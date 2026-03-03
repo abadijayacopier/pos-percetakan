@@ -345,7 +345,10 @@ export default function PrintingPage() {
                     <label className="form-label">Catatan</label>
                     <textarea className="form-textarea" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Catatan tambahan..." />
                 </div>
-                <button className="btn btn-primary btn-block" onClick={handleSubmit}>💾 Simpan Order</button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFormOpen(false)}>❌ Batal</button>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}>💾 Simpan Order</button>
+                </div>
             </Modal>
 
             {/* Detail Modal */}
@@ -392,6 +395,9 @@ export default function PrintingPage() {
                         </div>
 
                         <div style={{ marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }} className="no-print">
+                            <button className="btn btn-danger" onClick={() => setDetailOpen(false)}>
+                                ❌ Tutup
+                            </button>
                             <button className="btn btn-primary" style={{ background: '#25D366', color: 'white' }} onClick={sendWaOrder}>
                                 💬 Kirim Tagihan / Update via WA
                             </button>

@@ -116,7 +116,7 @@ const createTables = async () => {
         remaining INT DEFAULT 0,
         shipping_cost INT DEFAULT 0,
         deadline DATE,
-        status ENUM('pending', 'desain', 'approval', 'cetak', 'selesai', 'diambil') DEFAULT 'pending',
+        status ENUM('pending', 'desain', 'approval', 'cetak', 'selesai', 'diambil', 'batal') DEFAULT 'pending',
         notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
