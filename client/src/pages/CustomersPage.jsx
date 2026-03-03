@@ -154,14 +154,16 @@ export default function CustomersPage() {
                         {selected.transactions?.length > 0 && (
                             <div>
                                 <label className="form-label">Riwayat Transaksi</label>
-                                <table className="data-table">
-                                    <thead><tr><th>Tanggal</th><th>Invoice</th><th>Total</th><th>Status</th></tr></thead>
-                                    <tbody>
-                                        {selected.transactions.slice(0, 10).map(t => (
-                                            <tr key={t.id}><td>{formatDate(t.date)}</td><td>{t.invoiceNo}</td><td>{formatRupiah(t.total)}</td><td><span className={`badge ${t.status === 'paid' ? 'badge-success' : 'badge-warning'}`}>{t.status === 'paid' ? 'Lunas' : 'Belum'}</span></td></tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table className="data-table">
+                                        <thead><tr><th>Tanggal</th><th>Invoice</th><th>Total</th><th>Status</th></tr></thead>
+                                        <tbody>
+                                            {selected.transactions.slice(0, 10).map(t => (
+                                                <tr key={t.id}><td>{formatDate(t.date)}</td><td>{t.invoiceNo}</td><td>{formatRupiah(t.total)}</td><td><span className={`badge ${t.status === 'paid' ? 'badge-success' : 'badge-warning'}`}>{t.status === 'paid' ? 'Lunas' : 'Belum'}</span></td></tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </div>

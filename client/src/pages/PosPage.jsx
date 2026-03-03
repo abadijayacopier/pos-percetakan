@@ -506,29 +506,19 @@ export default function PosPage() {
             <style>{`
                 .premium-pos-wrapper {
                     font-family: 'Inter', sans-serif;
-                    background: #f6f8f6;
+                    background: var(--bg-primary);
                     display: flex;
                     height: calc(100vh - 64px);
                     overflow: hidden;
-                    --bg-panel: #ffffff;
-                    --text-main: #0f172a;
-                    --text-sec: #64748b;
-                    --border-c: rgba(19, 236, 91, 0.1);
-                    --bg-hover: #f1f5f9;
-                    --bg-input: #f8fafc;
+                    --bg-panel: var(--bg-secondary);
+                    --text-main: var(--text-primary);
+                    --text-sec: var(--text-secondary);
+                    --border-c: var(--border);
+                    --bg-hover: var(--bg-input);
+                    --bg-input: var(--bg-input);
                     --btn-primary: #13ec5b;
                     --btn-primary-hover: #10d350;
-                    --glass-bg: rgba(255, 255, 255, 0.8);
-                }
-                [data-theme="dark"] .premium-pos-wrapper {
-                    background: #0a0f0b;
-                    --bg-panel: #162219;
-                    --text-main: #f1f5f9;
-                    --text-sec: #94a3b8;
-                    --border-c: rgba(19, 236, 91, 0.1);
-                    --bg-hover: rgba(19, 236, 91, 0.1);
-                    --bg-input: #0a0f0b;
-                    --glass-bg: rgba(22, 34, 25, 0.7);
+                    --glass-bg: var(--bg-glass);
                 }
 
                 .premium-pos-wrapper .pos-catalog {

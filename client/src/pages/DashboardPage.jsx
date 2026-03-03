@@ -267,7 +267,8 @@ export default function DashboardPage({ onNavigate }) {
                         grid-template-columns: repeat(2, 1fr);
                     }
                     .main-grid {
-                        grid-template-columns: 1fr;
+                        display: flex;
+                        flex-direction: column;
                     }
                 }
 

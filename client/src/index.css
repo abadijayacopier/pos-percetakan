@@ -2545,3 +2545,18 @@ img {
     font-size: 1rem !important;
   }
 }
+
+/* Form inputs on mobile */
+@media screen and (max-width: 480px) {
+  .premium-page-wrapper .form-input,
+  .premium-page-wrapper .form-select,
+  .premium-page-wrapper .form-textarea {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
