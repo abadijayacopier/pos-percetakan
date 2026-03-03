@@ -139,7 +139,7 @@ const createTables = async () => {
         diagnosis TEXT,
         labor_cost INT DEFAULT 0,
         total_cost INT DEFAULT 0,
-        status ENUM('diterima', 'diagnosa', 'approval', 'tunggu_part', 'pengerjaan', 'testing', 'selesai', 'diambil') DEFAULT 'diterima',
+        status ENUM('diterima', 'diagnosa', 'approval', 'tunggu_part', 'pengerjaan', 'testing', 'selesai', 'diambil', 'batal') DEFAULT 'diterima',
         technician_id VARCHAR(50),
         warranty_end DATE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
