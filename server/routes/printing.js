@@ -18,6 +18,26 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
+// 1a. GET Bahan Digital Printing
+router.get('/digital-materials', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM digital_printing ORDER BY name ASC');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil data bahan digital' });
+    }
+});
+
+// 1b. GET Bahan Cetak Offset
+router.get('/offset-materials', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM offset_printing ORDER BY name ASC');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil data bahan offset' });
+    }
+});
+
 // 2. POST Order Percetakan Baru
 router.post('/', verifyToken, requireRole(['operator', 'admin', 'kasir']), async (req, res) => {
     const connection = await pool.getConnection();

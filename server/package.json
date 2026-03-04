@@ -7,7 +7,11 @@
         "start": "node index.js",
         "dev": "nodemon index.js",
         "migrate": "node database/migrate.js",
-        "seed": "node database/seed.js"
+        "migrate:percetakan": "node database/migrate_percetakan.js",
+        "migrate:offset": "node database/migrate_offset.js",
+        "migrate:pricing": "node database/migrate_pricing.js",
+        "seed": "node database/seed.js",
+        "reset:password": "node database/reset-password.js"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",

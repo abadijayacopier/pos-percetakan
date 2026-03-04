@@ -18,20 +18,33 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Tangkap error token expired & beri feedback jelas
+// Tangkap error token & beri feedback jelas
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            if (!window.location.pathname.includes('login')) {
-                // Token Expired / Ditolak — bersihkan sesi dan redirect
-                localStorage.removeItem('pos_session');
-                alert('Sesi login sudah habis. Silakan login kembali.');
-                window.location.href = '/';
-            }
+        const status = error.response?.status;
+        const configUrl = error.config?.url || '';
+        const responseUrl = error.request?.responseURL || '';
+
+        // Skip jika request berasal dari endpoint /auth/ (login, register, dll)
+        // Gunakan KEDUA sumber URL agar lebih andal
+        const isAuthEndpoint =
+            configUrl.includes('/auth/') ||
+            configUrl.includes('auth/login') ||
+            responseUrl.includes('/auth/');
+
+        if (status === 401 && !isAuthEndpoint) {
+            // Token expired / tidak valid — hanya logout jika BUKAN dari proses login
+            console.warn('[api] Token expired, melakukan logout otomatis. URL:', configUrl);
+            localStorage.removeItem('pos_session');
+            alert('Sesi login sudah habis. Silakan login kembali.');
+            window.location.href = '/';
         }
+
+        // 403 = Role tidak cukup → JANGAN logout, komponen tangani sendiri
         return Promise.reject(error);
     }
 );
+
 
 export default api;

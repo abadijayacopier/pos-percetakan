@@ -6,6 +6,12 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PosPage from './pages/PosPage';
 import PrintingPage from './pages/PrintingPage';
+import DigitalPrintingPage from './pages/DigitalPrintingPage';
+import OffsetPrintingPage from './pages/OffsetPrintingPage';
+import OrderInputPage from './pages/OrderInputPage';
+import PricingRulesPage from './pages/PricingRulesPage';
+import PricingLogsPage from './pages/PricingLogsPage';
+import MaterialsPage from './pages/MaterialsPage';
 import ServicePage from './pages/ServicePage';
 import InventoryPage from './pages/InventoryPage';
 import CustomersPage from './pages/CustomersPage';
@@ -194,8 +200,14 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard': return <DashboardPage onNavigate={setActivePage} />;
-      case 'pos': return <PosPage />;
+      case 'pos': return <PosPage onNavigate={setActivePage} />;
       case 'printing': return <PrintingPage />;
+      case 'digital-printing': return <DigitalPrintingPage />;
+      case 'cetak-offset': return <OffsetPrintingPage />;
+      case 'input-pesanan': return <OrderInputPage />;
+      case 'harga-grosir': return <PricingRulesPage />;
+      case 'riwayat-harga': return <PricingLogsPage />;
+      case 'stok-bahan': return <MaterialsPage />;
       case 'service': return <ServicePage />;
       case 'inventory': return <InventoryPage />;
       case 'customers': return <CustomersPage />;

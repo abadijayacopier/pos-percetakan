@@ -492,131 +492,241 @@ export default function SettingsPage() {
 
             {/* Printer & Nota */}
             {activeTab === 'printer' && (
-                <div className="card">
-                    <div className="card-body">
-                        <div className="form-group">
-                            <label className="form-label">Tipe Printer & Kertas Nota (Pilih Sesuai Hardware)</label>
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="printer-settings-grid">
+                    {/* Left Column */}
+                    <div className="ps-main">
+                        {/* Hardware Settings */}
+                        <div className="ps-section">
+                            <div className="ps-section-header">
+                                <div className="ps-section-icon"><FiPrinter /></div>
+                                <h3>Pengaturan Perangkat Keras</h3>
+                            </div>
+
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>Tipe Printer & Kertas Nota</label>
+                            <div className="ps-type-grid">
                                 {[
-                                    { id: '58mm', label: 'Thermal 58mm' },
-                                    { id: '80mm', label: 'Thermal 80mm' },
-                                    { id: 'lx310', label: 'Dot Matrix LX310 (12x14cm)' },
-                                    { id: 'inkjet', label: 'Inkjet/Laser (A4/A5/Folio)' }
-                                ].map(s => (
-                                    <button key={s.id} className={`btn ${printerSize === s.id ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPrinterSize(s.id)}>{s.label}</button>
+                                    { id: '58mm', icon: <FiFileText />, title: 'Thermal 58mm', desc: 'Printer POS kecil' },
+                                    { id: '80mm', icon: <FiFileText />, title: 'Thermal 80mm', desc: 'Printer POS standar' },
+                                    { id: 'lx310', icon: <FiPrinter />, title: 'Dot Matrix LX310', desc: 'Kertas continuous 12×14cm' },
+                                    { id: 'inkjet', icon: <FiPrinter />, title: 'Inkjet / Laser', desc: 'Ukuran A4 / A5 / Folio' },
+                                ].map(t => (
+                                    <button key={t.id} className={`ps-type-card ${printerSize === t.id ? 'selected' : ''}`} onClick={() => setPrinterSize(t.id)}>
+                                        <span className="ps-type-icon">{t.icon}</span>
+                                        <div className="ps-type-info">
+                                            <h4>{t.title}</h4>
+                                            <p>{t.desc}</p>
+                                        </div>
+                                        <span className="ps-type-check"><FiCheckCircle /></span>
+                                    </button>
                                 ))}
                             </div>
+
                             {printerSize === 'inkjet' && (
-                                <div style={{ marginTop: '12px' }}>
-                                    <label className="form-label"><FiFile /> Ukuran Kertas</label>
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <div style={{ marginBottom: '16px' }}>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>Ukuran Kertas</label>
+                                    <div className="ps-size-pills">
                                         {['A5', 'A4', 'Folio'].map(sz => (
-                                            <button key={sz} className={`btn ${paperSize === sz ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaperSize(sz)}>{sz}</button>
+                                            <button key={sz} className={`ps-size-pill ${paperSize === sz ? 'active' : ''}`} onClick={() => setPaperSize(sz)}>{sz}</button>
                                         ))}
                                     </div>
                                 </div>
                             )}
+
+                            <div className="ps-toggle-row">
+                                <div className="ps-toggle-info">
+                                    <span>Cetak Struk Otomatis setelah Pembayaran</span>
+                                    <span>Memicu pencetakan secara otomatis saat transaksi selesai</span>
+                                </div>
+                                <label className="ps-switch">
+                                    <input type="checkbox" defaultChecked />
+                                    <span className="ps-switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <div className="ps-direct-print" style={{ marginTop: '16px' }}>
+                                <label><FiZap /> Mode Cetak Cepat (Direct Print)</label>
+                                <p>Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
+                                <select className="form-select" style={{ width: '100%' }} value={printerName} onChange={e => setPrinterName(e.target.value)}>
+                                    <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
+                                    {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div className="form-group"><label className="form-label">Footer Struk</label><textarea className="form-textarea" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" /></div>
 
-                    <div className="form-group" style={{ padding: '16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
-                        <label className="form-label"><FiZap /> Mode Cetak Cepat (Direct Print)</label>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                            Jika dipilih, struk akan dikirim langsung ke hardware printer tanpa memunculkan kotak dialog browser bawaan (Silent Print Server).
-                        </p>
-                        <select className="form-select" value={printerName} onChange={e => setPrinterName(e.target.value)}>
-                            <option value=""><FiX /> Cetak Menggunakan Dialog Browser (Bawaan PDF)</option>
-                            {systemPrinters.map(p => <option key={p} value={p}><FiPrinter /> {p}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                        <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Pengaturan</button>
-                        <button className="btn btn-secondary" onClick={async () => {
-                            const W = printerSize === 'lx310' ? 36 : printerSize === 'inkjet' ? 60 : printerSize === '80mm' ? 42 : 32;
-                            const M = printerSize === 'lx310' ? '  ' : '';
-                            const pad = (label, val) => {
-                                const sp = W - label.length - val.length;
-                                return label + ' '.repeat(sp > 0 ? sp : 1) + val;
-                            };
-                            const center = (str) => {
-                                const p = Math.max(0, Math.floor((W - str.length) / 2));
-                                return ' '.repeat(p) + str;
-                            };
-                            const lines = [
-                                center(storeName || 'NAMA TOKO'),
-                                center(storeAddress || 'Alamat toko'),
-                                center('Telp: ' + (storePhone || '-')),
-                            ];
-                            if (printerSize === 'lx310' || printerSize === 'inkjet') {
-                                lines.push('='.repeat(W), center('NOTA PEMBAYARAN'), '='.repeat(W));
-                            } else {
-                                lines.push('-'.repeat(W));
-                            }
-                            lines.push(
-                                `No      : TEST-${Date.now().toString(36).toUpperCase()}`,
-                                `Tanggal : ${new Date().toLocaleString('id-ID')}`,
-                                `Kasir   : Admin`,
-                                '-'.repeat(W),
-                                'Kertas HVS A4',
-                                pad('  10x Rp 500', 'Rp 5.000'),
-                                'Pulpen Pilot',
-                                pad('  1x Rp 3.000', 'Rp 3.000'),
-                                '-'.repeat(W),
-                                pad('TOTAL    :', 'Rp 8.000'),
-                                pad('BAYAR    :', 'Rp 10.000'),
-                                pad('KEMBALI  :', 'Rp 2.000'),
-                                pad('Metode   :', 'TUNAI'),
-                                '-'.repeat(W),
-                                center(receiptFooter || 'Terima kasih!'),
-                                '',
-                                `Dicetak: ${new Date().toLocaleString('id-ID')}`,
-                            );
-                            let testText = lines.map(l => M + l).join('\n') + '\n';
-                            if (printerSize === 'lx310') {
-                                testText += '\n\n\n\n';
-                            } else if (printerSize !== 'inkjet') {
-                                testText += '\n\n\n';
-                            }
+                        {/* Branding Header & Footer */}
+                        <div className="ps-section">
+                            <div className="ps-section-header">
+                                <div className="ps-section-icon"><FiEdit /></div>
+                                <h3>Branding Header & Footer</h3>
+                            </div>
+                            <div className="ps-form-grid">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div className="ps-form-group">
+                                        <label>Nama Toko</label>
+                                        <input type="text" value={storeName} onChange={e => setStoreName(e.target.value)} />
+                                    </div>
+                                    <div className="ps-form-group">
+                                        <label>Alamat</label>
+                                        <textarea rows="2" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} />
+                                    </div>
+                                    <div className="ps-form-group">
+                                        <label>Nomor Telepon</label>
+                                        <input type="text" value={storePhone} onChange={e => setStorePhone(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div className="ps-form-group">
+                                        <label>Pesan Kaki (Footer Struk)</label>
+                                        <textarea rows="2" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" />
+                                    </div>
+                                    <div className="ps-form-group">
+                                        <label>Logo Toko (Optimasi Cetak)</label>
+                                        <label className="ps-logo-drop">
+                                            {storeLogo ? (
+                                                <img src={storeLogo} alt="Logo" className="ps-logo-preview" />
+                                            ) : (
+                                                <span className="drop-icon"><FiUpload /></span>
+                                            )}
+                                            <p>{storeLogo ? 'Klik untuk ganti logo' : 'Unggah Logo (PNG/JPG, maks 500KB)'}</p>
+                                            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                            if (printerName) {
-                                try {
-                                    const payload = { text: testText, printerName };
-                                    if (printerSize === 'lx310') payload.raw = true;
-                                    else if (printerSize === 'inkjet') { payload.mode = 'inkjet'; payload.paperSize = paperSize; }
-                                    await api.post('/print/receipt', payload);
-                                    showToast(`Test print berhasil dikirim ke ${printerName}!`, 'success');
-                                } catch (err) {
-                                    showToast(err.response?.data?.message || 'Gagal mengirim test print', 'error');
+                        {/* Digital Receipts */}
+                        <div className="ps-section">
+                            <div className="ps-section-header">
+                                <div className="ps-section-icon"><FiMessageCircle /></div>
+                                <h3>Struk Digital</h3>
+                            </div>
+                            <div className="ps-digital-grid">
+                                <div className="ps-digital-card">
+                                    <div className="ps-digital-icon whatsapp"><FiMessageCircle /></div>
+                                    <div className="ps-digital-content">
+                                        <div className="d-header">
+                                            <h4>Struk WhatsApp</h4>
+                                            <label className="ps-switch" style={{ transform: 'scale(0.8)' }}>
+                                                <input type="checkbox" defaultChecked />
+                                                <span className="ps-switch-slider" style={{ backgroundColor: 'var(--border)' }}></span>
+                                            </label>
+                                        </div>
+                                        <p>Kirim struk PDF melalui API WhatsApp</p>
+                                    </div>
+                                </div>
+                                <div className="ps-digital-card">
+                                    <div className="ps-digital-icon email"><FiFileText /></div>
+                                    <div className="ps-digital-content">
+                                        <div className="d-header">
+                                            <h4>Struk Email</h4>
+                                            <label className="ps-switch" style={{ transform: 'scale(0.8)' }}>
+                                                <input type="checkbox" />
+                                                <span className="ps-switch-slider"></span>
+                                            </label>
+                                        </div>
+                                        <p>Kirim struk ke alamat email pelanggan</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Perubahan</button>
+                            <button className="btn btn-secondary" onClick={async () => {
+                                const W = printerSize === 'lx310' ? 36 : printerSize === 'inkjet' ? 60 : printerSize === '80mm' ? 42 : 32;
+                                const M = printerSize === 'lx310' ? '  ' : '';
+                                const pad = (label, val) => {
+                                    const sp = W - label.length - val.length;
+                                    return label + ' '.repeat(sp > 0 ? sp : 1) + val;
+                                };
+                                const center = (str) => {
+                                    const p = Math.max(0, Math.floor((W - str.length) / 2));
+                                    return ' '.repeat(p) + str;
+                                };
+                                const lines = [
+                                    center(storeName || 'NAMA TOKO'),
+                                    center(storeAddress || 'Alamat toko'),
+                                    center('Telp: ' + (storePhone || '-')),
+                                ];
+                                if (printerSize === 'lx310' || printerSize === 'inkjet') {
+                                    lines.push('='.repeat(W), center('NOTA PEMBAYARAN'), '='.repeat(W));
+                                } else {
+                                    lines.push('-'.repeat(W));
                                 }
-                            } else {
-                                showToast('Pilih printer dulu di dropdown Direct Print', 'error');
-                            }
-                        }}><FiActivity /> Test Print</button>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Preview Struk (Simulasi Cetak CSS)</label>
-                        <div className={`receipt-preview print-${printerSize}`} style={{ maxWidth: printerSize === '58mm' ? '240px' : printerSize === '80mm' ? '320px' : '480px', height: printerSize === 'lx310' ? '520px' : 'auto', border: printerSize === 'lx310' ? '1px solid #ccc' : 'none' }}>
-                            <div className="receipt-header">
-                                <h4>{storeName}</h4>
-                                <p>{storeAddress}</p>
-                                <p>Telp: {storePhone}</p>
-                            </div>
-                            <div style={{ padding: '8px 0', borderBottom: '1px dashed #000', textAlign: 'center', fontSize: '0.7rem' }}>
-                                <p>TRX-2025-XXXX</p>
-                                <p>{new Date().toLocaleString('id-ID')}</p>
-                            </div>
-                            <div style={{ padding: '8px 0', borderBottom: '1px dashed #000' }}>
-                                <div className="receipt-item-row"><span>Contoh Produk x2</span><span>Rp 10.000</span></div>
-                            </div>
-                            <div style={{ padding: '8px 0', fontWeight: '700' }}>
-                                <div className="receipt-item-row"><span>TOTAL</span><span>Rp 10.000</span></div>
-                            </div>
-                            <div className="receipt-footer"><p>{receiptFooter || 'Terima kasih!'}</p></div>
+                                lines.push(
+                                    `No      : TEST-${Date.now().toString(36).toUpperCase()}`,
+                                    `Tanggal : ${new Date().toLocaleString('id-ID')}`,
+                                    `Kasir   : Admin`,
+                                    '-'.repeat(W),
+                                    'Kertas HVS A4',
+                                    pad('  10x Rp 500', 'Rp 5.000'),
+                                    'Pulpen Pilot',
+                                    pad('  1x Rp 3.000', 'Rp 3.000'),
+                                    '-'.repeat(W),
+                                    pad('TOTAL    :', 'Rp 8.000'),
+                                    pad('BAYAR    :', 'Rp 10.000'),
+                                    pad('KEMBALI  :', 'Rp 2.000'),
+                                    pad('Metode   :', 'TUNAI'),
+                                    '-'.repeat(W),
+                                    center(receiptFooter || 'Terima kasih!'),
+                                    '',
+                                    `Dicetak: ${new Date().toLocaleString('id-ID')}`,
+                                );
+                                let testText = lines.map(l => M + l).join('\n') + '\n';
+                                if (printerSize === 'lx310') {
+                                    testText += '\n\n\n\n';
+                                } else if (printerSize !== 'inkjet') {
+                                    testText += '\n\n\n';
+                                }
+                                if (printerName) {
+                                    try {
+                                        const payload = { text: testText, printerName };
+                                        if (printerSize === 'lx310') payload.raw = true;
+                                        else if (printerSize === 'inkjet') { payload.mode = 'inkjet'; payload.paperSize = paperSize; }
+                                        await api.post('/print/receipt', payload);
+                                        showToast(`Test print berhasil dikirim ke ${printerName}!`, 'success');
+                                    } catch (err) {
+                                        showToast(err.response?.data?.message || 'Gagal mengirim test print', 'error');
+                                    }
+                                } else {
+                                    showToast('Pilih printer dulu di dropdown Direct Print', 'error');
+                                }
+                            }}><FiActivity /> Cetak Uji Coba</button>
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan</button>
+
+                    {/* Right Column: Live Preview */}
+                    <div className="ps-section ps-preview-panel">
+                        <h3><FiEye /> Pratinjau Langsung</h3>
+                        <div className="ps-receipt-frame">
+                            <div className="ps-receipt">
+                                <div className="r-logo">
+                                    {storeLogo ? <img src={storeLogo} alt="Logo" /> : <FiPrinter style={{ color: '#94a3b8', fontSize: '16px' }} />}
+                                </div>
+                                <div className="r-store">{storeName || 'NAMA TOKO'}</div>
+                                <div className="r-addr">{storeAddress || 'Alamat toko'}</div>
+                                <div className="r-phone">TELP: {storePhone || '-'}</div>
+                                <hr className="r-divider" />
+                                <div className="r-meta">
+                                    <span>{new Date().toLocaleDateString('id-ID')}</span>
+                                    <span>#INV-9823</span>
+                                </div>
+                                <hr className="r-divider" />
+                                <div className="r-item"><span>Fotokopi (50 x 500)</span><span>25.000</span></div>
+                                <div className="r-item"><span>Kertas A4 (Rim)</span><span>55.000</span></div>
+                                <div className="r-item"><span>Jasa Penjilidan</span><span>15.000</span></div>
+                                <hr className="r-divider" />
+                                <div className="r-total"><span>Total</span><span>95.000</span></div>
+                                <hr className="r-divider" />
+                                <div className="r-footer">{receiptFooter || 'Terima kasih telah berbelanja!'}</div>
+                            </div>
+                        </div>
+                        <p className="ps-preview-label">
+                            Pratinjau format {printerSize === '58mm' ? 'Thermal 58mm' : printerSize === '80mm' ? 'Thermal 80mm' : printerSize === 'lx310' ? 'Dot Matrix' : `Inkjet ${paperSize}`}
+                        </p>
+                    </div>
                 </div>
             )}
 
@@ -698,3 +808,4 @@ export default function SettingsPage() {
         </div>
     );
 }
+

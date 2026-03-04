@@ -12,7 +12,13 @@ export default function Layout({ activePage, onNavigate, children }) {
     const PAGE_TITLES = {
         dashboard: 'Dasbor Utama',
         pos: 'Transaksi Baru',
+        'input-pesanan': 'Input Pesanan Baru',
         printing: 'Percetakan',
+        'digital-printing': 'Digital Printing',
+        'cetak-offset': 'Katalog Cetak Offset & Nota',
+        'harga-grosir': 'Pengaturan Harga Grosir & Berjenjang',
+        'riwayat-harga': 'Log Riwayat Perubahan Harga',
+        'stok-bahan': 'Stok Bahan Cetak',
         service: 'Tiket Servis',
         inventory: 'Data Inventori',
         customers: 'Pelanggan',
@@ -22,261 +28,80 @@ export default function Layout({ activePage, onNavigate, children }) {
     };
 
     return (
-        <div className="app-layout">
-            <style>{`
-                .app-layout {
-                    background: var(--bg-primary);
-                    color: var(--text-primary);
-                }
-                .p-top-header {
-                    height: 64px;
-                    min-height: 64px;
-                    padding: 0 32px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    background: var(--bg-secondary);
-                    border-bottom: 1px solid var(--border);
-                }
-                .p-header-title {
-                    font-size: 1.1rem;
-                    font-weight: 700;
-                    color: var(--text-primary);
-                    margin: 0;
-                }
-                .p-header-right {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
-                .p-search-box {
-                    position: relative;
-                    width: 100%;
-                    max-width: 500px;
-                }
-                .p-search-box input {
-                    width: 100%;
-                    padding: 8px 16px 8px 36px;
-                    background: var(--bg-input);
-                    border: 1px solid var(--border);
-                    border-radius: 8px;
-                    color: var(--text-primary);
-                    font-size: 0.85rem;
-                    outline: none;
-                    transition: 0.2s;
-                }
-                .p-search-box input:focus {
-                    border-color: #2563eb;
-                    background: var(--bg-secondary);
-                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-                }
-                .p-search-box .icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: var(--text-muted);
-                    font-size: 1rem;
-                }
-                .p-icon-btn {
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    background: none;
-                    border: none;
-                    color: var(--text-secondary);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1.1rem;
-                    cursor: pointer;
-                    transition: 0.2s;
-                    position: relative;
-                }
-                .p-icon-btn:hover {
-                    background: var(--bg-input);
-                    color: var(--text-primary);
-                }
-                .p-badge {
-                    position: absolute;
-                    top: 4px;
-                    right: 4px;
-                    width: 8px;
-                    height: 8px;
-                    background: #ef4444;
-                    border-radius: 50%;
-                    border: 2px solid var(--bg-secondary);
-                }
-                
-                /* Layout Header New Elements */
-                .h-theme-toggle {
-                    display: flex;
-                    gap: 4px;
-                    padding: 3px;
-                    background: var(--bg-input);
-                    border-radius: 8px;
-                    border: 1px solid var(--border);
-                }
-                .h-theme-btn {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 6px 12px;
-                    border: none;
-                    border-radius: 6px;
-                    background: transparent;
-                    color: var(--text-muted);
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    gap: 6px;
-                }
-                .h-theme-btn:hover {
-                    color: var(--text-primary);
-                }
-                .h-theme-btn.active {
-                    background: #2563eb;
-                    color: white;
-                    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-                }
-                
-                .h-user-profile {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding-left: 12px;
-                    border-left: 1px solid var(--border);
-                }
-                .h-avatar {
-                    width: 36px;
-                    height: 36px;
-                    background: var(--bg-input);
-                    border: 1px solid var(--border);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1rem;
-                }
-                .h-user-info {
-                    display: flex;
-                    flex-direction: column;
-                }
-                .h-user-name {
-                    font-size: 0.85rem;
-                    font-weight: 700;
-                    color: var(--text-primary);
-                    line-height: 1.2;
-                }
-                .h-user-role {
-                    font-size: 0.7rem;
-                    color: var(--text-muted);
-                }
-                
-                .menu-toggle {
-                    display: none;
-                }
-                @media (max-width: 1024px) {
-                    .menu-toggle {
-                        display: flex;
-                    }
-                }
-                .p-btn-blue {
-                    background: #2563eb;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                    cursor: pointer;
-                    transition: 0.2s;
-                }
-                .p-btn-blue:hover {
-                    background: #1d4ed8;
-                }
-                @media (max-width: 768px) {
-                    .p-top-header { padding: 0 16px; gap: 8px; overflow-x: auto; flex-wrap: wrap; height: auto; padding-top: 12px; padding-bottom: 12px;}
-                    .p-search-box { order: 3; width: 100%; max-width: 100%; margin-top: 8px; }
-                    .p-header-title { font-size: 0.95rem; white-space: nowrap; }
-                    .h-user-info { display: none; }
-                    .h-theme-btn span:last-child { display: none; } /* hide text on mobile */
-                    .p-btn-blue { padding: 6px 12px; font-size: 0.8rem; white-space: nowrap; }
-                    .p-icon-btn { width: 32px; height: 32px; }
-                    .p-header-right { gap: 8px; }
-                }
-            `}</style>
+        <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+            {activePage !== 'pos' && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-            <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-            <div className="main-content" style={{ background: 'var(--bg-primary)' }}>
-                <header className="p-top-header">
-                    {/* LEFT: Title */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '200px' }}>
-                        <button className="header-btn menu-toggle" onClick={() => setSidebarOpen(true)}><FiMenu /></button>
-                        <h1 className="p-header-title">{PAGE_TITLES[activePage] || 'Dasbor Utama'}</h1>
-                    </div>
-
-                    {/* CENTER: Search */}
-                    <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 20px' }}>
-                        <div className="p-search-box">
-                            <span className="icon"><FiSearch /></span>
-                            <input type="text" placeholder="Cari transaksi, pelanggan, barang..." />
-                        </div>
-                    </div>
-
-                    {/* RIGHT: Toggles & Profile */}
-                    <div className="p-header-right" style={{ display: 'flex', gap: '16px', alignItems: 'center', minWidth: 'max-content' }}>
-
-                        <div className="h-theme-toggle">
-                            {[
-                                { id: 'light', icon: FiSun, label: 'Terang' },
-                                { id: 'dark', icon: FiMoon, label: 'Gelap' },
-                            ].map(t => (
-                                <button
-                                    key={t.id}
-                                    className={`h-theme-btn ${themeMode === t.id || (themeMode === 'system' && t.id === 'light') ? 'active' : ''}`}
-                                    onClick={() => setTheme(t.id)}
-                                    title={t.label}
-                                >
-                                    <span><t.icon size={14} /></span>
-                                    <span>{t.label}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                            <button className="p-icon-btn">
-                                <FiBell size={18} />
-                                <span className="p-badge"></span>
-                            </button>
-                            <button className="p-icon-btn" style={{ marginRight: '8px' }}>
-                                <FiHelpCircle size={18} />
-                            </button>
-                        </div>
-
-                        <div className="h-user-profile">
-                            <div className="h-avatar">
-                                <FiUser size={18} />
-                            </div>
-                            <div className="h-user-info">
-                                <span className="h-user-name">{user?.name || 'Budi Santoso'}</span>
-                                <span className="h-user-role">{user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Super Admin'}</span>
-                            </div>
+            <main className="flex-1 flex flex-col overflow-hidden">
+                {activePage !== 'pos' && (
+                    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
+                        <div className="flex items-center gap-4">
+                            {/* Mobile Menu Button */}
                             <button
-                                onClick={logout}
-                                title="Keluar"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1.2rem', marginLeft: '4px' }}>
-                                <FiLogOut size={18} />
+                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                onClick={() => setSidebarOpen(true)}
+                            >
+                                <FiMenu size={20} />
                             </button>
+                            <h2 className="text-lg font-bold hidden md:block">{PAGE_TITLES[activePage] || 'Ringkasan Bisnis'}</h2>
+                            <div className="relative group ml-0 md:ml-4">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <span className="material-symbols-outlined text-sm">search</span>
+                                </span>
+                                <input
+                                    className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-48 md:w-64 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                                    placeholder="Cari pesanan, klien..."
+                                    type="text"
+                                />
+                            </div>
                         </div>
 
-                    </div>
-                </header>
+                        <div className="flex items-center gap-4">
+                            {/* Theme Toggle */}
+                            <div className="hidden lg:flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                {[
+                                    { id: 'light', icon: FiSun },
+                                    { id: 'dark', icon: FiMoon },
+                                ].map(t => (
+                                    <button
+                                        key={t.id}
+                                        className={`p-1.5 rounded-md transition-colors ${themeMode === t.id || (themeMode === 'system' && t.id === 'light') ? 'bg-white dark:bg-slate-600 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                        onClick={() => setTheme(t.id)}
+                                        title={`Tema ${t.id}`}
+                                    >
+                                        <t.icon size={14} />
+                                    </button>
+                                ))}
+                            </div>
 
-                {activePage === 'pos' ? children : <div className="page-container">{children}</div>}
-            </div>
+                            <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative">
+                                <span className="material-symbols-outlined">notifications</span>
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+                            </button>
+
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="text-right hidden sm:block">
+                                    <p className="text-sm font-bold leading-none">{user?.name || 'Admin User'}</p>
+                                    <p className="text-xs text-slate-500 font-medium">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Pemilik'}</p>
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-300 dark:border-slate-700 overflow-hidden ring-2 ring-primary/20 flex items-center justify-center cursor-pointer" onClick={logout} title="Keluar">
+                                    {/* Use icon instead of hardcoded avatar since we don't know the exact user avatar */}
+                                    <FiUser className="text-slate-500" size={20} />
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                )}
+
+                {activePage === 'pos' ? (
+                    children
+                ) : (
+                    <div className="flex-1 overflow-y-auto w-full h-full bg-background-light dark:bg-background-dark">
+                        {children}
+                    </div>
+                )}
+            </main>
         </div>
     );
 }

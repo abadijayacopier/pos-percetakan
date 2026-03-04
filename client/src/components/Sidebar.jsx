@@ -1,315 +1,222 @@
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import {
-    FiGrid, FiShoppingCart, FiPrinter, FiTool, FiPackage,
-    FiUsers, FiDollarSign, FiFileText, FiSettings, FiLogOut,
-    FiSun, FiMoon
-} from 'react-icons/fi';
 
 const MENU_GROUPS = [
     {
         title: 'UTAMA',
         items: [
-            { id: 'dashboard', label: 'Dashboard', icon: FiGrid, roles: ['admin', 'kasir', 'operator', 'teknisi'] },
-            { id: 'pos', label: 'Kasir/POS', icon: FiShoppingCart, roles: ['admin', 'kasir'] },
+            { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'kasir', 'operator', 'teknisi'] },
+            { id: 'pos', label: 'Kasir/POS', icon: 'receipt_long', roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'ORDER',
         items: [
-            { id: 'printing', label: 'Percetakan', icon: FiPrinter, roles: ['admin', 'kasir', 'operator'] },
-            { id: 'service', label: 'Service', icon: FiTool, roles: ['admin', 'kasir', 'teknisi'] },
+            {
+                id: 'printing',
+                label: 'Percetakan',
+                icon: 'print_connect',
+                roles: ['admin', 'kasir', 'operator'],
+                subItems: [
+                    { id: 'input-pesanan', label: 'Input Pesanan', icon: 'add_circle', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'digital-printing', label: 'Digital Printing', icon: 'photo_print', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'cetak-offset', label: 'Cetak Offset', icon: 'print', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'harga-grosir', label: 'Harga Grosir', icon: 'sell', roles: ['admin'] },
+                    { id: 'riwayat-harga', label: 'Riwayat Harga', icon: 'history', roles: ['admin'] },
+                    { id: 'stok-bahan', label: 'Stok Bahan', icon: 'inventory_2', roles: ['admin', 'operator'] },
+                ],
+            },
+            { id: 'service', label: 'Service', icon: 'build', roles: ['admin', 'kasir', 'teknisi'] },
         ]
     },
     {
         title: 'DATA',
         items: [
-            { id: 'inventory', label: 'Inventori', icon: FiPackage, roles: ['admin', 'kasir'] },
-            { id: 'customers', label: 'Pelanggan', icon: FiUsers, roles: ['admin', 'kasir'] },
+            { id: 'inventory', label: 'Inventori', icon: 'inventory_2', roles: ['admin', 'kasir'] },
+            { id: 'customers', label: 'Pelanggan', icon: 'group', roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'KEUANGAN',
         items: [
-            { id: 'finance', label: 'Kas & Keuangan', icon: FiDollarSign, roles: ['admin', 'kasir'] },
-            { id: 'reports', label: 'Laporan', icon: FiFileText, roles: ['admin', 'kasir'] },
+            { id: 'finance', label: 'Kas & Keuangan', icon: 'payments', roles: ['admin', 'kasir'] },
+            { id: 'reports', label: 'Laporan', icon: 'bar_chart', roles: ['admin', 'kasir'] },
         ]
     },
 ];
 
 export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
-    const { user, logout } = useAuth();
-    const { themeMode, setTheme } = useTheme();
+    const { user } = useAuth();
 
-    const getInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '??';
+    // Track which parent menus are expanded (by item id)
+    const [expanded, setExpanded] = useState(() => {
+        // Auto-expand "printing" if any sub-page is active
+        const printingSubIds = ['digital-printing'];
+        return printingSubIds.includes(activePage) ? { printing: true } : {};
+    });
+
+    const toggleExpand = (id) => {
+        setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     const handleNav = (id) => {
         onNavigate(id);
         if (window.innerWidth <= 768) onClose();
     };
 
+    const isActiveOrChildActive = (item) => {
+        if (activePage === item.id) return true;
+        if (item.subItems) return item.subItems.some(sub => activePage === sub.id);
+        return false;
+    };
+
     return (
         <>
-            <style>{`
-                .premium-sidebar {
-                    width: 260px;
-                    min-width: 260px;
-                    background: var(--sidebar-bg, #ffffff);
-                    border-right: 1px solid var(--sidebar-border, #f1f5f9);
-                    display: flex;
-                    flex-direction: column;
-                    z-index: 100;
-                    height: 100vh;
-                    font-family: 'Inter', sans-serif;
-                }
-                [data-theme="light"] .premium-sidebar,
-                :root .premium-sidebar {
-                    --sidebar-bg: #ffffff;
-                    --sidebar-border: #f1f5f9;
-                    --sidebar-text: #1e293b;
-                    --sidebar-text-muted: #64748b;
-                    --sidebar-hover: #f8fafc;
-                    --sidebar-avatar-bg: #f1f5f9;
-                }
-                [data-theme="dark"] .premium-sidebar {
-                    --sidebar-bg: #0f172a;
-                    --sidebar-border: #1e293b;
-                    --sidebar-text: #e2e8f0;
-                    --sidebar-text-muted: #94a3b8;
-                    --sidebar-hover: #1e293b;
-                    --sidebar-avatar-bg: #1e293b;
-                }
-                .s-brand {
-                    padding: 24px 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-                .s-brand-icon {
-                    width: 40px;
-                    height: 40px;
-                    background: #2563eb;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 1.5rem;
-                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-                }
-                .s-brand-info h3 {
-                    margin: 0;
-                    font-size: 1rem;
-                    font-weight: 700;
-                    color: var(--sidebar-text, #1e293b);
-                }
-                .s-brand-info span {
-                    font-size: 0.75rem;
-                    color: var(--sidebar-text-muted, #64748b);
-                }
-                .s-nav {
-                    flex: 1;
-                    padding: 12px 16px;
-                    overflow-y: auto;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-                .s-nav-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    color: var(--sidebar-text-muted, #64748b);
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    width: 100%;
-                    text-align: left;
-                    transition: all 0.2s;
-                }
-                .s-nav-item:hover {
-                    background: var(--sidebar-hover, #f8fafc);
-                    color: var(--sidebar-text, #1e293b);
-                }
-                .s-nav-item.active {
-                    background: #2563eb;
-                    color: white;
-                    font-weight: 600;
-                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-                }
-                .s-nav-item .s-icon {
-                    font-size: 1.2rem;
-                }
-                .s-footer {
-                    padding: 16px 16px 20px;
-                    border-top: 1px solid var(--sidebar-border, #f1f5f9);
-                }
-                .s-group-title {
-                    font-size: 0.75rem;
-                    font-weight: 700;
-                    color: var(--sidebar-text-muted, #94a3b8);
-                    margin: 16px 16px 8px 16px;
-                    letter-spacing: 0.5px;
-                }
-                .nav-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
+            {/* Mobile overlay */}
+            <div
+                className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity lg:hidden ${isOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}
+                onClick={onClose}
+            />
 
-                /* Theme Toggle */
-                .s-theme-toggle {
-                    display: flex;
-                    gap: 4px;
-                    padding: 3px;
-                    background: var(--sidebar-avatar-bg, #f1f5f9);
-                    border-radius: 10px;
-                    margin-bottom: 16px;
-                }
-                .s-theme-btn {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 4px;
-                    padding: 8px 4px;
-                    border: none;
-                    border-radius: 8px;
-                    background: transparent;
-                    color: var(--sidebar-text-muted, #64748b);
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    white-space: nowrap;
-                }
-                .s-theme-btn:hover {
-                    color: var(--sidebar-text, #1e293b);
-                }
-                .s-theme-btn.active {
-                    background: #2563eb;
-                    color: white;
-                    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-                }
-                .s-theme-btn .t-icon {
-                    font-size: 0.85rem;
-                }
-
-                .s-user-card {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    margin-top: 0;
-                    padding: 0 8px;
-                }
-                .s-avatar {
-                    width: 36px;
-                    height: 36px;
-                    background: var(--sidebar-avatar-bg, #f1f5f9);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: var(--sidebar-text-muted, #64748b);
-                    font-weight: 600;
-                    font-size: 0.85rem;
-                }
-                .s-user-details .s-name {
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    color: var(--sidebar-text, #1e293b);
-                    margin: 0;
-                }
-                .s-user-details .s-role {
-                    font-size: 0.7rem;
-                    color: var(--sidebar-text-muted, #94a3b8);
-                }
-
-                @media (max-width: 1024px) {
-                    .premium-sidebar {
-                        position: fixed;
-                        left: -260px;
-                        top: 0;
-                        bottom: 0;
-                        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
-                    }
-                    .premium-sidebar.open {
-                        left: 0;
-                    }
-                    .sidebar-overlay {
-                        display: none;
-                        position: fixed;
-                        top: 0; left: 0; right: 0; bottom: 0;
-                        background: rgba(15, 23, 42, 0.6);
-                        z-index: 99;
-                        backdrop-filter: blur(4px);
-                        opacity: 0;
-                        transition: opacity 0.3s ease;
-                    }
-                    .sidebar-overlay.open {
-                        display: block;
-                        opacity: 1;
-                    }
-                    .s-nav-item {
-                        padding: 16px;
-                        font-size: 1rem;
-                    }
-                }
-            `}</style>
-
-            <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
-            <aside className={`premium-sidebar ${isOpen ? 'open' : ''}`}>
-                <div className="s-brand">
-                    <div className="s-brand-icon"><FiPrinter size={24} /></div>
-                    <div className="s-brand-info">
-                        <h3>ABADI JAYA</h3>
-                        <span>POINT OF SALE</span>
+            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:relative lg:translate-x-0 overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <div className="flex flex-col h-full p-6">
+                    <div className="flex items-center gap-3 mb-10">
+                        <div className="bg-primary size-10 rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                            <span className="material-symbols-outlined">print</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <h1 className="text-slate-900 dark:text-white text-base font-bold leading-none">ABADI JAYA</h1>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Dashboard Admin</p>
+                        </div>
                     </div>
-                </div>
 
-                <nav className="s-nav">
-                    {MENU_GROUPS.map((group, groupIndex) => {
-                        const filteredItems = group.items.filter(item =>
-                            user && (user.role === 'admin' || item.roles.includes(user.role))
-                        );
+                    <nav className="flex-1 flex flex-col gap-6">
+                        {MENU_GROUPS.map((group, groupIndex) => {
+                            const filteredItems = group.items.filter(item =>
+                                user && (user.role === 'admin' || item.roles.includes(user.role))
+                            );
 
-                        if (filteredItems.length === 0) return null;
+                            if (filteredItems.length === 0) return null;
 
-                        return (
-                            <div key={groupIndex} className="nav-group">
-                                <div className="s-group-title">{group.title}</div>
-                                {filteredItems.map(item => (
-                                    <button
-                                        key={item.id}
-                                        className={`s-nav-item ${activePage === item.id ? 'active' : ''}`}
-                                        onClick={() => handleNav(item.id)}
-                                    >
-                                        <span className="s-icon"><item.icon /></span>
-                                        {item.label}
-                                        {item.badge && <span className="nav-badge">{item.badge}</span>}
-                                    </button>
-                                ))}
-                            </div>
-                        );
-                    })}
-                </nav>
+                            return (
+                                <div key={groupIndex} className="flex flex-col gap-1">
+                                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-3">{group.title}</div>
+                                    {filteredItems.map(item => {
+                                        const isActive = activePage === item.id;
+                                        const hasChildren = item.subItems && item.subItems.length > 0;
+                                        const isExpanded = !!expanded[item.id];
+                                        const isParentOfActive = hasChildren && item.subItems.some(sub => activePage === sub.id);
+                                        const highlightParent = isActive || isParentOfActive;
 
-                <div className="s-footer">
-                    <button
-                        className={`s-nav-item ${activePage === 'settings' ? 'active' : ''}`}
-                        onClick={() => handleNav('settings')}
-                    >
-                        <span className="s-icon"><FiSettings /></span>
-                        Pengaturan
-                    </button>
+                                        return (
+                                            <div key={item.id}>
+                                                {/* Parent button */}
+                                                <button
+                                                    onClick={() => {
+                                                        if (hasChildren) {
+                                                            toggleExpand(item.id);
+                                                        } else {
+                                                            handleNav(item.id);
+                                                        }
+                                                    }}
+                                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors w-full text-left
+                                                        ${highlightParent
+                                                            ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                                >
+                                                    <span className="material-symbols-outlined">{item.icon}</span>
+                                                    <span className="text-sm flex-1">{item.label}</span>
+                                                    {hasChildren && (
+                                                        <span
+                                                            className="material-symbols-outlined transition-transform duration-200"
+                                                            style={{
+                                                                fontSize: '18px',
+                                                                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                            }}
+                                                        >
+                                                            expand_more
+                                                        </span>
+                                                    )}
+                                                </button>
+
+                                                {/* Sub-menu items */}
+                                                {hasChildren && (
+                                                    <div
+                                                        style={{
+                                                            maxHeight: isExpanded ? `${item.subItems.length * 60}px` : '0px',
+                                                            overflow: 'hidden',
+                                                            transition: 'max-height 0.25s cubic-bezier(0.4,0,0.2,1)',
+                                                        }}
+                                                    >
+                                                        <div className="mt-1 flex flex-col gap-0.5 pl-4">
+                                                            {/* Vertical connector line */}
+                                                            <div className="relative">
+                                                                {item.subItems
+                                                                    .filter(sub => user && (user.role === 'admin' || sub.roles.includes(user.role)))
+                                                                    .map((sub, si, arr) => {
+                                                                        const subActive = activePage === sub.id;
+                                                                        return (
+                                                                            <div key={sub.id} className="relative flex items-center">
+                                                                                {/* Tree line */}
+                                                                                <div className="flex flex-col items-center mr-2" style={{ width: 16 }}>
+                                                                                    <div style={{
+                                                                                        width: 1,
+                                                                                        height: si === 0 ? 20 : 10,
+                                                                                        background: '#cbd5e1',
+                                                                                    }} />
+                                                                                    <div style={{
+                                                                                        width: 12,
+                                                                                        height: 1,
+                                                                                        background: '#cbd5e1',
+                                                                                        alignSelf: 'flex-end',
+                                                                                    }} />
+                                                                                    {si < arr.length - 1 && (
+                                                                                        <div style={{ flex: 1, width: 1, background: '#cbd5e1', minHeight: 10 }} />
+                                                                                    )}
+                                                                                </div>
+                                                                                <button
+                                                                                    onClick={() => handleNav(sub.id)}
+                                                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-colors w-full text-left my-0.5
+                                                                                        ${subActive
+                                                                                            ? 'bg-primary/10 text-primary font-semibold'
+                                                                                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                                                                >
+                                                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{sub.icon}</span>
+                                                                                    <span className="text-xs">{sub.label}</span>
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            );
+                        })}
+                    </nav>
+
+                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-1">
+                        <button
+                            onClick={() => handleNav('settings')}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors w-full text-left
+                                ${activePage === 'settings'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                        >
+                            <span className="material-symbols-outlined">settings</span>
+                            <span className="text-sm">Pengaturan</span>
+                        </button>
+                        <button className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors mt-2">
+                            <span className="material-symbols-outlined text-lg">support_agent</span>
+                            Pusat Bantuan
+                        </button>
+                    </div>
                 </div>
             </aside>
         </>
     );
 }
-

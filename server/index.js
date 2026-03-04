@@ -26,6 +26,10 @@ app.use('/api/service-orders', require('./routes/service'));
 app.use('/api/finance', require('./routes/finance'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/print', require('./routes/print'));
+app.use('/api/materials', require('./routes/materials'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/design-logs', require('./routes/design-logs'));
+app.use('/api/offset-orders', require('./routes/offset_orders'));
 
 const startServer = async () => {
     // Test koneksi database saat start
