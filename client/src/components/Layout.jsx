@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { FiSun, FiMoon, FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch } from 'react-icons/fi';
 
 export default function Layout({ activePage, onNavigate, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -213,14 +214,14 @@ export default function Layout({ activePage, onNavigate, children }) {
                 <header className="p-top-header">
                     {/* LEFT: Title */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: '200px' }}>
-                        <button className="header-btn menu-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
+                        <button className="header-btn menu-toggle" onClick={() => setSidebarOpen(true)}><FiMenu /></button>
                         <h1 className="p-header-title">{PAGE_TITLES[activePage] || 'Dasbor Utama'}</h1>
                     </div>
 
                     {/* CENTER: Search */}
                     <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 20px' }}>
                         <div className="p-search-box">
-                            <span className="icon">⌕</span>
+                            <span className="icon"><FiSearch /></span>
                             <input type="text" placeholder="Cari transaksi, pelanggan, barang..." />
                         </div>
                     </div>
@@ -230,8 +231,8 @@ export default function Layout({ activePage, onNavigate, children }) {
 
                         <div className="h-theme-toggle">
                             {[
-                                { id: 'light', icon: '☀️', label: 'Terang' },
-                                { id: 'dark', icon: '🌙', label: 'Gelap' },
+                                { id: 'light', icon: FiSun, label: 'Terang' },
+                                { id: 'dark', icon: FiMoon, label: 'Gelap' },
                             ].map(t => (
                                 <button
                                     key={t.id}
@@ -239,7 +240,7 @@ export default function Layout({ activePage, onNavigate, children }) {
                                     onClick={() => setTheme(t.id)}
                                     title={t.label}
                                 >
-                                    <span>{t.icon}</span>
+                                    <span><t.icon size={14} /></span>
                                     <span>{t.label}</span>
                                 </button>
                             ))}
@@ -247,17 +248,17 @@ export default function Layout({ activePage, onNavigate, children }) {
 
                         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                             <button className="p-icon-btn">
-                                🔔
+                                <FiBell size={18} />
                                 <span className="p-badge"></span>
                             </button>
                             <button className="p-icon-btn" style={{ marginRight: '8px' }}>
-                                ❓
+                                <FiHelpCircle size={18} />
                             </button>
                         </div>
 
                         <div className="h-user-profile">
                             <div className="h-avatar">
-                                {user?.name ? '🧑' : '👤'}
+                                <FiUser size={18} />
                             </div>
                             <div className="h-user-info">
                                 <span className="h-user-name">{user?.name || 'Budi Santoso'}</span>
@@ -267,7 +268,7 @@ export default function Layout({ activePage, onNavigate, children }) {
                                 onClick={logout}
                                 title="Keluar"
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1.2rem', marginLeft: '4px' }}>
-                                🚪
+                                <FiLogOut size={18} />
                             </button>
                         </div>
 

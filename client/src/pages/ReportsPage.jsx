@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { formatRupiah, formatDate } from '../utils';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBarChart2, FiTrendingDown, FiAward } from 'react-icons/fi';
 
 export default function ReportsPage() {
     const [reportType, setReportType] = useState('sales');
@@ -119,11 +120,11 @@ export default function ReportsPage() {
     }, []);
 
     const REPORT_TABS = [
-        { id: 'sales', label: '📈 Penjualan' },
-        { id: 'finance', label: '💰 Keuangan' },
-        { id: 'stock', label: '📦 Stok' },
-        { id: 'orders', label: '📋 Order' },
-        { id: 'customers', label: '👥 Pelanggan' },
+        { id: 'sales', icon: <FiFileText />, text: 'Penjualan' },
+        { id: 'finance', icon: <FiDollarSign />, text: 'Keuangan' },
+        { id: 'stock', icon: <FiPackage />, text: 'Stok' },
+        { id: 'orders', icon: <FiFileText />, text: 'Order' },
+        { id: 'customers', icon: <FiUsers />, text: 'Pelanggan' },
     ];
 
     const REPORT_TITLES = {
@@ -139,7 +140,7 @@ export default function ReportsPage() {
             <div className="page-toolbar">
                 <div className="tabs" style={{ border: 'none', marginBottom: '0' }}>
                     {REPORT_TABS.map(t => (
-                        <button key={t.id} className={`tab-btn ${reportType === t.id ? 'active' : ''}`} onClick={() => setReportType(t.id)}>{t.label}</button>
+                        <button key={t.id} className={`tab-btn ${reportType === t.id ? 'active' : ''}`} onClick={() => setReportType(t.id)}>{t.icon} {t.text}</button>
                     ))}
                 </div>
                 <div className="filter-group">
@@ -147,7 +148,7 @@ export default function ReportsPage() {
                     <span style={{ color: 'var(--text-muted)' }}>s/d</span>
                     <input className="form-input" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ width: '160px' }} />
                     <button className="btn btn-primary" onClick={() => window.print()} style={{ marginLeft: '12px' }}>
-                        🖨️ Cetak / Save PDF
+                        <FiPrinter /> Cetak / Save PDF
                     </button>
                 </div>
             </div>
@@ -169,12 +170,12 @@ export default function ReportsPage() {
             <div className={`report-section ${reportType !== 'sales' ? 'report-section-hidden' : ''}`}>
                 <h3 className="report-section-title">A. LAPORAN PENJUALAN</h3>
                 <div className="stats-grid">
-                    <div className="stat-card"><div className="stat-icon green">💰</div><div className="stat-value">{formatRupiah(salesStats.total)}</div><div className="stat-label">Total Penjualan</div></div>
-                    <div className="stat-card"><div className="stat-icon blue">📦</div><div className="stat-value">{salesStats.count}</div><div className="stat-label">Jumlah Transaksi</div></div>
-                    <div className="stat-card"><div className="stat-icon purple">📊</div><div className="stat-value">{salesStats.count > 0 ? formatRupiah(Math.round(salesStats.total / salesStats.count)) : 'Rp 0'}</div><div className="stat-label">Rata-rata / TRX</div></div>
+                    <div className="stat-card"><div className="stat-icon green"><FiDollarSign /></div><div className="stat-value">{formatRupiah(salesStats.total)}</div><div className="stat-label">Total Penjualan</div></div>
+                    <div className="stat-card"><div className="stat-icon blue"><FiPackage /></div><div className="stat-value">{salesStats.count}</div><div className="stat-label">Jumlah Transaksi</div></div>
+                    <div className="stat-card"><div className="stat-icon purple"><FiBarChart2 /></div><div className="stat-value">{salesStats.count > 0 ? formatRupiah(Math.round(salesStats.total / salesStats.count)) : 'Rp 0'}</div><div className="stat-label">Rata-rata / TRX</div></div>
                 </div>
                 <div className="card" style={{ marginTop: '16px' }}>
-                    <div className="card-header"><h3>📋 Riwayat Transaksi</h3></div>
+                    <div className="card-header"><h3><FiFileText /> Riwayat Transaksi</h3></div>
                     <div style={{ overflow: 'auto', maxHeight: '400px' }}>
                         <table className="data-table">
                             <thead><tr><th>Invoice</th><th>Tanggal</th><th>Customer</th><th>Tipe</th><th>Total</th><th>Bayar</th><th>Status</th></tr></thead>
@@ -198,9 +199,9 @@ export default function ReportsPage() {
             <div className={`report-section ${reportType !== 'finance' ? 'report-section-hidden' : ''}`}>
                 <h3 className="report-section-title">B. LAPORAN KEUANGAN</h3>
                 <div className="stats-grid">
-                    <div className="stat-card"><div className="stat-icon green">📈</div><div className="stat-value">{formatRupiah(financeStats.income)}</div><div className="stat-label">Pemasukan</div></div>
-                    <div className="stat-card"><div className="stat-icon red">📉</div><div className="stat-value">{formatRupiah(financeStats.expense)}</div><div className="stat-label">Pengeluaran</div></div>
-                    <div className="stat-card"><div className="stat-icon blue">💎</div><div className="stat-value" style={{ color: financeStats.profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{formatRupiah(financeStats.profit)}</div><div className="stat-label">Laba / Rugi</div></div>
+                    <div className="stat-card"><div className="stat-icon green"><FiFileText /></div><div className="stat-value">{formatRupiah(financeStats.income)}</div><div className="stat-label">Pemasukan</div></div>
+                    <div className="stat-card"><div className="stat-icon red"><FiTrendingDown /></div><div className="stat-value">{formatRupiah(financeStats.expense)}</div><div className="stat-label">Pengeluaran</div></div>
+                    <div className="stat-card"><div className="stat-icon blue"><FiActivity /></div><div className="stat-value" style={{ color: financeStats.profit >= 0 ? 'var(--success)' : 'var(--danger)' }}>{formatRupiah(financeStats.profit)}</div><div className="stat-label">Laba / Rugi</div></div>
                 </div>
                 <div className="card">
                     <div className="card-header"><h3>Arus Kas</h3></div>
@@ -235,9 +236,9 @@ export default function ReportsPage() {
             <div className={`report-section ${reportType !== 'stock' ? 'report-section-hidden' : ''}`}>
                 <h3 className="report-section-title">C. LAPORAN STOK BARANG</h3>
                 <div className="stats-grid">
-                    <div className="stat-card"><div className="stat-icon blue">📦</div><div className="stat-value">{stockStats.total}</div><div className="stat-label">Total Produk</div></div>
-                    <div className="stat-card"><div className="stat-icon yellow">⚠️</div><div className="stat-value">{stockStats.low.length}</div><div className="stat-label">Stok Menipis</div></div>
-                    <div className="stat-card"><div className="stat-icon purple">💎</div><div className="stat-value">{formatRupiah(stockStats.totalValue)}</div><div className="stat-label">Nilai Inventori</div></div>
+                    <div className="stat-card"><div className="stat-icon blue"><FiPackage /></div><div className="stat-value">{stockStats.total}</div><div className="stat-label">Total Produk</div></div>
+                    <div className="stat-card"><div className="stat-icon yellow"><FiAlertCircle /></div><div className="stat-value">{stockStats.low.length}</div><div className="stat-label">Stok Menipis</div></div>
+                    <div className="stat-card"><div className="stat-icon purple"><FiActivity /></div><div className="stat-value">{formatRupiah(stockStats.totalValue)}</div><div className="stat-label">Nilai Inventori</div></div>
                 </div>
                 <div className="card">
                     <div className="card-header"><h3>Semua Stok</h3></div>
@@ -264,9 +265,9 @@ export default function ReportsPage() {
             <div className={`report-section ${reportType !== 'orders' ? 'report-section-hidden' : ''}`}>
                 <h3 className="report-section-title">D. LAPORAN ORDER</h3>
                 <div className="stats-grid">
-                    <div className="stat-card"><div className="stat-icon blue">🖨️</div><div className="stat-value">{printOrders.length}</div><div className="stat-label">Order Cetak</div></div>
-                    <div className="stat-card"><div className="stat-icon yellow">🔧</div><div className="stat-value">{serviceOrders.length}</div><div className="stat-label">Order Service</div></div>
-                    <div className="stat-card"><div className="stat-icon red">⏰</div><div className="stat-value">{printOrders.filter(o => !['selesai', 'diambil', 'batal'].includes(o.status)).length}</div><div className="stat-label">Belum Selesai</div></div>
+                    <div className="stat-card"><div className="stat-icon blue"><FiPrinter /></div><div className="stat-value">{printOrders.length}</div><div className="stat-label">Order Cetak</div></div>
+                    <div className="stat-card"><div className="stat-icon yellow"><FiTool /></div><div className="stat-value">{serviceOrders.length}</div><div className="stat-label">Order Service</div></div>
+                    <div className="stat-card"><div className="stat-icon red"><FiClock /></div><div className="stat-value">{printOrders.filter(o => !['selesai', 'diambil', 'batal'].includes(o.status)).length}</div><div className="stat-label">Belum Selesai</div></div>
                 </div>
                 <div className="card">
                     <div className="card-header"><h3>Order Percetakan</h3></div>
@@ -300,7 +301,7 @@ export default function ReportsPage() {
             <div className={`report-section ${reportType !== 'customers' ? 'report-section-hidden' : ''}`}>
                 <h3 className="report-section-title">E. LAPORAN DATA PELANGGAN</h3>
                 <div className="card">
-                    <div className="card-header"><h3>🏆 Top Customer</h3></div>
+                    <div className="card-header"><h3><FiAward /> Top Customer</h3></div>
                     <div style={{ overflow: 'auto' }}>
                         <table className="data-table">
                             <thead><tr><th>#</th><th>Nama</th><th>Tipe</th><th>Total TRX</th><th>Total Belanja</th></tr></thead>

@@ -4,6 +4,7 @@ import { formatRupiah } from '../utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiFolder } from 'react-icons/fi';
 
 export default function InventoryPage() {
     const { user } = useAuth();
@@ -54,7 +55,8 @@ export default function InventoryPage() {
             setCategories(catRes.data);
             setSuppliers(supRes.data || []);
         } catch (error) {
-            showToast('Gagal memuat data inventori', 'error');
+            console.error('Inventory Fetch Error:', error, error.response?.data);
+            showToast('Gagal memuat data inventori: ' + (error.response?.data?.message || error.message), 'error');
         }
     };
 
@@ -181,32 +183,35 @@ export default function InventoryPage() {
         <div className="premium-page-wrapper">
             {/* TABS */}
             <div className="tabs" style={{ marginBottom: '20px' }}>
-                <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>📦 Data Produk</button>
-                <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}>🏢 Data Supplier</button>
+                <button className={`tab-btn ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}><FiPackage /> Data Produk</button>
+                <button className={`tab-btn ${activeTab === 'suppliers' ? 'active' : ''}`} onClick={() => setActiveTab('suppliers')}><FiBriefcase /> Data Supplier</button>
             </div>
 
             {activeTab === 'products' && (
                 <>
                     <div className="stats-grid" style={{ marginBottom: '16px' }}>
-                        <div className="stat-card"><div className="stat-icon green">📦</div><div className="stat-value">{products.length}</div><div className="stat-label">Total Produk</div></div>
-                        <div className="stat-card"><div className="stat-icon yellow">⚠️</div><div className="stat-value">{lowStockCount}</div><div className="stat-label">Stok Menipis</div></div>
-                        <div className="stat-card"><div className="stat-icon purple">💎</div><div className="stat-value">{formatRupiah(totalValue)}</div><div className="stat-label">Nilai Inventori</div></div>
+                        <div className="stat-card"><div className="stat-icon green"><FiPackage /></div><div className="stat-value">{products.length}</div><div className="stat-label">Total Produk</div></div>
+                        <div className="stat-card"><div className="stat-icon yellow"><FiAlertCircle /></div><div className="stat-value">{lowStockCount}</div><div className="stat-label">Stok Menipis</div></div>
+                        <div className="stat-card"><div className="stat-icon purple"><FiDollarSign /></div><div className="stat-value">{formatRupiah(totalValue)}</div><div className="stat-label">Nilai Inventori</div></div>
                     </div>
 
                     <div className="page-toolbar">
                         <div className="filter-group">
-                            <input className="form-input" placeholder="🔍 Cari produk..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '250px' }} />
+                            <div style={{ position: 'relative', width: '250px' }}>
+                                <input className="form-input" placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', paddingLeft: '32px' }} />
+                                <FiSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            </div>
                             <select className="form-select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
                                 <option value="all">Semua Kategori</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                             <select className="form-select" value={filterStock} onChange={e => setFilterStock(e.target.value)}>
                                 <option value="all">Semua Stok</option>
-                                <option value="low">⚠️ Stok Menipis</option>
-                                <option value="empty">❌ Stok Habis</option>
+                                <option value="low">Stok Menipis</option>
+                                <option value="empty">Stok Habis</option>
                             </select>
                         </div>
-                        <button className="btn btn-primary" onClick={openNew}>➕ Tambah Produk</button>
+                        <button className="btn btn-primary" onClick={openNew}><FiPlus /> Tambah Produk</button>
                     </div>
 
                     <div className="card">
@@ -228,9 +233,9 @@ export default function InventoryPage() {
                                             <td><span className={`badge ${p.stock === 0 ? 'badge-danger' : p.stock <= p.minStock ? 'badge-warning' : 'badge-success'}`}>{p.stock === 0 ? 'Habis' : p.stock <= p.minStock ? 'Menipis' : 'OK'}</span></td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '4px' }}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => { setStockProduct(p); setStockQty(p.stock); setOpnameOpen(true); }} title="Cek & Sesuaikan Stok Opname">🔍</button>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)} title="Edit">✏️</button>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(p)} title="Hapus">🗑️</button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => { setStockProduct(p); setStockQty(p.stock); setOpnameOpen(true); }} title="Cek & Sesuaikan Stok Opname"><FiSearch /></button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)} title="Edit"><FiEdit /></button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(p)} title="Hapus"><FiTrash2 /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -241,7 +246,7 @@ export default function InventoryPage() {
                     </div>
 
                     {/* Product Form */}
-                    <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editingProduct ? '✏️ Edit Produk' : '➕ Produk Baru'}>
+                    <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editingProduct ? <><FiEdit /> Edit Produk</> : <><FiPlus /> Produk Baru</>}>
                         <div className="form-row">
                             <div className="form-group"><label className="form-label">Kode</label><input className="form-input" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="ATK-001" /></div>
                             <div className="form-group">
@@ -257,7 +262,7 @@ export default function InventoryPage() {
                                         }}
                                     >
                                         <option value="" disabled>Pilih</option>
-                                        {['📦', '📄', '🖊️', '✏️', '✂️', '📏', '🖇️', '🖨️', '💻', '🔌', '🔋', '🎒', '📚', '🏷️', '📌', '🖌️', '🖍️', '📁', '🖨️'].map(emj => (
+                                        {['📦', '📄', '✏️', '✂️', '🖥️', '🔋', '💼', '📖', '🏷️', '📁', '🖨️'].map(emj => (
                                             <option key={emj} value={emj}>{emj}</option>
                                         ))}
                                     </select>
@@ -275,9 +280,9 @@ export default function InventoryPage() {
                                 </div>
                                 {newCategoryMode ? (
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        <input className="form-input" placeholder="Emoji 📁" value={newCategoryEmoji} onChange={e => setNewCategoryEmoji(e.target.value)} style={{ width: '60px' }} />
+                                        <input className="form-input" placeholder="📁" value={newCategoryEmoji} onChange={e => setNewCategoryEmoji(e.target.value)} style={{ width: '60px' }} />
                                         <input className="form-input" placeholder="Nama Kategori" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} />
-                                        <button className="btn btn-primary" onClick={handleSaveNewCategory}>✓</button>
+                                        <button className="btn btn-primary" onClick={handleSaveNewCategory}><FiCheck /></button>
                                     </div>
                                 ) : (
                                     <select className="form-select" value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
@@ -311,11 +316,11 @@ export default function InventoryPage() {
                             <div className="form-group"><label className="form-label">Stok</label><input className="form-input" type="number" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} /></div>
                             <div className="form-group"><label className="form-label">Stok Minimum</label><input className="form-input" type="number" value={form.minStock} onChange={e => setForm(f => ({ ...f, minStock: e.target.value }))} /></div>
                         </div>
-                        <button className="btn btn-primary btn-block" onClick={handleSave}>💾 Simpan</button>
+                        <button className="btn btn-primary btn-block" onClick={handleSave}><FiSave /> Simpan</button>
                     </Modal>
 
                     {/* Opname Modal */}
-                    <Modal isOpen={opnameOpen} onClose={() => setOpnameOpen(false)} title={`🔍 Stok Opname: ${stockProduct?.name || ''}`}>
+                    <Modal isOpen={opnameOpen} onClose={() => setOpnameOpen(false)} title={`<FiSearch /> Stok Opname: ${stockProduct?.name || ''}`}>
                         <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Stok di Sistem / Database</div>
                             <div style={{ fontSize: '2rem', fontWeight: '800' }}>{stockProduct?.stock} {stockProduct?.unit}</div>
@@ -327,7 +332,7 @@ export default function InventoryPage() {
                                 Selisih: <strong style={{ color: (parseInt(stockQty) - stockProduct?.stock) < 0 ? 'var(--danger)' : 'var(--success)' }}>{(parseInt(stockQty) - stockProduct?.stock) || 0}</strong> {stockProduct?.unit}
                             </p>
                         </div>
-                        <button className="btn btn-primary btn-block" onClick={handleOpname}>✅ Simpan Penyesuaian Stok</button>
+                        <button className="btn btn-primary btn-block" onClick={handleOpname}><FiCheck /> Simpan Penyesuaian Stok</button>
                     </Modal>
                 </>
             )}
@@ -337,7 +342,7 @@ export default function InventoryPage() {
                 <>
                     <div className="page-toolbar">
                         <h3>Daftar Supplier</h3>
-                        <button className="btn btn-primary" onClick={openNewSupplier}>➕ Tambah Supplier</button>
+                        <button className="btn btn-primary" onClick={openNewSupplier}><FiPlus /> Tambah Supplier</button>
                     </div>
 
                     <div className="card">
@@ -353,8 +358,8 @@ export default function InventoryPage() {
                                             <td>{s.address || '-'}</td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '4px' }}>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => openEditSupplier(s)}>✏️</button>
-                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteSupplier(s)}>🗑️</button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => openEditSupplier(s)}><FiEdit /></button>
+                                                    <button className="btn btn-ghost btn-sm" onClick={() => handleDeleteSupplier(s)}><FiTrash2 /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -365,7 +370,7 @@ export default function InventoryPage() {
                     </div>
 
                     {/* Supplier Form */}
-                    <Modal isOpen={supplierFormOpen} onClose={() => setSupplierFormOpen(false)} title={editingSupplier ? '✏️ Edit Supplier' : '➕ Supplier Baru'}>
+                    <Modal isOpen={supplierFormOpen} onClose={() => setSupplierFormOpen(false)} title={editingSupplier ? <><FiEdit /> Edit Supplier</> : <><FiPlus /> Supplier Baru</>}>
                         <div className="form-group"><label className="form-label">Nama Supplier</label>
                             <input className="form-input" value={supplierForm.name} onChange={e => setSupplierForm(f => ({ ...f, name: e.target.value }))} autoFocus />
                         </div>
@@ -375,7 +380,7 @@ export default function InventoryPage() {
                         <div className="form-group"><label className="form-label">Alamat Lengkap</label>
                             <textarea className="form-textarea" value={supplierForm.address} onChange={e => setSupplierForm(f => ({ ...f, address: e.target.value }))} />
                         </div>
-                        <button className="btn btn-primary btn-block" onClick={handleSaveSupplier}>💾 Simpan Supplier</button>
+                        <button className="btn btn-primary btn-block" onClick={handleSaveSupplier}><FiSave /> Simpan Supplier</button>
                     </Modal>
                 </>
             )}

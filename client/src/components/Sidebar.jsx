@@ -1,33 +1,38 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import {
+    FiGrid, FiShoppingCart, FiPrinter, FiTool, FiPackage,
+    FiUsers, FiDollarSign, FiFileText, FiSettings, FiLogOut,
+    FiSun, FiMoon
+} from 'react-icons/fi';
 
 const MENU_GROUPS = [
     {
         title: 'UTAMA',
         items: [
-            { id: 'dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'kasir', 'operator', 'teknisi'] },
-            { id: 'pos', label: 'Kasir/POS', icon: '🛒', roles: ['admin', 'kasir'] },
+            { id: 'dashboard', label: 'Dashboard', icon: FiGrid, roles: ['admin', 'kasir', 'operator', 'teknisi'] },
+            { id: 'pos', label: 'Kasir/POS', icon: FiShoppingCart, roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'ORDER',
         items: [
-            { id: 'printing', label: 'Percetakan', icon: '🖨️', roles: ['admin', 'kasir', 'operator'] },
-            { id: 'service', label: 'Service', icon: '🔧', roles: ['admin', 'kasir', 'teknisi'] },
+            { id: 'printing', label: 'Percetakan', icon: FiPrinter, roles: ['admin', 'kasir', 'operator'] },
+            { id: 'service', label: 'Service', icon: FiTool, roles: ['admin', 'kasir', 'teknisi'] },
         ]
     },
     {
         title: 'DATA',
         items: [
-            { id: 'inventory', label: 'Inventori', icon: '📦', roles: ['admin', 'kasir'] },
-            { id: 'customers', label: 'Pelanggan', icon: '👥', roles: ['admin', 'kasir'] },
+            { id: 'inventory', label: 'Inventori', icon: FiPackage, roles: ['admin', 'kasir'] },
+            { id: 'customers', label: 'Pelanggan', icon: FiUsers, roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'KEUANGAN',
         items: [
-            { id: 'finance', label: 'Kas & Keuangan', icon: '💰', roles: ['admin'] },
-            { id: 'reports', label: 'Laporan', icon: '🧾', roles: ['admin'] },
+            { id: 'finance', label: 'Kas & Keuangan', icon: FiDollarSign, roles: ['admin', 'kasir'] },
+            { id: 'reports', label: 'Laporan', icon: FiFileText, roles: ['admin', 'kasir'] },
         ]
     },
 ];
@@ -260,7 +265,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
             <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
             <aside className={`premium-sidebar ${isOpen ? 'open' : ''}`}>
                 <div className="s-brand">
-                    <div className="s-brand-icon">🖨️</div>
+                    <div className="s-brand-icon"><FiPrinter size={24} /></div>
                     <div className="s-brand-info">
                         <h3>ABADI JAYA</h3>
                         <span>POINT OF SALE</span>
@@ -284,7 +289,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                         className={`s-nav-item ${activePage === item.id ? 'active' : ''}`}
                                         onClick={() => handleNav(item.id)}
                                     >
-                                        <span className="s-icon">{item.icon}</span>
+                                        <span className="s-icon"><item.icon /></span>
                                         {item.label}
                                         {item.badge && <span className="nav-badge">{item.badge}</span>}
                                     </button>
@@ -299,7 +304,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                         className={`s-nav-item ${activePage === 'settings' ? 'active' : ''}`}
                         onClick={() => handleNav('settings')}
                     >
-                        <span className="s-icon">⚙️</span>
+                        <span className="s-icon"><FiSettings /></span>
                         Pengaturan
                     </button>
                 </div>

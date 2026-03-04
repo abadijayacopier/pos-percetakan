@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatRupiah } from '../utils';
+import {
+    FiDollarSign, FiPrinter, FiTool, FiShoppingCart, FiAlertCircle,
+    FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
+    FiPackage, FiArrowRight
+} from 'react-icons/fi';
 
 export default function DashboardPage({ onNavigate }) {
     const [stats, setStats] = useState({
@@ -290,7 +295,7 @@ export default function DashboardPage({ onNavigate }) {
                 <div className="p-card">
                     <div className="p-card-top">
                         <span className="p-card-title">Penjualan Hari Ini</span>
-                        <div className="p-icon-box i-green">💵</div>
+                        <div className="p-icon-box i-green"><FiDollarSign /></div>
                     </div>
                     <div className="p-card-value">
                         {formatRupiah(stats.omset)} <span className="v-green">+12.5%</span>
@@ -301,7 +306,7 @@ export default function DashboardPage({ onNavigate }) {
                 <div className="p-card">
                     <div className="p-card-top">
                         <span className="p-card-title">Pesanan Aktif</span>
-                        <div className="p-icon-box i-blue">🖨️</div>
+                        <div className="p-icon-box i-blue"><FiPrinter /></div>
                     </div>
                     <div className="p-card-value">
                         {stats.pendingOrders.length} Pesanan <span className="v-blue">+{Math.min(2, stats.pendingOrders.length)}</span>
@@ -312,7 +317,7 @@ export default function DashboardPage({ onNavigate }) {
                 <div className="p-card">
                     <div className="p-card-top">
                         <span className="p-card-title">Servis Berjalan</span>
-                        <div className="p-icon-box i-orange">🔧</div>
+                        <div className="p-icon-box i-orange"><FiTool /></div>
                     </div>
                     <div className="p-card-value">
                         {stats.activeService.length} Tiket <span style={{ color: '#f97316', fontSize: '0.75rem' }}>Prioritas</span>
@@ -323,7 +328,7 @@ export default function DashboardPage({ onNavigate }) {
                 <div className="p-card">
                     <div className="p-card-top">
                         <span className="p-card-title">Stok Menipis</span>
-                        <div className="p-icon-box i-red">🛒</div>
+                        <div className="p-icon-box i-red"><FiShoppingCart /></div>
                     </div>
                     <div className="p-card-value">
                         {stats.lowStock.length} Item <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>Siaga</span>
@@ -338,13 +343,13 @@ export default function DashboardPage({ onNavigate }) {
                         <h3 style={{ fontSize: '1rem', margin: 0 }}>Aksi Cepat</h3>
                         <div className="action-btns">
                             <button className="btn-act primary" onClick={() => onNavigate('pos')}>
-                                🛒 Transaksi Baru
+                                <FiShoppingCart /> Transaksi Baru
                             </button>
                             <button className="btn-act secondary" onClick={() => onNavigate('service')}>
-                                🎫 Buat Tiket Servis
+                                <FiTool /> Buat Tiket Servis
                             </button>
                             <button className="btn-act secondary" onClick={() => onNavigate('printing')}>
-                                🖨️ Antrean Cetak
+                                <FiPrinter /> Antrean Cetak
                             </button>
                         </div>
                     </div>
@@ -384,7 +389,7 @@ export default function DashboardPage({ onNavigate }) {
                         <div className="trx-list">
                             {recentTrx.length > 0 ? recentTrx.map((trx, idx) => (
                                 <div className="trx-item" key={idx}>
-                                    <div className="trx-icon">{trx.type === 'service' ? '🔧' : trx.type === 'print' ? '🖨️' : '📄'}</div>
+                                    <div className="trx-icon">{trx.type === 'service' ? <FiTool /> : trx.type === 'print' ? <FiPrinter /> : <FiFileText />}</div>
                                     <div className="trx-info">
                                         <div className="trx-name">{trx.customer_name || 'Pelanggan Umum'} ({trx.type})</div>
                                         <div className="trx-id">ID Transaksi: #{trx.id.toString().padStart(4, '0')}</div>
@@ -399,62 +404,7 @@ export default function DashboardPage({ onNavigate }) {
                             )) : (
                                 <>
                                     <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#e0f2fe', color: '#0ea5e9' }}>🖨️</div>
-                                        <div className="trx-info">
-                                            <div className="trx-name">Cetak Foto (A4)</div>
-                                            <div className="trx-id">ID Transaksi: #8492</div>
-                                        </div>
-                                        <div className="trx-amount">
-                                            <div className="trx-price">Rp 25.000</div>
-                                            <div className="trx-badge b-completed">Selesai</div>
-                                        </div>
-                                    </div>
-                                    <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#ffedd5', color: '#f97316' }}>🔧</div>
-                                        <div className="trx-info">
-                                            <div className="trx-name">Servis Printer</div>
-                                            <div className="trx-id">ID Transaksi: #8491</div>
-                                        </div>
-                                        <div className="trx-amount">
-                                            <div className="trx-price">Rp 150.000</div>
-                                            <div className="trx-badge b-progress">Diproses</div>
-                                        </div>
-                                    </div>
-                                    <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#f3e8ff', color: '#a855f7' }}>📄</div>
-                                        <div className="trx-info">
-                                            <div className="trx-name">Fotokopi Massal</div>
-                                            <div className="trx-id">ID Transaksi: #8490</div>
-                                        </div>
-                                        <div className="trx-amount">
-                                            <div className="trx-price">Rp 85.000</div>
-                                            <div className="trx-badge b-completed">Selesai</div>
-                                        </div>
-                                    </div>
-                                    <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#dcfce7', color: '#22c55e' }}>✏️</div>
-                                        <div className="trx-info">
-                                            <div className="trx-name">Paket ATK Terpadu</div>
-                                            <div className="trx-id">ID Transaksi: #8489</div>
-                                        </div>
-                                        <div className="trx-amount">
-                                            <div className="trx-price">Rp 45.000</div>
-                                            <div className="trx-badge b-completed">Selesai</div>
-                                        </div>
-                                    </div>
-                                    <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#fee2e2', color: '#ef4444' }}>❗</div>
-                                        <div className="trx-info">
-                                            <div className="trx-name">Isi Ulang Tinta</div>
-                                            <div className="trx-id">ID Transaksi: #8488</div>
-                                        </div>
-                                        <div className="trx-amount">
-                                            <div className="trx-price">Rp 30.000</div>
-                                            <div className="trx-badge b-cancelled">Dibatalkan</div>
-                                        </div>
-                                    </div>
-                                    <div className="trx-item">
-                                        <div className="trx-icon" style={{ background: '#e0f2fe', color: '#0ea5e9' }}>📇</div>
+                                        <div className="trx-icon" style={{ background: '#e0f2fe', color: '#0ea5e9' }}><FiPrinter /></div>
                                         <div className="trx-info">
                                             <div className="trx-name">Kartu Nama (500)</div>
                                             <div className="trx-id">ID Transaksi: #8487</div>

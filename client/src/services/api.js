@@ -18,14 +18,15 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// Opsional: Tangkap error token expired
+// Tangkap error token expired & beri feedback jelas
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401 || error.response?.status === 403) {
             if (!window.location.pathname.includes('login')) {
-                // Jika Token Expired/Ditolak
+                // Token Expired / Ditolak — bersihkan sesi dan redirect
                 localStorage.removeItem('pos_session');
+                alert('Sesi login sudah habis. Silakan login kembali.');
                 window.location.href = '/';
             }
         }

@@ -213,11 +213,11 @@ c:/Users/AJ/Videos/pos/
 4. **Fotocopy** → pilih kertas → input lembar → volume discount → bayar
 5. **Percetakan** → buat order + ongkir → kanban → update status
 6. **Service** → buat order → diagnosa → sparepart → update status
-7. **Inventory** → CRUD produk → stok alert
+7. **Inventory** → CRUD produk → stok alert (table → card di mobile)
 8. **Pelanggan** → CRUD → riwayat transaksi
 9. **Keuangan** → kas harian → pengeluaran → piutang
 10. **Laporan** → filter periode → export
-11. **Settings** → theme toggle → backup/restore
-12. **Responsive** → desktop (1920px), tablet (768px), mobile (375px)
+11. **Settings** → backup/restore
+12. **Responsive** → desktop (1920px), tablet (768px), mobile (375px) — perbaikan UI mobile (sidebar, table→card, touch-friendly)
 13. **PWA** → install ke home screen → test offline
 14. **Firebase** → realtime update order status antar device

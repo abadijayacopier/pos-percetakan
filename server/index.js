@@ -25,7 +25,6 @@ app.use('/api/customers', require('./routes/customers'));
 app.use('/api/service-orders', require('./routes/service'));
 app.use('/api/finance', require('./routes/finance'));
 app.use('/api/suppliers', require('./routes/suppliers'));
-app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/print', require('./routes/print'));
 
 const startServer = async () => {

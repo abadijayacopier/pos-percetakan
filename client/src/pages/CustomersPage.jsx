@@ -4,12 +4,13 @@ import db from '../db';
 import { formatRupiah, formatDate } from '../utils';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye } from 'react-icons/fi';
 
 const TYPES = [
-    { id: 'walkin', label: '🏠 Walk-in', color: 'badge-info' },
-    { id: 'corporate', label: '🏢 Corporate', color: 'badge-purple' },
-    { id: 'vip', label: '🌟 VIP', color: 'badge-warning' },
-    { id: 'service', label: '🔧 Service', color: 'badge-primary' },
+    { id: 'walkin', icon: <FiHome />, text: 'Walk-in', color: 'badge-info' },
+    { id: 'corporate', icon: <FiBriefcase />, text: 'Corporate', color: 'badge-purple' },
+    { id: 'vip', icon: <FiStar />, text: 'VIP', color: 'badge-warning' },
+    { id: 'service', icon: <FiTool />, text: 'Service', color: 'badge-primary' },
 ];
 
 export default function CustomersPage() {
@@ -84,15 +85,18 @@ export default function CustomersPage() {
     return (
         <div className="premium-page-wrapper">
             <div className="page-toolbar">
-                <h2>👥 Data Pelanggan</h2>
+                <h2><FiUsers /> Data Pelanggan</h2>
                 <div className="filter-group">
-                    <input className="form-input" placeholder="🔍 Cari nama, HP, perusahaan..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '300px' }} />
+                    <div style={{ position: 'relative', width: '300px' }}>
+                        <input className="form-input" placeholder="Cari nama, HP, perusahaan..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', paddingLeft: '32px' }} />
+                        <FiSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    </div>
                     <select className="form-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
                         <option value="all">Semua Tipe</option>
-                        {TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                        {TYPES.map(t => <option key={t.id} value={t.id}>{t.text}</option>)}
                     </select>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditing(null); setForm({ name: '', phone: '', address: '', type: 'walkin', company: '' }); setFormOpen(true); }}>➕ Tambah Pelanggan</button>
+                <button className="btn btn-primary" onClick={() => { setEditing(null); setForm({ name: '', phone: '', address: '', type: 'walkin', company: '' }); setFormOpen(true); }}><FiPlus /> Tambah Pelanggan</button>
             </div>
 
             <div className="card">
@@ -104,14 +108,14 @@ export default function CustomersPage() {
                                 <tr key={c.id}>
                                     <td><strong>{c.name}</strong></td>
                                     <td>{c.phone || '-'}</td>
-                                    <td><span className={`badge ${TYPES.find(t => t.id === c.type)?.color || 'badge-info'}`}>{TYPES.find(t => t.id === c.type)?.label || c.type}</span></td>
+                                    <td><span className={`badge ${TYPES.find(t => t.id === c.type)?.color || 'badge-info'}`}>{TYPES.find(t => t.id === c.type)?.icon} {TYPES.find(t => t.id === c.type)?.text || c.type}</span></td>
                                     <td>{c.company || '-'}</td>
                                     <td>{c.totalTrx || 0}x</td>
                                     <td style={{ color: 'var(--primary)', fontWeight: '600' }}>{formatRupiah(c.totalSpend || 0)}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '4px' }}>
-                                            <button className="btn btn-ghost btn-sm" onClick={() => openDetail(c)}>👁️</button>
-                                            <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(c); setForm(c); setFormOpen(true); }}>✏️</button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => openDetail(c)}><FiEye /></button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => { setEditing(c); setForm(c); setFormOpen(true); }}><FiEdit /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -122,7 +126,7 @@ export default function CustomersPage() {
             </div>
 
             {/* Form */}
-            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editing ? '✏️ Edit Pelanggan' : '➕ Pelanggan Baru'}>
+            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={editing ? <><FiEdit /> Edit Pelanggan</> : <><FiPlus /> Pelanggan Baru</>}>
                 <div className="form-group"><label className="form-label">Nama</label><input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">No HP</label><input className="form-input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Alamat</label><textarea className="form-textarea" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
@@ -130,21 +134,21 @@ export default function CustomersPage() {
                     <div className="form-group">
                         <label className="form-label">Tipe</label>
                         <select className="form-select" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                            {TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                            {TYPES.map(t => <option key={t.id} value={t.id}>{t.text}</option>)}
                         </select>
                     </div>
                     <div className="form-group"><label className="form-label">Perusahaan/Instansi</label><input className="form-input" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} /></div>
                 </div>
-                <button className="btn btn-primary btn-block" onClick={handleSave}>💾 Simpan</button>
+                <button className="btn btn-primary btn-block" onClick={handleSave}><FiSave /> Simpan</button>
             </Modal>
 
             {/* Detail */}
-            <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title={`👤 ${selected?.name || ''}`} size="lg">
+            <Modal isOpen={detailOpen} onClose={() => setDetailOpen(false)} title={<><FiUsers /> {selected?.name || ''}</>} size="lg">
                 {selected && (
                     <div>
                         <div className="form-row">
                             <div><label className="form-label">No HP</label><p>{selected.phone || '-'}</p></div>
-                            <div><label className="form-label">Tipe</label><p><span className={`badge ${TYPES.find(t => t.id === selected.type)?.color}`}>{TYPES.find(t => t.id === selected.type)?.label}</span></p></div>
+                            <div><label className="form-label">Tipe</label><p><span className={`badge ${TYPES.find(t => t.id === selected.type)?.color}`}>{TYPES.find(t => t.id === selected.type)?.icon} {TYPES.find(t => t.id === selected.type)?.text}</span></p></div>
                         </div>
                         <div><label className="form-label">Alamat</label><p>{selected.address || '-'}</p></div>
                         <div className="stats-grid" style={{ margin: '16px 0' }}>

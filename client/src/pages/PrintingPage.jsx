@@ -5,15 +5,16 @@ import { formatRupiah, generateOrderNo, formatDate, generateOrderReceipt } from 
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye } from 'react-icons/fi';
 
 const STATUS_COLUMNS = [
-    { id: 'pending', label: '📋 Antrean Baru', color: 'var(--danger)' },
-    { id: 'desain', label: '🎨 Desain', color: 'var(--warning)' },
-    { id: 'approval', label: '✅ Approval', color: 'var(--info)' },
-    { id: 'cetak', label: '🖨️ Cetak', color: 'var(--primary)' },
-    { id: 'selesai', label: '✅ Selesai', color: 'var(--success)' },
-    { id: 'diambil', label: '📦 Diambil', color: 'var(--text-muted)' },
-    { id: 'batal', label: '❌ Batal', color: 'var(--danger)' }
+    { id: 'pending', label: <><FiFileText /> Antrean Baru</>, color: 'var(--danger)' },
+    { id: 'desain', label: <><FiActivity /> Desain</>, color: 'var(--warning)' },
+    { id: 'approval', label: <><FiCheck /> Approval</>, color: 'var(--info)' },
+    { id: 'cetak', label: <><FiPrinter /> Cetak</>, color: 'var(--primary)' },
+    { id: 'selesai', label: <><FiCheck /> Selesai</>, color: 'var(--success)' },
+    { id: 'diambil', label: <><FiPackage /> Diambil</>, color: 'var(--text-muted)' },
+    { id: 'batal', label: <><FiX /> Batal</>, color: 'var(--danger)' }
 ];
 
 const JENIS_CETAK = ['Undangan Pernikahan', 'Spanduk / Banner', 'Kartu Nama', 'Brosur / Flyer', 'Nota / Kwitansi', 'Stiker', 'ID Card', 'Sertifikat', 'Custom Lainnya'];
@@ -156,13 +157,13 @@ export default function PrintingPage() {
     return (
         <div className="premium-page-wrapper">
             <div className="page-toolbar">
-                <h2>🖨️ Order Percetakan</h2>
+                <h2><FiPrinter /> Order Percetakan</h2>
                 <div className="toolbar-actions">
                     <div className="tabs" style={{ border: 'none' }}>
-                        <button className={`tab-btn ${viewMode === 'kanban' ? 'active' : ''}`} onClick={() => setViewMode('kanban')}>📋 Kanban</button>
-                        <button className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>📄 List</button>
+                        <button className={`tab-btn ${viewMode === 'kanban' ? 'active' : ''}`} onClick={() => setViewMode('kanban')}><FiFileText /> Kanban</button>
+                        <button className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><FiFile /> List</button>
                     </div>
-                    <button className="btn btn-primary" onClick={() => setFormOpen(true)}>➕ Order Baru</button>
+                    <button className="btn btn-primary" onClick={() => setFormOpen(true)}><FiPlus /> Order Baru</button>
                 </div>
             </div>
 
@@ -181,11 +182,11 @@ export default function PrintingPage() {
                                         <div key={o.id} className="kanban-card" onClick={() => openDetail(o)}>
                                             <div className="card-order-no">{o.orderNo}</div>
                                             <div className="card-title">{o.type}</div>
-                                            <div className="card-customer">👤 {o.customerName}</div>
-                                            {o.shippingCost > 0 && <div style={{ fontSize: '0.7rem', color: 'var(--info)' }}>🚚 Ongkir: {formatRupiah(o.shippingCost)}</div>}
+                                            <div className="card-customer"><FiUsers /> {o.customerName}</div>
+                                            {o.shippingCost > 0 && <div style={{ fontSize: '0.7rem', color: 'var(--info)' }}><FiTruck /> Ongkir: {formatRupiah(o.shippingCost)}</div>}
                                             <div className="card-footer">
                                                 <span>{formatRupiah(o.totalPrice)}</span>
-                                                <span>📅 {o.deadline}</span>
+                                                <span><FiCalendar /> {o.deadline}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -211,7 +212,7 @@ export default function PrintingPage() {
                                         <td style={{ color: o.remaining > 0 ? 'var(--danger)' : 'var(--success)' }}>{formatRupiah(o.remaining)}</td>
                                         <td>{o.deadline}</td>
                                         <td><span className={`badge badge-${o.status === 'selesai' || o.status === 'diambil' ? 'success' : o.status === 'pending' ? 'danger' : 'warning'}`}>{o.status}</span></td>
-                                        <td><button className="btn btn-ghost btn-sm" onClick={() => openDetail(o)}>👁️</button></td>
+                                        <td><button className="btn btn-ghost btn-sm" onClick={() => openDetail(o)}><FiEye /></button></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -221,7 +222,7 @@ export default function PrintingPage() {
             )}
 
             {/* Form Modal */}
-            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="🖨️ Order Percetakan Baru" size="lg">
+            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title={<><FiPrinter /> Order Percetakan Baru</>} size="lg">
                 <div className="form-row">
                     <div className="form-group">
                         <label className="form-label">Customer</label>
@@ -314,7 +315,7 @@ export default function PrintingPage() {
                                     <option value="set">set</option>
                                     <option value="box">box</option>
                                     <option value="meter">meter</option>
-                                    <option value="custom">➕ Ketik Manual</option>
+                                    <option value="custom"><FiPlus /> Ketik Manual</option>
                                 </select>
                             )}
                         </div>
@@ -326,7 +327,7 @@ export default function PrintingPage() {
                         <input className="form-input" type="number" value={form.totalPrice} onChange={e => setForm(f => ({ ...f, totalPrice: e.target.value }))} placeholder="1500000" />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">🚚 Biaya Ongkir</label>
+                        <label className="form-label"><FiTruck /> Biaya Ongkir</label>
                         <input className="form-input" type="number" value={form.shippingCost} onChange={e => setForm(f => ({ ...f, shippingCost: e.target.value }))} placeholder="0" />
                     </div>
                 </div>
@@ -346,8 +347,8 @@ export default function PrintingPage() {
                     <textarea className="form-textarea" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Catatan tambahan..." />
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFormOpen(false)}>❌ Batal</button>
-                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}>💾 Simpan Order</button>
+                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFormOpen(false)}><FiX /> Batal</button>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}><FiSave /> Simpan Order</button>
                 </div>
             </Modal>
 
@@ -370,11 +371,11 @@ export default function PrintingPage() {
                         </div>
                         <div className="form-row">
                             <div><label className="form-label">Jumlah</label><p>{selectedOrder.qty} {selectedOrder.unit}</p></div>
-                            <div><label className="form-label">Deadline</label><p>📅 {selectedOrder.deadline}</p></div>
+                            <div><label className="form-label">Deadline</label><p><FiCalendar /> {selectedOrder.deadline}</p></div>
                         </div>
                         <div className="form-row">
                             <div><label className="form-label">Total</label><p style={{ fontWeight: '700', fontSize: '1.1rem' }}>{formatRupiah(selectedOrder.totalPrice)}</p></div>
-                            <div><label className="form-label">🚚 Ongkir</label><p>{formatRupiah(selectedOrder.shippingCost || 0)}</p></div>
+                            <div><label className="form-label"><FiTruck /> Ongkir</label><p>{formatRupiah(selectedOrder.shippingCost || 0)}</p></div>
                         </div>
                         <div className="form-row">
                             <div><label className="form-label">DP</label><p style={{ color: 'var(--success)' }}>{formatRupiah(selectedOrder.dpAmount)}</p></div>
@@ -396,13 +397,13 @@ export default function PrintingPage() {
 
                         <div style={{ marginTop: '20px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }} className="no-print">
                             <button className="btn btn-danger" onClick={() => setDetailOpen(false)}>
-                                ❌ Tutup
+                                <FiX /> Tutup
                             </button>
                             <button className="btn btn-primary" style={{ background: '#25D366', color: 'white' }} onClick={sendWaOrder}>
-                                💬 Kirim Tagihan / Update via WA
+                                <FiMessageCircle /> Kirim Tagihan / Update via WA
                             </button>
                             <button className="btn btn-secondary" onClick={handlePrint}>
-                                🖨️ Cetak Invoice
+                                <FiPrinter /> Cetak Invoice
                             </button>
                         </div>
                     </div>

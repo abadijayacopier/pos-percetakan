@@ -1,14 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import api from '../services/api';
 import db from '../db';
-import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatDateTime } from '../utils';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap } from 'react-icons/fi';
 
 export default function SettingsPage() {
-    const { themeMode, setTheme } = useTheme();
     const { user } = useAuth();
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('general');
@@ -26,6 +25,16 @@ export default function SettingsPage() {
             showToast('Harga berhasil diupdate!', 'success');
             api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data));
         } catch { showToast('Gagal update harga', 'error'); }
+    };
+
+    const saveAllFotocopyPrices = async () => {
+        try {
+            for (const p of fotocopyPrices) {
+                await api.put(`/transactions/fotocopy-prices/${p.id}`, { price: parseInt(p.price), paper: p.paper, color: p.color, side: p.side });
+            }
+            showToast('Semua harga fotocopy berhasil disimpan!', 'success');
+            api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data));
+        } catch { showToast('Gagal menyimpan harga fotocopy', 'error'); }
     };
     const activityLog = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50), []);
     const [userFormOpen, setUserFormOpen] = useState(false);
@@ -174,21 +183,21 @@ export default function SettingsPage() {
     };
 
     const TABS = [
-        { id: 'general', label: '⚙️ Umum' },
-        { id: 'fotocopy', label: '📄 Harga Layanan' },
-        { id: 'users', label: '👤 Users' },
-        { id: 'printer', label: '🖨️ Printer & Nota' },
-        { id: 'log', label: '📝 Log Aktivitas' },
-        { id: 'backup', label: '💾 Backup & Restore' },
+        { id: 'general', icon: <FiSettings />, text: 'Umum' },
+        { id: 'fotocopy', icon: <FiFile />, text: 'Harga Layanan' },
+        { id: 'users', icon: <FiUsers />, text: 'Users' },
+        { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
+        { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
+        { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
     ];
 
     return (
         <div className="premium-settings-wrapper premium-page-wrapper">
-            <div className="page-toolbar"><h2>⚙️ Pengaturan</h2></div>
+            <div className="page-toolbar"><h2><FiSettings /> Pengaturan</h2></div>
 
             <div className="tabs" style={{ marginBottom: '16px' }}>
                 {TABS.map(t => (
-                    <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
+                    <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.icon} {t.text}</button>
                 ))}
             </div>
 
@@ -207,15 +216,7 @@ export default function SettingsPage() {
                                 {storeLogo && <button className="btn btn-ghost btn-sm" onClick={() => setStoreLogo('')} style={{ color: 'var(--danger)' }}>Hapus Logo</button>}
                             </div>
                         </div>
-                        <div className="form-group">
-                            <label className="form-label">Tema</label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                {[{ id: 'light', label: '☀️ Light' }, { id: 'dark', label: '🌙 Dark' }, { id: 'system', label: '💻 System' }].map(t => (
-                                    <button key={t.id} className={`btn ${themeMode === t.id ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTheme(t.id)}>{t.label}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan Pengaturan</button>
+                        <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Pengaturan</button>
                     </div>
                 </div>
             )}
@@ -223,7 +224,17 @@ export default function SettingsPage() {
             {/* Fotocopy Prices */}
             {activeTab === 'fotocopy' && (
                 <div className="card">
-                    <div className="card-header"><h3>📄 Master Harga Fotocopy</h3></div>
+                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3><FiFile /> Master Harga Fotocopy</h3>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => {
+                                const newId = 'fc' + Date.now();
+                                const newItem = { id: newId, paper: 'HVS A4', color: 'bw', side: '1', price: 0, label: 'Baru' };
+                                setFotocopyPrices([...fotocopyPrices, newItem]);
+                            }}><FiPlus /> Tambah Aturan</button>
+                            <button className="btn btn-primary" onClick={saveAllFotocopyPrices}><FiSave /> Simpan Harga Fotocopy</button>
+                        </div>
+                    </div>
                     <div className="card-body">
                         <div style={{ overflowX: 'auto' }}>
                             <table className="data-table">
@@ -231,9 +242,35 @@ export default function SettingsPage() {
                                 <tbody>
                                     {fotocopyPrices.map((p, idx) => (
                                         <tr key={p.id}>
-                                            <td><strong>{p.paper}</strong></td>
-                                            <td>{p.color === 'bw' ? '⬛ Hitam Putih' : '🌈 Berwarna'}</td>
-                                            <td>{p.side} Sisi</td>
+                                            <td>
+                                                <select className="form-select" value={p.paper} onChange={(e) => {
+                                                    const newPrices = [...fotocopyPrices];
+                                                    newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
+                                                    setFotocopyPrices(newPrices);
+                                                }} style={{ width: '130px' }}>
+                                                    {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select className="form-select" value={p.color} onChange={(e) => {
+                                                    const newPrices = [...fotocopyPrices];
+                                                    newPrices[idx] = { ...newPrices[idx], color: e.target.value };
+                                                    setFotocopyPrices(newPrices);
+                                                }} style={{ width: '120px' }}>
+                                                    <option value="bw">Hitam Putih</option>
+                                                    <option value="color">Berwarna</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select className="form-select" value={p.side} onChange={(e) => {
+                                                    const newPrices = [...fotocopyPrices];
+                                                    newPrices[idx] = { ...newPrices[idx], side: e.target.value };
+                                                    setFotocopyPrices(newPrices);
+                                                }} style={{ width: '100px' }}>
+                                                    <option value="1">1 Sisi</option>
+                                                    <option value="2">Bolak-balik</option>
+                                                </select>
+                                            </td>
                                             <td>
                                                 <input type="number" className="form-input"
                                                     value={p.price}
@@ -245,7 +282,13 @@ export default function SettingsPage() {
                                                     style={{ width: '120px' }}
                                                 />
                                             </td>
-                                            <td><button className="btn btn-primary btn-sm" onClick={() => updateFotocopyPrice(p.id, p.price)}>💾 Simpan</button></td>
+                                            <td>
+                                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                    if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
+                                                        setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
+                                                    }
+                                                }}><FiTrash2 /></button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -253,17 +296,37 @@ export default function SettingsPage() {
                         </div>
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3>🖨️ Master Harga Jasa Print</h3>
-                                <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan Harga Print</button>
+                                <h3><FiPrinter /> Master Harga Jasa Print</h3>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => {
+                                        setPrintPrices([...printPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', price: 0 }]);
+                                    }}><FiPlus /> Tambah Aturan</button>
+                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Print</button>
+                                </div>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
                                 <table className="data-table">
-                                    <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Harga (Rp) / Lembar</th></tr></thead>
+                                    <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
                                     <tbody>
                                         {printPrices.map((p, idx) => (
                                             <tr key={p.id}>
-                                                <td><strong>{p.paper}</strong></td>
-                                                <td>{p.color === 'bw' ? '⬛ Hitam Putih' : '🌈 Berwarna'}</td>
+                                                <td>
+                                                    <input className="form-input" value={p.paper} onChange={(e) => {
+                                                        const newPrices = [...printPrices];
+                                                        newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
+                                                        setPrintPrices(newPrices);
+                                                    }} style={{ width: '150px' }} />
+                                                </td>
+                                                <td>
+                                                    <select className="form-select" value={p.color} onChange={(e) => {
+                                                        const newPrices = [...printPrices];
+                                                        newPrices[idx] = { ...newPrices[idx], color: e.target.value };
+                                                        setPrintPrices(newPrices);
+                                                    }} style={{ width: '120px' }}>
+                                                        <option value="bw">Hitam Putih</option>
+                                                        <option value="color">Berwarna</option>
+                                                    </select>
+                                                </td>
                                                 <td>
                                                     <input type="number" className="form-input"
                                                         value={p.price}
@@ -275,6 +338,13 @@ export default function SettingsPage() {
                                                         style={{ width: '120px' }}
                                                     />
                                                 </td>
+                                                <td>
+                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                        if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
+                                                            setPrintPrices(printPrices.filter((_, i) => i !== idx));
+                                                        }
+                                                    }}><FiTrash2 /></button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -284,16 +354,27 @@ export default function SettingsPage() {
 
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3>📚 Master Harga Penjilidan</h3>
-                                <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan Harga Jilid</button>
+                                <h3><FiBook /> Master Harga Penjilidan</h3>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => {
+                                        setBindPrices([...bindPrices, { id: Date.now().toString(), type: '', price: 0 }]);
+                                    }}><FiPlus /> Tambah Aturan</button>
+                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Jilid</button>
+                                </div>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
                                 <table className="data-table">
-                                    <thead><tr><th>Jenis Jilid</th><th>Harga (Rp) / Buku</th></tr></thead>
+                                    <thead><tr><th>Jenis Jilid</th><th>Harga (Rp) / Buku</th><th>Aksi</th></tr></thead>
                                     <tbody>
                                         {bindPrices.map((p, idx) => (
                                             <tr key={p.id}>
-                                                <td><strong>{p.type}</strong></td>
+                                                <td>
+                                                    <input className="form-input" value={p.type} onChange={(e) => {
+                                                        const newPrices = [...bindPrices];
+                                                        newPrices[idx] = { ...newPrices[idx], type: e.target.value };
+                                                        setBindPrices(newPrices);
+                                                    }} style={{ width: '250px' }} placeholder="Nama jenis jilid" />
+                                                </td>
                                                 <td>
                                                     <input type="number" className="form-input"
                                                         value={p.price}
@@ -305,6 +386,13 @@ export default function SettingsPage() {
                                                         style={{ width: '150px' }}
                                                     />
                                                 </td>
+                                                <td>
+                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                        if (confirm(`Hapus jilid "${p.type}"?`)) {
+                                                            setBindPrices(bindPrices.filter((_, i) => i !== idx));
+                                                        }
+                                                    }}><FiTrash2 /></button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -314,12 +402,12 @@ export default function SettingsPage() {
 
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3>🏷️ Aturan Diskon Grosir Fotocopy</h3>
+                                <h3><FiTag /> Aturan Diskon Grosir Fotocopy</h3>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <button className="btn btn-secondary btn-sm" onClick={() => {
                                         setFcDiscounts([...fcDiscounts, { id: Date.now().toString(), minQty: 0, discountPerSheet: 0 }]);
-                                    }}>➕ Tambah Aturan</button>
-                                    <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan Diskon</button>
+                                    }}><FiPlus /> Tambah Aturan</button>
+                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Diskon</button>
                                 </div>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
@@ -354,7 +442,7 @@ export default function SettingsPage() {
                                                     <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
                                                         const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
                                                         setFcDiscounts(newDiscounts);
-                                                    }}>🗑️</button>
+                                                    }}><FiTrash2 /></button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -368,7 +456,7 @@ export default function SettingsPage() {
 
                         <div style={{ marginTop: '24px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 'var(--radius)' }}>
                             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--info)' }}>
-                                ℹ️ <strong>Catatan:</strong><br />
+                                <FiInfo /> <strong>Catatan:</strong><br />
                                 Diskon volume akan otomatis memotong harga per-lembar saat <strong>Fotocopy</strong> mencapai target kuantitas di atas. Pastikan mengurutkannya mulai dari lembar paling tinggi untuk hasil pemotongan diskon yang maksimal.
                             </p>
                         </div>
@@ -380,8 +468,8 @@ export default function SettingsPage() {
             {activeTab === 'users' && (
                 <div className="card">
                     <div className="card-header">
-                        <h3>👤 Manajemen User</h3>
-                        <button className="btn btn-primary btn-sm" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}>➕ Tambah</button>
+                        <h3><FiUsers /> Manajemen User</h3>
+                        <button className="btn btn-primary btn-sm" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}><FiPlus /> Tambah</button>
                     </div>
                     <div style={{ overflow: 'auto' }}>
                         <table className="data-table">
@@ -393,7 +481,7 @@ export default function SettingsPage() {
                                         <td>{u.username}</td>
                                         <td><span className="badge badge-primary">{u.role}</span></td>
                                         <td><span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>{u.isActive ? 'Aktif' : 'Nonaktif'}</span></td>
-                                        <td><button className="btn btn-ghost btn-sm" onClick={() => { setEditUser(u); setUserForm({ ...u, password: '' }); setUserFormOpen(true); }}>✏️</button></td>
+                                        <td><button className="btn btn-ghost btn-sm" onClick={() => { setEditUser(u); setUserForm({ ...u, password: '' }); setUserFormOpen(true); }}><FiEdit /></button></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -420,7 +508,7 @@ export default function SettingsPage() {
                             </div>
                             {printerSize === 'inkjet' && (
                                 <div style={{ marginTop: '12px' }}>
-                                    <label className="form-label">📄 Ukuran Kertas</label>
+                                    <label className="form-label"><FiFile /> Ukuran Kertas</label>
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         {['A5', 'A4', 'Folio'].map(sz => (
                                             <button key={sz} className={`btn ${paperSize === sz ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaperSize(sz)}>{sz}</button>
@@ -433,17 +521,17 @@ export default function SettingsPage() {
                     <div className="form-group"><label className="form-label">Footer Struk</label><textarea className="form-textarea" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" /></div>
 
                     <div className="form-group" style={{ padding: '16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
-                        <label className="form-label">🚀 Mode Cetak Cepat (Direct Print)</label>
+                        <label className="form-label"><FiZap /> Mode Cetak Cepat (Direct Print)</label>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
                             Jika dipilih, struk akan dikirim langsung ke hardware printer tanpa memunculkan kotak dialog browser bawaan (Silent Print Server).
                         </p>
                         <select className="form-select" value={printerName} onChange={e => setPrinterName(e.target.value)}>
-                            <option value="">❌ Cetak Menggunakan Dialog Browser (Bawaan PDF)</option>
-                            {systemPrinters.map(p => <option key={p} value={p}>🖨️ {p}</option>)}
+                            <option value=""><FiX /> Cetak Menggunakan Dialog Browser (Bawaan PDF)</option>
+                            {systemPrinters.map(p => <option key={p} value={p}><FiPrinter /> {p}</option>)}
                         </select>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                        <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan Pengaturan</button>
+                        <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Pengaturan</button>
                         <button className="btn btn-secondary" onClick={async () => {
                             const W = printerSize === 'lx310' ? 36 : printerSize === 'inkjet' ? 60 : printerSize === '80mm' ? 42 : 32;
                             const M = printerSize === 'lx310' ? '  ' : '';
@@ -497,14 +585,14 @@ export default function SettingsPage() {
                                     if (printerSize === 'lx310') payload.raw = true;
                                     else if (printerSize === 'inkjet') { payload.mode = 'inkjet'; payload.paperSize = paperSize; }
                                     await api.post('/print/receipt', payload);
-                                    showToast(`✅ Test print berhasil dikirim ke ${printerName}!`, 'success');
+                                    showToast(`Test print berhasil dikirim ke ${printerName}!`, 'success');
                                 } catch (err) {
-                                    showToast(err.response?.data?.message || '❌ Gagal mengirim test print', 'error');
+                                    showToast(err.response?.data?.message || 'Gagal mengirim test print', 'error');
                                 }
                             } else {
-                                showToast('⚠️ Pilih printer dulu di dropdown Direct Print', 'error');
+                                showToast('Pilih printer dulu di dropdown Direct Print', 'error');
                             }
-                        }}>🧪 Test Print</button>
+                        }}><FiActivity /> Test Print</button>
                     </div>
 
                     <div className="form-group">
@@ -528,14 +616,14 @@ export default function SettingsPage() {
                             <div className="receipt-footer"><p>{receiptFooter || 'Terima kasih!'}</p></div>
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={saveSettings}>💾 Simpan</button>
+                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan</button>
                 </div>
             )}
 
             {/* Activity Log */}
             {activeTab === 'log' && (
                 <div className="card">
-                    <div className="card-header"><h3>📝 Log Aktivitas (50 Terbaru)</h3></div>
+                    <div className="card-header"><h3><FiEdit /> Log Aktivitas </h3></div>
                     <div style={{ overflow: 'auto', maxHeight: '500px' }}>
                         <table className="data-table">
                             <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead>
@@ -555,35 +643,35 @@ export default function SettingsPage() {
                 <div>
                     <div className="dashboard-grid">
                         <div className="card">
-                            <div className="card-header"><h3>💾 Backup Data</h3></div>
+                            <div className="card-header"><h3><FiSave /> Backup Data</h3></div>
                             <div className="card-body">
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Export seluruh data POS ke file JSON. Simpan file ini sebagai backup.</p>
-                                <button className="btn btn-primary btn-block" onClick={handleBackup}>📥 Download Backup</button>
+                                <button className="btn btn-primary btn-block" onClick={handleBackup}><FiDownload /> Download Backup</button>
                             </div>
                         </div>
                         <div className="card">
-                            <div className="card-header"><h3>📤 Restore Data</h3></div>
+                            <div className="card-header"><h3><FiUpload /> Restore Data</h3></div>
                             <div className="card-body">
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Import data dari file backup JSON. Data saat ini akan ditimpa.</p>
                                 <label className="btn btn-warning btn-block" style={{ textAlign: 'center' }}>
-                                    📂 Pilih File Backup
+                                    <FiFolder /> Pilih File Backup
                                     <input type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div className="card" style={{ marginTop: '16px' }}>
-                        <div className="card-header"><h3>⚠️ Reset Data</h3></div>
+                        <div className="card-header"><h3><FiAlertCircle /> Reset Data</h3></div>
                         <div className="card-body">
                             <p style={{ fontSize: '0.85rem', color: 'var(--danger)', marginBottom: '16px' }}>Hapus semua data dan kembalikan ke data awal (demo). Tindakan ini tidak dapat dibatalkan!</p>
-                            <button className="btn btn-danger" onClick={resetData}>🗑️ Reset Semua Data</button>
+                            <button className="btn btn-danger" onClick={resetData}><FiTrash2 /> Reset Semua Data</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* User Form Modal */}
-            <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? '✏️ Edit User' : '➕ User Baru'}>
+            <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? <><FiEdit /> Edit User</> : <><FiPlus /> User Baru</>}>
                 <div className="form-group"><label className="form-label">Nama</label><input className="form-input" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Username</label><input className="form-input" value={userForm.username} onChange={e => setUserForm(f => ({ ...f, username: e.target.value }))} /></div>
                 <div className="form-group"><label className="form-label">Password {editUser && '(kosongkan jika tidak diubah)'}</label><input className="form-input" type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} /></div>
@@ -591,10 +679,10 @@ export default function SettingsPage() {
                     <div className="form-group">
                         <label className="form-label">Role</label>
                         <select className="form-select" value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}>
-                            <option value="admin">👑 Admin</option>
-                            <option value="kasir">💼 Kasir</option>
-                            <option value="operator">🖨️ Operator</option>
-                            <option value="teknisi">🔧 Teknisi</option>
+                            <option value="admin">Admin</option>
+                            <option value="kasir">Kasir</option>
+                            <option value="operator"><FiPrinter /> Operator</option>
+                            <option value="teknisi"><FiTool /> Teknisi</option>
                         </select>
                     </div>
                     <div className="form-group">
@@ -605,7 +693,7 @@ export default function SettingsPage() {
                         </select>
                     </div>
                 </div>
-                <button className="btn btn-primary btn-block" onClick={handleSaveUser}>💾 Simpan</button>
+                <button className="btn btn-primary btn-block" onClick={handleSaveUser}><FiSave /> Simpan</button>
             </Modal>
         </div>
     );

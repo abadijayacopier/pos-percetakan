@@ -5,7 +5,12 @@ import { formatRupiah, generateInvoice, today, generateRawReceipt } from '../uti
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
-
+import {
+    FiShoppingCart, FiFile, FiPrinter, FiBook, FiCamera, FiClock,
+    FiSearch, FiPlus, FiTrash2, FiX, FiTag, FiUser, FiCreditCard,
+    FiPackage, FiEdit, FiAlertCircle, FiShoppingBag,
+    FiDelete, FiSquare, FiArrowDown, FiMinus, FiCheck, FiRefreshCw, FiMessageCircle, FiInfo
+} from 'react-icons/fi';
 // Volume discount for fotocopy (dikalkulasi secara dinamis saat addFotocopy)
 const getVolumeDiscountDynamic = (qty, basePrice, fcDiscountsList) => {
     // Pastikan rule di sort dari minQty tertinggi ke terendah
@@ -120,8 +125,11 @@ export default function PosPage() {
                         { id: '3', paper: 'HVS F4', color: 'bw', price: 600 },
                         { id: '4', paper: 'HVS F4', color: 'color', price: 1200 },
                         { id: '5', paper: 'Art Paper', color: 'color', price: 5000 },
+                        { id: '5b', paper: 'Art Paper', color: 'bw', price: 4000 },
                         { id: '6', paper: 'Sticker Cromo', color: 'color', price: 6000 },
-                        { id: '7', paper: 'Sticker Vinyl', color: 'color', price: 8000 }
+                        { id: '6b', paper: 'Sticker Cromo', color: 'bw', price: 5000 },
+                        { id: '7', paper: 'Sticker Vinyl', color: 'color', price: 8000 },
+                        { id: '7b', paper: 'Sticker Vinyl', color: 'bw', price: 7000 }
                     ]);
                 }
 
@@ -206,8 +214,8 @@ export default function PosPage() {
     const addFotocopy = () => {
         const qty = parseInt(fcQty);
         if (!qty || qty <= 0) { showToast('Masukkan jumlah lembar!', 'warning'); return; }
-        const priceEntry = fotocopyPrices.find(p => p.paper === fcPaper && p.color === fcColor && p.side === fcSide);
-        if (!priceEntry) { showToast('Harga tidak ditemukan!', 'error'); return; }
+        const priceEntry = fotocopyPrices.find(p => String(p.paper) === String(fcPaper) && String(p.color) === String(fcColor) && String(p.side) === String(fcSide));
+        if (!priceEntry) { showToast(`Harga untuk ${fcPaper} ${fcColor === 'bw' ? 'H/P' : 'Warna'} Sisi ${fcSide} belum diatur!`, 'error'); return; }
         const perSheet = getVolumeDiscountDynamic(qty, priceEntry.price, fcDiscounts);
         const subtotal = qty * perSheet;
         const discountAmt = qty * (priceEntry.price - perSheet);
@@ -225,8 +233,8 @@ export default function PosPage() {
         const qty = parseInt(printQty);
         if (!qty || qty <= 0) { showToast('Masukkan jumlah lembar print!', 'warning'); return; }
 
-        const priceEntry = printPrices.find(p => p.paper === printPaper && p.color === printColor);
-        if (!priceEntry) { showToast('Harga print tidak ditemukan di pengaturan!', 'error'); return; }
+        const priceEntry = printPrices.find(p => String(p.paper) === String(printPaper) && String(p.color) === String(printColor));
+        if (!priceEntry) { showToast(`Harga Print untuk ${printPaper} ${printColor === 'bw' ? 'B/W' : 'Warna'} tidak ditemukan!`, 'error'); return; }
 
         let price = parseInt(priceEntry.price) || 0;
         let label = `Print ${printPaper} (${printColor === 'bw' ? 'B&W' : 'Warna'})`;
@@ -289,19 +297,19 @@ export default function PosPage() {
     const numpadClick = (val) => {
         if (activeTab === 'fotocopy') {
             if (val === 'C') { setFcQty(''); return; }
-            if (val === '⌫') { setFcQty(prev => prev.slice(0, -1)); return; }
+            if (val === 'DEL') { setFcQty(prev => prev.slice(0, -1)); return; }
             setFcQty(prev => prev + val);
         } else if (activeTab === 'print') {
             if (val === 'C') { setPrintQty(''); return; }
-            if (val === '⌫') { setPrintQty(prev => prev.slice(0, -1)); return; }
+            if (val === 'DEL') { setPrintQty(prev => prev.slice(0, -1)); return; }
             setPrintQty(prev => prev + val);
         } else if (activeTab === 'jilid') {
             if (val === 'C') { setBindQty(''); return; }
-            if (val === '⌫') { setBindQty(prev => prev.slice(0, -1)); return; }
+            if (val === 'DEL') { setBindQty(prev => prev.slice(0, -1)); return; }
             setBindQty(prev => prev + val);
         } else if (activeTab === 'foto') {
             if (val === 'C') { setPhotoQty(''); return; }
-            if (val === '⌫') { setPhotoQty(prev => prev.slice(0, -1)); return; }
+            if (val === 'DEL') { setPhotoQty(prev => prev.slice(0, -1)); return; }
             setPhotoQty(prev => prev + val);
         }
     };
@@ -503,448 +511,25 @@ export default function PosPage() {
 
     return (
         <div className="pos-layout premium-pos-wrapper">
-            <style>{`
-                .premium-pos-wrapper {
-                    font-family: 'Inter', sans-serif;
-                    background: var(--bg-primary);
-                    display: flex;
-                    height: calc(100vh - 64px);
-                    overflow: hidden;
-                    --bg-panel: var(--bg-secondary);
-                    --text-main: var(--text-primary);
-                    --text-sec: var(--text-secondary);
-                    --border-c: var(--border);
-                    --bg-hover: var(--bg-input);
-                    --bg-input: var(--bg-input);
-                    --btn-primary: #13ec5b;
-                    --btn-primary-hover: #10d350;
-                    --glass-bg: var(--bg-glass);
-                }
 
-                .premium-pos-wrapper .pos-catalog {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    padding: 0;
-                    min-width: 0;
-                    overflow-x: hidden;
-                    overflow-y: hidden;
-                }
-                
-                .premium-pos-wrapper .pos-catalog-header {
-                    padding: 16px 24px !important;
-                    background: var(--bg-panel);
-                    border-bottom: 1px solid var(--border-c);
-                    display: flex !important;
-                    flex-direction: column !important;
-                    flex-wrap: nowrap !important;
-                    align-items: stretch !important;
-                    gap: 16px !important;
-                    overflow: visible !important;
-                    min-width: 0;
-                }
-                
-                .premium-pos-wrapper .pos-catalog-header .tabs {
-                    display: flex !important;
-                    gap: 8px;
-                    overflow-x: auto !important;
-                    flex-wrap: nowrap !important;
-                    padding-bottom: 4px;
-                    border-bottom: none !important;
-                    margin-bottom: 0 !important;
-                }
-                
-                .premium-pos-wrapper .pos-catalog-header .tab-btn {
-                    background: var(--bg-hover);
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 9999px;
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--text-sec);
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    border-bottom: 0 !important; /* override index.css */
-                    margin-bottom: 0 !important; /* override index.css */
-                    white-space: nowrap;
-                    flex-shrink: 0;
-                }
-                .premium-pos-wrapper .pos-catalog-header .tab-btn:hover {
-                    background: rgba(19, 236, 91, 0.1);
-                    color: var(--btn-primary);
-                }
-                .premium-pos-wrapper .pos-catalog-header .tab-btn.active {
-                    background: var(--btn-primary) !important;
-                    color: #000 !important;
-                    border-bottom: 0 !important; /* override index.css */
-                }
-                
-                .pos-products {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                    gap: 16px;
-                    padding: 24px;
-                    overflow-y: auto;
-                    flex: 1;
-                }
-                
-                .product-card {
-                    background: var(--bg-panel);
-                    border: 1px solid var(--border-c);
-                    border-radius: 12px;
-                    padding: 16px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    text-align: center;
-                    position: relative;
-                    overflow: hidden;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-                }
-                .product-card:hover {
-                    border-color: rgba(19, 236, 91, 0.4);
-                }
-                .product-emoji {
-                    width: 80px;
-                    height: 80px;
-                    background: var(--bg-input);
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 3rem;
-                    margin-bottom: 12px;
-                    transition: 0.2s;
-                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-                }
-                .product-card:hover .product-emoji {
-                    transform: scale(1.05);
-                }
-                .product-name {
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--text-main);
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-                .product-price {
-                    font-size: 1rem;
-                    font-weight: 700;
-                    color: var(--btn-primary);
-                    margin-top: 4px;
-                }
-                .product-stock {
-                    font-size: 0.625rem;
-                    color: var(--text-sec);
-                    margin-top: 4px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-                
-                .premium-pos-wrapper .pos-cart {
-                    width: 380px;
-                    min-width: 380px;
-                    background: var(--glass-bg);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border-left: 1px solid var(--border-c);
-                    display: flex;
-                    flex-direction: column;
-                    box-shadow: -4px 0 24px rgba(0,0,0,0.02);
-                }
-                .cart-header {
-                    padding: 20px 24px 16px 24px;
-                    border-bottom: 1px solid var(--border-c);
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .cart-header h3 {
-                    margin: 0;
-                    font-size: 1.15rem;
-                    font-weight: 800;
-                    color: var(--text-main);
-                }
-                
-                .cart-items {
-                    flex: 1;
-                    padding: 20px 24px;
-                    overflow-y: auto;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                }
-                .cart-item {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    padding-bottom: 16px;
-                    border-bottom: 1px dashed var(--border-c);
-                }
-                .cart-item:last-child {
-                    border-bottom: none;
-                    padding-bottom: 0;
-                }
-                .item-info {
-                    flex: 1;
-                }
-                .item-info .item-header {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 8px;
-                }
-                .item-info .item-name {
-                    font-size: 0.875rem;
-                    font-weight: 600;
-                    color: var(--text-main);
-                }
-                .item-info .item-price {
-                    font-size: 0.875rem;
-                    font-weight: 700;
-                    color: var(--text-main);
-                }
-                .item-controls {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                }
-                .item-qty {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-                .item-qty button {
-                    background: transparent;
-                    border: 1px solid var(--border-c);
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 6px;
-                    color: var(--btn-primary);
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: 0.2s;
-                }
-                .item-qty button:hover {
-                    background: rgba(19, 236, 91, 0.1);
-                }
-                .item-subtotal {
-                    font-size: 0.625rem;
-                    color: var(--text-sec);
-                }
-                
-                .cart-summary {
-                    padding: 24px;
-                    border-top: 1px solid var(--border-c);
-                }
-                .summary-row {
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 12px;
-                    font-size: 0.95rem;
-                    color: var(--text-sec);
-                    font-weight: 500;
-                }
-                .summary-row.total {
-                    margin-top: 16px;
-                    padding-top: 16px;
-                    border-top: 2px dashed var(--border-c);
-                    font-size: 1.35rem;
-                    font-weight: 800;
-                    color: var(--text-main);
-                }
-                
-                .cart-actions {
-                    padding: 0 24px 24px 24px;
-                }
-                .btn-pay {
-                    width: 100%;
-                    padding: 18px;
-                    background: var(--btn-primary);
-                    color: #000;
-                    border: none;
-                    border-radius: 12px;
-                    font-size: 1.15rem;
-                    font-weight: 800;
-                    cursor: pointer;
-                    transition: 0.2s;
-                    box-shadow: 0 0 20px rgba(19, 236, 91, 0.2);
-                }
-                .btn-pay:hover:not(:disabled) {
-                    background: var(--btn-primary-hover);
-                    transform: translateY(-2px);
-                    filter: brightness(1.1);
-                }
-                .btn-pay:active:not(:disabled) {
-                    transform: scale(0.98);
-                }
-                .btn-pay:disabled {
-                    background: var(--text-sec);
-                    cursor: not-allowed;
-                    opacity: 0.5;
-                    box-shadow: none;
-                }
-                
-                /* Layout Modifiers for Forms inside POS */
-                .fotocopy-form {
-                    background: var(--bg-panel);
-                    border: 1px solid var(--border-c);
-                    border-radius: 16px;
-                    padding: 24px;
-                }
-                .form-label {
-                    color: var(--text-main);
-                    font-weight: 600;
-                    font-size: 0.9rem;
-                    margin-bottom: 12px;
-                    display: block;
-                }
-                .fotocopy-options {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                }
-                .form-group {
-                    margin-bottom: 20px;
-                }
-                .opt-btn {
-                    padding: 12px 24px;
-                    border: 1px solid var(--border-c);
-                    background: var(--bg-panel);
-                    color: var(--text-sec);
-                    border-radius: 9999px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: 0.2s;
-                    flex: 1;
-                    min-width: 120px;
-                }
-                .opt-btn:hover { border-color: rgba(19, 236, 91, 0.4); color: var(--text-main); }
-                .opt-btn.active {
-                    background: rgba(19, 236, 91, 0.1);
-                    border-color: var(--btn-primary);
-                    color: var(--btn-primary);
-                    box-shadow: 0 0 0 1px var(--btn-primary);
-                }
-                .numpad button {
-                    background: var(--bg-hover);
-                    border: none;
-                    border-radius: 12px;
-                    padding: 20px;
-                    font-size: 1.3rem;
-                    font-weight: 700;
-                    color: var(--text-main);
-                    cursor: pointer;
-                    transition: 0.1s;
-                }
-                .numpad button:active { background: var(--border-c); transform: scale(0.95); }
-                .form-input {
-                    background: var(--bg-input);
-                    border: 1px solid var(--border-c);
-                    color: var(--text-main);
-                    padding: 12px 16px;
-                    border-radius: 10px;
-                    outline: none;
-                }
-                .form-input:focus { border-color: var(--btn-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-                
-                .premium-pos-wrapper .pos-categories {
-                    display: flex !important;
-                    gap: 8px !important;
-                    flex-wrap: nowrap !important;
-                    overflow-x: auto !important;
-                }
-                .premium-pos-wrapper .cat-btn {
-                    padding: 8px 16px !important;
-                    border: 1px solid var(--border-c) !important;
-                    border-radius: 20px !important;
-                    background: var(--bg-panel) !important;
-                    color: var(--text-sec) !important;
-                    font-weight: 600;
-                    cursor: pointer;
-                    white-space: nowrap;
-                    transition: 0.2s;
-                    flex-shrink: 0;
-                    font-size: 0.85rem !important;
-                }
-                .premium-pos-wrapper .cat-btn.active,
-                .premium-pos-wrapper .pos-categories .cat-btn.active { 
-                    background: var(--btn-primary) !important; 
-                    color: #000 !important; 
-                    border-color: var(--btn-primary) !important; 
-                }
-                
-                .pos-split-grid {
-                    display: grid;
-                    grid-template-columns: minmax(200px, 1fr) 1fr;
-                    gap: 20px;
-                    margin-top: 16px;
-                }
-                
-                /* Mobile Cart Overlay */
-                .cart-overlay {
-                    display: none;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.5);
-                    z-index: 40;
-                }
-                .floating-cart-btn {
-                    display: none;
-                }
-                
-                @media (max-width: 768px) {
-                    .pos-split-grid { grid-template-columns: 1fr; }
-                    .premium-pos-wrapper .pos-cart {
-                        position: fixed;
-                        top: 0;
-                        bottom: 0;
-                        right: -100%;
-                        left: auto !important; /* Override index.css */
-                        height: 100vh !important; /* Override index.css */
-                        transform: none !important; /* Override index.css */
-                        border-radius: 0 !important; /* Override index.css */
-                        z-index: 150;
-                        transition: right 0.3s ease;
-                        width: 100%;
-                        max-width: 400px;
-                    }
-                    .premium-pos-wrapper .pos-cart.open {
-                        right: 0;
-                    }
-                    .cart-overlay.open {
-                        display: block;
-                        z-index: 140; /* just below cart */
-                    }
-                    .floating-cart-btn {
-                        display: flex;
-                    }
-                }
-            `}</style>
 
             {/* Left: Catalog */}
             <div className="pos-catalog">
                 <div className="pos-catalog-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                         <div className="tabs" style={{ flex: 1, minWidth: 0 }}>
-                            <button className={`tab-btn ${activeTab === 'atk' ? 'active' : ''}`} onClick={() => setActiveTab('atk')}>🛒 ATK</button>
-                            <button className={`tab-btn ${activeTab === 'fotocopy' ? 'active' : ''}`} onClick={() => setActiveTab('fotocopy')}>📄 Fotocopy</button>
-                            <button className={`tab-btn ${activeTab === 'print' ? 'active' : ''}`} onClick={() => setActiveTab('print')}>🖨️ Percetakan</button>
-                            <button className={`tab-btn ${activeTab === 'jilid' ? 'active' : ''}`} onClick={() => setActiveTab('jilid')}>📚 Service & Jilid</button>
-                            <button className={`tab-btn ${activeTab === 'foto' ? 'active' : ''}`} onClick={() => setActiveTab('foto')}>📸 Foto</button>
-                            <button className="tab-btn" onClick={loadHistory} style={{ borderLeft: '1px solid var(--border-c)', marginLeft: '4px', paddingLeft: '20px' }}>📜 Riwayat</button>
+                            <button className={`tab-btn ${activeTab === 'atk' ? 'active' : ''}`} onClick={() => setActiveTab('atk')}><FiShoppingCart /> ATK</button>
+                            <button className={`tab-btn ${activeTab === 'fotocopy' ? 'active' : ''}`} onClick={() => setActiveTab('fotocopy')}><FiFile /> Fotocopy</button>
+                            <button className={`tab-btn ${activeTab === 'print' ? 'active' : ''}`} onClick={() => setActiveTab('print')}><FiPrinter /> Percetakan</button>
+                            <button className={`tab-btn ${activeTab === 'jilid' ? 'active' : ''}`} onClick={() => setActiveTab('jilid')}><FiBook /> Service & Jilid</button>
+                            <button className={`tab-btn ${activeTab === 'foto' ? 'active' : ''}`} onClick={() => setActiveTab('foto')}><FiCamera /> Foto</button>
+                            <button className="tab-btn" onClick={loadHistory} style={{ borderLeft: '1px solid var(--border-c)', marginLeft: '4px', paddingLeft: '20px' }}><FiClock /> Riwayat</button>
                         </div>
                     </div>
                     {activeTab === 'atk' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                            <input className="form-input" placeholder="🔍 Cari Produk atau Jasa..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%' }} />
+                            <input className="form-input" placeholder="Cari Produk atau Jasa..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ width: '100%', paddingLeft: '32px' }} />
+                            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-sec)' }} />
                             <div className="pos-categories" style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '4px' }}>
                                 <button className={`cat-btn ${selectedCategory === 'all' ? 'active' : ''}`} onClick={() => setSelectedCategory('all')}>Semua Kategori</button>
                                 {categories.map(c => (
@@ -962,7 +547,7 @@ export default function PosPage() {
                         {filteredProducts.map(p => (
                             <div key={p.id} className="product-card" onClick={() => addToCart(p)}>
                                 <div className="product-emoji">
-                                    {p.emoji || '📦'}
+                                    {p.emoji || <FiPackage />}
                                 </div>
                                 <div className="product-name" title={p.name}>{p.name}</div>
                                 <div className="product-price">{formatRupiah(p.sellPrice)}</div>
@@ -971,7 +556,7 @@ export default function PosPage() {
                         ))}
                         {filteredProducts.length === 0 && (
                             <div className="empty-state" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--text-sec)' }}>
-                                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔍</div>
+                                <div style={{ fontSize: '3rem', marginBottom: '16px' }}><FiSearch /></div>
                                 <h3 style={{ color: 'var(--text-main)' }}>Tidak ada produk</h3>
                                 <p>Coba ubah filter atau kata kunci pencarian</p>
                             </div>
@@ -992,8 +577,8 @@ export default function PosPage() {
                         <div className="form-group">
                             <label className="form-label">Jenis Copy</label>
                             <div className="fotocopy-options">
-                                <button className={`opt-btn ${fcColor === 'bw' ? 'active' : ''}`} onClick={() => setFcColor('bw')}>⬛ Hitam Putih</button>
-                                <button className={`opt-btn ${fcColor === 'color' ? 'active' : ''}`} onClick={() => setFcColor('color')}>🌈 Berwarna</button>
+                                <button className={`opt-btn ${fcColor === 'bw' ? 'active' : ''}`} onClick={() => setFcColor('bw')}><FiSquare /> Hitam Putih</button>
+                                <button className={`opt-btn ${fcColor === 'color' ? 'active' : ''}`} onClick={() => setFcColor('color')}><FiPrinter /> Berwarna</button>
                             </div>
                         </div>
                         <div className="form-group">
@@ -1009,11 +594,11 @@ export default function PosPage() {
                                 <label className="form-label">Jumlah Lembar</label>
                                 <input className="form-input" value={fcQty} readOnly placeholder="0" style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: '800', marginBottom: '8px' }} />
                                 <div className="numpad">
-                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫'].map(v => (
-                                        <button key={v} onClick={() => numpadClick(v)}>{v}</button>
+                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'DEL'].map(v => (
+                                        <button key={v} onClick={() => numpadClick(v)}>{v === 'DEL' ? <FiDelete /> : v}</button>
                                     ))}
                                 </div>
-                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addFotocopy}>➕ Tambah ke Keranjang</button>
+                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addFotocopy}><FiPlus /> Tambah ke Keranjang</button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <label className="form-label">Daftar Harga</label>
@@ -1049,8 +634,8 @@ export default function PosPage() {
                         <div className="form-group">
                             <label className="form-label">Warna Tinta</label>
                             <div className="fotocopy-options">
-                                <button className={`opt-btn ${printColor === 'bw' ? 'active' : ''}`} onClick={() => setPrintColor('bw')}>⬛ Hitam Putih</button>
-                                <button className={`opt-btn ${printColor === 'color' ? 'active' : ''}`} onClick={() => setPrintColor('color')}>🌈 Berwarna</button>
+                                <button className={`opt-btn ${printColor === 'bw' ? 'active' : ''}`} onClick={() => setPrintColor('bw')}><FiSquare /> Hitam Putih</button>
+                                <button className={`opt-btn ${printColor === 'color' ? 'active' : ''}`} onClick={() => setPrintColor('color')}><FiPrinter /> Berwarna</button>
                             </div>
                         </div>
                         <div className="pos-split-grid">
@@ -1058,15 +643,15 @@ export default function PosPage() {
                                 <label className="form-label">Jumlah Lembar (Print)</label>
                                 <input className="form-input" value={printQty} readOnly placeholder="0" style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: '800', marginBottom: '8px' }} />
                                 <div className="numpad">
-                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫'].map(v => (
-                                        <button key={v} onClick={() => numpadClick(v)}>{v}</button>
+                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'DEL'].map(v => (
+                                        <button key={v} onClick={() => numpadClick(v)}>{v === 'DEL' ? <FiDelete /> : v}</button>
                                     ))}
                                 </div>
-                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addJasaPrint}>➕ Tambah ke Keranjang</button>
+                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addJasaPrint}><FiPlus /> Tambah ke Keranjang</button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '16px', fontSize: '0.85rem', flex: 1, border: '1px dashed var(--border)' }}>
-                                    <h4 style={{ marginBottom: '12px' }}>💡 Info Jasa Print</h4>
+                                    <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiInfo /> Info Jasa Print</h4>
                                     <p>Gunakan tab ini untuk melayani pencetakan dokumen / foto pelanggan.</p>
                                     <ul style={{ margin: '12px 0', paddingLeft: '20px', color: 'var(--text-secondary)' }}>
                                         <li>Pastikan printer memadai untuk jenis kertas.</li>
@@ -1096,15 +681,15 @@ export default function PosPage() {
                                 <label className="form-label">Jumlah Buku / Rangkap</label>
                                 <input className="form-input" value={bindQty} readOnly placeholder="0" style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: '800', marginBottom: '8px' }} />
                                 <div className="numpad">
-                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫'].map(v => (
-                                        <button key={v} onClick={() => numpadClick(v)}>{v}</button>
+                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'DEL'].map(v => (
+                                        <button key={v} onClick={() => numpadClick(v)}>{v === 'DEL' ? <FiDelete /> : v}</button>
                                     ))}
                                 </div>
-                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addJilid}>➕ Tambah ke Keranjang</button>
+                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addJilid}><FiPlus /> Tambah ke Keranjang</button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '16px', fontSize: '0.85rem', flex: 1, border: '1px dashed var(--border)' }}>
-                                    <h4 style={{ marginBottom: '12px' }}>💡 Info Jasa Jilid</h4>
+                                    <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiInfo /> Info Jasa Jilid</h4>
                                     <p>Harga yang tertera adalah per buku / rangkap.</p>
                                     <p>Bisa dikombinasikan dengan transaksi Fotocopy dan ATK dalam satu struk pembayaran.</p>
                                 </div>
@@ -1149,15 +734,15 @@ export default function PosPage() {
                                 <label className="form-label">Jumlah Lembar (Foto)</label>
                                 <input className="form-input" value={photoQty} readOnly placeholder="0" style={{ fontSize: '1.5rem', textAlign: 'center', fontWeight: '800', marginBottom: '8px' }} />
                                 <div className="numpad">
-                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '⌫'].map(v => (
-                                        <button key={v} onClick={() => numpadClick(v)}>{v}</button>
+                                    {['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', 'DEL'].map(v => (
+                                        <button key={v} onClick={() => numpadClick(v)}>{v === 'DEL' ? <FiDelete /> : v}</button>
                                     ))}
                                 </div>
-                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addFoto}>➕ Tambah ke Keranjang</button>
+                                <button className="btn btn-primary btn-block" style={{ marginTop: 'auto', paddingTop: '12px', paddingBottom: '12px' }} onClick={addFoto}><FiPlus /> Tambah ke Keranjang</button>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)', padding: '16px', fontSize: '0.85rem', flex: 1, border: '1px dashed var(--border)' }}>
-                                    <h4 style={{ marginBottom: '12px' }}>💡 Info Cetak Foto</h4>
+                                    <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiInfo /> Info Cetak Foto</h4>
                                     <p>Tentukan sendiri harga per lembarnya sesuai tarif pasaran saat ini. Gunakan opsi *Custom* bila pelanggan meminta cetak dalam ukuran bingkai spesifik selain standar pas foto (2x3, 3x4, 4x6).</p>
                                 </div>
                             </div>
@@ -1168,7 +753,7 @@ export default function PosPage() {
 
             {/* Floating Cart Button (Mobile) */}
             <button className="floating-cart-btn" onClick={() => setCartOpen(true)} style={{ background: 'var(--btn-primary)', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '30px', fontWeight: 'bold', gap: '12px', alignItems: 'center', boxShadow: '0 4px 12px rgba(19, 236, 91, 0.4)', cursor: 'pointer', position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
-                <span>🛒 {cart.length} barang</span>
+                <span><FiShoppingCart /> {cart.length} barang</span>
                 <span style={{ padding: '4px 8px', background: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>{formatRupiah(total)}</span>
             </button>
 
@@ -1180,22 +765,22 @@ export default function PosPage() {
                 <div className="cart-header" onClick={() => { if (isMobile) setCartOpen(false); }} style={{ cursor: isMobile ? 'pointer' : 'default', padding: '24px 24px 16px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {isMobile && <button className="btn-icon" style={{ background: 'var(--bg-hover)', border: 'none', fontSize: '1.2rem', padding: '0 8px', borderRadius: '8px', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setCartOpen(false); }}>↓</button>}
+                            {isMobile && <button className="btn-icon" style={{ background: 'var(--bg-hover)', border: 'none', fontSize: '1.2rem', padding: '0 8px', borderRadius: '8px', cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); setCartOpen(false); }}><FiArrowDown /></button>}
                             <h3 style={{ fontSize: '1.25rem' }}>Detail Pesanan</h3>
                         </div>
                         <button onClick={() => { if (window.confirm('Kosongkan keranjang?')) setCart(prev => []) }} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px' }}>
-                            🗑️ Kosongkan
+                            <FiTrash2 /> Kosongkan
                         </button>
                     </div>
                 </div>
 
                 <div style={{ padding: '0 24px 16px', borderBottom: '1px solid var(--border-c)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-sec)' }}>
-                    <span>🧾</span> INV-{new Date().getTime().toString().slice(-6)}
+                    <span><FiFile /></span> INV-{new Date().getTime().toString().slice(-6)}
                 </div>
 
                 {cart.length === 0 ? (
                     <div className="cart-empty" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-sec)' }}>
-                        <div className="empty-icon" style={{ fontSize: '4rem', opacity: 0.2, marginBottom: '16px' }}>🛒</div>
+                        <div className="empty-icon" style={{ fontSize: '4rem', opacity: 0.2, marginBottom: '16px' }}><FiShoppingCart /></div>
                         <p style={{ fontWeight: 600 }}>Keranjang masih kosong</p>
                         <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Pilih produk atau jasa dari katalog</p>
                     </div>
@@ -1204,7 +789,7 @@ export default function PosPage() {
                         {cart.map(item => (
                             <div key={item.id} className="cart-item">
                                 <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
-                                    {item.type === 'product' ? '📦' : item.type === 'fotocopy' ? '📄' : item.type === 'print' ? '🖨️' : '📚'}
+                                    {item.type === 'product' ? <FiPackage /> : item.type === 'fotocopy' ? <FiFile /> : item.type === 'print' ? <FiPrinter /> : <FiBook />}
                                 </div>
                                 <div className="item-info">
                                     <div className="item-header">
@@ -1214,7 +799,7 @@ export default function PosPage() {
                                     <div className="item-controls">
                                         {item.type === 'product' ? (
                                             <div className="item-qty">
-                                                <button onClick={() => updateCartQty(item.id, -1)}>−</button>
+                                                <button onClick={() => updateCartQty(item.id, -1)}><FiMinus /></button>
                                                 <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>{item.qty}</span>
                                                 <button onClick={() => updateCartQty(item.id, 1)}>+</button>
                                             </div>
@@ -1223,7 +808,7 @@ export default function PosPage() {
                                         )}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <span className="item-subtotal">Subtotal: {formatRupiah(item.subtotal)}</span>
-                                            <button className="item-remove" style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => removeFromCart(item.id)}>✕</button>
+                                            <button className="item-remove" style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => removeFromCart(item.id)}><FiX /></button>
                                         </div>
                                     </div>
                                 </div>
@@ -1249,7 +834,7 @@ export default function PosPage() {
                             const disc = prompt('Masukkan nominal diskon (Rp):', discount);
                             if (disc !== null) setDiscount(parseInt(disc) || 0);
                         }}>
-                            🏷️ Set Diskon
+                            <FiTag /> Set Diskon
                         </button>
 
                         <div style={{ position: 'relative' }}>
@@ -1257,7 +842,7 @@ export default function PosPage() {
                                 const c = customers.find(c => c.id === e.target.value);
                                 setSelectedCustomer(c || null);
                             }}>
-                                <option value="">👤 Member</option>
+                                <option value="">Member</option>
                                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
@@ -1271,13 +856,13 @@ export default function PosPage() {
 
                 <div className="cart-actions" style={{ background: 'var(--bg-input)' }}>
                     <button className="btn-pay" disabled={cart.length === 0} onClick={() => { setPaymentOpen(true); setCashReceived(''); }}>
-                        💳 PROSES PEMBAYARAN
+                        <FiCreditCard /> PROSES PEMBAYARAN
                     </button>
                 </div>
             </div>
 
             {/* Payment Modal */}
-            <Modal isOpen={paymentOpen} onClose={() => setPaymentOpen(false)} title="💳 Pembayaran">
+            <Modal isOpen={paymentOpen} onClose={() => setPaymentOpen(false)} title={<><FiCreditCard /> Pembayaran</>}>
                 <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                     <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Tagihan</div>
                     <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary)' }}>{formatRupiah(total)}</div>
@@ -1286,10 +871,10 @@ export default function PosPage() {
                 <label className="form-label">Metode Pembayaran</label>
                 <div className="payment-methods">
                     {[
-                        { id: 'tunai', icon: '💵', label: 'Tunai' },
-                        { id: 'transfer', icon: '🏦', label: 'Transfer' },
-                        { id: 'qris', icon: '📱', label: 'QRIS' },
-                        { id: 'hutang', icon: '📝', label: 'Hutang' },
+                        { id: 'tunai', icon: <FiCreditCard />, label: 'Tunai' },
+                        { id: 'transfer', icon: <FiCreditCard />, label: 'Transfer' },
+                        { id: 'qris', icon: <FiCreditCard />, label: 'QRIS' },
+                        { id: 'hutang', icon: <FiFile />, label: 'Hutang' },
                     ].map(m => (
                         <button key={m.id} className={`payment-method-btn ${payMethod === m.id ? 'active' : ''}`} onClick={() => setPayMethod(m.id)}>
                             <span className="method-icon">{m.icon}</span>
@@ -1307,7 +892,7 @@ export default function PosPage() {
                         <div className="quick-cash">
                             {[10000, 20000, 50000, 100000, total].map((v, i) => (
                                 <button key={i} onClick={() => setCashReceived(String(v))}>
-                                    {i === 4 ? '✅ Pas' : formatRupiah(v)}
+                                    {i === 4 ? <><FiCheck /> Pas</> : formatRupiah(v)}
                                 </button>
                             ))}
                         </div>
@@ -1321,17 +906,17 @@ export default function PosPage() {
                 )}
 
                 {payMethod === 'hutang' && !selectedCustomer && (
-                    <div className="login-error" style={{ marginTop: '12px' }}>⚠️ Pilih customer terlebih dahulu untuk pembayaran hutang!</div>
+                    <div className="login-error" style={{ marginTop: '12px' }}><FiAlertCircle /> Pilih customer terlebih dahulu untuk pembayaran hutang!</div>
                 )}
 
                 <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: '16px' }} onClick={processPayment}
                     disabled={(payMethod === 'tunai' && cashNum < total) || (payMethod === 'hutang' && !selectedCustomer)}>
-                    ✅ Proses Pembayaran
+                    <FiCheck /> Proses Pembayaran
                 </button>
             </Modal>
 
             {/* Receipt Modal */}
-            <Modal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} title="🧾 Struk">
+            <Modal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} title={<><FiFile /> Struk</>}>
                 {lastReceipt && (
                     <div className={`receipt-preview print-${printerType}`}>
                         <div className="receipt-header">
@@ -1372,14 +957,14 @@ export default function PosPage() {
                     </div>
                 )}
                 <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }} className="no-print">
-                    <button className="btn btn-secondary btn-block" style={{ background: '#25D366', color: 'white' }} onClick={sendWaReceipt}>💬 Kirim WA</button>
-                    <button className="btn btn-secondary btn-block" onClick={handlePrint}>🖨️ {isMobile ? 'Cetak Bluetooth 58mm' : printerType === 'lx310' ? 'Cetak LX-310' : printerType === 'inkjet' ? `Cetak Inkjet [${storeInfo.paperSize || 'A4'}]` : 'Cetak'}</button>
-                    <button className="btn btn-primary btn-block" onClick={() => setReceiptOpen(false)}>✅ Selesai</button>
+                    <button className="btn btn-secondary btn-block" style={{ background: '#25D366', color: 'white' }} onClick={sendWaReceipt}><FiMessageCircle /> Kirim WA</button>
+                    <button className="btn btn-secondary btn-block" onClick={handlePrint}><FiPrinter /> {isMobile ? 'Cetak Bluetooth 58mm' : printerType === 'lx310' ? 'Cetak LX-310' : printerType === 'inkjet' ? `Cetak Inkjet [${storeInfo.paperSize || 'A4'}]` : 'Cetak'}</button>
+                    <button className="btn btn-primary btn-block" onClick={() => setReceiptOpen(false)}><FiCheck /> Selesai</button>
                 </div>
             </Modal>
 
             {/* History Modal */}
-            <Modal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} title="📜 Riwayat Transaksi Kasir" size="lg">
+            <Modal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} title={<><FiClock /> Riwayat Transaksi Kasir</>} size="lg">
                 <div style={{ overflow: 'auto', maxHeight: '60dvh' }}>
                     <table className="data-table">
                         <thead>
@@ -1408,9 +993,9 @@ export default function PosPage() {
                                     </td>
                                     <td style={{ textAlign: 'center' }}>
                                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                            <button className="btn btn-ghost btn-sm" title="Preview Struk" onClick={() => previewTransaction(trx.id)}>🖨️</button>
-                                            <button className="btn btn-ghost btn-sm" title="Edit Transaksi (Void & Re-Checkout)" style={{ color: 'var(--primary)' }} onClick={() => editTransaction(trx.id, trx.invoice_no || trx.invoiceNo)}>✏️</button>
-                                            <button className="btn btn-ghost btn-sm" title="Hapus / VOID Transaksi" style={{ color: 'var(--danger)' }} onClick={() => voidTransaction(trx.id, trx.invoice_no || trx.invoiceNo)}>🗑️</button>
+                                            <button className="btn btn-ghost btn-sm" title="Preview Struk" onClick={() => previewTransaction(trx.id)}><FiPrinter /></button>
+                                            <button className="btn btn-ghost btn-sm" title="Edit Transaksi (Void & Re-Checkout)" style={{ color: 'var(--primary)' }} onClick={() => editTransaction(trx.id, trx.invoice_no || trx.invoiceNo)}><FiEdit /></button>
+                                            <button className="btn btn-ghost btn-sm" title="Hapus / VOID Transaksi" style={{ color: 'var(--danger)' }} onClick={() => voidTransaction(trx.id, trx.invoice_no || trx.invoiceNo)}><FiTrash2 /></button>
                                         </div>
                                     </td>
                                 </tr>

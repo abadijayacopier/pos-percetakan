@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';

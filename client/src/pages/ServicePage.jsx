@@ -4,17 +4,18 @@ import { formatRupiah, generateOrderNo } from '../utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye } from 'react-icons/fi';
 
 const STATUS_LIST = [
-    { id: 'diterima', label: '📥 Diterima' },
-    { id: 'diagnosa', label: '🔍 Diagnosa' },
-    { id: 'approval', label: '✅ Approval' },
-    { id: 'tunggu_part', label: '📦 Tunggu Part' },
-    { id: 'pengerjaan', label: '🔧 Pengerjaan' },
-    { id: 'testing', label: '🧪 Testing' },
-    { id: 'selesai', label: '✅ Selesai' },
-    { id: 'diambil', label: '📦 Diambil' },
-    { id: 'batal', label: '❌ Batal' }
+    { id: 'diterima', label: <><FiDownload /> Diterima</> },
+    { id: 'diagnosa', label: <><FiSearch /> Diagnosa</> },
+    { id: 'approval', label: <><FiCheck /> Approval</> },
+    { id: 'tunggu_part', label: <><FiPackage /> Tunggu Part</> },
+    { id: 'pengerjaan', label: <><FiTool /> Pengerjaan</> },
+    { id: 'testing', label: <><FiActivity /> Testing</> },
+    { id: 'selesai', label: <><FiCheck /> Selesai</> },
+    { id: 'diambil', label: <><FiPackage /> Diambil</> },
+    { id: 'batal', label: <><FiX /> Batal</> }
 ];
 
 export default function ServicePage() {
@@ -132,23 +133,23 @@ export default function ServicePage() {
     };
 
     const kanbanCols = [
-        { statuses: ['diterima', 'diagnosa'], label: '📥 Masuk & Diagnosa', color: 'var(--warning)' },
-        { statuses: ['approval', 'tunggu_part'], label: '⏳ Menunggu', color: 'var(--info)' },
-        { statuses: ['pengerjaan', 'testing'], label: '🔧 Proses', color: 'var(--primary)' },
-        { statuses: ['selesai', 'diambil'], label: '✅ Selesai', color: 'var(--success)' },
-        { statuses: ['batal'], label: '❌ Batal', color: 'var(--danger)' }
+        { statuses: ['diterima', 'diagnosa'], label: <><FiDownload /> Masuk & Diagnosa</>, color: 'var(--warning)' },
+        { statuses: ['approval', 'tunggu_part'], label: <><FiClock /> Menunggu</>, color: 'var(--info)' },
+        { statuses: ['pengerjaan', 'testing'], label: <><FiTool /> Proses</>, color: 'var(--primary)' },
+        { statuses: ['selesai', 'diambil'], label: <><FiCheck /> Selesai</>, color: 'var(--success)' },
+        { statuses: ['batal'], label: <><FiX /> Batal</>, color: 'var(--danger)' }
     ];
 
     return (
         <div className="premium-page-wrapper">
             <div className="page-toolbar">
-                <h2>🔧 Service Mesin</h2>
+                <h2><FiTool /> Service Mesin</h2>
                 <div className="toolbar-actions">
                     <div className="tabs" style={{ border: 'none' }}>
-                        <button className={`tab-btn ${viewMode === 'kanban' ? 'active' : ''}`} onClick={() => setViewMode('kanban')}>📋 Kanban</button>
-                        <button className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>📄 List</button>
+                        <button className={`tab-btn ${viewMode === 'kanban' ? 'active' : ''}`} onClick={() => setViewMode('kanban')}><FiFileText /> Kanban</button>
+                        <button className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><FiFileText /> List</button>
                     </div>
-                    <button className="btn btn-primary" onClick={() => setFormOpen(true)}>➕ Service Baru</button>
+                    <button className="btn btn-primary" onClick={() => setFormOpen(true)}><FiPlus /> Service Baru</button>
                 </div>
             </div>
 
@@ -167,7 +168,7 @@ export default function ServicePage() {
                                         <div key={o.id} className="kanban-card" onClick={() => loadDetail(o)}>
                                             <div className="card-order-no">{o.serviceNo}</div>
                                             <div className="card-title">{o.machineInfo}</div>
-                                            <div className="card-customer">👤 {o.customerName}</div>
+                                            <div className="card-customer"><FiUsers /> {o.customerName}</div>
                                             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '4px 0' }}>{o.complaint}</div>
                                             <div className="card-footer">
                                                 <span>{formatRupiah(o.totalCost)}</span>
@@ -193,7 +194,7 @@ export default function ServicePage() {
                                     <td>{o.complaint}</td>
                                     <td>{formatRupiah(o.totalCost)}</td>
                                     <td><span className="badge badge-info">{o.status}</span></td>
-                                    <td><button className="btn btn-ghost btn-sm" onClick={() => loadDetail(o)}>👁️</button></td>
+                                    <td><button className="btn btn-ghost btn-sm" onClick={() => loadDetail(o)}><FiEye /></button></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -202,7 +203,7 @@ export default function ServicePage() {
             )}
 
             {/* Form Modal */}
-            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="🔧 Service Baru" size="lg">
+            <Modal isOpen={formOpen} onClose={() => setFormOpen(false)} title="<FiTool /> Service Baru" size="lg">
                 <div className="form-row">
                     <div className="form-group">
                         <label className="form-label">Nama Customer</label>
@@ -242,10 +243,10 @@ export default function ServicePage() {
                         <input className="form-input" placeholder="Nama part" value={sp.name} onChange={e => updateSparepart(i, 'name', e.target.value)} style={{ flex: 2 }} />
                         <input className="form-input" type="number" placeholder="Qty" value={sp.qty} onChange={e => updateSparepart(i, 'qty', e.target.value)} style={{ width: '70px' }} />
                         <input className="form-input" type="number" placeholder="Harga" value={sp.price} onChange={e => updateSparepart(i, 'price', e.target.value)} style={{ flex: 1 }} />
-                        <button className="btn btn-ghost btn-sm" onClick={() => removeSparepart(i)}>✕</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => removeSparepart(i)}><FiX /></button>
                     </div>
                 ))}
-                <button className="btn btn-secondary btn-sm" onClick={addSparepart} style={{ marginBottom: '12px' }}>➕ Tambah Part</button>
+                <button className="btn btn-secondary btn-sm" onClick={addSparepart} style={{ marginBottom: '12px' }}><FiPlus /> Tambah Part</button>
 
                 <div className="form-row">
                     <div className="form-group">
@@ -263,8 +264,8 @@ export default function ServicePage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px' }}>
-                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFormOpen(false)}>❌ Batal</button>
-                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}>💾 Simpan Service</button>
+                    <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setFormOpen(false)}><FiX /> Batal</button>
+                    <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}><FiSave /> Simpan Service</button>
                 </div>
             </Modal>
 
@@ -300,12 +301,12 @@ export default function ServicePage() {
                                             <td>{formatRupiah((sp.qty || 0) * (sp.price || 0))}</td>
                                             <td><button className="btn btn-ghost btn-sm" onClick={() => {
                                                 setSelected({ ...selected, spareparts: selected.spareparts.filter((_, idx) => idx !== i) });
-                                            }}>✕</button></td>
+                                            }}><FiX /></button></td>
                                         </tr>
                                     ))}
                                     <tr>
                                         <td colSpan="5">
-                                            <button className="btn btn-secondary btn-sm" onClick={() => setSelected({ ...selected, spareparts: [...(selected.spareparts || []), { name: '', qty: 1, price: 0 }] })}>➕ Tambah Part</button>
+                                            <button className="btn btn-secondary btn-sm" onClick={() => setSelected({ ...selected, spareparts: [...(selected.spareparts || []), { name: '', qty: 1, price: 0 }] })}><FiPlus /> Tambah Part</button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -326,8 +327,8 @@ export default function ServicePage() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '12px', margin: '12px 0' }}>
-                            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDetailOpen(false)}>❌ Batal</button>
-                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleUpdateDetail}>💾 Simpan Detail & Kalkulasi</button>
+                            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setDetailOpen(false)}><FiX /> Batal</button>
+                            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleUpdateDetail}><FiSave /> Simpan Detail & Kalkulasi</button>
                         </div>
 
                         <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
@@ -345,7 +346,7 @@ export default function ServicePage() {
                         {selected.status === 'selesai' && (
                             <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                                 <button className="btn btn-success btn-block" onClick={handlePay} style={{ fontSize: '1.1rem', padding: '12px' }}>
-                                    ✅ Proses Pelunasan (Diambil) - {formatRupiah(selected.totalCost)}
+                                    <FiCheck /> Proses Pelunasan (Diambil) - {formatRupiah(selected.totalCost)}
                                 </button>
                             </div>
                         )}

@@ -4,6 +4,7 @@ import { formatRupiah, today, isToday } from '../utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Modal from '../components/Modal';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiMinus } from 'react-icons/fi';
 
 const EXPENSE_CATS = ['Operasional', 'Belanja Stok', 'Listrik & Air', 'Transport', 'Makan Karyawan', 'Lainnya'];
 
@@ -113,25 +114,25 @@ export default function FinancePage() {
     return (
         <div className="premium-page-wrapper">
             <div className="page-toolbar">
-                <h2>💰 Kas & Keuangan</h2>
+                <h2><FiDollarSign /> Kas & Keuangan</h2>
                 <div className="toolbar-actions">
                     <input className="form-input" type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} style={{ width: '180px' }} />
-                    <button className="btn btn-danger" onClick={() => setExpenseOpen(true)}>➖ Catat Pengeluaran</button>
+                    <button className="btn btn-danger" onClick={() => setExpenseOpen(true)}><FiMinus /> Catat Pengeluaran</button>
                 </div>
             </div>
 
             {/* Summary Cards */}
             <div className="stats-grid">
-                <div className="stat-card"><div className="stat-icon green">📈</div><div className="stat-value">{formatRupiah(dayFlow.income)}</div><div className="stat-label">Pemasukan</div></div>
-                <div className="stat-card"><div className="stat-icon red">📉</div><div className="stat-value">{formatRupiah(dayFlow.expense)}</div><div className="stat-label">Pengeluaran</div></div>
-                <div className="stat-card"><div className="stat-icon blue">💰</div><div className="stat-value" style={{ color: dayFlow.balance >= 0 ? 'var(--success)' : 'var(--danger)' }}>{formatRupiah(dayFlow.balance)}</div><div className="stat-label">Saldo Kas</div></div>
-                <div className="stat-card"><div className="stat-icon yellow">📋</div><div className="stat-value">{formatRupiah(totalReceivable)}</div><div className="stat-label">Total Piutang</div></div>
+                <div className="stat-card"><div className="stat-icon green"><FiFileText /></div><div className="stat-value">{formatRupiah(dayFlow.income)}</div><div className="stat-label">Pemasukan</div></div>
+                <div className="stat-card"><div className="stat-icon red"><FiFileText /></div><div className="stat-value">{formatRupiah(dayFlow.expense)}</div><div className="stat-label">Pengeluaran</div></div>
+                <div className="stat-card"><div className="stat-icon blue"><FiDollarSign /></div><div className="stat-value" style={{ color: dayFlow.balance >= 0 ? 'var(--success)' : 'var(--danger)' }}>{formatRupiah(dayFlow.balance)}</div><div className="stat-label">Saldo Kas</div></div>
+                <div className="stat-card"><div className="stat-icon yellow"><FiFileText /></div><div className="stat-value">{formatRupiah(totalReceivable)}</div><div className="stat-label">Total Piutang</div></div>
             </div>
 
             <div className="dashboard-grid">
                 {/* Income Breakdown */}
                 <div className="card">
-                    <div className="card-header"><h3>📈 Pemasukan</h3></div>
+                    <div className="card-header"><h3><FiFileText /> Pemasukan</h3></div>
                     <div className="card-body">
                         {dayFlow.salesIncome > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
@@ -154,7 +155,7 @@ export default function FinancePage() {
 
                 {/* Expenses */}
                 <div className="card">
-                    <div className="card-header"><h3>📉 Pengeluaran</h3></div>
+                    <div className="card-header"><h3><FiFileText /> Pengeluaran</h3></div>
                     <div className="card-body">
                         {dayFlow.items.filter(c => c.type === 'out').length === 0 ? (
                             <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>Belum ada pengeluaran</div>
@@ -173,7 +174,7 @@ export default function FinancePage() {
             {/* Piutang */}
             {receivables.length > 0 && (
                 <div className="card" style={{ marginTop: '16px' }}>
-                    <div className="card-header"><h3>📋 Piutang</h3></div>
+                    <div className="card-header"><h3><FiFileText /> Piutang</h3></div>
                     <div style={{ overflow: 'auto' }}>
                         <table className="data-table">
                             <thead><tr><th>Customer</th><th>Jenis</th><th>Referensi</th><th>Jumlah</th></tr></thead>
@@ -188,7 +189,7 @@ export default function FinancePage() {
             )}
 
             {/* Expense Modal */}
-            <Modal isOpen={expenseOpen} onClose={() => setExpenseOpen(false)} title="➖ Catat Pengeluaran">
+            <Modal isOpen={expenseOpen} onClose={() => setExpenseOpen(false)} title={<><FiMinus /> Catat Pengeluaran</>}>
                 <div className="form-group">
                     <label className="form-label">Kategori</label>
                     <select className="form-select" value={expCat} onChange={e => setExpCat(e.target.value)}>
@@ -203,7 +204,7 @@ export default function FinancePage() {
                     <label className="form-label">Keterangan</label>
                     <input className="form-input" value={expDesc} onChange={e => setExpDesc(e.target.value)} placeholder="Deskripsi pengeluaran" />
                 </div>
-                <button className="btn btn-danger btn-block" onClick={addExpense}>💾 Simpan Pengeluaran</button>
+                <button className="btn btn-danger btn-block" onClick={addExpense}><FiSave /> Simpan Pengeluaran</button>
             </Modal>
         </div>
     );

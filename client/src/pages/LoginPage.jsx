@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiShield, FiShoppingBag, FiTool } from 'react-icons/fi';
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -26,12 +27,12 @@ export default function LoginPage() {
         <div className="login-page">
             <div className="login-card">
                 <div className="login-brand">
-                    <div className="login-icon">🖨️</div>
+                    <div className="login-icon"><FiPrinter size={40} /></div>
                     <h1>FOTOCOPY ABADI JAYA</h1>
                     <p>Sistem Point of Sale</p>
                 </div>
 
-                {error && <div className="login-error">⚠️ {error}</div>}
+                {error && <div className="login-error"><FiAlertCircle /> {error}</div>}
 
                 <form onSubmit={handleLogin}>
                     <div className="form-group">
@@ -43,7 +44,7 @@ export default function LoginPage() {
                         <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Masukkan password" />
                     </div>
                     <button className="btn btn-primary btn-block btn-lg" type="submit" disabled={loading} style={{ marginTop: '8px' }}>
-                        {loading ? '⏳ Memproses...' : '🔐 Masuk'}
+                        {loading ? <><FiLoader className="spin" /> Memproses...</> : <><FiLock /> Masuk</>}
                     </button>
                 </form>
 
@@ -51,13 +52,13 @@ export default function LoginPage() {
                     <div style={{ fontWeight: '700', marginBottom: '8px', color: 'var(--text-muted)' }}>DEMO LOGIN:</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                         {[
-                            { label: '👑 Admin', u: 'admin', p: 'admin123' },
-                            { label: '💼 Kasir', u: 'kasir', p: 'kasir123' },
-                            { label: '🖨️ Operator', u: 'operator', p: 'operator123' },
-                            { label: '🔧 Teknisi', u: 'teknisi', p: 'teknisi123' },
+                            { label: 'Admin', icon: FiShield, u: 'admin', p: 'admin123' },
+                            { label: 'Kasir', icon: FiShoppingBag, u: 'kasir', p: 'kasir123' },
+                            { label: 'Operator', icon: FiPrinter, u: 'operator', p: 'operator123' },
+                            { label: 'Teknisi', icon: FiTool, u: 'teknisi', p: 'teknisi123' },
                         ].map(d => (
-                            <button key={d.u} className="btn btn-secondary btn-sm" onClick={() => quickLogin(d.u, d.p)} style={{ fontSize: '0.7rem' }}>
-                                {d.label}
+                            <button key={d.u} className="btn btn-secondary btn-sm" onClick={() => quickLogin(d.u, d.p)} style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                <d.icon size={12} /> {d.label}
                             </button>
                         ))}
                     </div>

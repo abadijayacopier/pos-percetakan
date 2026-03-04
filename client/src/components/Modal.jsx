@@ -1,3 +1,5 @@
+import { FiX } from 'react-icons/fi';
+
 export default function Modal({ isOpen, onClose, title, children, size = '', footer }) {
     if (!isOpen) return null;
     return (
@@ -5,7 +7,7 @@ export default function Modal({ isOpen, onClose, title, children, size = '', foo
             <div className={`modal ${size ? 'modal-' + size : ''}`}>
                 <div className="modal-header">
                     <h3>{title}</h3>
-                    <button className="modal-close" onClick={onClose}>✕</button>
+                    <button className="modal-close" onClick={onClose}><FiX /></button>
                 </div>
                 <div className="modal-body">{children}</div>
                 {footer && <div className="modal-footer">{footer}</div>}
