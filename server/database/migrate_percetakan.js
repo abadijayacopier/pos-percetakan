@@ -47,7 +47,7 @@ async function run() {
                 is_active     BOOLEAN         NOT NULL DEFAULT TRUE,
                 created_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP,
                 updated_at    TIMESTAMP       DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Master bahan cetak'
+            ) ENGINE=InnoDB COMMENT='Master bahan cetak'
         `);
         console.log('  ✅  Tabel materials');
 
@@ -78,7 +78,7 @@ async function run() {
 
                 CONSTRAINT fk_orders_customer  FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
                 CONSTRAINT fk_orders_user      FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Induk pesanan percetakan (multi-item)'
+            ) ENGINE=InnoDB COMMENT='Induk pesanan percetakan (multi-item)'
         `);
         console.log('  ✅  Tabel orders');
 
@@ -98,8 +98,8 @@ async function run() {
                                COMMENT 'FK ke materials (NULL untuk jasa desain / ATK)',
                 ukuran_p     DECIMAL(8,2)  NULL COMMENT 'Panjang dalam meter (untuk banner/stiker)',
                 ukuran_l     DECIMAL(8,2)  NULL COMMENT 'Lebar dalam meter',
-                luas_total   DECIMAL(10,4) GENERATED ALWAYS AS (ukuran_p * ukuran_l) STORED
-                               COMMENT 'Otomatis dihitung: p × l (m²)',
+                luas_total   DECIMAL(10,4) NULL
+                               COMMENT 'Dihitung: p × l (m²)',
                 quantity     INT           NOT NULL DEFAULT 1,
                 harga_satuan INT           NOT NULL DEFAULT 0
                                COMMENT 'Per m² atau per pcs, sesuai satuan material',
@@ -110,7 +110,7 @@ async function run() {
 
                 CONSTRAINT fk_oi_order    FOREIGN KEY (order_id)    REFERENCES orders(id)    ON DELETE CASCADE,
                 CONSTRAINT fk_oi_material FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Item detail per pesanan'
+            ) ENGINE=InnoDB COMMENT='Item detail per pesanan'
         `);
         console.log('  ✅  Tabel order_items');
 
@@ -127,22 +127,18 @@ async function run() {
                 start_time           DATETIME     NOT NULL,
                 end_time             DATETIME     NULL
                                        COMMENT 'NULL = timer masih berjalan',
-                total_durasi_menit   INT          GENERATED ALWAYS AS (
-                                         TIMESTAMPDIFF(MINUTE, start_time, end_time)
-                                     ) STORED
-                                       COMMENT 'Durasi otomatis (menit)',
+                total_durasi_menit   INT          NULL
+                                       COMMENT 'Durasi manual (menit)',
                 tarif_per_jam        INT          NOT NULL DEFAULT 50000
                                        COMMENT 'Tarif desain saat sesi dicatat (Rp/jam)',
-                total_biaya_desain   INT          GENERATED ALWAYS AS (
-                                         ROUND((TIMESTAMPDIFF(SECOND, start_time, COALESCE(end_time, start_time)) / 3600.0) * tarif_per_jam)
-                                     ) STORED
-                                       COMMENT 'Biaya desain otomatis (Rp)',
+                total_biaya_desain   INT          NULL
+                                       COMMENT 'Biaya desain (Rp)',
                 catatan              TEXT         NULL,
                 created_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
 
                 CONSTRAINT fk_dl_order_item  FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE,
                 CONSTRAINT fk_dl_technician  FOREIGN KEY (technician_id) REFERENCES users(id)       ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Log sesi timer jasa desain'
+            ) ENGINE=InnoDB COMMENT='Log sesi timer jasa desain'
         `);
         console.log('  ✅  Tabel design_logs');
 
@@ -166,7 +162,7 @@ async function run() {
 
                 CONSTRAINT fk_ps_order_item FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE CASCADE,
                 CONSTRAINT fk_ps_operator   FOREIGN KEY (operator_id)   REFERENCES users(id)       ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Status produksi per item pesanan'
+            ) ENGINE=InnoDB COMMENT='Status produksi per item pesanan'
         `);
         console.log('  ✅  Tabel production_status');
 
@@ -190,7 +186,7 @@ async function run() {
 
                 CONSTRAINT fk_exp_requester FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL,
                 CONSTRAINT fk_exp_approver  FOREIGN KEY (approved_by)  REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Pengeluaran operasional dengan approval'
+            ) ENGINE=InnoDB COMMENT='Pengeluaran operasional dengan approval'
         `);
         console.log('  ✅  Tabel expenses');
 
@@ -212,7 +208,7 @@ async function run() {
 
                 CONSTRAINT fk_mm_material FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
                 CONSTRAINT fk_mm_user     FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Mutasi / riwayat stok bahan cetak'
+            ) ENGINE=InnoDB COMMENT='Mutasi / riwayat stok bahan cetak'
         `);
         console.log('  ✅  Tabel material_movements');
 

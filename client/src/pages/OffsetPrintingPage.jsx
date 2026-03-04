@@ -5,7 +5,7 @@ export default function OffsetPrintingPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start w-full">
 
             {/* Sidebar Kiri - Timer */}
-            <div className="w-full lg:w-64 flex flex-col gap-6 shrink-0">
+            {/* <div className="w-full lg:w-64 flex flex-col gap-6 shrink-0">
                 <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Design Timer</span>
@@ -17,7 +17,7 @@ export default function OffsetPrintingPage() {
                         Mulai Desain Baru
                     </button>
                 </div>
-            </div>
+            </div> */}
 
             {/* Area Utama - Konten */}
             <div className="flex-1 flex flex-col gap-6 w-full">

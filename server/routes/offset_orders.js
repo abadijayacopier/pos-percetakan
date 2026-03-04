@@ -38,6 +38,28 @@ router.post('/', verifyToken, async (req, res) => {
         // Validasi input
         if (!qty || qty <= 0) throw new Error('Jumlah pesanan tidak valid.');
 
+        // 1. Ambil Harga Dasar & Kalkulasi Harga Grosir dari DB
+        const [productRows] = await conn.query('SELECT sell_price FROM products WHERE id = ?', [spesifikasi.product_id || 1]);
+        const basePrice = productRows.length > 0 ? productRows[0].sell_price : 5000;
+
+        const [rules] = await conn.query(`
+            SELECT harga_per_unit_akhir 
+            FROM tiered_pricing_rules 
+            WHERE product_id = ? AND min_kuantitas <= ? AND (max_kuantitas IS NULL OR max_kuantitas >= ?)
+            ORDER BY urutan_tier DESC LIMIT 1
+        `, [spesifikasi.product_id || 1, qty, qty]);
+
+        const hargaSatuan = rules.length > 0 ? rules[0].harga_per_unit_akhir : basePrice;
+
+        // 2. Kalkulasi Biaya Tambahan (Material, Finishing, dsb)
+        // Di aplikasi penuh ini dikueri dari DB, disini kita simulasi sesuai frontend 
+        const biayaCetak = hargaSatuan * qty;
+        const biayaMaterial = (spesifikasi.material || '').includes('Carton') ? 125000 : 75000;
+        const biayaFinishing = (spesifikasi.finishing || []).includes('Laminasi Glossy') ? 75000 : 0;
+        const biayaDesain = 50000;
+
+        let calculatedGrandTotal = biayaCetak + biayaMaterial + biayaFinishing + biayaDesain;
+
         // Buat order_number: OFF-{TIMESTAMP}
         const orderNumber = `OFF-${Date.now()}`;
         const orderId = `oo-${Date.now()}`;
@@ -54,8 +76,8 @@ router.post('/', verifyToken, async (req, res) => {
             customer_id || null, // null jika tamu
             qty,
             JSON.stringify(spesifikasi),
-            total_estimasi,
-            total_estimasi // sementara grand total sama dengan estimasi
+            calculatedGrandTotal,
+            calculatedGrandTotal
         ]);
 
         // (Opsional) Jika perlu mencatat ke transaksi / cash_flow langsung

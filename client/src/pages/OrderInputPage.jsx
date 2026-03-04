@@ -30,19 +30,54 @@ export default function OrderInputPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
-    // Hardcoded perhitungan
-    const HARGA_DASAR = 5000;
-    let hargaSatuan = HARGA_DASAR;
-    let diskonMessege = '';
+    // Kalkulasi Dinamis
+    const [hargaDasar, setHargaDasar] = useState(5000);
+    const [hargaSatuan, setHargaSatuan] = useState(5000);
+    const [diskonPersen, setDiskonPersen] = useState(0);
+    const [isGrosir, setIsGrosir] = useState(false);
 
-    // Simple Grosir Logic
-    if (qty >= 50 && qty <= 199) {
-        hargaSatuan = 4500;
-        diskonMessege = 'Hemat 10%';
-    } else if (qty >= 200) {
-        hargaSatuan = 4000;
-        diskonMessege = 'Hemat 20%';
+    // Product ID dummy / terpilih (idealnya dari state produk)
+    // Untuk demo offset printing ini, kita anggap produk ID nya = 1
+    const [productId, setProductId] = useState('1');
+
+    // Fetch calculation from server on qty or product change
+    useEffect(() => {
+        const calculatePrice = async () => {
+            if (!qty || qty <= 0 || !productId) return;
+            try {
+                // Di dunia nyata, pastikan endpoint ini menangani kalkulasi offset jg
+                // Saat ini kita pakai endpoint pricing grosir yg sudah kita buat
+                const res = await api.post('/pricing/calculate', {
+                    product_id: productId,
+                    quantity: qty
+                });
+
+                if (res.data) {
+                    setHargaDasar(res.data.harga_normal);
+                    setHargaSatuan(res.data.harga_grosir);
+                    setDiskonPersen(res.data.diskon_persen);
+                    setIsGrosir(res.data.is_grosir);
+                }
+            } catch (err) {
+                console.error('Error calculating price:', err);
+                // Fallback
+                setHargaSatuan(hargaDasar);
+                setIsGrosir(false);
+            }
+        };
+
+        // Debounce simple
+        const delay = setTimeout(calculatePrice, 300);
+        return () => clearTimeout(delay);
+
+    }, [qty, productId, hargaDasar]);
+
+    let diskonMessege = '';
+    if (isGrosir && diskonPersen > 0) {
+        diskonMessege = `Grosir ${diskonPersen}% OFF`;
     }
+
+
 
     const biayaCetak = hargaSatuan * qty;
     const biayaMaterial = material.includes('Carton') ? 125000 : 75000;
@@ -198,8 +233,8 @@ export default function OrderInputPage() {
                                             key={k}
                                             onClick={() => setKategori(k)}
                                             className={`p-3 border rounded-lg flex flex-col items-center gap-1 transition-colors ${kategori === k
-                                                    ? 'border-primary bg-primary/5 text-primary'
-                                                    : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-primary/50'
+                                                ? 'border-primary bg-primary/5 text-primary'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-primary/50'
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined">{k === 'Digital' ? 'print' : k === 'Offset' ? 'layers' : 'width_full'}</span>
@@ -308,8 +343,8 @@ export default function OrderInputPage() {
                                     <span className="text-slate-500 dark:text-slate-400">Biaya Cetak ({qty} {ukuran})</span>
                                 </div>
                                 <div className="text-right">
-                                    {hargaSatuan < HARGA_DASAR && (
-                                        <span className="text-slate-400 line-through text-xs block">Rp {(HARGA_DASAR * qty).toLocaleString('id-ID')}</span>
+                                    {isGrosir && (
+                                        <span className="text-slate-400 line-through text-xs block">Rp {(hargaDasar * qty).toLocaleString('id-ID')}</span>
                                     )}
                                     <span className="font-medium text-slate-900 dark:text-white">Rp {biayaCetak.toLocaleString('id-ID')}</span>
                                 </div>

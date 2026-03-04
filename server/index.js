@@ -16,6 +16,8 @@ app.get('/', (req, res) => {
     res.json({ message: 'POS Abadi Jaya API is running!' });
 });
 
+const pricingRouter = require('./routes/pricing');
+
 // Init API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
@@ -30,6 +32,7 @@ app.use('/api/materials', require('./routes/materials'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/design-logs', require('./routes/design-logs'));
 app.use('/api/offset-orders', require('./routes/offset_orders'));
+app.use('/api/pricing', pricingRouter);
 
 const startServer = async () => {
     // Test koneksi database saat start

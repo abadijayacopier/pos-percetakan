@@ -31,35 +31,22 @@ function Toast({ msg, type, onClose }) {
 ───────────────────────────────────────────────────────────────────────────── */
 export default function PricingLogsPage() {
     const { user } = useAuth();
-    const [logs, setLogs] = useState([
-        {
-            id: 'log-1',
-            product_name: 'Buku Nota A5 NCR 2 Play',
-            user_name: 'Admin Utama',
-            user_role: 'admin',
-            created_at: '2024-03-04 14:30:22',
-            action: 'UPDATE',
-            changes: 'Tier 51-Tak Terhingga: Diskon diubah dari 20% menjadi 25%'
-        },
-        {
-            id: 'log-2',
-            product_name: 'Kartu Nama Premium 260gr',
-            user_name: 'Budi (Kasir 1)',
-            user_role: 'kasir',
-            created_at: '2024-03-02 09:15:00',
-            action: 'CREATE',
-            changes: 'Menambahkan aturan grosir baru untuk pembelian > 10 box'
-        },
-        {
-            id: 'log-3',
-            product_name: 'Banner Outdoor (m2)',
-            user_name: 'Admin Utama',
-            user_role: 'admin',
-            created_at: '2024-02-28 16:45:10',
-            action: 'DELETE',
-            changes: 'Menghapus tier diskon 5% untuk kuantitas 11-20'
-        }
-    ]);
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await api.get('/pricing/logs');
+                setLogs(res.data || []);
+            } catch (err) {
+                console.error('Failed to load pricing logs', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchLogs();
+    }, []);
 
     return (
         <div className="flex-1 flex flex-col lg:flex-row gap-8 w-full h-full">
@@ -137,8 +124,8 @@ export default function PricingLogsPage() {
                                     <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-slate-900 dark:text-white text-sm">{log.created_at.split(' ')[0]}</span>
-                                                <span className="text-xs text-slate-500">{log.created_at.split(' ')[1]}</span>
+                                                <span className="font-semibold text-slate-900 dark:text-white text-sm">{new Date(log.created_at).toLocaleDateString('id-ID')}</span>
+                                                <span className="text-xs text-slate-500">{new Date(log.created_at).toLocaleTimeString('id-ID')}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
