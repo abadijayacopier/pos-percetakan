@@ -18,11 +18,8 @@ const MENU_GROUPS = [
                 icon: 'print_connect',
                 roles: ['admin', 'kasir', 'operator'],
                 subItems: [
-                    { id: 'input-pesanan', label: 'Input Pesanan', icon: 'add_circle', roles: ['admin', 'kasir', 'operator'] },
                     { id: 'digital-printing', label: 'Digital Printing', icon: 'photo_print', roles: ['admin', 'kasir', 'operator'] },
                     { id: 'cetak-offset', label: 'Cetak Offset', icon: 'print', roles: ['admin', 'kasir', 'operator'] },
-                    { id: 'harga-grosir', label: 'Harga Grosir', icon: 'sell', roles: ['admin'] },
-                    { id: 'riwayat-harga', label: 'Riwayat Harga', icon: 'history', roles: ['admin'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: 'inventory_2', roles: ['admin', 'operator'] },
                 ],
             },

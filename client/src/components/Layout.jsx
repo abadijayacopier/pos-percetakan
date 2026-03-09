@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { FiSun, FiMoon, FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch } from 'react-icons/fi';
 
-export default function Layout({ activePage, onNavigate, children }) {
+export default function Layout({ activePage, onNavigate, children, isFullscreen }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { user, logout } = useAuth();
     const { themeMode, setTheme } = useTheme();
@@ -12,12 +12,9 @@ export default function Layout({ activePage, onNavigate, children }) {
     const PAGE_TITLES = {
         dashboard: 'Dasbor Utama',
         pos: 'Transaksi Baru',
-        'input-pesanan': 'Input Pesanan Baru',
         printing: 'Percetakan',
         'digital-printing': 'Digital Printing',
         'cetak-offset': 'Katalog Cetak Offset & Nota',
-        'harga-grosir': 'Pengaturan Harga Grosir & Berjenjang',
-        'riwayat-harga': 'Log Riwayat Perubahan Harga',
         'stok-bahan': 'Stok Bahan Cetak',
         service: 'Tiket Servis',
         inventory: 'Data Inventori',
@@ -25,15 +22,25 @@ export default function Layout({ activePage, onNavigate, children }) {
         finance: 'Keuangan',
         reports: 'Laporan',
         settings: 'Pengaturan',
+        'spk-list': 'Daftar Tugas Produksi (SPK)',
+        'spk-detail': 'Detail SPK',
+        'spk-settlement': 'Penyelesaian Tagihan (SPK)',
+        'kasir-payment': 'Pelunasan Kasir',
+        'handover': 'Serah Terima Barang',
+        'wa-settings': 'Pengaturan WhatsApp',
+        'print-invoice': 'Cetak Invoice',
+        'print-label': 'Cetak Label Produk',
+        'print-spk': 'Cetak Dokumen SPK',
+        'qris-monitor': 'Monitor Transaksi QRIS',
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            {activePage !== 'pos' && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+        <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+            {!(isFullscreen && activePage === 'pos') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className={`flex-1 flex flex-col overflow-hidden print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
                 {activePage !== 'pos' && (
-                    <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
+                    <header className="print:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
                         <div className="flex items-center gap-4">
                             {/* Mobile Menu Button */}
                             <button
@@ -97,7 +104,7 @@ export default function Layout({ activePage, onNavigate, children }) {
                 {activePage === 'pos' ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto w-full h-full bg-background-light dark:bg-background-dark">
+                    <div className="flex-1 overflow-y-auto print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark">
                         {children}
                     </div>
                 )}

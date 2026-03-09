@@ -8,20 +8,35 @@ import PosPage from './pages/PosPage';
 import PrintingPage from './pages/PrintingPage';
 import DigitalPrintingPage from './pages/DigitalPrintingPage';
 import OffsetPrintingPage from './pages/OffsetPrintingPage';
-import OrderInputPage from './pages/OrderInputPage';
-import PricingRulesPage from './pages/PricingRulesPage';
-import PricingLogsPage from './pages/PricingLogsPage';
 import MaterialsPage from './pages/MaterialsPage';
+import MaterialFormPage from './pages/MaterialFormPage';
 import ServicePage from './pages/ServicePage';
 import InventoryPage from './pages/InventoryPage';
 import CustomersPage from './pages/CustomersPage';
 import FinancePage from './pages/FinancePage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import SPKListPage from './pages/SPKListPage';
+import SPKDetailPage from './pages/SPKDetailPage';
+import SPKSettlementPage from './pages/SPKSettlementPage';
+import CashierPaymentPage from './pages/CashierPaymentPage';
+import HandoverPage from './pages/HandoverPage';
+import WASettingsPage from './pages/WASettingsPage';
+import PrintInvoicePage from './pages/PrintInvoicePage';
+import PrintLabelPage from './pages/PrintLabelPage';
+import PrintSPKPage from './pages/PrintSPKPage';
+import QRISMonitorPage from './pages/QRISMonitorPage';
 
 export default function App() {
   const { user, loading } = useAuth();
   const [activePage, setActivePage] = useState('dashboard');
+  const [pageState, setPageState] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleNavigate = (pageId, state = null) => {
+    setActivePage(pageId);
+    setPageState(state);
+  };
 
   if (loading) {
     return (
@@ -199,27 +214,35 @@ export default function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard': return <DashboardPage onNavigate={setActivePage} />;
-      case 'pos': return <PosPage onNavigate={setActivePage} />;
-      case 'printing': return <PrintingPage />;
-      case 'digital-printing': return <DigitalPrintingPage />;
-      case 'cetak-offset': return <OffsetPrintingPage />;
-      case 'input-pesanan': return <OrderInputPage />;
-      case 'harga-grosir': return <PricingRulesPage />;
-      case 'riwayat-harga': return <PricingLogsPage />;
-      case 'stok-bahan': return <MaterialsPage />;
-      case 'service': return <ServicePage />;
-      case 'inventory': return <InventoryPage />;
-      case 'customers': return <CustomersPage />;
-      case 'finance': return <FinancePage />;
-      case 'reports': return <ReportsPage />;
-      case 'settings': return <SettingsPage />;
-      default: return <DashboardPage onNavigate={setActivePage} />;
+      case 'dashboard': return <DashboardPage onNavigate={handleNavigate} />;
+      case 'pos': return <PosPage onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
+      case 'printing': return <PrintingPage onNavigate={handleNavigate} />;
+      case 'digital-printing': return <DigitalPrintingPage onNavigate={handleNavigate} />;
+      case 'cetak-offset': return <OffsetPrintingPage onNavigate={handleNavigate} />;
+      case 'stok-bahan': return <MaterialsPage onNavigate={handleNavigate} />;
+      case 'tambah-bahan': return <MaterialFormPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'service': return <ServicePage onNavigate={handleNavigate} />;
+      case 'inventory': return <InventoryPage onNavigate={handleNavigate} />;
+      case 'customers': return <CustomersPage onNavigate={handleNavigate} />;
+      case 'finance': return <FinancePage onNavigate={handleNavigate} />;
+      case 'reports': return <ReportsPage onNavigate={handleNavigate} />;
+      case 'settings': return <SettingsPage onNavigate={handleNavigate} />;
+      case 'spk-list': return <SPKListPage onNavigate={handleNavigate} />;
+      case 'spk-detail': return <SPKDetailPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'spk-settlement': return <SPKSettlementPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'kasir-payment': return <CashierPaymentPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'handover': return <HandoverPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'wa-settings': return <WASettingsPage onNavigate={handleNavigate} />;
+      case 'print-invoice': return <PrintInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-label': return <PrintLabelPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-spk': return <PrintSPKPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'qris-monitor': return <QRISMonitorPage onNavigate={handleNavigate} />;
+      default: return <DashboardPage onNavigate={handleNavigate} />;
     }
   };
 
   return (
-    <Layout activePage={activePage} onNavigate={setActivePage}>
+    <Layout activePage={activePage} onNavigate={handleNavigate} isFullscreen={isFullscreen}>
       {renderPage()}
     </Layout>
   );
