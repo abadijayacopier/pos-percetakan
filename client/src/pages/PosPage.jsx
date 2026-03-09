@@ -302,15 +302,15 @@ export default function PosPage({ onNavigate, onFullscreenChange }) {
                     100% { transform: translateX(-100%); }
                 }
                 .running-text {
-                    animation: marquee 80s linear infinite;
+                    animation: marquee 150s linear infinite;
                     white-space: nowrap;
-                    font-family: 'Segoe UI', 'Arial Black', sans-serif;
+                    font-family: 'DS-Digital', 'Digital-7', 'Segment7', 'Courier New', monospace;
                 }
             `}</style>
             
             <div style={{ 
                 background: 'linear-gradient(90deg, #1e3a8a 0%, #3b82f6 50%, #1e3a8a 100%)',
-                color: 'white',
+                color: '#00ff00',
                 padding: '14px 0',
                 overflow: 'hidden',
                 borderRadius: '8px',
@@ -321,9 +321,10 @@ export default function PosPage({ onNavigate, onFullscreenChange }) {
                 <div className="running-text" style={{ 
                     display: 'inline-block',
                     paddingLeft: '100%',
-                    fontSize: '1.4rem',
-                    fontWeight: 900,
-                    letterSpacing: '2px'
+                    fontSize: '1.8rem',
+                    fontWeight: 'bold',
+                    letterSpacing: '3px',
+                    textShadow: '0 0 10px #00ff00, 0 0 20px #00ff00'
                 }}>
                     {runningText.repeat(10)}
                 </div>

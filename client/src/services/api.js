@@ -6,14 +6,20 @@ const api = axios.create({
 
 // Otomatis menempelkan token JWT di setiap request HTTP
 api.interceptors.request.use((config) => {
+    let token = localStorage.getItem('token'); // Fallback token lama
     const session = localStorage.getItem('pos_session');
+
     if (session) {
         try {
-            const { token } = JSON.parse(session);
-            if (token) {
-                config.headers.Authorization = `Bearer ${token}`;
+            const parsed = JSON.parse(session);
+            if (parsed && parsed.token) {
+                token = parsed.token;
             }
-        } catch { /* abaikan */ }
+        } catch { /* abaikan jika parse gagal */ }
+    }
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 });

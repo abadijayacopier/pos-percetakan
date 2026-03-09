@@ -35,6 +35,7 @@ router.get('/', verifyToken, async (req, res) => {
         const [rows] = await pool.query(`
             SELECT
                 o.id, o.order_number, o.customer_name, o.total_harga,
+                COALESCE(SUM(oi.design_cost), 0) AS total_design_cost,
                 o.status_pembayaran, o.dp_amount, o.remaining,
                 o.metode_pembayaran, o.deadline, o.catatan,
                 o.created_at,
@@ -74,7 +75,9 @@ router.get('/:id', verifyToken, async (req, res) => {
             WHERE oi.order_id = ?
         `, [req.params.id]);
 
-        res.json({ ...order, items });
+        // Hitung total biaya desain untuk order ini (per item)
+        const totalDesignCost = (items || []).reduce((acc, it) => acc + (it.design_cost || 0), 0);
+        res.json({ ...order, items, total_design_cost: totalDesignCost });
     } catch (e) {
         res.status(500).json({ message: e.message });
     }
@@ -93,14 +96,29 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
         } = req.body;
 
         if (!items || !items.length) {
-            throw new Error('Minimal satu item diperlukan');
+            return res.status(400).json({ message: 'Minimal satu item diperlukan' });
         }
+
+        // Validasi: pastikan setiap item punya nama
+        for (let i = 0; i < items.length; i++) {
+            if (!items[i].nama_item || !items[i].nama_item.trim()) {
+                return res.status(400).json({ message: `Nama item #${i + 1} tidak boleh kosong` });
+            }
+        }
+
+        // Verifikasi user_id masih valid di DB (token bisa saja valid tapi user sudah dihapus/reset)
+        const [userCheck] = await conn.query('SELECT id FROM users WHERE id = ?', [req.user.id]);
+        const validUserId = userCheck.length > 0 ? req.user.id : null;
 
         const orderId = 'ord' + Date.now();
         const orderNo = await generateOrderNumber(conn);
         const totalHarga = items.reduce((sum, i) => sum + (parseInt(i.subtotal) || 0), 0);
         const dp = parseInt(dp_amount) || 0;
         const remaining = totalHarga - dp;
+
+        // Sanitize ENUM & DATE values: empty string → null
+        const safeMetode = metode_pembayaran && metode_pembayaran.trim() ? metode_pembayaran.trim() : null;
+        const safeDeadline = deadline && deadline.trim() ? deadline.trim() : null;
 
         // Insert induk order
         await conn.query(
@@ -111,38 +129,54 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 orderId, orderNo,
-                customer_id || null, customer_name || 'Umum', req.user.id,
+                customer_id && customer_id.trim() ? customer_id.trim() : null,
+                customer_name || 'Umum',
+                validUserId,
                 totalHarga,
-                dp >= totalHarga ? 'lunas' : dp > 0 ? 'dp' : 'belum_bayar',
+                dp >= totalHarga && totalHarga > 0 ? 'lunas' : dp > 0 ? 'dp' : 'belum_bayar',
                 dp, remaining,
-                metode_pembayaran || null,
-                deadline || null, catatan || null
+                safeMetode,
+                safeDeadline,
+                catatan && catatan.trim() ? catatan.trim() : null
             ]
         );
 
         // Insert setiap item
+        const VALID_LAYANAN = ['digital_printing', 'offset', 'atk', 'jilid', 'fotocopy', 'jasa_desain', 'lainnya'];
+
         for (const item of items) {
             const itemId = 'oi' + Date.now() + Math.random().toString(36).slice(2, 6);
             const sub = parseInt(item.subtotal) || 0;
 
+            // Sanitize layanan — fallback ke 'digital_printing' jika tidak valid
+            const safeLayanan = VALID_LAYANAN.includes(item.layanan) ? item.layanan : 'digital_printing';
+
+            // Sanitize material_id — empty string → null (FK constraint)
+            const safeMaterialId = item.material_id && item.material_id.trim() ? item.material_id.trim() : null;
+
+            // Hitung luas jika ada ukuran
+            const ukP = parseFloat(item.ukuran_p) || null;
+            const ukL = parseFloat(item.ukuran_l) || null;
+            const luasTotal = (ukP && ukL) ? parseFloat((ukP * ukL).toFixed(4)) : null;
+
             await conn.query(
                 `INSERT INTO order_items
                  (id, order_id, layanan, nama_item, material_id,
-                  ukuran_p, ukuran_l, quantity, harga_satuan, subtotal,
+                  ukuran_p, ukuran_l, luas_total, quantity, harga_satuan, subtotal, design_cost,
                   file_desain, catatan)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
                 [
                     itemId, orderId,
-                    item.layanan || 'digital_printing',
-                    item.nama_item,
-                    item.material_id || null,
-                    item.ukuran_p || null,
-                    item.ukuran_l || null,
-                    item.quantity || 1,
-                    item.harga_satuan || 0,
+                    safeLayanan,
+                    item.nama_item.trim(),
+                    safeMaterialId,
+                    ukP, ukL, luasTotal,
+                    parseInt(item.quantity) || 1,
+                    parseInt(item.harga_satuan) || 0,
                     sub,
-                    item.file_desain || null,
-                    item.catatan || null
+                    0,
+                    item.file_desain && item.file_desain.trim() ? item.file_desain.trim() : null,
+                    item.catatan && item.catatan.trim() ? item.catatan.trim() : null
                 ]
             );
 
@@ -163,10 +197,10 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
         }
 
         // Update statistik pelanggan
-        if (customer_id) {
+        if (customer_id && customer_id.trim()) {
             await conn.query(
                 'UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?',
-                [dp, customer_id]
+                [dp, customer_id.trim()]
             );
         }
 
@@ -174,7 +208,21 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
         res.status(201).json({ message: 'Order berhasil dibuat', id: orderId, order_number: orderNo });
     } catch (e) {
         await conn.rollback();
-        res.status(500).json({ message: e.message });
+        console.error('POST /api/orders error:', e.code, e.message);
+
+        // Berikan pesan error yang jelas untuk kasus umum
+        let userMessage = 'Gagal menyimpan order';
+        if (e.code === 'ER_NO_REFERENCED_ROW_2' || e.code === 'ER_NO_REFERENCED_ROW') {
+            userMessage = 'Data referensi tidak valid (pelanggan atau bahan mungkin sudah dihapus). Coba muat ulang halaman.';
+        } else if (e.code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || e.code === 'WARN_DATA_TRUNCATED') {
+            userMessage = 'Format data tidak valid. Pastikan semua kolom terisi dengan benar.';
+        } else if (e.code === 'ER_DUP_ENTRY') {
+            userMessage = 'Nomor order duplikat, silakan coba lagi.';
+        } else if (e.code === 'ER_BAD_NULL_ERROR') {
+            userMessage = 'Ada kolom wajib yang belum diisi.';
+        }
+
+        res.status(500).json({ message: userMessage, detail: e.message });
     } finally {
         conn.release();
     }

@@ -18,12 +18,14 @@ const MENU_GROUPS = [
                 icon: 'print_connect',
                 roles: ['admin', 'kasir', 'operator'],
                 subItems: [
-                    { id: 'digital-printing', label: 'Digital Printing', icon: 'photo_print', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'digital-printing', label: 'Digital Printing', icon: 'local_printshop', roles: ['admin', 'kasir', 'operator'] },
                     { id: 'cetak-offset', label: 'Cetak Offset', icon: 'print', roles: ['admin', 'kasir', 'operator'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: 'inventory_2', roles: ['admin', 'operator'] },
+                    { id: 'spk-list', label: 'Daftar SPK', icon: 'description', roles: ['admin', 'kasir', 'operator'] },
                 ],
             },
             { id: 'service', label: 'Service', icon: 'build', roles: ['admin', 'kasir', 'teknisi'] },
+            { id: 'handover', label: 'Serah Terima', icon: 'local_mall', roles: ['admin', 'kasir'] },
         ]
     },
     {
@@ -36,8 +38,16 @@ const MENU_GROUPS = [
     {
         title: 'KEUANGAN',
         items: [
-            { id: 'finance', label: 'Kas & Keuangan', icon: 'payments', roles: ['admin', 'kasir'] },
+            { id: 'finance', label: 'Kas & Keuangan', icon: 'account_balance_wallet', roles: ['admin', 'kasir'] },
+            { id: 'kasir-payment', label: 'Pelunasan Kasir', icon: 'payments', roles: ['admin', 'kasir'] },
+            { id: 'qris-monitor', label: 'Monitor QRIS', icon: 'qr_code_scanner', roles: ['admin'] },
             { id: 'reports', label: 'Laporan', icon: 'bar_chart', roles: ['admin', 'kasir'] },
+        ]
+    },
+    {
+        title: 'SISTEM',
+        items: [
+            { id: 'wa-settings', label: 'Pengaturan WA', icon: 'chat', roles: ['admin'] },
         ]
     },
 ];
@@ -48,7 +58,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
     // Track which parent menus are expanded (by item id)
     const [expanded, setExpanded] = useState(() => {
         // Auto-expand "printing" if any sub-page is active
-        const printingSubIds = ['digital-printing'];
+        const printingSubIds = ['digital-printing', 'cetak-offset', 'stok-bahan', 'spk-list'];
         return printingSubIds.includes(activePage) ? { printing: true } : {};
     });
 
@@ -71,11 +81,11 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
         <>
             {/* Mobile overlay */}
             <div
-                className={`fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity lg:hidden ${isOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}
+                className={`print:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity lg:hidden ${isOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}
                 onClick={onClose}
             />
 
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:relative lg:translate-x-0 overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`print:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:relative lg:translate-x-0 overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex flex-col h-full p-6">
                     <div className="flex items-center gap-3 mb-10">
                         <div className="bg-primary size-10 rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/30">

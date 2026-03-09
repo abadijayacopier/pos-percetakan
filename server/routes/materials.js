@@ -12,9 +12,7 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 router.get('/', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT id, nama_bahan, kategori, satuan,
-                   harga_modal, harga_jual, stok_saat_ini, stok_minimum, is_active,
-                   updated_at AS updatedAt
+            SELECT *, updated_at AS updatedAt
             FROM materials
             ORDER BY kategori, nama_bahan
         `);
@@ -38,17 +36,18 @@ router.get('/:id', verifyToken, async (req, res) => {
 // ── POST tambah bahan baru ────────────────────────────────────────────────
 router.post('/', verifyToken, requireRole(['admin', 'operator']), async (req, res) => {
     try {
-        const { nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini, stok_minimum } = req.body;
+        const { nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini, stok_minimum, barcode, lokasi_rak, supplier_id } = req.body;
         if (!nama_bahan || !kategori || !satuan) {
             return res.status(400).json({ message: 'nama_bahan, kategori, dan satuan wajib diisi' });
         }
         const id = 'mat' + Date.now();
         await pool.query(
-            `INSERT INTO materials (id, nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini, stok_minimum)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO materials (id, nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini, stok_minimum, barcode, lokasi_rak, supplier_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [id, nama_bahan, kategori, satuan,
                 harga_modal || 0, harga_jual || 0,
-                stok_saat_ini || 0, stok_minimum || 0]
+                stok_saat_ini || 0, stok_minimum || 0,
+                barcode || null, lokasi_rak || null, supplier_id || null]
         );
         res.status(201).json({ message: 'Bahan berhasil ditambahkan', id });
     } catch (e) {
@@ -59,13 +58,15 @@ router.post('/', verifyToken, requireRole(['admin', 'operator']), async (req, re
 // ── PUT update bahan ───────────────────────────────────────────────────────
 router.put('/:id', verifyToken, requireRole(['admin', 'operator']), async (req, res) => {
     try {
-        const { nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_minimum, is_active } = req.body;
+        const { nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_minimum, is_active, barcode, lokasi_rak, supplier_id } = req.body;
         await pool.query(
             `UPDATE materials SET nama_bahan=?, kategori=?, satuan=?, harga_modal=?,
-             harga_jual=?, stok_minimum=?, is_active=?
+             harga_jual=?, stok_minimum=?, is_active=?, barcode=?, lokasi_rak=?, supplier_id=?
              WHERE id=?`,
             [nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_minimum,
-                is_active !== undefined ? is_active : 1, req.params.id]
+                is_active !== undefined ? is_active : 1,
+                barcode || null, lokasi_rak || null, supplier_id || null,
+                req.params.id]
         );
         res.json({ message: 'Bahan berhasil diperbarui' });
     } catch (e) {

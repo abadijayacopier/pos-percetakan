@@ -174,7 +174,7 @@ export default function SettingsPage() {
     };
 
     const resetData = () => {
-        if (confirm('⚠️ PERINGATAN: Semua data akan dihapus dan di-reset ke data awal. Lanjutkan?')) {
+        if (confirm('<FiAlertCircle /> PERINGATAN: Semua data akan dihapus dan di-reset ke data awal. Lanjutkan?')) {
             const tables = ['users', 'categories', 'products', 'customers', 'suppliers', 'transactions', 'transaction_details', 'print_orders', 'service_orders', 'cash_flow', 'stock_movements', 'activity_log', 'settings', 'fotocopy_prices'];
             tables.forEach(t => db.clear(t));
             showToast('Data di-reset! Refresh halaman.', 'success');

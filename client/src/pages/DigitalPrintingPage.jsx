@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { FiCheck } from 'react-icons/fi';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +17,7 @@ const KANBAN_COLS = [
     { id: 'cetak', label: 'Cetak', color: '#2563eb', bg: '#dbeafe' },
     { id: 'finishing', label: 'Finishing', color: '#0891b2', bg: '#cffafe' },
     { id: 'siap_diambil', label: 'Siap Diambil', color: '#16a34a', bg: '#dcfce7' },
+    { id: 'selesai', label: 'Selesai', color: '#10b981', bg: '#dcfce7' },
 ];
 
 const STATUS_BADGE = {
@@ -118,7 +120,7 @@ function FormOrderModal({ materials, onClose, onSaved, toast }) {
                 dp_amount: parseInt(form.dp_amount) || 0,
                 items: items.map(({ _key, ...rest }) => rest),
             });
-            toast('Order berhasil dibuat! ✅');
+            toast(<>Order berhasil dibuat! <FiCheck /></>);
             onSaved();
         } catch (err) {
             toast(err.response?.data?.message || 'Gagal menyimpan order', 'error');
@@ -350,7 +352,7 @@ function TimerDesain({ orders, toast }) {
             setRunning(false);
             setActiveSession(null);
             setSeconds(0);
-            toast(`Timer selesai. Biaya desain: ${fmt(biaya)} ✅`);
+            toast(<>Timer selesai. Biaya desain: {fmt(biaya)} <FiCheck /></>);
         } catch (err) {
             toast('Gagal menghentikan timer', 'error');
         }
@@ -440,8 +442,22 @@ function TimerDesain({ orders, toast }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    KANBAN BOARD
 ───────────────────────────────────────────────────────────────────────────── */
+
+// Mapping: status saat ini → tombol aksi ke tahap berikutnya
+const NEXT_STATUS = {
+    menunggu:      { next: 'desain',        label: 'Mulai Desain',      icon: '🎨' },
+    desain:        { next: 'approval',      label: 'Ajukan Approval',   icon: '📋' },
+    approval:      { next: 'cetak',         label: 'Mulai Cetak',       icon: '🖨️' },
+    cetak:         { next: 'finishing',      label: 'Mulai Finishing',   icon: '✂️' },
+    finishing:     { next: 'siap_diambil',   label: 'Siap Diambil',     icon: '✅' },
+    siap_diambil:  { next: 'selesai',       label: 'Selesai / Diambil', icon: '🏁' },
+};
+
+// Tombol batalkan (tersedia di semua tahap kecuali selesai)
+const CANCEL_STATUS = { next: 'batal', label: 'Batalkan', icon: '✕' };
+
 function KanbanBoard({ orders, onStatusChange, toast }) {
-    const [dragging, setDragging] = useState(null); // { itemId, currentStatus }
+    const [loading, setLoading] = useState(null); // itemId yang sedang diproses
 
     // Flatten items dengan status produksi
     const allItems = orders.flatMap(o =>
@@ -453,22 +469,16 @@ function KanbanBoard({ orders, onStatusChange, toast }) {
         }))
     );
 
-    const handleDragStart = (e, item) => {
-        setDragging({ itemId: item.id, currentStatus: item.production_status || 'menunggu' });
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleDrop = async (e, colId) => {
-        e.preventDefault();
-        if (!dragging || dragging.currentStatus === colId) return;
+    const handleAction = async (itemId, nextStatus, label) => {
+        setLoading(itemId);
         try {
-            await api.patch(`/orders/items/${dragging.itemId}/status`, { status: colId });
+            await api.patch(`/orders/items/${itemId}/status`, { status: nextStatus });
             onStatusChange();
-            toast(`Status diperbarui → ${colId.replace(/_/g, ' ')}`);
+            toast(`${label} berhasil`);
         } catch {
             toast('Gagal mengubah status', 'error');
         }
-        setDragging(null);
+        setLoading(null);
     };
 
     return (
@@ -478,17 +488,17 @@ function KanbanBoard({ orders, onStatusChange, toast }) {
                     <span className="material-symbols-outlined" style={{ color: '#7c3aed' }}>view_kanban</span>
                     Kanban Produksi
                 </h2>
-                <span style={{ fontSize: '.75rem', color: '#94a3b8' }}>Drag item untuk ubah status</span>
+                <span style={{ fontSize: '.75rem', color: '#94a3b8' }}>Gunakan tombol aksi di setiap card</span>
             </div>
             <div className="dp-kanban-board">
                 {KANBAN_COLS.map(col => {
                     const colItems = allItems.filter(i =>
                         (i.production_status || 'menunggu') === col.id
                     );
+                    const nextAction = NEXT_STATUS[col.id];
+
                     return (
-                        <div key={col.id} className="dp-kanban-col"
-                            onDragOver={e => e.preventDefault()}
-                            onDrop={e => handleDrop(e, col.id)}>
+                        <div key={col.id} className="dp-kanban-col">
                             <div className="dp-kanban-col-head" style={{ borderColor: col.color }}>
                                 <span style={{ color: col.color, fontWeight: 700, fontSize: '.78rem' }}>
                                     {col.label}
@@ -499,9 +509,7 @@ function KanbanBoard({ orders, onStatusChange, toast }) {
                             </div>
                             <div className="dp-kanban-cards">
                                 {colItems.map(item => (
-                                    <div key={item.id} className="dp-kanban-card"
-                                        draggable
-                                        onDragStart={e => handleDragStart(e, item)}>
+                                    <div key={item.id} className="dp-kanban-card">
                                         <div className="dp-kanban-card-order">{item.order_number}</div>
                                         <div className="dp-kanban-card-name">{item.nama_item}</div>
                                         <div className="dp-kanban-card-customer">👤 {item.customer_name}</div>
@@ -510,6 +518,55 @@ function KanbanBoard({ orders, onStatusChange, toast }) {
                                                 📅 {new Date(item.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                                             </div>
                                         )}
+
+                                        {/* Tombol aksi */}
+                                        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                                            {nextAction && (
+                                                <button
+                                                    disabled={loading === item.id}
+                                                    onClick={() => handleAction(item.id, nextAction.next, nextAction.label)}
+                                                    style={{
+                                                        flex: 1,
+                                                        padding: '5px 8px',
+                                                        fontSize: '.7rem',
+                                                        fontWeight: 700,
+                                                        border: 'none',
+                                                        borderRadius: 6,
+                                                        cursor: loading === item.id ? 'wait' : 'pointer',
+                                                        background: col.color,
+                                                        color: '#fff',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: 4,
+                                                        opacity: loading === item.id ? 0.6 : 1,
+                                                    }}
+                                                >
+                                                    <span style={{ fontSize: '.75rem' }}>{nextAction.icon}</span>
+                                                    {loading === item.id ? 'Proses...' : nextAction.label}
+                                                </button>
+                                            )}
+                                            <button
+                                                disabled={loading === item.id}
+                                                onClick={() => {
+                                                    if (confirm(`Batalkan item "${item.nama_item}"?`)) {
+                                                        handleAction(item.id, 'batal', 'Batalkan');
+                                                    }
+                                                }}
+                                                style={{
+                                                    padding: '5px 8px',
+                                                    fontSize: '.65rem',
+                                                    fontWeight: 600,
+                                                    border: '1px solid #e2e8f0',
+                                                    borderRadius: 6,
+                                                    cursor: 'pointer',
+                                                    background: '#fff',
+                                                    color: '#ef4444',
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {colItems.length === 0 && (
@@ -527,7 +584,7 @@ function KanbanBoard({ orders, onStatusChange, toast }) {
 /* ─────────────────────────────────────────────────────────────────────────────
    DAFTAR PESANAN AKTIF (tabel)
 ───────────────────────────────────────────────────────────────────────────── */
-function DaftarPesanan({ orders, onRefresh, toast }) {
+function DaftarPesanan({ orders, onRefresh, onPay, toast }) {
     const handleBayar = async (order) => {
         const bayar = prompt(`Tambah pembayaran untuk ${order.order_number}\nSisa: ${fmt(order.remaining)}\nJumlah (Rp):`);
         if (!bayar || isNaN(bayar)) return;
@@ -536,7 +593,7 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
                 bayar_tambahan: parseInt(bayar),
                 metode_pembayaran: order.metode_pembayaran,
             });
-            toast('Pembayaran berhasil dicatat ✅');
+            toast(<>Pembayaran berhasil dicatat <FiCheck /></>);
             onRefresh();
         } catch (err) {
             toast(err.response?.data?.message || 'Gagal mencatat pembayaran', 'error');
@@ -547,6 +604,38 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
         belum_bayar: { label: 'Belum Bayar', color: '#dc2626', bg: '#fee2e2' },
         dp: { label: 'DP', color: '#d97706', bg: '#fef3c7' },
         lunas: { label: 'Lunas', color: '#16a34a', bg: '#dcfce7' },
+    };
+
+    const PRODUKSI_STATUS = {
+        menunggu:      { label: 'Menunggu',      color: '#475569', bg: '#f1f5f9' },
+        desain:        { label: 'Desain',        color: '#d97706', bg: '#fef3c7' },
+        approval:      { label: 'Approval',      color: '#7c3aed', bg: '#ede9fe' },
+        cetak:         { label: 'Cetak',         color: '#2563eb', bg: '#dbeafe' },
+        finishing:     { label: 'Finishing',      color: '#0891b2', bg: '#cffafe' },
+        siap_diambil:  { label: 'Siap Diambil',  color: '#16a34a', bg: '#dcfce7' },
+        selesai:       { label: 'Selesai',       color: '#15803d', bg: '#bbf7d0' },
+        batal:         { label: 'Batal',         color: '#dc2626', bg: '#fee2e2' },
+    };
+
+    // Tentukan status produksi keseluruhan order dari item-itemnya
+    const getOrderProduksiStatus = (order) => {
+        const items = order.items || [];
+        if (!items.length) return 'menunggu';
+        const statuses = items.map(i => i.production_status || 'menunggu');
+        // Jika semua selesai → selesai
+        if (statuses.every(s => s === 'selesai')) return 'selesai';
+        // Jika semua batal → batal
+        if (statuses.every(s => s === 'batal')) return 'batal';
+        // Jika ada campuran, ambil status paling "maju" dari item aktif (bukan batal/selesai)
+        const PRIORITY = ['menunggu', 'desain', 'approval', 'cetak', 'finishing', 'siap_diambil', 'selesai'];
+        const activeStatuses = statuses.filter(s => s !== 'batal');
+        if (!activeStatuses.length) return 'batal';
+        let highest = 0;
+        for (const s of activeStatuses) {
+            const idx = PRIORITY.indexOf(s);
+            if (idx > highest) highest = idx;
+        }
+        return PRIORITY[highest];
     };
 
     return (
@@ -573,16 +662,20 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
                                 <th>No. Order</th>
                                 <th>Pelanggan</th>
                                 <th>Total</th>
+                                <th>Biaya Desain</th>
                                 <th>Bayar</th>
                                 <th>Sisa</th>
                                 <th>Status Bayar</th>
+                                <th>Produksi</th>
                                 <th>Deadline</th>
                                 <th className="dp-th-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {orders.map(o => {
+                {orders.map(o => {
                                 const bs = BAYAR_STATUS[o.status_pembayaran] || BAYAR_STATUS.belum_bayar;
+                                const prodStatus = getOrderProduksiStatus(o);
+                                const ps = PRODUKSI_STATUS[prodStatus] || PRODUKSI_STATUS.menunggu;
                                 return (
                                     <tr key={o.id} className="dp-tr">
                                         <td>
@@ -592,6 +685,7 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
                                         </td>
                                         <td className="dp-td-customer">{o.customer_name}</td>
                                         <td style={{ fontWeight: 700 }}>{fmt(o.total_harga)}</td>
+                                        <td style={{ fontWeight: 700 }}>{fmt(o.total_design_cost || 0)}</td>
                                         <td>{fmt(o.dp_amount)}</td>
                                         <td style={{ color: o.remaining > 0 ? '#ef4444' : '#16a34a', fontWeight: 600 }}>
                                             {fmt(o.remaining)}
@@ -601,18 +695,20 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
                                                 {bs.label}
                                             </span>
                                         </td>
+                                        <td>
+                                            <span className="dp-status-badge" style={{ background: ps.bg, color: ps.color }}>
+                                                {ps.label}
+                                            </span>
+                                        </td>
                                         <td className="dp-td-deadline">
                                             {o.deadline ? new Date(o.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                                         </td>
                                         <td className="dp-td-action">
-                                            {o.status_pembayaran !== 'lunas' && (
-                                                <button className="dp-action-btn"
-                                                    title="Tambah Pembayaran"
-                                                    onClick={() => handleBayar(o)}
-                                                    style={{ color: '#16a34a' }}>
-                                                    <span className="material-symbols-outlined">payments</span>
-                                                </button>
-                                            )}
+                                        {o.status_pembayaran !== 'lunas' && (
+                                            <button className="dp-action-btn" onClick={() => onPay(o)} title="Bayar" style={{ color: '#16a34a' }}>
+                                                Bayar
+                                            </button>
+                                        )}
                                         </td>
                                     </tr>
                                 );
@@ -623,6 +719,58 @@ function DaftarPesanan({ orders, onRefresh, toast }) {
             </div>
         </section>
     );
+}
+
+// --- Payment modal for orders in Daftar Pesanan ---
+function PaymentModal({ order, onClose, onPaid, toast }) {
+  const [amount, setAmount] = useState(order?.remaining ?? 0);
+  const [method, setMethod] = useState('tunai');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const pay = parseInt(amount) || 0;
+    if (pay <= 0) return;
+    try {
+      await api.patch(`/orders/${order.id}/status-bayar`, { bayar_tambahan: pay, metode_pembayaran: method });
+      toast('Pembayaran berhasil dicatat');
+      onPaid && onPaid();
+      onClose && onClose();
+    } catch (err) {
+      toast(err.response?.data?.message || 'Gagal memproses pembayaran', 'error');
+    }
+  };
+
+  return (
+    <div className="dp-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="dp-modal">
+        <div className="dp-modal-head">
+          <h3>Bayar Pesanan {order.order_number}</h3>
+          <button className="dp-modal-close" onClick={onClose}>✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="dp-modal-body">
+          <div className="dp-form-row">
+            <div className="dp-form-group" style={{ flex: 1 }}>
+              <label className="dp-label">Jumlah Bayar (Rp)</label>
+              <input className="dp-input" type="number" min="1" value={amount} onChange={e => setAmount(e.target.value)} />
+            </div>
+            <div className="dp-form-group" style={{ width: 240 }}>
+              <label className="dp-label">Metode Pembayaran</label>
+              <select className="dp-input" value={method} onChange={e => setMethod(e.target.value)}>
+                <option value="tunai">Tunai</option>
+                <option value="transfer">Transfer</option>
+                <option value="qris">QRIS</option>
+                <option value="hutang">Hutang</option>
+              </select>
+            </div>
+          </div>
+          <div className="dp-modal-footer">
+            <button type="button" className="dp-btn-secondary" onClick={onClose}>Batal</button>
+            <button type="submit" className="dp-btn-primary">Bayar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -744,6 +892,8 @@ export default function DigitalPrintingPage() {
         fetchOrders();
     };
 
+    // Payment actions will use a top-level state defined above (openPayment/closePayment)
+
     return (
         <div className="dp-page">
             {/* ── CSS ── */}
@@ -790,7 +940,13 @@ export default function DigitalPrintingPage() {
             ) : (
                 <>
                     <KanbanBoard orders={orders} onStatusChange={fetchOrders} toast={toast} />
-                    <DaftarPesanan orders={orders} onRefresh={fetchOrders} toast={toast} />
+                    <DaftarPesanan orders={orders} onRefresh={fetchOrders} onPay={openPayment} toast={toast} />
+                    {paymentOpen && paymentOrder && (
+                        <PaymentModal order={paymentOrder} onClose={closePayment} onPaid={() => { fetchOrders(); }} toast={toast} />
+                    )}
+                    {paymentOpen && paymentOrder && (
+                        <PaymentModal order={paymentOrder} onClose={closePayment} onPaid={() => { fetchOrders(); }} toast={toast} />
+                    )}
                 </>
             )}
         </div>

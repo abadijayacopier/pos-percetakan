@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { FiCheck, FiX, FiSave } from 'react-icons/fi';
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
@@ -39,10 +40,10 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
         try {
             if (initial) {
                 await api.put(`/materials/${initial.id}`, form);
-                toast('Bahan berhasil diperbarui ✅');
+                toast(<>Bahan berhasil diperbarui <FiCheck /></>);
             } else {
                 await api.post('/materials', form);
-                toast('Bahan baru berhasil ditambahkan ✅');
+                toast(<>Bahan baru berhasil ditambahkan <FiCheck /></>);
             }
             onSaved();
         } catch (err) {
@@ -143,7 +144,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
         setSaving(true);
         try {
             await api.post(`/materials/${bahan.id}/stok`, { ...form, jumlah: parseFloat(form.jumlah) });
-            toast('Stok berhasil disesuaikan ✅');
+            toast(<>Stok berhasil disesuaikan <FiCheck /></>);
             onSaved();
         } catch (err) {
             toast(err.response?.data?.message || 'Gagal menyesuaikan stok', 'error');
@@ -221,7 +222,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                     <div className="ms-modal-footer">
                         <button type="button" className="ms-btn-cancel" onClick={onClose}>Batal</button>
                         <button type="submit" className="ms-btn-save" disabled={saving}>
-                            {saving ? '⏳...' : '✅ Simpan'}
+                            {saving ? '⏳...' : <>Simpan <FiSave /></>}
                         </button>
                     </div>
                 </form>
@@ -231,13 +232,11 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
 }
 
 /* ── MAIN PAGE ───────────────────────────────────────────────────────── */
-export default function MaterialsPage() {
+export default function MaterialsPage({ onNavigate }) {
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
-    const [showForm, setShowForm] = useState(false);
-    const [editItem, setEditItem] = useState(null);
     const [stokItem, setStokItem] = useState(null);
     const [toastMsg, setToastMsg] = useState(null);
 
@@ -286,14 +285,7 @@ export default function MaterialsPage() {
 
             {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
 
-            {(showForm || editItem) && (
-                <FormBahanModal
-                    initial={editItem}
-                    onClose={() => { setShowForm(false); setEditItem(null); }}
-                    onSaved={handleSaved}
-                    toast={toast}
-                />
-            )}
+            {/* Modal FormBahanModal has been replaced by MaterialFormPage */}
 
             {stokItem && (
                 <StokModal
@@ -310,7 +302,7 @@ export default function MaterialsPage() {
                     <h1 className="ms-title">Stok Bahan Cetak</h1>
                     <p className="ms-sub">Manajemen master bahan dan penyesuaian stok.</p>
                 </div>
-                <button className="ms-btn-primary" onClick={() => setShowForm(true)}>
+                <button className="ms-btn-primary" onClick={() => onNavigate('tambah-bahan')}>
                     <span className="material-symbols-outlined">add</span>
                     Tambah Bahan
                 </button>
@@ -346,15 +338,18 @@ export default function MaterialsPage() {
                     </div>
                     <div className="ms-filter-tabs">
                         {[
-                            { id: 'all', label: 'Semua' },
-                            { id: 'digital', label: '🖨️ Digital' },
-                            { id: 'offset', label: '📰 Offset' },
-                            { id: 'atk', label: '✏️ ATK' },
-                            { id: 'low', label: `⚠️ Menipis (${lowStockCount})` },
+                            { id: 'all', label: 'Semua', icon: '' },
+                            { id: 'digital', label: 'Digital', icon: 'print' },
+                            { id: 'offset', label: 'Offset', icon: 'layers' },
+                            { id: 'atk', label: 'ATK', icon: 'edit' },
+                            { id: 'low', label: `Menipis (${lowStockCount})`, icon: 'warning' },
                         ].map(f => (
                             <button key={f.id} className={`ms-tab ${filter === f.id ? 'ms-tab-active' : ''}`}
                                 onClick={() => setFilter(f.id)}>
-                                {f.label}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {f.icon && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{f.icon}</span>}
+                                    {f.label}
+                                </div>
                             </button>
                         ))}
                     </div>
@@ -455,7 +450,7 @@ export default function MaterialsPage() {
                                                     <span className="material-symbols-outlined">tune</span>
                                                 </button>
                                                 <button className="ms-action-btn" title="Edit Bahan"
-                                                    onClick={() => setEditItem(m)}>
+                                                    onClick={() => onNavigate('tambah-bahan', { material: m })}>
                                                     <span className="material-symbols-outlined">edit</span>
                                                 </button>
                                             </td>

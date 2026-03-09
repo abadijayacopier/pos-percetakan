@@ -32,6 +32,8 @@ app.use('/api/materials', require('./routes/materials'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/design-logs', require('./routes/design-logs'));
 app.use('/api/offset-orders', require('./routes/offset_orders'));
+app.use('/api/spk', require('./routes/spk'));
+app.use('/api/wa-config', require('./routes/wa-config'));
 app.use('/api/pricing', pricingRouter);
 
 const startServer = async () => {

@@ -104,9 +104,36 @@ router.patch('/:id/stop', verifyToken, async (req, res) => {
         if (!rows.length) return res.status(404).json({ message: 'Sesi tidak ditemukan atau bukan milik Anda' });
         if (rows[0].end_time) return res.status(400).json({ message: 'Sesi sudah selesai' });
 
+        // Compute duration and cost for the design session
+        const logBefore = rows[0];
+        const orderItemId = logBefore.order_item_id;
+        const startTime = logBefore.start_time;
+        const tarif = logBefore.tarif_per_jam;
+        const endNow = new Date();
+        const durationMin = Math.ceil((endNow.getTime() - new Date(startTime).getTime()) / 60000);
+        const biayaBaru = Math.round((durationMin / 60) * tarif);
+
         await pool.query(
-            `UPDATE design_logs SET end_time = NOW(), catatan = COALESCE(?, catatan) WHERE id = ?`,
-            [catatan || null, req.params.id]
+            `UPDATE design_logs 
+             SET end_time = NOW(), catatan = COALESCE(?, catatan),
+                 total_durasi_menit = COALESCE(total_durasi_menit, 0) + ?,
+                 total_biaya_desain = COALESCE(total_biaya_desain, 0) + ?
+             WHERE id = ?`,
+            [catatan || null, durationMin, biayaBaru, req.params.id]
+        );
+
+        // Update cost per item
+        if (orderItemId) {
+            await pool.query(
+                `UPDATE order_items SET design_cost = COALESCE(design_cost, 0) + ? WHERE id = ?`,
+                [biayaBaru, orderItemId]
+            );
+        }
+
+        // Update status produksi ke 'approval' (tahap setelah desain selesai)
+        await pool.query(
+            `UPDATE production_status SET status = 'approval', operator_id = ? WHERE order_item_id = ?`,
+            [req.user.id, rows[0].order_item_id]
         );
 
         // Ambil data terbaru (generated columns sudah terhitung)
