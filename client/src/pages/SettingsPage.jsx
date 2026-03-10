@@ -58,6 +58,7 @@ export default function SettingsPage() {
     const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
     const [printerName, setPrinterName] = useState(getSetting('printer_name') || '');
     const [paperSize, setPaperSize] = useState(getSetting('paper_size') || 'A4');
+    const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
     const [systemPrinters, setSystemPrinters] = useState([]);
 
     const defaultPrintPrices = [
@@ -113,6 +114,7 @@ export default function SettingsPage() {
         set('printer_size', printerSize);
         set('printer_name', printerName);
         set('paper_size', paperSize);
+        set('auto_print', autoPrint ? 'true' : 'false');
         set('print_prices', JSON.stringify(printPrices));
         set('bind_prices', JSON.stringify(bindPrices));
         set('fc_discounts', JSON.stringify(fcDiscounts));
@@ -192,12 +194,19 @@ export default function SettingsPage() {
     ];
 
     return (
-        <div className="premium-settings-wrapper premium-page-wrapper">
-            <div className="page-toolbar"><h2><FiSettings /> Pengaturan</h2></div>
+        <div className="premium-settings-wrapper premium-page-wrapper" style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
 
             <div className="tabs" style={{ marginBottom: '16px' }}>
                 {TABS.map(t => (
-                    <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.icon} {t.text}</button>
+                    <button
+                        key={t.id}
+                        className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
+                        onClick={() => setActiveTab(t.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon}</span>
+                        {t.text}
+                    </button>
                 ))}
             </div>
 
@@ -224,15 +233,18 @@ export default function SettingsPage() {
             {/* Fotocopy Prices */}
             {activeTab === 'fotocopy' && (
                 <div className="card">
-                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3><FiFile /> Master Harga Fotocopy</h3>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <FiFile style={{ fontSize: '1.2rem', color: 'var(--primary)' }} />
+                            <h3 style={{ margin: 0 }}>Master Harga Fotocopy</h3>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
                             <button className="btn btn-secondary btn-sm" onClick={() => {
                                 const newId = 'fc' + Date.now();
                                 const newItem = { id: newId, paper: 'HVS A4', color: 'bw', side: '1', price: 0, label: 'Baru' };
                                 setFotocopyPrices([...fotocopyPrices, newItem]);
-                            }}><FiPlus /> Tambah Aturan</button>
-                            <button className="btn btn-primary" onClick={saveAllFotocopyPrices}><FiSave /> Simpan Harga Fotocopy</button>
+                            }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiPlus /> Tambah Aturan</button>
+                            <button className="btn btn-primary" onClick={saveAllFotocopyPrices} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiSave /> Simpan Harga</button>
                         </div>
                     </div>
                     <div className="card-body">
@@ -532,25 +544,23 @@ export default function SettingsPage() {
                                 </div>
                             )}
 
-                            <div className="ps-toggle-row">
-                                <div className="ps-toggle-info">
-                                    <span>Cetak Struk Otomatis setelah Pembayaran</span>
-                                    <span>Memicu pencetakan secara otomatis saat transaksi selesai</span>
-                                </div>
-                                <label className="ps-switch">
-                                    <input type="checkbox" defaultChecked />
-                                    <span className="ps-switch-slider"></span>
-                                </label>
+                            <div className="ps-toggle-info">
+                                <span>Cetak Struk Otomatis setelah Pembayaran</span>
+                                <span>Memicu pencetakan secara otomatis saat transaksi selesai</span>
                             </div>
+                            <label className="ps-switch">
+                                <input type="checkbox" checked={autoPrint} onChange={e => setAutoPrint(e.target.checked)} />
+                                <span className="ps-switch-slider"></span>
+                            </label>
+                        </div>
 
-                            <div className="ps-direct-print" style={{ marginTop: '16px' }}>
-                                <label><FiZap /> Mode Cetak Cepat (Direct Print)</label>
-                                <p>Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
-                                <select className="form-select" style={{ width: '100%' }} value={printerName} onChange={e => setPrinterName(e.target.value)}>
-                                    <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
-                                    {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
-                                </select>
-                            </div>
+                        <div className="ps-direct-print" style={{ marginTop: '16px' }}>
+                            <label><FiZap /> Mode Cetak Cepat (Direct Print)</label>
+                            <p>Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
+                            <select className="form-select" style={{ width: '100%' }} value={printerName} onChange={e => setPrinterName(e.target.value)}>
+                                <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
+                                {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
                         </div>
 
                         {/* Branding Header & Footer */}
@@ -580,7 +590,6 @@ export default function SettingsPage() {
                                         <textarea rows="2" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" />
                                     </div>
                                     <div className="ps-form-group">
-                                        <label>Logo Toko (Optimasi Cetak)</label>
                                         <label className="ps-logo-drop">
                                             {storeLogo ? (
                                                 <img src={storeLogo} alt="Logo" className="ps-logo-preview" />
@@ -808,4 +817,3 @@ export default function SettingsPage() {
         </div>
     );
 }
-
