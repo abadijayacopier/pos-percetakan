@@ -57,6 +57,67 @@ export default function App() {
     setPageState(state);
   };
 
+  // Temporary migration script to sync old dp_tasks to transactions
+  useEffect(() => {
+    import('./db').then(m => {
+      const db = m.default;
+      const migrated = localStorage.getItem('dp_tasks_migrated_v3');
+      if (!migrated) {
+        const dpTasks = db.getAll('dp_tasks');
+        const transactions = db.getAll('transactions');
+        let modifications = 0;
+
+        dpTasks.forEach(task => {
+          const hasTrx = transactions.some(t => t.dp_task_id === task.id || t.items?.some(i => i.id === task.id));
+          if (!hasTrx) {
+            const now = new Date();
+            const y = now.getFullYear();
+            const mo = String(now.getMonth() + 1).padStart(2, '0');
+            const count = Math.floor(Math.random() * 9000 + 1000);
+            const invoiceNo = `TRX-${y}${mo}-${count}`;
+
+            const newTransaction = {
+              id: task.id + '_TRX_MIG',
+              invoiceNo: invoiceNo,
+              date: task.createdAt || new Date().toISOString(),
+              userId: 'admin',
+              userName: 'Admin',
+              customerName: task.customerName || 'Pelanggan Umum',
+              customerId: task.customerId,
+              items: [{
+                id: task.id,
+                name: Math.random() < 0.5 ? 'Kartu Nama (Digital)' : 'Brosur Lipat (Digital)', // mock name since title might be undefined
+                qty: 1,
+                price: task.material_price || 0,
+                subtotal: task.material_price || 0,
+                type: 'digital_printing'
+              }],
+              subtotal: task.material_price || 0,
+              discount: 0,
+              tax: 0,
+              total: task.material_price || 0,
+              paymentType: '',
+              paid: 0,
+              change: 0,
+              status: 'unpaid',
+              type: 'digital_printing',
+              dp_task_id: task.id
+            };
+            if (task.title) newTransaction.items[0].name = task.title;
+
+            db.insert('transactions', newTransaction);
+            modifications++;
+          }
+        });
+
+        if (modifications > 0) {
+          console.log(`Migrated ${modifications} old DP tasks to transactions`);
+        }
+        localStorage.setItem('dp_tasks_migrated_v3', 'true');
+      }
+    });
+  }, []);
+
   if (loading) {
     return (
       <div className="adaptive-loading-screen">

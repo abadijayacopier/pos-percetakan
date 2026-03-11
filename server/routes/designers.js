@@ -90,11 +90,20 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
 // ── PUT update desainer ───────────────────────────────────────────────────────
 router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        const { name, username, is_active } = req.body;
-        await pool.query(
-            `UPDATE users SET name = ?, username = ?, is_active = ? WHERE id = ? AND role = 'desainer'`,
-            [name, username, is_active !== undefined ? is_active : true, req.params.id]
-        );
+        const { name, username, is_active, password } = req.body;
+
+        if (password) {
+            const hashed = await bcrypt.hash(password, 10);
+            await pool.query(
+                `UPDATE users SET name = ?, username = ?, is_active = ?, password = ? WHERE id = ? AND role = 'desainer'`,
+                [name, username, is_active !== undefined ? is_active : true, hashed, req.params.id]
+            );
+        } else {
+            await pool.query(
+                `UPDATE users SET name = ?, username = ?, is_active = ? WHERE id = ? AND role = 'desainer'`,
+                [name, username, is_active !== undefined ? is_active : true, req.params.id]
+            );
+        }
         res.json({ message: 'Data desainer berhasil diperbarui' });
     } catch (e) {
         res.status(500).json({ message: e.message });
@@ -227,7 +236,7 @@ router.patch('/tasks/:id/start', verifyToken, async (req, res) => {
 // ── PATCH selesai desain ──────────────────────────────────────────────────────
 router.patch('/tasks/:id/finish', verifyToken, async (req, res) => {
     try {
-        const { catatan } = req.body;
+        const { catatan, file_hasil_desain } = req.body;
         const [rows] = await pool.query(
             `SELECT * FROM design_assignments WHERE id = ? AND designer_id = ?`,
             [req.params.id, req.user.id]
@@ -240,8 +249,8 @@ router.patch('/tasks/:id/finish', verifyToken, async (req, res) => {
         }
 
         await pool.query(
-            `UPDATE design_assignments SET status = 'selesai', finished_at = NOW(), catatan = ? WHERE id = ?`,
-            [catatan || null, req.params.id]
+            `UPDATE design_assignments SET status = 'selesai', finished_at = NOW(), catatan = ?, file_hasil_desain = ? WHERE id = ?`,
+            [catatan || null, file_hasil_desain || null, req.params.id]
         );
 
         await pool.query(

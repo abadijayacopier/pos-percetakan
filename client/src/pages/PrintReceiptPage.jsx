@@ -18,14 +18,13 @@ export default function PrintReceiptPage({ pageState }) {
                     display: none !important;
                 }
                 .thermal-width {
-                    width: 100% !important;
-                    border: none !important;
+                    width: 80mm !important;
+                    max-width: 100% !important;
+                    margin: 0 auto !important;
                     box-shadow: none !important;
-                    padding: 0 !important;
-                    margin: 0 !important;
+                    border: none !important;
                 }
                 @page {
-                    size: 80mm auto; /* Typical thermal printer width */
                     margin: 0; 
                 }
                 /* Hide global Layout elements during print */
@@ -67,6 +66,25 @@ export default function PrintReceiptPage({ pageState }) {
         return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(amount);
     };
 
+    const handleShare = async () => {
+        const textData = `*NOTA PEMBAYARAN - JAYA COPY*\nNo. Nota: ${receiptData.invoiceNo}\nKasir: ${receiptData.cashier}\nTotal: Rp ${formatCurrency(receiptData.total)}\nStatus: ${receiptData.paid >= receiptData.total ? 'LUNAS' : 'SISA BAYAR Rp ' + formatCurrency(receiptData.total - receiptData.paid)}\n\nTerima Kasih Atas Kunjungan Anda!`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: `Nota ${receiptData.invoiceNo}`,
+                    text: textData,
+                });
+            } catch (err) {
+                console.log('User cancelled share or share failed', err);
+            }
+        } else {
+            // Fallback to clipboard
+            navigator.clipboard.writeText(textData);
+            alert('Teks nota telah disalin ke clipboard! Silakan paste (tempel) di WhatsApp.');
+        }
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center pt-10 pb-20 px-4 font-display">
             {/* Action Bar (No Print) */}
@@ -80,6 +98,7 @@ export default function PrintReceiptPage({ pageState }) {
                 </button>
                 <button
                     className="flex-1 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-2 px-4 rounded-lg font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    onClick={handleShare}
                 >
                     <span className="material-symbols-outlined">share</span>
                     Bagikan
@@ -87,15 +106,15 @@ export default function PrintReceiptPage({ pageState }) {
             </div>
 
             {/* Main Receipt Container */}
-            <div className="thermal-width w-[380px] bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col text-slate-900 dark:text-slate-100">
+            <div className="thermal-width w-[380px] bg-white shadow-xl border border-slate-200 p-6 flex flex-col text-slate-900 mx-auto print:shadow-none print:p-2">
                 {/* Header / Logo Section */}
-                <div className="flex flex-col items-center text-center border-b border-dashed border-slate-300 dark:border-slate-700 pb-4 mb-4">
-                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3 text-primary">
-                        <span className="material-symbols-outlined !text-4xl">print</span>
+                <div className="flex flex-col items-center text-center border-b border-dashed border-slate-300 pb-4 mb-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2 text-primary">
+                        <span className="material-symbols-outlined !text-3xl">print</span>
                     </div>
-                    <h1 className="text-xl font-bold uppercase tracking-tight">Jaya Copy & Percetakan</h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Jl. Pendidikan No. 45, Jakarta Pusat</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Telp: 0812-3456-7890</p>
+                    <h1 className="text-lg font-bold uppercase tracking-tight">Jaya Copy & Percetakan</h1>
+                    <p className="text-[10px] text-slate-500 mt-1">Jl. Pendidikan No. 45, Jakarta Pusat</p>
+                    <p className="text-[10px] text-slate-500">Telp: 0812-3456-7890</p>
                 </div>
 
                 {/* Metadata Section */}
@@ -126,16 +145,23 @@ export default function PrintReceiptPage({ pageState }) {
                         <span className="w-1/4 text-right">Total</span>
                     </div>
 
-                    {receiptData.items.map((item, index) => (
-                        <div key={index} className="flex flex-col gap-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="w-1/2 font-medium">{item.desc}</span>
-                                <span className="w-1/4 text-right text-slate-600 dark:text-slate-400">{item.qty}</span>
-                                <span className="w-1/4 text-right font-medium">{formatCurrency(item.total)}</span>
+                    {receiptData.items.map((item, index) => {
+                        const desc = item.desc || item.name || 'Item Cetak';
+                        const qty = item.qty || item.quantity || 1;
+                        const total = item.total || (item.price * qty) || 0;
+                        const note = item.note || '';
+
+                        return (
+                            <div key={index} className="flex flex-col gap-1">
+                                <div className="flex justify-between text-[11px] sm:text-sm">
+                                    <span className="w-1/2 font-medium break-words leading-tight pr-2">{desc}</span>
+                                    <span className="w-1/4 text-right text-slate-600 print:text-slate-900">{qty}</span>
+                                    <span className="w-1/4 text-right font-medium">{formatCurrency(total)}</span>
+                                </div>
+                                {note && <span className="text-[10px] text-slate-500 italic">{note}</span>}
                             </div>
-                            <span className="text-[10px] text-slate-400">{item.note}</span>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Calculation Section */}

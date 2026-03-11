@@ -57,7 +57,11 @@ export default function DesignerManagementPage({ onNavigate }) {
         setSaving(true);
         try {
             if (editItem) {
-                await api.put(`/designers/${editItem.id}`, { name: form.name, username: form.username, is_active: form.is_active });
+                const payload = { name: form.name, username: form.username, is_active: form.is_active };
+                if (form.password.trim()) {
+                    payload.password = form.password;
+                }
+                await api.put(`/designers/${editItem.id}`, payload);
                 toast('Data desainer berhasil diperbarui ✅');
             } else {
                 await api.post('/designers', form);
@@ -298,12 +302,10 @@ export default function DesignerManagementPage({ onNavigate }) {
                                 <label className="dm-label">Username *</label>
                                 <input className="dm-input" placeholder="andi_desain" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
                             </div>
-                            {!editItem && (
-                                <div className="dm-group">
-                                    <label className="dm-label">Password *</label>
-                                    <input className="dm-input" type="password" placeholder="Minimal 6 karakter" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-                                </div>
-                            )}
+                            <div className="dm-group">
+                                <label className="dm-label">Password {editItem ? '(Opsional)' : '*'}</label>
+                                <input className="dm-input" type="password" placeholder={editItem ? 'Kosongkan jika tidak ingin mengubah password' : 'Minimal 6 karakter'} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                            </div>
                             <div className="dm-modal-footer">
                                 <button type="button" className="dm-btn-cancel" onClick={() => setShowForm(false)}>Batal</button>
                                 <button type="submit" className="dm-btn-save" disabled={saving}>

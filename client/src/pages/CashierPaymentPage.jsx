@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah, formatDateTime } from '../utils';
 import Modal from '../components/Modal';
+import { useAuth } from '../contexts/AuthContext';
 import { FiCreditCard, FiSearch, FiCheckCircle, FiClock, FiDollarSign, FiChevronLeft, FiChevronRight, FiPrinter, FiAlertTriangle } from 'react-icons/fi';
 
-export default function CashierPaymentPage() {
+export default function CashierPaymentPage({ onNavigate }) {
+    const { user } = useAuth();
     const [transactions, setTransactions] = useState(() => db.getAll('transactions'));
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -32,6 +34,25 @@ export default function CashierPaymentPage() {
     const totalPaid = transactions.filter(t => t.paidAmount >= t.total).length;
     const totalUnpaid = transactions.filter(t => !t.paidAmount || t.paidAmount < t.total).length;
     const totalRevenue = transactions.reduce((s, t) => s + (t.paidAmount || 0), 0);
+
+    const handlePrintReceipt = (trx) => {
+        if (!onNavigate) return;
+        const paid = trx.paidAmount || 0;
+        const receiptData = {
+            invoiceNo: trx.invoiceNo,
+            date: formatDateTime(trx.settledAt || trx.date || new Date().toISOString()),
+            cashier: user?.name || 'Kasir',
+            customer: trx.customerName || 'Umum',
+            items: trx.items || [],
+            subtotal: trx.subtotal || trx.total,
+            tax: trx.tax || 0,
+            total: trx.total,
+            paymentMethod: trx.paymentType || 'Tunai',
+            paid: paid,
+            change: paid > trx.total ? paid - trx.total : 0
+        };
+        onNavigate('print-receipt', { receipt: receiptData });
+    };
 
     const openSettle = (trx) => {
         setSelectedTrx(trx);
@@ -127,8 +148,10 @@ export default function CashierPaymentPage() {
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
-                                                {!isLunas && (
+                                                {!isLunas ? (
                                                     <button className="cp-btn-sm" onClick={() => openSettle(t)}><FiDollarSign size={14} /> Lunasi</button>
+                                                ) : (
+                                                    <button className="cp-btn-ghost" style={{ padding: '6px 14px', fontSize: '.78rem', flex: 'none', display: 'inline-flex', width: 'auto' }} onClick={() => handlePrintReceipt(t)}><FiPrinter size={14} /> Cetak Struk</button>
                                                 )}
                                             </td>
                                         </tr>

@@ -167,6 +167,21 @@ img {
   background: var(--primary);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-input);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
 /* ============================================
    PREMIUM PAGE WRAPPER 
    (Shared across inside pages like Reports, Customers, Service, Finance)

@@ -6,6 +6,7 @@ import { FiPackage, FiSearch, FiCheckCircle, FiAlertTriangle, FiUser, FiPhone, F
 
 export default function HandoverPage() {
     const [transactions] = useState(() => db.getAll('transactions'));
+    const [dpTasks] = useState(() => db.getAll('dp_tasks'));
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [selectedTrx, setSelectedTrx] = useState(null);
@@ -138,7 +139,16 @@ export default function HandoverPage() {
                                                 {ho ? (
                                                     <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>oleh {ho.receiverName}</span>
                                                 ) : (
-                                                    <button className="ho-btn-sm" onClick={() => openHandover(t)}><FiCheckCircle size={14} /> Serah Terima</button>
+                                                    (() => {
+                                                        const isDp = t.type === 'digital_printing';
+                                                        const dpTask = isDp && t.dp_task_id ? dpTasks.find(d => d.id === t.dp_task_id) : null;
+                                                        const dpStatus = dpTask ? dpTask.status : null;
+
+                                                        if (isDp && dpStatus && dpStatus !== 'selesai') {
+                                                            return <span className="ho-badge pending" style={{ background: '#fef3c7', color: '#d97706', padding: '6px 12px', border: '1px solid #fde68a' }} title={`Status Produksi: ${dpStatus}`}>Sedang Produksi</span>;
+                                                        }
+                                                        return <button className="ho-btn-sm" onClick={() => openHandover(t)}><FiCheckCircle size={14} /> Serah Terima</button>;
+                                                    })()
                                                 )}
                                             </td>
                                         </tr>

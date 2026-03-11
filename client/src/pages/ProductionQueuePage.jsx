@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { FiLink, FiFileText, FiX, FiPaperclip } from 'react-icons/fi';
 
 export default function ProductionQueuePage({ onNavigate }) {
     const { user } = useAuth();
@@ -11,12 +13,28 @@ export default function ProductionQueuePage({ onNavigate }) {
         tech2: { name: 'Siti Aminah', count: 0, status: 'amber' },
         tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
     });
+    const [viewDesignModal, setViewDesignModal] = useState(null);
 
-    const loadProductionData = () => {
+    const loadProductionData = async () => {
+        let assignments = [];
+        try {
+            const { data } = await api.get('/designers/assignments');
+            assignments = data;
+        } catch (err) {
+            console.error('Failed to fetch assignments:', err);
+        }
+
         const allTasks = db.getAll('dp_tasks');
         // Filter for production tasks
         const prodTasks = allTasks.filter(t => !['desain', 'checkout', 'batal'].includes(t.status));
-        setTasks(prodTasks);
+
+        // Map assignment data to tasks
+        const enrichedTasks = prodTasks.map(t => {
+            const assignment = assignments.find(a => a.task_id === t.id && a.status === 'selesai');
+            return { ...t, designData: assignment };
+        });
+
+        setTasks(enrichedTasks);
 
         // Update Tech Stats
         const newStats = {
@@ -92,9 +110,6 @@ export default function ProductionQueuePage({ onNavigate }) {
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
-                    <button onClick={() => onNavigate('assignment-settings')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative transition-colors" title="Pengaturan Penugasan">
-                        <span className="material-symbols-outlined">settings</span>
-                    </button>
                     <button className="bg-[#137fec] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-sm shadow-blue-500/20">
                         <span className="material-symbols-outlined text-sm">add</span>
                         <span className="hidden sm:inline">SPK Baru</span>
@@ -178,7 +193,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                 </div>
 
                 {/* Kanban Board */}
-                <div className="flex gap-4 sm:gap-6 overflow-x-auto pb-6 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+                <div className="flex gap-4 sm:gap-6 overflow-x-auto overflow-y-hidden pb-6 w-full custom-scrollbar" style={{ minHeight: '600px' }}>
 
                     {/* Dynamic Columns */}
                     {[
@@ -190,7 +205,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                     ].map(col => (
                         <div
                             key={col.id}
-                            className="flex flex-col gap-4 min-w-[280px] sm:min-w-[300px] w-[300px] shrink-0 pb-10 transition-colors duration-200"
+                            className="flex flex-col gap-4 min-w-[300px] w-[300px] shrink-0 pb-10 transition-colors duration-200"
                             onDragOver={(e) => {
                                 e.preventDefault();
                                 e.currentTarget.classList.add('bg-slate-50', 'dark:bg-slate-800/30', 'rounded-xl');
@@ -237,6 +252,15 @@ export default function ProductionQueuePage({ onNavigate }) {
                                         <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
                                         <p className="text-xs text-slate-500 mb-3 font-medium">Pelanggan: {task.customerName}</p>
 
+                                        {task.designData && (
+                                            <button
+                                                onClick={() => setViewDesignModal(task)}
+                                                className="w-full flex items-center justify-center gap-2 py-2 mb-3 bg-blue-50 hover:bg-blue-100 text-[#137fec] text-xs font-bold rounded-lg transition-colors border border-blue-100"
+                                            >
+                                                <FiPaperclip size={14} /> Lihat File & Catatan Desain
+                                            </button>
+                                        )}
+
                                         <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50 dark:border-slate-800/50">
                                             <div className="flex items-center text-slate-400 gap-1">
                                                 <span className="material-symbols-outlined text-sm">schedule</span>
@@ -277,6 +301,76 @@ export default function ProductionQueuePage({ onNavigate }) {
                     ))}
                 </div>
             </div>
+
+            {/* Design Modal */}
+            {viewDesignModal && (
+                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && setViewDesignModal(null)}>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-800" style={{ animation: 'fadeIn .2s ease-out' }}>
+                        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">File & Catatan Desain</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Pesanan #{viewDesignModal.id}</p>
+                            </div>
+                            <button className="text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-lg transition-colors" onClick={() => setViewDesignModal(null)}>
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            {/* Admin Notes */}
+                            {viewDesignModal.pesan_desainer && (
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><FiFileText /> Instruksi Awal (Kasir)</h4>
+                                    <div className="bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                                        <p className="text-sm font-medium text-amber-900 dark:text-amber-200 italic">"{viewDesignModal.pesan_desainer}"</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Designer Notes */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><FiFileText /> Catatan dari Desainer</h4>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4 rounded-xl">
+                                    <p className="text-sm text-slate-700 dark:text-slate-300">
+                                        {viewDesignModal.designData.catatan || <span className="text-slate-400 italic">Tidak ada catatan tambahan.</span>}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 mt-2 font-medium">— Dikerjakan oleh: {viewDesignModal.designData.designer_name}</p>
+                                </div>
+                            </div>
+
+                            {/* Attachments */}
+                            <div>
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><FiLink /> Lampiran File</h4>
+                                {viewDesignModal.designData.file_hasil_desain ? (
+                                    <a
+                                        href={viewDesignModal.designData.file_hasil_desain.startsWith('http') ? viewDesignModal.designData.file_hasil_desain : `https://${viewDesignModal.designData.file_hasil_desain}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex items-center justify-between w-full p-4 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800/50 rounded-xl transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="size-10 rounded-lg bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-[#137fec] shrink-0">
+                                                <FiLink size={18} />
+                                            </div>
+                                            <div className="truncate">
+                                                <p className="text-sm font-bold text-[#137fec] dark:text-blue-400 truncate w-full">Buka Link File Desain</p>
+                                                <p className="text-[10px] text-blue-400/80 dark:text-blue-500 truncate w-full">{viewDesignModal.designData.file_hasil_desain}</p>
+                                            </div>
+                                        </div>
+                                        <span className="material-symbols-outlined text-[#137fec] opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all">arrow_forward</span>
+                                    </a>
+                                ) : (
+                                    <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl">
+                                        <div className="size-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                                            <FiPaperclip size={18} />
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-500">Tidak ada file dilampirkan</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 /* Add keyframes for progress bar shimmer */

@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle } from 'react-icons/fi';
+import { generateInvoice } from '../utils';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -28,6 +29,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
     const [lebar, setLebar] = useState('');
     const [matId, setMatId] = useState('');
     const [customerId, setCustomerId] = useState('');
+    const [pesanDesainer, setPesanDesainer] = useState('');
     const [errors, setErrors] = useState({});
 
     // CRUD State
@@ -186,16 +188,47 @@ export default function DigitalPrintingPage({ onNavigate }) {
             design_price: 0,
             priority: 'normal',
             time: '--:--:--', // Timer belum berjalan, diatur oleh operator desain
+            pesan_desainer: pesanDesainer || null, // Catatan spesifik dari Admin
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
+        const newTransaction = {
+            id: newTask.id + '_TRX', // Link back to DP task
+            invoiceNo: generateInvoice(),
+            date: new Date().toISOString(),
+            userId: user?.id || 'admin',
+            userName: user?.name || 'Admin',
+            customerName: selectedCust?.name || 'Pelanggan Umum',
+            customerId: customerId,
+            items: [{
+                id: newTask.id,
+                name: newTask.title,
+                qty: 1,
+                price: totalEstimasi,
+                subtotal: totalEstimasi,
+                type: 'digital_printing'
+            }],
+            subtotal: totalEstimasi,
+            discount: 0,
+            tax: 0,
+            total: totalEstimasi,
+            paymentType: '',
+            paid: 0,
+            change: 0,
+            status: 'unpaid',
+            type: 'digital_printing',
+            dp_task_id: newTask.id
+        };
+
         db.insert('dp_tasks', newTask);
+        db.insert('transactions', newTransaction);
         db.logActivity(user?.name, 'Buat Pesanan Baru', `Menambah pesanan cetak ${newTask.title}`);
 
         // Reset form
         setPanjang('');
         setLebar('');
+        setPesanDesainer('');
         setErrors({});
         loadData();
     };
@@ -472,6 +505,16 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                     <span className="text-lg font-black text-primary">{fmt(totalEstimasi)}</span>
                                 </div>
                                 <p className="text-[10px] text-slate-400 italic">*Belum termasuk jasa desain & mata ayam</p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1 uppercase">Catatan untuk Desainer (Opsional)</label>
+                                <textarea
+                                    className="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-sm p-3 border focus:ring-primary focus:border-primary resize-none"
+                                    rows="2"
+                                    placeholder="Contoh: Warna biru gradasi, mata ayam 4 sudut..."
+                                    value={pesanDesainer}
+                                    onChange={e => setPesanDesainer(e.target.value)}
+                                ></textarea>
                             </div>
                             <button
                                 className="w-full py-3 bg-primary text-white rounded-lg font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2"

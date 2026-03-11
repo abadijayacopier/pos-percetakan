@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink } from 'react-icons/fi';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -11,6 +12,12 @@ export default function DesignerDashboardPage({ onNavigate }) {
     const [loading, setLoading] = useState(true);
     const [timerSeconds, setTimerSeconds] = useState(0);
     const intervalRef = useRef(null);
+
+    // Modal State
+    const [showFinishModal, setShowFinishModal] = useState(false);
+    const [finishingTask, setFinishingTask] = useState(null);
+    const [fileDesain, setFileDesain] = useState('');
+    const [catatanDesain, setCatatanDesain] = useState('');
 
     const fetchTasks = useCallback(async () => {
         setLoading(true);
@@ -58,15 +65,26 @@ export default function DesignerDashboardPage({ onNavigate }) {
         }
     };
 
-    const handleFinish = async (assignmentId) => {
-        if (!window.confirm('Apakah desain sudah selesai?')) return;
+    const handleFinishClick = (task) => {
+        setFinishingTask(task);
+        setFileDesain('');
+        setCatatanDesain('');
+        setShowFinishModal(true);
+    };
+
+    const submitFinish = async () => {
+        if (!finishingTask) return;
         try {
-            await api.patch(`/designers/tasks/${assignmentId}/finish`);
+            await api.patch(`/designers/tasks/${finishingTask.id}/finish`, {
+                file_hasil_desain: fileDesain || null,
+                catatan: catatanDesain || null
+            });
             // Update dp_task status in localStorage
-            const task = tasks.find(t => t.id === assignmentId);
-            if (task?.task_id) {
-                db.update('dp_tasks', task.task_id, { status: 'produksi' });
+            if (finishingTask.task_id) {
+                db.update('dp_tasks', finishingTask.task_id, { status: 'produksi' });
             }
+            setShowFinishModal(false);
+            setFinishingTask(null);
             fetchTasks();
         } catch (err) {
             alert(err.response?.data?.message || 'Gagal menyelesaikan');
@@ -99,11 +117,11 @@ export default function DesignerDashboardPage({ onNavigate }) {
                     </div>
                 </div>
                 <div className="dd-header-right">
-                    <span className={`dd-status-badge ${activeTask ? 'dd-status-busy' : 'dd-status-free'}`}>
-                        {activeTask ? '🔴 Sibuk' : '🟢 Tersedia'}
+                    <span className={`dd-status-badge flex items-center gap-1 ${activeTask ? 'dd-status-busy' : 'dd-status-free'}`}>
+                        {activeTask ? <><div className="size-2 rounded-full bg-red-400"></div> Sibuk</> : <><div className="size-2 rounded-full bg-green-400"></div> Tersedia</>}
                     </span>
                     <button className="dd-logout-btn" onClick={logout}>
-                        <span className="material-symbols-outlined">logout</span>
+                        <FiLogOut />
                         Keluar
                     </button>
                 </div>
@@ -115,7 +133,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                     <section className="dd-active-card">
                         <div className="dd-active-header">
                             <div className="dd-active-icon">
-                                <span className="material-symbols-outlined">brush</span>
+                                <FiPenTool size={24} />
                             </div>
                             <div>
                                 <h2 className="dd-active-title">Sedang Mengerjakan Desain</h2>
@@ -154,17 +172,25 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                     <span className="dd-info-label">Ukuran</span>
                                     <span className="dd-info-value">{activeTask.dpTask.dimensions?.width}m × {activeTask.dpTask.dimensions?.height}m</span>
                                 </div>
+                                {activeTask.dpTask?.pesan_desainer && (
+                                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
+                                        <span className="dd-info-label" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                            <FiFileText /> Catatan dari Admin:
+                                        </span>
+                                        <span className="dd-info-value" style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>"{activeTask.dpTask.pesan_desainer}"</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <button className="dd-finish-btn" onClick={() => handleFinish(activeTask.id)}>
-                            <span className="material-symbols-outlined">check_circle</span>
+                        <button className="dd-finish-btn" onClick={() => handleFinishClick(activeTask)}>
+                            <FiCheckCircle size={20} />
                             Selesai Desain
                         </button>
                     </section>
                 ) : (
                     <section className="dd-empty-active">
-                        <span className="material-symbols-outlined" style={{ fontSize: 64, color: '#334155' }}>palette</span>
+                        <FiPenTool size={64} style={{ color: '#334155', margin: '0 auto' }} />
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#64748b', margin: '12px 0 4px' }}>Tidak Ada Desain Aktif</h2>
                         <p style={{ fontSize: '.85rem', color: '#475569' }}>Menunggu penugasan dari admin.</p>
                     </section>
@@ -174,7 +200,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                 {pendingTasks.length > 0 && (
                     <section className="dd-section">
                         <h3 className="dd-section-title">
-                            <span className="material-symbols-outlined" style={{ color: '#f59e0b' }}>assignment</span>
+                            <FiList style={{ color: '#f59e0b' }} />
                             Tugas Menunggu ({pendingTasks.length})
                         </h3>
                         <div className="dd-task-list">
@@ -190,11 +216,11 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                                 </>
                                             )}
                                         </div>
-                                        <span className="dd-badge-assigned">📋 Ditugaskan</span>
+                                        <span className="dd-badge-assigned flex items-center gap-1"><FiClock /> Ditugaskan</span>
                                     </div>
                                     {!activeTask && (
                                         <button className="dd-start-btn" onClick={() => handleStart(t.id)}>
-                                            <span className="material-symbols-outlined">play_arrow</span>
+                                            <FiPlayCircle size={18} />
                                             Mulai Desain
                                         </button>
                                     )}
@@ -208,7 +234,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                 {doneTasks.length > 0 && (
                     <section className="dd-section">
                         <h3 className="dd-section-title">
-                            <span className="material-symbols-outlined" style={{ color: '#22c55e' }}>task_alt</span>
+                            <FiCheckSquare style={{ color: '#22c55e' }} />
                             Riwayat Selesai ({doneTasks.length})
                         </h3>
                         <div className="dd-task-list">
@@ -220,7 +246,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                             {t.dpTask && <p className="dd-task-card-title">{t.dpTask.title}</p>}
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
-                                            <span className="dd-badge-done">✅ Selesai</span>
+                                            <span className="dd-badge-done flex items-center gap-1 justify-end"><FiCheckCircle /> Selesai</span>
                                             {t.started_at && t.finished_at && (
                                                 <p style={{ fontSize: '.7rem', color: '#64748b', marginTop: 4 }}>
                                                     {Math.round((new Date(t.finished_at) - new Date(t.started_at)) / 60000)} menit
@@ -234,6 +260,72 @@ export default function DesignerDashboardPage({ onNavigate }) {
                     </section>
                 )}
             </main>
+
+            {/* Finish Modal */}
+            {showFinishModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all">
+                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" style={{ animation: 'fadeIn .2s ease-out' }}>
+                        <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/50">
+                            <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                    <FiUploadCloud size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-white leading-tight">Selesai Desain</h3>
+                                    <p className="text-xs text-slate-400">Pesanan #{finishingTask?.task_id}</p>
+                                </div>
+                            </div>
+                            <button className="text-slate-500 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors" onClick={() => setShowFinishModal(false)}>
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-5">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
+                                    <FiLink className="text-slate-400" /> Link File Hasil Desain
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-800 border-slate-700 text-white placeholder-slate-500 rounded-xl p-3 text-sm focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    placeholder="Contoh: https://drive.google.com/..."
+                                    value={fileDesain}
+                                    onChange={e => setFileDesain(e.target.value)}
+                                />
+                                <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                                    <span className="material-symbols-outlined !text-[12px]">info</span>
+                                    Opsional. Link ini akan dilihat oleh Operator Cetak.
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
+                                    <FiFileText className="text-slate-400" /> Catatan Tambahan
+                                </label>
+                                <textarea
+                                    className="w-full bg-slate-800 border-slate-700 text-white placeholder-slate-500 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    placeholder="Tambahkan pesan untuk operator jika ada instruksi khusus..."
+                                    value={catatanDesain}
+                                    onChange={e => setCatatanDesain(e.target.value)}
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div className="p-5 border-t border-slate-800 bg-slate-900/50 flex gap-3">
+                            <button
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
+                                onClick={() => setShowFinishModal(false)}
+                            >
+                                Batal
+                            </button>
+                            <button
+                                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+                                onClick={submitFinish}
+                            >
+                                <FiCheckCircle size={18} />
+                                Konfirmasi Selesai
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -289,8 +381,8 @@ const CSS = `
 .dd-task-card-title{font-size:.9rem;font-weight:700;color:#e2e8f0;margin:0 0 2px;}
 .dd-task-card-customer{font-size:.78rem;color:#64748b;margin:0;}
 
-.dd-badge-assigned{padding:3px 9px;background:rgba(245,158,11,.15);color:#fbbf24;font-size:.68rem;font-weight:700;border-radius:6px;}
-.dd-badge-done{padding:3px 9px;background:rgba(34,197,94,.15);color:#4ade80;font-size:.68rem;font-weight:700;border-radius:6px;}
+.dd-badge-assigned{padding:4px 10px;background:rgba(245,158,11,.15);color:#fbbf24;font-size:.68rem;font-weight:700;border-radius:6px;display:flex;align-items:center;gap:4px;}
+.dd-badge-done{padding:4px 10px;background:rgba(34,197,94,.15);color:#4ade80;font-size:.68rem;font-weight:700;border-radius:6px;display:flex;align-items:center;gap:4px;}
 
 .dd-start-btn{width:100%;margin-top:12px;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;box-shadow:0 4px 14px rgba(37,99,235,.3);}
 .dd-start-btn:hover{background:#1d4ed8;transform:translateY(-1px);}
