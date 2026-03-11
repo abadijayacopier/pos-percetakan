@@ -177,3 +177,15 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm') => 
 
   return text;
 };
+
+export const printViaRawBT = (text) => {
+  try {
+    // Encodes string safely considering potentially non-ASCII characters
+    const base64Data = btoa(unescape(encodeURIComponent(text)));
+    const intentUrl = `intent:${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+    window.location.href = intentUrl;
+  } catch (err) {
+    console.error('Failed to encode receipt for RawBT:', err);
+    alert('Gagal encode nota untuk printer Bluetooth');
+  }
+};

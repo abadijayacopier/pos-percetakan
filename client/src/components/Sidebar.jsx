@@ -5,7 +5,7 @@ const MENU_GROUPS = [
     {
         title: 'UTAMA',
         items: [
-            { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'kasir', 'operator', 'teknisi'] },
+            { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', roles: ['admin', 'kasir', 'operator', 'teknisi', 'desainer'] },
             { id: 'pos', label: 'Kasir/POS', icon: 'receipt_long', roles: ['admin', 'kasir'] },
         ]
     },
@@ -19,9 +19,11 @@ const MENU_GROUPS = [
                 roles: ['admin', 'kasir', 'operator'],
                 subItems: [
                     { id: 'digital-printing', label: 'Digital Printing', icon: 'local_printshop', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'production-queue', label: 'Antrean Produksi', icon: 'view_kanban', roles: ['admin', 'operator', 'teknisi'] },
                     { id: 'cetak-offset', label: 'Cetak Offset', icon: 'print', roles: ['admin', 'kasir', 'operator'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: 'inventory_2', roles: ['admin', 'operator'] },
                     { id: 'spk-list', label: 'Daftar SPK', icon: 'description', roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'manajemen-desainer', label: 'Operator Desain', icon: 'palette', roles: ['admin'] },
                 ],
             },
             { id: 'service', label: 'Service', icon: 'build', roles: ['admin', 'kasir', 'teknisi'] },
@@ -58,7 +60,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
     // Track which parent menus are expanded (by item id)
     const [expanded, setExpanded] = useState(() => {
         // Auto-expand "printing" if any sub-page is active
-        const printingSubIds = ['digital-printing', 'cetak-offset', 'stok-bahan', 'spk-list'];
+        const printingSubIds = ['digital-printing', 'production-queue', 'cetak-offset', 'stok-bahan', 'spk-list', 'manajemen-desainer'];
         return printingSubIds.includes(activePage) ? { printing: true } : {};
     });
 

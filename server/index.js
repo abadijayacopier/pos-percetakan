@@ -35,6 +35,7 @@ app.use('/api/offset-orders', require('./routes/offset_orders'));
 app.use('/api/spk', require('./routes/spk'));
 app.use('/api/wa-config', require('./routes/wa-config'));
 app.use('/api/pricing', pricingRouter);
+app.use('/api/designers', require('./routes/designers'));
 
 const startServer = async () => {
     // Test koneksi database saat start

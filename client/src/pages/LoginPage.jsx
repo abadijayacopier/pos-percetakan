@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiShield, FiShoppingBag, FiTool } from 'react-icons/fi';
+import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiShield, FiShoppingBag, FiTool, FiPenTool } from 'react-icons/fi';
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -56,6 +56,7 @@ export default function LoginPage() {
                             { label: 'Kasir', icon: FiShoppingBag, u: 'kasir', p: 'kasir123' },
                             { label: 'Operator', icon: FiPrinter, u: 'operator', p: 'operator123' },
                             { label: 'Teknisi', icon: FiTool, u: 'teknisi', p: 'teknisi123' },
+                            { label: 'Desainer', icon: FiPenTool, u: 'andi_desain', p: 'desainer123' },
                         ].map(d => (
                             <button key={d.u} className="btn btn-secondary btn-sm" onClick={() => quickLogin(d.u, d.p)} style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                 <d.icon size={12} /> {d.label}

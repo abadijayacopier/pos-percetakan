@@ -431,6 +431,19 @@
   margin-top: 16px;
 }
 
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
 /* Mobile Cart Overlay */
 .cart-overlay {
   display: none;
@@ -485,17 +498,18 @@
    Printer Settings (Stitch Design)
    ============================================= */
 
+/* Mobile-first: base = 1 column */
 .printer-settings-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   align-items: start;
 }
 
 .printer-settings-grid .ps-main {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 /* Section Card */
@@ -503,26 +517,26 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 24px;
+  padding: 16px;
 }
 
 .ps-section-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .ps-section-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: rgba(37, 99, 235, 0.1);
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #2563eb;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 [data-theme="dark"] .ps-section-icon {
@@ -531,17 +545,81 @@
 
 .ps-section-header h3 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-/* Printer Type Cards */
+/* Printer Type Cards — 1 column on mobile */
 .ps-type-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+/* Form grid — 1 column on mobile */
+.ps-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Digital grid — 1 column on mobile */
+.ps-digital-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 12px;
-  margin-bottom: 20px;
+}
+
+/* Tablet: >= 768px */
+@media (min-width: 768px) {
+  .ps-section {
+    padding: 24px;
+  }
+
+  .ps-section-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+
+  .ps-section-header h3 {
+    font-size: 1.05rem;
+  }
+
+  .ps-section-header {
+    margin-bottom: 20px;
+  }
+
+  .ps-type-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .ps-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ps-digital-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .printer-settings-grid {
+    gap: 24px;
+  }
+
+  .printer-settings-grid .ps-main {
+    gap: 24px;
+  }
+}
+
+/* Desktop: >= 1024px */
+@media (min-width: 1024px) {
+  .printer-settings-grid {
+    grid-template-columns: 1fr 320px;
+  }
 }
 
 .ps-type-card {
@@ -982,22 +1060,4 @@
   color: var(--text-secondary);
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .printer-settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .ps-preview-panel {
-    position: static;
-  }
-}
-
-@media (max-width: 640px) {
-
-  .ps-type-grid,
-  .ps-form-grid,
-  .ps-digital-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Responsive: handled by mobile-first min-width queries above */

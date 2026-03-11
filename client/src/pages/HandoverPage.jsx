@@ -1,194 +1,255 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState, useMemo } from 'react';
+import db from '../db';
+import { formatRupiah, formatDateTime } from '../utils';
+import Modal from '../components/Modal';
+import { FiPackage, FiSearch, FiCheckCircle, FiAlertTriangle, FiUser, FiPhone, FiFileText, FiClock, FiChevronLeft, FiChevronRight, FiPrinter } from 'react-icons/fi';
 
-export default function HandoverPage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || null;
-    const [spk, setSpk] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [barcode, setBarcode] = useState('');
+export default function HandoverPage() {
+    const [transactions] = useState(() => db.getAll('transactions'));
+    const [search, setSearch] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [selectedTrx, setSelectedTrx] = useState(null);
     const [receiverName, setReceiverName] = useState('');
     const [receiverPhone, setReceiverPhone] = useState('');
     const [notes, setNotes] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    const [handovers, setHandovers] = useState(() => db.getAll('handovers'));
+    const [page, setPage] = useState(1);
+    const PER_PAGE = 10;
 
-    useEffect(() => {
-        if (!spkId) { setLoading(false); return; }
-        const fetchSPK = async () => {
-            try {
-                const res = await api.get(`/spk/${spkId}`);
-                const data = res.data;
-                setSpk(data);
-                setReceiverName(data.customer_name || '');
-                setReceiverPhone(data.customer_phone || '');
-            } catch (err) { console.error('Gagal fetch SPK:', err); }
-            finally { setLoading(false); }
-        };
-        fetchSPK();
-    }, [spkId]);
+    const getHandoverStatus = (trxId) => handovers.find(h => h.transactionId === trxId);
 
-    const handleHandover = async () => {
-        setSubmitting(true);
-        try {
-            await api.post(`/spk/${spkId}/handover`, {
-                received_by_name: receiverName,
-                received_by_phone: receiverPhone,
-                notes: notes || null
-            });
-            onNavigate('spk-list');
-        } catch (err) {
-            console.error('Gagal handover:', err);
-        } finally {
-            setSubmitting(false);
-        }
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        return transactions.filter(t => {
+            const matchSearch = !q || (t.invoiceNo || '').toLowerCase().includes(q) || (t.customerName || '').toLowerCase().includes(q);
+            const ho = getHandoverStatus(t.id);
+            if (filterStatus === 'pending') return matchSearch && !ho;
+            if (filterStatus === 'done') return matchSearch && ho;
+            return matchSearch;
+        });
+    }, [transactions, search, filterStatus, handovers]);
+
+    const totalPages = Math.ceil(filtered.length / PER_PAGE);
+    const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    const pendingCount = transactions.filter(t => !getHandoverStatus(t.id)).length;
+    const doneCount = handovers.length;
+
+    const openHandover = (trx) => {
+        setSelectedTrx(trx);
+        setReceiverName(trx.customerName || '');
+        setReceiverPhone('');
+        setNotes('');
     };
 
-    const formatCurrency = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
+    const handleHandover = () => {
+        if (!receiverName.trim() || !selectedTrx) return;
+        db.insert('handovers', {
+            transactionId: selectedTrx.id,
+            invoiceNo: selectedTrx.invoiceNo,
+            customerName: selectedTrx.customerName,
+            receiverName,
+            receiverPhone,
+            notes,
+            handoverDate: new Date().toISOString(),
+            handoverBy: 'Admin',
+        });
+        db.logActivity('Admin', 'Serah Terima', `Pesanan ${selectedTrx.invoiceNo} diserahkan ke ${receiverName}`);
+        setHandovers(db.getAll('handovers'));
+        setSelectedTrx(null);
+    };
 
-    if (loading) return <div className="flex items-center justify-center min-h-screen"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
+    const handleSearch = (v) => { setSearch(v); setPage(1); };
+    const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
     return (
-        <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            <div className="flex-1 p-8">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Serah Terima & Pengambilan Barang</h2>
-                        <p className="text-slate-500 text-sm">Proses verifikasi dan penyerahan pesanan kepada pelanggan</p>
+        <div style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <style>{CSS}</style>
+
+            {/* Header */}
+            <div className="ho-header">
+                <div>
+                    <h1 className="ho-title"><FiPackage /> Serah Terima Barang</h1>
+                    <p className="ho-sub">Proses verifikasi dan penyerahan pesanan kepada pelanggan</p>
+                </div>
+                <div className="ho-date">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            </div>
+
+            {/* Stats */}
+            <div className="ho-stats">
+                <div className="ho-stat-card">
+                    <div className="ho-stat-icon" style={{ background: '#dbeafe', color: '#3b82f6' }}><FiPackage /></div>
+                    <div><p className="ho-stat-label">Total Pesanan</p><p className="ho-stat-value" style={{ color: '#3b82f6' }}>{transactions.length}</p></div>
+                </div>
+                <div className="ho-stat-card">
+                    <div className="ho-stat-icon" style={{ background: '#fef3c7', color: '#f59e0b' }}><FiClock /></div>
+                    <div><p className="ho-stat-label">Menunggu</p><p className="ho-stat-value" style={{ color: '#f59e0b' }}>{pendingCount}</p></div>
+                </div>
+                <div className="ho-stat-card">
+                    <div className="ho-stat-icon" style={{ background: '#d1fae5', color: '#10b981' }}><FiCheckCircle /></div>
+                    <div><p className="ho-stat-label">Sudah Diserahkan</p><p className="ho-stat-value" style={{ color: '#10b981' }}>{doneCount}</p></div>
+                </div>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="ho-card">
+                <div className="ho-filter-bar">
+                    <div className="ho-search-wrap">
+                        <FiSearch className="ho-search-icon" />
+                        <input className="ho-search" placeholder="Cari invoice / nama pelanggan..." value={search} onChange={e => handleSearch(e.target.value)} />
                     </div>
-                    <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </p>
+                    <div className="ho-filter-tabs">
+                        {[
+                            { key: 'all', label: 'Semua' },
+                            { key: 'pending', label: `Menunggu (${pendingCount})` },
+                            { key: 'done', label: `Selesai (${doneCount})` },
+                        ].map(f => (
+                            <button key={f.key} className={`ho-tab ${filterStatus === f.key ? 'active' : ''}`} onClick={() => handleFilter(f.key)}>{f.label}</button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Search */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
-                    <div className="flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="flex-1 relative">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                            <input type="text"
-                                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-sm transition-all"
-                                placeholder="Scan Barcode atau Cari Nomor SPK..."
-                                value={barcode} onChange={(e) => setBarcode(e.target.value)}
-                            />
-                        </div>
-                        <button className="bg-primary text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 cursor-pointer">
-                            <span className="material-symbols-outlined">qr_code_scanner</span>
-                            Cari Nota
-                        </button>
-                    </div>
-                </div>
-
-                {spk && (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                        {/* Left Column */}
-                        <div className="md:col-span-7 space-y-6">
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
-                                    <h3 className="font-bold text-slate-900 dark:text-white">Detail Pesanan</h3>
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase">{spk.status}</span>
-                                </div>
-                                <div className="p-6 grid grid-cols-2 gap-6">
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">Nomor SPK</p>
-                                        <p className="font-bold text-slate-900 dark:text-white text-lg">{spk.spk_number}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">Pelanggan</p>
-                                        <p className="font-bold text-slate-900 dark:text-white">{spk.customer_name}</p>
-                                        <p className="text-xs text-slate-500">{spk.customer_phone || '-'}</p>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-1">Rincian Barang</p>
-                                        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 space-y-2">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-slate-600 dark:text-slate-400">{spk.product_name} ({spk.product_qty} {spk.product_unit})</span>
-                                                <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(spk.total_biaya)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Bukti Pelunasan */}
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                                    <h3 className="font-bold text-slate-900 dark:text-white">Bukti Pelunasan</h3>
-                                </div>
-                                <div className="p-6">
-                                    <div className={`flex items-center gap-6 p-4 rounded-xl border-2 ${spk.sisa_tagihan <= 0 ? 'border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-900/10' : 'border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10'}`}>
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white ${spk.sisa_tagihan <= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
-                                            <span className="material-symbols-outlined text-3xl">{spk.sisa_tagihan <= 0 ? 'check_circle' : 'warning'}</span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className={`font-bold ${spk.sisa_tagihan <= 0 ? 'text-green-800 dark:text-green-500' : 'text-red-800 dark:text-red-500'}`}>
-                                                {spk.sisa_tagihan <= 0 ? 'LUNAS' : 'BELUM LUNAS'}
-                                            </p>
-                                            <p className={`text-sm ${spk.sisa_tagihan <= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                {spk.sisa_tagihan <= 0 ? 'Pembayaran telah diverifikasi' : `Sisa tagihan: ${formatCurrency(spk.sisa_tagihan)}`}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-slate-500">Total Biaya</p>
-                                            <p className="text-xl font-bold text-slate-900 dark:text-white">{formatCurrency(spk.total_biaya)}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column */}
-                        <div className="md:col-span-5 space-y-6">
-                            {/* Penerima */}
-                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                                    <h3 className="font-bold text-slate-900 dark:text-white">Data Penerima</h3>
-                                </div>
-                                <div className="p-6 space-y-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Nama Penerima</label>
-                                        <input type="text" value={receiverName} onChange={e => setReceiverName(e.target.value)}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-4 text-sm focus:ring-primary" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Telepon Penerima</label>
-                                        <input type="text" value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-4 text-sm focus:ring-primary" />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Catatan</label>
-                                        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2.5 px-4 text-sm focus:ring-primary resize-none"
-                                            placeholder="Catatan tambahan serah terima..." />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Action */}
-                            <div className="pt-2">
-                                <button
-                                    onClick={handleHandover}
-                                    disabled={submitting || !receiverName}
-                                    className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary/30 transition-all cursor-pointer disabled:opacity-50">
-                                    <span className="material-symbols-outlined">done_all</span>
-                                    {submitting ? 'Memproses...' : 'Barang Telah Diambil'}
-                                </button>
-                                <p className="text-center text-slate-400 text-[10px] mt-4 uppercase tracking-widest font-bold">
-                                    Status SPK akan diperbarui menjadi <span className="text-slate-600 dark:text-slate-300">Diambil</span>
-                                </p>
-                            </div>
-                        </div>
+                {/* Table */}
+                {paginated.length === 0 ? (
+                    <div className="ho-empty"><FiPackage size={48} /><p>Tidak ada pesanan ditemukan.</p></div>
+                ) : (
+                    <div className="ho-table-wrap">
+                        <table className="ho-table">
+                            <thead><tr>
+                                <th>Invoice</th><th>Tanggal</th><th>Pelanggan</th><th>Total</th><th>Status</th><th style={{ textAlign: 'right' }}>Aksi</th>
+                            </tr></thead>
+                            <tbody>
+                                {paginated.map(t => {
+                                    const ho = getHandoverStatus(t.id);
+                                    return (
+                                        <tr key={t.id} className="ho-tr">
+                                            <td style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '.82rem' }}>{t.invoiceNo}</td>
+                                            <td style={{ fontSize: '.82rem' }}>{formatDateTime(t.date)}</td>
+                                            <td style={{ fontWeight: 600 }}>{t.customerName || 'Umum'}</td>
+                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(t.total)}</td>
+                                            <td>
+                                                {ho ? (
+                                                    <span className="ho-badge done"><FiCheckCircle size={12} /> Diserahkan</span>
+                                                ) : (
+                                                    <span className="ho-badge pending"><FiClock size={12} /> Menunggu</span>
+                                                )}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                {ho ? (
+                                                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>oleh {ho.receiverName}</span>
+                                                ) : (
+                                                    <button className="ho-btn-sm" onClick={() => openHandover(t)}><FiCheckCircle size={14} /> Serah Terima</button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 
-                {!spk && !loading && (
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-12 text-center">
-                        <span className="material-symbols-outlined text-slate-300 !text-6xl">inventory_2</span>
-                        <p className="text-slate-500 mt-4">Scan barcode atau cari nomor SPK untuk memulai proses serah terima</p>
+                {/* Pagination */}
+                {filtered.length > PER_PAGE && (
+                    <div className="ho-pagination">
+                        <span className="ho-page-info">Menampilkan {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} dari {filtered.length}</span>
+                        <div className="ho-page-btns">
+                            <button className="ho-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FiChevronLeft size={16} /> Prev</button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
+                                <button key={n} className={`ho-page-num ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
+                            ))}
+                            <button className="ho-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next <FiChevronRight size={16} /></button>
+                        </div>
                     </div>
                 )}
             </div>
+
+            {/* Handover Modal */}
+            <Modal isOpen={!!selectedTrx} onClose={() => setSelectedTrx(null)} title="Proses Serah Terima" footer={
+                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                    <button className="ho-btn-ghost" onClick={() => setSelectedTrx(null)}>Batal</button>
+                    <button className="ho-btn-primary" onClick={handleHandover} disabled={!receiverName.trim()}><FiCheckCircle /> Barang Diserahkan</button>
+                </div>
+            }>
+                {selectedTrx && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div className="ho-info-box">
+                            <div className="ho-info-row"><span>No. Invoice</span><strong>{selectedTrx.invoiceNo}</strong></div>
+                            <div className="ho-info-row"><span>Pelanggan</span><strong>{selectedTrx.customerName || 'Umum'}</strong></div>
+                            <div className="ho-info-row"><span>Total</span><strong style={{ color: '#10b981' }}>{formatRupiah(selectedTrx.total)}</strong></div>
+                            <div className="ho-info-row"><span>Tipe</span><strong>{selectedTrx.type}</strong></div>
+                        </div>
+                        <div className="ho-form-group">
+                            <label className="ho-label"><FiUser size={13} /> Nama Penerima *</label>
+                            <input className="ho-input" value={receiverName} onChange={e => setReceiverName(e.target.value)} placeholder="Nama penerima barang" />
+                        </div>
+                        <div className="ho-form-group">
+                            <label className="ho-label"><FiPhone size={13} /> Telepon Penerima</label>
+                            <input className="ho-input" value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} placeholder="081234567890" />
+                        </div>
+                        <div className="ho-form-group">
+                            <label className="ho-label"><FiFileText size={13} /> Catatan</label>
+                            <textarea className="ho-input" rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Catatan tambahan serah terima..." style={{ resize: 'none' }} />
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 }
+
+const CSS = `
+.ho-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.ho-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
+.ho-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
+.ho-date { font-size:.82rem; color:var(--text-secondary); font-weight:600; padding:8px 14px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; }
+.ho-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+@media(max-width:700px){ .ho-stats { grid-template-columns:1fr; } }
+.ho-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
+.ho-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
+.ho-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
+.ho-stat-value { font-size:1.4rem; font-weight:900; margin:0; }
+.ho-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.ho-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.ho-search-wrap { position:relative; flex:1; min-width:180px; }
+.ho-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; }
+.ho-search { width:100%; padding:8px 12px 8px 36px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); }
+.ho-search:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+.ho-filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.ho-tab { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.73rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; white-space:nowrap; }
+.ho-tab:hover { border-color:#3b82f6; color:#3b82f6; }
+.ho-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+.ho-empty { padding:48px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
+.ho-table-wrap { overflow-x:auto; }
+.ho-table { width:100%; border-collapse:collapse; text-align:left; }
+.ho-table thead tr { background:var(--bg-input); }
+.ho-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
+.ho-tr { border-top:1px solid var(--border); transition:background .1s; }
+.ho-tr:hover { background:var(--bg-card-hover); }
+.ho-table td { padding:12px 18px; vertical-align:middle; }
+.ho-badge { padding:4px 10px; font-size:.7rem; font-weight:700; border-radius:9999px; display:inline-flex; align-items:center; gap:4px; }
+.ho-badge.done { background:#d1fae5; color:#059669; }
+.ho-badge.pending { background:#fef3c7; color:#d97706; }
+.ho-btn-sm { display:inline-flex; align-items:center; gap:5px; padding:6px 14px; font-size:.78rem; font-weight:700; border-radius:8px; border:none; cursor:pointer; background:#3b82f6; color:#fff; transition:all .15s; }
+.ho-btn-sm:hover { background:#2563eb; }
+.ho-btn-primary { display:flex; align-items:center; gap:6px; background:#10b981; color:#fff; font-weight:700; font-size:.875rem; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; flex:1; justify-content:center; }
+.ho-btn-primary:disabled { opacity:.4; cursor:not-allowed; }
+.ho-btn-ghost { display:flex; align-items:center; gap:6px; background:var(--bg-input); color:var(--text-secondary); font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:1px solid var(--border); cursor:pointer; flex:1; justify-content:center; }
+.ho-info-box { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:14px; }
+.ho-info-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:.85rem; }
+.ho-info-row:last-child { border:none; }
+.ho-info-row span { color:var(--text-muted); }
+.ho-form-group { display:flex; flex-direction:column; }
+.ho-label { font-size:.77rem; font-weight:600; color:var(--text-secondary); margin-bottom:5px; display:flex; align-items:center; gap:5px; }
+.ho-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); box-sizing:border-box; }
+.ho-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+.ho-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px; }
+.ho-page-info { font-size:.78rem; color:var(--text-muted); font-weight:600; }
+.ho-page-btns { display:flex; align-items:center; gap:4px; }
+.ho-page-btn { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
+.ho-page-btn:hover:not(:disabled) { border-color:#3b82f6; color:#3b82f6; }
+.ho-page-btn:disabled { opacity:.4; cursor:not-allowed; }
+.ho-page-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; }
+.ho-page-num:hover { border-color:#3b82f6; color:#3b82f6; }
+.ho-page-num.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+`;

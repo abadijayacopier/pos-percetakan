@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -26,12 +26,31 @@ import PrintInvoicePage from './pages/PrintInvoicePage';
 import PrintLabelPage from './pages/PrintLabelPage';
 import PrintSPKPage from './pages/PrintSPKPage';
 import QRISMonitorPage from './pages/QRISMonitorPage';
+import DesignFinalizationPage from './pages/DesignFinalizationPage';
+import ProductionQueuePage from './pages/ProductionQueuePage';
+import AssignmentSettingsPage from './pages/AssignmentSettingsPage';
+import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
+import PrintReceiptPage from './pages/PrintReceiptPage';
+import DesignerManagementPage from './pages/DesignerManagementPage';
+import DesignerDashboardPage from './pages/DesignerDashboardPage';
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [activePage, setActivePage] = useState('dashboard');
+  const [activePage, setActivePage] = useState(() => {
+    // Auto-redirect desainer to their dashboard
+    if (user?.role === 'desainer') return 'dashboard-desainer';
+    return 'dashboard';
+  });
   const [pageState, setPageState] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // When user finishes loading, auto-redirect desainer to their dashboard 
+  // if they are currently mapped to the default 'dashboard'.
+  useEffect(() => {
+    if (user && user.role === 'desainer' && activePage === 'dashboard') {
+      setActivePage('dashboard-desainer');
+    }
+  }, [user, activePage]);
 
   const handleNavigate = (pageId, state = null) => {
     setActivePage(pageId);
@@ -237,6 +256,13 @@ export default function App() {
       case 'print-label': return <PrintLabelPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-spk': return <PrintSPKPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'qris-monitor': return <QRISMonitorPage onNavigate={handleNavigate} />;
+      case 'design-finalization': return <DesignFinalizationPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'production-queue': return <ProductionQueuePage onNavigate={handleNavigate} />;
+      case 'assignment-settings': return <AssignmentSettingsPage onNavigate={handleNavigate} />;
+      case 'dp-cart': return <DigitalPrintingCartPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
+      case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
       default: return <DashboardPage onNavigate={handleNavigate} />;
     }
   };

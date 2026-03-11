@@ -95,9 +95,15 @@
 
 /* ---- Animations ---- */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
+
 .spin {
   animation: spin 1s linear infinite;
 }
@@ -2557,10 +2563,12 @@ img {
 
 /* Form inputs on mobile */
 @media screen and (max-width: 480px) {
+
   .premium-page-wrapper .form-input,
   .premium-page-wrapper .form-select,
   .premium-page-wrapper .form-textarea {
-    font-size: 16px; /* prevent iOS zoom */
+    font-size: 16px;
+    /* prevent iOS zoom */
   }
 }
 
@@ -2586,11 +2594,11 @@ img {
     transition: left 0.3s ease;
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }
-  
+
   .premium-sidebar.open {
     left: 0;
   }
-  
+
   .sidebar-overlay {
     display: none;
     position: fixed;
@@ -2601,19 +2609,19 @@ img {
     background: rgba(0, 0, 0, 0.5);
     z-index: 999;
   }
-  
+
   .sidebar-overlay.show {
     display: block;
   }
-  
+
   .p-top-header {
     padding: 0 16px !important;
   }
-  
+
   .p-search-box {
     display: none !important;
   }
-  
+
   .p-header-title {
     font-size: 1rem !important;
   }
@@ -2624,54 +2632,54 @@ img {
   .app-layout {
     padding-bottom: 80px;
   }
-  
+
   .p-top-header {
     height: 56px;
     min-height: 56px;
     padding: 0 12px !important;
   }
-  
+
   .p-header-right {
     gap: 8px !important;
   }
-  
+
   .h-theme-toggle {
     display: none !important;
   }
-  
+
   .h-user-profile {
     padding: 4px 8px !important;
   }
-  
+
   .h-user-info {
     display: none !important;
   }
-  
+
   .page-container,
   .premium-page-wrapper {
     padding: 12px !important;
   }
-  
+
   .card {
     margin-bottom: 12px;
     border-radius: 8px;
   }
-  
+
   .card-header {
     padding: 12px 16px;
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .card-header h3 {
     font-size: 1rem;
   }
-  
+
   .card-body {
     padding: 12px;
   }
-  
+
   /* Table to Card transformation for mobile */
   .data-table,
   .table-responsive table {
@@ -2679,19 +2687,19 @@ img {
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .data-table thead,
   .table-responsive table thead {
     display: none;
   }
-  
+
   .data-table tbody,
   .table-responsive table tbody {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .data-table tr,
   .table-responsive table tbody tr {
     display: flex;
@@ -2702,7 +2710,7 @@ img {
     padding: 12px;
     margin-bottom: 8px;
   }
-  
+
   .data-table td,
   .table-responsive table tbody td {
     display: flex;
@@ -2712,7 +2720,7 @@ img {
     border: none;
     font-size: 0.85rem;
   }
-  
+
   .data-table td::before,
   .table-responsive table tbody td::before {
     content: attr(data-label);
@@ -2721,7 +2729,7 @@ img {
     font-size: 0.75rem;
     text-transform: uppercase;
   }
-  
+
   .data-table td:last-child,
   .table-responsive table tbody td:last-child {
     justify-content: flex-end;
@@ -2729,7 +2737,7 @@ img {
     margin-top: 8px;
     border-top: 1px solid var(--border);
   }
-  
+
   /* Touch-friendly buttons */
   .btn {
     min-height: 44px;
@@ -2737,14 +2745,14 @@ img {
     padding: 10px 16px;
     font-size: 0.9rem;
   }
-  
+
   .btn-sm {
     min-height: 36px;
     min-width: 36px;
     padding: 8px 12px;
     font-size: 0.8rem;
   }
-  
+
   /* Form inputs touch-friendly */
   .form-input,
   .form-select,
@@ -2753,37 +2761,37 @@ img {
     font-size: 16px !important;
     padding: 10px 12px;
   }
-  
+
   /* Grid to single column */
   .grid-2,
   .grid-3,
   .grid-4 {
     grid-template-columns: 1fr !important;
   }
-  
+
   /* Kanban mobile */
   .kanban-board {
     flex-direction: column;
   }
-  
+
   .kanban-column {
     width: 100% !important;
     min-width: unset !important;
     margin-bottom: 16px;
   }
-  
+
   /* Tabs scroll horizontal */
   .tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
   }
-  
+
   /* Modal fullscreen on mobile */
   .modal-overlay {
     padding: 0 !important;
   }
-  
+
   .modal {
     width: 100% !important;
     max-width: 100% !important;
@@ -2792,7 +2800,7 @@ img {
     border-radius: 0 !important;
     margin: 0 !important;
   }
-  
+
   /* Cart panel fullscreen */
   .cart-panel {
     width: 100% !important;
@@ -2801,16 +2809,16 @@ img {
     max-height: 100% !important;
     border-radius: 0 !important;
   }
-  
+
   /* POS Page mobile */
   .pos-layout {
     flex-direction: column;
   }
-  
+
   .pos-products {
     width: 100% !important;
   }
-  
+
   .pos-cart {
     width: 100% !important;
     position: fixed;
@@ -2818,5 +2826,284 @@ img {
     left: 0;
     right: 0;
     z-index: 100;
+  }
+}
+
+/* ============================================
+   SETTINGS PAGE — MOBILE-FIRST RESPONSIVE
+   Base = mobile, scale up via min-width
+   ============================================ */
+
+/* --- Base: Mobile (< 768px) --- */
+.premium-settings-wrapper {
+  padding: 12px !important;
+  max-width: 100% !important;
+}
+
+.premium-settings-wrapper .tabs {
+  gap: 4px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.premium-settings-wrapper .tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.premium-settings-wrapper .tab-btn {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  gap: 4px !important;
+  flex-shrink: 0;
+}
+
+.premium-settings-wrapper .tab-btn span {
+  font-size: 1rem;
+}
+
+.premium-settings-wrapper .card {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+.premium-settings-wrapper .card-header {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 10px;
+  padding: 12px !important;
+}
+
+.premium-settings-wrapper .card-header h3 {
+  font-size: 0.95rem;
+}
+
+.premium-settings-wrapper .card-header>div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.premium-settings-wrapper .card-header .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  font-size: 0.8rem;
+  padding: 10px 12px;
+}
+
+.premium-settings-wrapper .card-body {
+  padding: 12px;
+}
+
+.premium-settings-wrapper .form-group {
+  margin-bottom: 14px;
+}
+
+.premium-settings-wrapper .form-label {
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.premium-settings-wrapper .form-input,
+.premium-settings-wrapper .form-select,
+.premium-settings-wrapper .form-textarea {
+  font-size: 16px !important;
+  /* prevent iOS zoom */
+  padding: 10px 12px;
+  min-height: 44px;
+}
+
+.premium-settings-wrapper .btn {
+  min-height: 44px;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+}
+
+.premium-settings-wrapper .btn-block {
+  width: 100%;
+}
+
+/* Dashed section headers on mobile */
+.premium-settings-wrapper div[style*="dashed"] {
+  margin-top: 16px !important;
+  padding-top: 16px !important;
+}
+
+.premium-settings-wrapper div[style*="dashed"] h3 {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.premium-settings-wrapper div[style*="dashed"]>div:first-child {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 10px;
+}
+
+.premium-settings-wrapper div[style*="dashed"]>div:first-child>div {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.premium-settings-wrapper div[style*="dashed"]>div:first-child>div .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* Tables in Settings */
+.premium-settings-wrapper .data-table {
+  font-size: 0.85rem;
+}
+
+/* Dashboard grid (Backup tab) — single column on mobile */
+.premium-settings-wrapper .dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Info note box */
+.premium-settings-wrapper div[style*="rgba(59, 130, 246"] {
+  padding: 10px !important;
+  font-size: 0.8rem;
+}
+
+/* Users table on mobile */
+.premium-settings-wrapper .data-table td,
+.premium-settings-wrapper .data-table th {
+  padding: 10px 8px;
+  font-size: 0.8rem;
+}
+
+/* Activity log scroll */
+.premium-settings-wrapper div[style*="maxHeight"] {
+  max-height: 400px;
+}
+
+/* --- Tablet: >= 768px --- */
+@media (min-width: 768px) {
+  .premium-settings-wrapper {
+    padding: 20px !important;
+  }
+
+  .premium-settings-wrapper .tabs {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .premium-settings-wrapper .tab-btn {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    gap: 6px !important;
+  }
+
+  .premium-settings-wrapper .card {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+
+  .premium-settings-wrapper .card-header {
+    flex-direction: row;
+    align-items: center !important;
+    justify-content: space-between;
+    padding: 16px 20px !important;
+  }
+
+  .premium-settings-wrapper .card-header>div:last-child {
+    width: auto;
+  }
+
+  .premium-settings-wrapper .card-header .btn {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+  }
+
+  .premium-settings-wrapper .card-body {
+    padding: 16px;
+  }
+
+  .premium-settings-wrapper .form-input,
+  .premium-settings-wrapper .form-select,
+  .premium-settings-wrapper .form-textarea {
+    font-size: 0.95rem !important;
+  }
+
+  .premium-settings-wrapper .btn {
+    font-size: 0.9rem;
+    padding: 12px 20px;
+  }
+
+  .premium-settings-wrapper div[style*="dashed"] {
+    margin-top: 20px !important;
+    padding-top: 20px !important;
+  }
+
+  .premium-settings-wrapper div[style*="dashed"]>div:first-child {
+    flex-direction: row;
+    align-items: center !important;
+    justify-content: space-between;
+  }
+
+  .premium-settings-wrapper div[style*="dashed"]>div:first-child>div {
+    width: auto;
+  }
+
+  .premium-settings-wrapper .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .premium-settings-wrapper .data-table td,
+  .premium-settings-wrapper .data-table th {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* --- Desktop: >= 1024px --- */
+@media (min-width: 1024px) {
+  .premium-settings-wrapper {
+    padding: 32px !important;
+    max-width: 1400px !important;
+    margin: 0 auto;
+  }
+
+  .premium-settings-wrapper .tabs {
+    gap: 12px;
+  }
+
+  .premium-settings-wrapper .tab-btn {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    gap: 8px !important;
+  }
+
+  .premium-settings-wrapper .card {
+    padding: 32px;
+    border-radius: 16px;
+  }
+
+  .premium-settings-wrapper .card-body {
+    padding: 20px;
+  }
+
+  .premium-settings-wrapper div[style*="dashed"] {
+    margin-top: 24px !important;
+    padding-top: 24px !important;
+  }
+
+  .premium-settings-wrapper .data-table td,
+  .premium-settings-wrapper .data-table th {
+    padding: 16px;
+    font-size: 0.95rem;
   }
 }

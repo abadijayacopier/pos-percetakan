@@ -3,16 +3,25 @@ import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { formatDateTime } from '../utils';
+import { useTheme } from '../contexts/ThemeContext';
+import { formatDateTime, printViaRawBT } from '../utils';
 import Modal from '../components/Modal';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
 
 export default function SettingsPage() {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const themeCtx = useTheme();
     const [activeTab, setActiveTab] = useState('general');
     const [fotocopyPrices, setFotocopyPrices] = useState([]);
     const [users, setUsers] = useState(() => db.getAll('users'));
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data)).catch(() => { });
@@ -219,13 +228,51 @@ export default function SettingsPage() {
                         <div className="form-group"><label className="form-label">No. Telepon</label><input className="form-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} /></div>
                         <div className="form-group">
                             <label className="form-label">Logo Toko (Opsional)</label>
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                                 {storeLogo && <img src={storeLogo} alt="Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
                                 <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ fontSize: '0.8rem' }} />
                                 {storeLogo && <button className="btn btn-ghost btn-sm" onClick={() => setStoreLogo('')} style={{ color: 'var(--danger)' }}>Hapus Logo</button>}
                             </div>
                         </div>
-                        <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Pengaturan</button>
+
+                        {/* Theme Mode Selector */}
+                        <div className="form-group" style={{ marginTop: '8px' }}>
+                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiMonitor size={14} /> Mode Tampilan</label>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                {[
+                                    { id: 'light', icon: <FiSun size={16} />, label: 'Terang' },
+                                    { id: 'dark', icon: <FiMoon size={16} />, label: 'Gelap' },
+                                    { id: 'system', icon: <FiMonitor size={16} />, label: 'Sistem' },
+                                ].map(t => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => themeCtx.setTheme(t.id)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '12px 8px',
+                                            borderRadius: '12px',
+                                            border: themeCtx.themeMode === t.id ? '2px solid var(--primary, #6366f1)' : '2px solid var(--border, #e2e8f0)',
+                                            backgroundColor: themeCtx.themeMode === t.id ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-card, #f8fafc)',
+                                            color: themeCtx.themeMode === t.id ? 'var(--primary, #6366f1)' : 'var(--text-primary, #374151)',
+                                            fontWeight: 600,
+                                            fontSize: '0.85rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: themeCtx.themeMode === t.id ? '0 2px 8px rgba(99, 102, 241, 0.15)' : 'none'
+                                        }}
+                                    >
+                                        {t.icon}
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button className="btn btn-primary" onClick={saveSettings} style={{ marginTop: '8px' }}><FiSave /> Simpan Pengaturan</button>
                     </div>
                 </div>
             )}
@@ -248,64 +295,122 @@ export default function SettingsPage() {
                         </div>
                     </div>
                     <div className="card-body">
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="data-table">
-                                <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Sisi</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                <tbody>
-                                    {fotocopyPrices.map((p, idx) => (
-                                        <tr key={p.id}>
-                                            <td>
+                        {isMobile ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {fotocopyPrices.map((p, idx) => (
+                                    <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Kertas</label>
                                                 <select className="form-select" value={p.paper} onChange={(e) => {
                                                     const newPrices = [...fotocopyPrices];
                                                     newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
                                                     setFotocopyPrices(newPrices);
-                                                }} style={{ width: '130px' }}>
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
                                                     {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
                                                 </select>
-                                            </td>
-                                            <td>
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Warna</label>
                                                 <select className="form-select" value={p.color} onChange={(e) => {
                                                     const newPrices = [...fotocopyPrices];
                                                     newPrices[idx] = { ...newPrices[idx], color: e.target.value };
                                                     setFotocopyPrices(newPrices);
-                                                }} style={{ width: '120px' }}>
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
                                                     <option value="bw">Hitam Putih</option>
                                                     <option value="color">Berwarna</option>
                                                 </select>
-                                            </td>
-                                            <td>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Sisi</label>
                                                 <select className="form-select" value={p.side} onChange={(e) => {
                                                     const newPrices = [...fotocopyPrices];
                                                     newPrices[idx] = { ...newPrices[idx], side: e.target.value };
                                                     setFotocopyPrices(newPrices);
-                                                }} style={{ width: '100px' }}>
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
                                                     <option value="1">1 Sisi</option>
                                                     <option value="2">Bolak-balik</option>
                                                 </select>
-                                            </td>
-                                            <td>
-                                                <input type="number" className="form-input"
-                                                    value={p.price}
-                                                    onChange={(e) => {
+                                            </div>
+                                            <div style={{ flex: 1.5 }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
+                                                <input type="number" className="form-input" value={p.price} onChange={(e) => {
+                                                    const newPrices = [...fotocopyPrices];
+                                                    newPrices[idx].price = e.target.value;
+                                                    setFotocopyPrices(newPrices);
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
+                                            </div>
+                                            <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
+                                                if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
+                                                    setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
+                                                }
+                                            }}><FiTrash2 /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                                <table className="data-table">
+                                    <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Sisi</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
+                                    <tbody>
+                                        {fotocopyPrices.map((p, idx) => (
+                                            <tr key={p.id}>
+                                                <td data-label="Jenis Kertas">
+                                                    <select className="form-select" value={p.paper} onChange={(e) => {
                                                         const newPrices = [...fotocopyPrices];
-                                                        newPrices[idx].price = e.target.value;
+                                                        newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
                                                         setFotocopyPrices(newPrices);
-                                                    }}
-                                                    style={{ width: '120px' }}
-                                                />
-                                            </td>
-                                            <td>
-                                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                    if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
-                                                        setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
-                                                    }
-                                                }}><FiTrash2 /></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                                    }} style={{ width: '130px' }}>
+                                                        {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
+                                                    </select>
+                                                </td>
+                                                <td data-label="Warna">
+                                                    <select className="form-select" value={p.color} onChange={(e) => {
+                                                        const newPrices = [...fotocopyPrices];
+                                                        newPrices[idx] = { ...newPrices[idx], color: e.target.value };
+                                                        setFotocopyPrices(newPrices);
+                                                    }} style={{ width: '120px' }}>
+                                                        <option value="bw">Hitam Putih</option>
+                                                        <option value="color">Berwarna</option>
+                                                    </select>
+                                                </td>
+                                                <td data-label="Sisi">
+                                                    <select className="form-select" value={p.side} onChange={(e) => {
+                                                        const newPrices = [...fotocopyPrices];
+                                                        newPrices[idx] = { ...newPrices[idx], side: e.target.value };
+                                                        setFotocopyPrices(newPrices);
+                                                    }} style={{ width: '100px' }}>
+                                                        <option value="1">1 Sisi</option>
+                                                        <option value="2">Bolak-balik</option>
+                                                    </select>
+                                                </td>
+                                                <td data-label="Harga">
+                                                    <input type="number" className="form-input"
+                                                        value={p.price}
+                                                        onChange={(e) => {
+                                                            const newPrices = [...fotocopyPrices];
+                                                            newPrices[idx].price = e.target.value;
+                                                            setFotocopyPrices(newPrices);
+                                                        }}
+                                                        style={{ width: '120px' }}
+                                                    />
+                                                </td>
+                                                <td data-label="Aksi">
+                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                        if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
+                                                            setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
+                                                        }
+                                                    }}><FiTrash2 /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                 <h3><FiPrinter /> Master Harga Jasa Print</h3>
@@ -316,52 +421,97 @@ export default function SettingsPage() {
                                     <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Print</button>
                                 </div>
                             </div>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                    <tbody>
-                                        {printPrices.map((p, idx) => (
-                                            <tr key={p.id}>
-                                                <td>
+                            {isMobile ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {printPrices.map((p, idx) => (
+                                        <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Kertas</label>
                                                     <input className="form-input" value={p.paper} onChange={(e) => {
                                                         const newPrices = [...printPrices];
                                                         newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
                                                         setPrintPrices(newPrices);
-                                                    }} style={{ width: '150px' }} />
-                                                </td>
-                                                <td>
+                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} />
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Warna</label>
                                                     <select className="form-select" value={p.color} onChange={(e) => {
                                                         const newPrices = [...printPrices];
                                                         newPrices[idx] = { ...newPrices[idx], color: e.target.value };
                                                         setPrintPrices(newPrices);
-                                                    }} style={{ width: '120px' }}>
+                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
                                                         <option value="bw">Hitam Putih</option>
                                                         <option value="color">Berwarna</option>
                                                     </select>
-                                                </td>
-                                                <td>
-                                                    <input type="number" className="form-input"
-                                                        value={p.price}
-                                                        onChange={(e) => {
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                                                <div style={{ flex: 1.5 }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
+                                                    <input type="number" className="form-input" value={p.price} onChange={(e) => {
+                                                        const newPrices = [...printPrices];
+                                                        newPrices[idx].price = e.target.value;
+                                                        setPrintPrices(newPrices);
+                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
+                                                </div>
+                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
+                                                    if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
+                                                        setPrintPrices(printPrices.filter((_, i) => i !== idx));
+                                                    }
+                                                }}><FiTrash2 /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table className="data-table">
+                                        <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
+                                        <tbody>
+                                            {printPrices.map((p, idx) => (
+                                                <tr key={p.id}>
+                                                    <td data-label="Jenis Kertas">
+                                                        <input className="form-input" value={p.paper} onChange={(e) => {
                                                             const newPrices = [...printPrices];
-                                                            newPrices[idx].price = e.target.value;
+                                                            newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
                                                             setPrintPrices(newPrices);
-                                                        }}
-                                                        style={{ width: '120px' }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                        if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
-                                                            setPrintPrices(printPrices.filter((_, i) => i !== idx));
-                                                        }
-                                                    }}><FiTrash2 /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                        }} style={{ width: '150px' }} />
+                                                    </td>
+                                                    <td data-label="Warna">
+                                                        <select className="form-select" value={p.color} onChange={(e) => {
+                                                            const newPrices = [...printPrices];
+                                                            newPrices[idx] = { ...newPrices[idx], color: e.target.value };
+                                                            setPrintPrices(newPrices);
+                                                        }} style={{ width: '120px' }}>
+                                                            <option value="bw">Hitam Putih</option>
+                                                            <option value="color">Berwarna</option>
+                                                        </select>
+                                                    </td>
+                                                    <td data-label="Harga">
+                                                        <input type="number" className="form-input"
+                                                            value={p.price}
+                                                            onChange={(e) => {
+                                                                const newPrices = [...printPrices];
+                                                                newPrices[idx].price = e.target.value;
+                                                                setPrintPrices(newPrices);
+                                                            }}
+                                                            style={{ width: '120px' }}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Aksi">
+                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                            if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
+                                                                setPrintPrices(printPrices.filter((_, i) => i !== idx));
+                                                            }
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
@@ -374,42 +524,74 @@ export default function SettingsPage() {
                                     <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Jilid</button>
                                 </div>
                             </div>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead><tr><th>Jenis Jilid</th><th>Harga (Rp) / Buku</th><th>Aksi</th></tr></thead>
-                                    <tbody>
-                                        {bindPrices.map((p, idx) => (
-                                            <tr key={p.id}>
-                                                <td>
-                                                    <input className="form-input" value={p.type} onChange={(e) => {
+                            {isMobile ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {bindPrices.map((p, idx) => (
+                                        <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Jilid</label>
+                                                <input className="form-input" value={p.type} onChange={(e) => {
+                                                    const newPrices = [...bindPrices];
+                                                    newPrices[idx] = { ...newPrices[idx], type: e.target.value };
+                                                    setBindPrices(newPrices);
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} placeholder="Nama jenis jilid" />
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                                                <div style={{ flex: 1.5 }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
+                                                    <input type="number" className="form-input" value={p.price} onChange={(e) => {
                                                         const newPrices = [...bindPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], type: e.target.value };
+                                                        newPrices[idx].price = e.target.value;
                                                         setBindPrices(newPrices);
-                                                    }} style={{ width: '250px' }} placeholder="Nama jenis jilid" />
-                                                </td>
-                                                <td>
-                                                    <input type="number" className="form-input"
-                                                        value={p.price}
-                                                        onChange={(e) => {
+                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
+                                                </div>
+                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
+                                                    if (confirm(`Hapus jilid "${p.type}"?`)) {
+                                                        setBindPrices(bindPrices.filter((_, i) => i !== idx));
+                                                    }
+                                                }}><FiTrash2 /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table className="data-table">
+                                        <thead><tr><th>Jenis Jilid</th><th>Harga (Rp) / Buku</th><th>Aksi</th></tr></thead>
+                                        <tbody>
+                                            {bindPrices.map((p, idx) => (
+                                                <tr key={p.id}>
+                                                    <td data-label="Jenis Jilid">
+                                                        <input className="form-input" value={p.type} onChange={(e) => {
                                                             const newPrices = [...bindPrices];
-                                                            newPrices[idx].price = e.target.value;
+                                                            newPrices[idx] = { ...newPrices[idx], type: e.target.value };
                                                             setBindPrices(newPrices);
-                                                        }}
-                                                        style={{ width: '150px' }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                        if (confirm(`Hapus jilid "${p.type}"?`)) {
-                                                            setBindPrices(bindPrices.filter((_, i) => i !== idx));
-                                                        }
-                                                    }}><FiTrash2 /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                        }} style={{ width: '250px' }} placeholder="Nama jenis jilid" />
+                                                    </td>
+                                                    <td data-label="Harga">
+                                                        <input type="number" className="form-input"
+                                                            value={p.price}
+                                                            onChange={(e) => {
+                                                                const newPrices = [...bindPrices];
+                                                                newPrices[idx].price = e.target.value;
+                                                                setBindPrices(newPrices);
+                                                            }}
+                                                            style={{ width: '150px' }}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Aksi">
+                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                            if (confirm(`Hapus jilid "${p.type}"?`)) {
+                                                                setBindPrices(bindPrices.filter((_, i) => i !== idx));
+                                                            }
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
@@ -422,48 +604,82 @@ export default function SettingsPage() {
                                     <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Diskon</button>
                                 </div>
                             </div>
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead><tr><th>Minimal Jumlah / Lembar ({'>='})</th><th>Potongan Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                    <tbody>
-                                        {fcDiscounts.map((d, idx) => (
-                                            <tr key={d.id}>
-                                                <td>
-                                                    <input type="number" className="form-input"
-                                                        value={d.minQty}
-                                                        onChange={(e) => {
-                                                            const newDiscounts = [...fcDiscounts];
-                                                            newDiscounts[idx].minQty = e.target.value;
-                                                            setFcDiscounts(newDiscounts);
-                                                        }}
-                                                        style={{ width: '150px' }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <input type="number" className="form-input"
-                                                        value={d.discountPerSheet}
-                                                        onChange={(e) => {
-                                                            const newDiscounts = [...fcDiscounts];
-                                                            newDiscounts[idx].discountPerSheet = e.target.value;
-                                                            setFcDiscounts(newDiscounts);
-                                                        }}
-                                                        style={{ width: '150px' }}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                        const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
+                            {isMobile ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    {fcDiscounts.map((d, idx) => (
+                                        <div key={d.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                            <div style={{ marginBottom: '12px' }}>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Minimal Jumlah / Lembar ({'>='})</label>
+                                                <input type="number" className="form-input" value={d.minQty} onChange={(e) => {
+                                                    const newDiscounts = [...fcDiscounts];
+                                                    newDiscounts[idx].minQty = e.target.value;
+                                                    setFcDiscounts(newDiscounts);
+                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} />
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                                                <div style={{ flex: 1.5 }}>
+                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Potongan Harga (Rp) / Lbr</label>
+                                                    <input type="number" className="form-input" value={d.discountPerSheet} onChange={(e) => {
+                                                        const newDiscounts = [...fcDiscounts];
+                                                        newDiscounts[idx].discountPerSheet = e.target.value;
                                                         setFcDiscounts(newDiscounts);
-                                                    }}><FiTrash2 /></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {fcDiscounts.length === 0 && (
-                                            <tr><td colSpan="3" style={{ textAlign: 'center', padding: '16px' }}>Belum ada aturan diskon tercatat.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
+                                                </div>
+                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
+                                                    const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
+                                                    setFcDiscounts(newDiscounts);
+                                                }}><FiTrash2 /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {fcDiscounts.length === 0 && (
+                                        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Belum ada aturan diskon tercatat.</div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table className="data-table">
+                                        <thead><tr><th>Minimal Jumlah / Lembar ({'>='})</th><th>Potongan Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
+                                        <tbody>
+                                            {fcDiscounts.map((d, idx) => (
+                                                <tr key={d.id}>
+                                                    <td data-label="Min. Jumlah / Lbr">
+                                                        <input type="number" className="form-input"
+                                                            value={d.minQty}
+                                                            onChange={(e) => {
+                                                                const newDiscounts = [...fcDiscounts];
+                                                                newDiscounts[idx].minQty = e.target.value;
+                                                                setFcDiscounts(newDiscounts);
+                                                            }}
+                                                            style={{ width: '150px' }}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Potongan (Rp) / Lbr">
+                                                        <input type="number" className="form-input"
+                                                            value={d.discountPerSheet}
+                                                            onChange={(e) => {
+                                                                const newDiscounts = [...fcDiscounts];
+                                                                newDiscounts[idx].discountPerSheet = e.target.value;
+                                                                setFcDiscounts(newDiscounts);
+                                                            }}
+                                                            style={{ width: '150px' }}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Aksi">
+                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
+                                                            const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
+                                                            setFcDiscounts(newDiscounts);
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {fcDiscounts.length === 0 && (
+                                                <tr><td colSpan="3" style={{ textAlign: 'center', padding: '16px' }}>Belum ada aturan diskon tercatat.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
 
                         <div style={{ marginTop: '24px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 'var(--radius)' }}>
@@ -689,6 +905,12 @@ export default function SettingsPage() {
                                 } else if (printerSize !== 'inkjet') {
                                     testText += '\n\n\n';
                                 }
+                                if (window.innerWidth < 1024) {
+                                    printViaRawBT(testText);
+                                    showToast('Draft dikirim ke aplikasi Bluetooth Printer', 'success');
+                                    return;
+                                }
+
                                 if (printerName) {
                                     try {
                                         const payload = { text: testText, printerName };
