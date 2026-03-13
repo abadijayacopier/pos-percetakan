@@ -73,8 +73,8 @@ export default function ServicePage({ onNavigate }) {
 
     const handleSaveService = (e) => {
         e.preventDefault();
-        const totalSpareparts = formData.spareparts.reduce((sum, item) => sum + item.subtotal, 0);
-        const totalCost = Number(formData.laborCost) + totalSpareparts;
+        const totalSpareparts = formData.spareparts.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+        const totalCost = (Number(formData.laborCost) || 0) + totalSpareparts;
 
         const technician = technicians.find(t => t.id === formData.technicianId);
 
@@ -138,7 +138,7 @@ export default function ServicePage({ onNavigate }) {
             if (p.id === id) {
                 const newPart = { ...p, [field]: value };
                 if (field === 'qty' || field === 'price') {
-                    newPart.subtotal = Number(newPart.qty) * Number(newPart.price);
+                    newPart.subtotal = (Number(newPart.qty) || 0) * (Number(newPart.price) || 0);
                 }
                 return newPart;
             }
@@ -570,7 +570,7 @@ export default function ServicePage({ onNavigate }) {
                             <div className="hidden sm:block">
                                 <p className="text-xs text-slate-400 font-bold">Total Estimasi (Jasa + Sparepart)</p>
                                 <p className="text-2xl font-black text-slate-900 dark:text-white leading-none mt-1">
-                                    Rp {(Number(formData.laborCost) + formData.spareparts.reduce((s, i) => s + i.subtotal, 0)).toLocaleString('id-ID')}
+                                    Rp {((Number(formData.laborCost) || 0) + formData.spareparts.reduce((s, i) => s + (Number(i.subtotal) || 0), 0)).toLocaleString('id-ID')}
                                 </p>
                             </div>
                             <div className="flex gap-4 w-full sm:w-auto">
