@@ -52,7 +52,7 @@ const db = {
     },
 
     exportAll() {
-        const tables = ['users', 'categories', 'products', 'customers', 'suppliers', 'transactions', 'transaction_details', 'print_orders', 'service_orders', 'cash_flow', 'stock_movements', 'activity_log', 'settings', 'fotocopy_prices'];
+        const tables = ['users', 'categories', 'products', 'customers', 'suppliers', 'transactions', 'transaction_details', 'print_orders', 'service_orders', 'cash_flow', 'stock_movements', 'activity_log', 'settings', 'fotocopy_prices', 'binding_prices', 'print_prices'];
         const backup = {};
         tables.forEach(t => { backup[t] = this.getAll(t); });
         backup._exportedAt = new Date().toISOString();

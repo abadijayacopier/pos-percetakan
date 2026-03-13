@@ -24,7 +24,9 @@ export default function SettingsPage() {
     }, []);
 
     useEffect(() => {
-        api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data)).catch(() => { });
+        api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data)).catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
+        setPrintPrices(db.getAll('print_prices'));
+        setBindPrices(db.getAll('binding_prices'));
         api.get('/print/printers').then(res => setSystemPrinters(res.data)).catch(() => { });
     }, []);
 
@@ -70,32 +72,9 @@ export default function SettingsPage() {
     const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
     const [systemPrinters, setSystemPrinters] = useState([]);
 
-    const defaultPrintPrices = [
-        { id: '1', paper: 'HVS A4', color: 'bw', price: 500 },
-        { id: '2', paper: 'HVS A4', color: 'color', price: 1000 },
-        { id: '3', paper: 'HVS F4', color: 'bw', price: 600 },
-        { id: '4', paper: 'HVS F4', color: 'color', price: 1200 },
-        { id: '5', paper: 'Art Paper', color: 'color', price: 5000 },
-        { id: '6', paper: 'Sticker Cromo', color: 'color', price: 6000 },
-        { id: '7', paper: 'Sticker Vinyl', color: 'color', price: 8000 }
-    ];
-    const [printPrices, setPrintPrices] = useState(() => {
-        const saved = getSetting('print_prices');
-        return saved ? JSON.parse(saved) : defaultPrintPrices;
-    });
+    const [printPrices, setPrintPrices] = useState([]);
 
-    const defaultBindPrices = [
-        { id: '1', type: 'Jilid Lakban (Biasa)', price: 3000 },
-        { id: '2', type: 'Jilid Mika', price: 5000 },
-        { id: '3', type: 'Jilid Spiral Kawat', price: 15000 },
-        { id: '4', type: 'Jilid Spiral Plastik', price: 10000 },
-        { id: '5', type: 'Jilid Soft Cover', price: 25000 },
-        { id: '6', type: 'Jilid Hard Cover', price: 40000 }
-    ];
-    const [bindPrices, setBindPrices] = useState(() => {
-        const saved = getSetting('bind_prices');
-        return saved ? JSON.parse(saved) : defaultBindPrices;
-    });
+    const [bindPrices, setBindPrices] = useState([]);
 
     const defaultFcDiscounts = [
         { id: '1', minQty: 100, discountPerSheet: 50 },
@@ -124,11 +103,10 @@ export default function SettingsPage() {
         set('printer_name', printerName);
         set('paper_size', paperSize);
         set('auto_print', autoPrint ? 'true' : 'false');
-        set('print_prices', JSON.stringify(printPrices));
-        set('bind_prices', JSON.stringify(bindPrices));
-        set('fc_discounts', JSON.stringify(fcDiscounts));
+        db.setAll('print_prices', printPrices);
+        db.setAll('binding_prices', bindPrices);
         showToast('Pengaturan berhasil disimpan!', 'success');
-        db.logActivity(user?.name || 'Admin', 'Simpan Pengaturan', 'Pengaturan umum diperbarui');
+        db.logActivity(user?.name || 'Admin', 'Simpan Pengaturan', 'Pengaturan umum dan harga layanan diperbarui');
     };
 
     const handleLogoUpload = (e) => {
@@ -519,7 +497,7 @@ export default function SettingsPage() {
                                 <h3><FiBook /> Master Harga Penjilidan</h3>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <button className="btn btn-secondary btn-sm" onClick={() => {
-                                        setBindPrices([...bindPrices, { id: Date.now().toString(), type: '', price: 0 }]);
+                                        setBindPrices([...bindPrices, { id: Date.now().toString(), name: '', price: 0 }]);
                                     }}><FiPlus /> Tambah Aturan</button>
                                     <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Jilid</button>
                                 </div>
@@ -530,9 +508,9 @@ export default function SettingsPage() {
                                         <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
                                             <div style={{ marginBottom: '12px' }}>
                                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Jilid</label>
-                                                <input className="form-input" value={p.type} onChange={(e) => {
+                                                <input className="form-input" value={p.name} onChange={(e) => {
                                                     const newPrices = [...bindPrices];
-                                                    newPrices[idx] = { ...newPrices[idx], type: e.target.value };
+                                                    newPrices[idx] = { ...newPrices[idx], name: e.target.value };
                                                     setBindPrices(newPrices);
                                                 }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} placeholder="Nama jenis jilid" />
                                             </div>
@@ -546,7 +524,7 @@ export default function SettingsPage() {
                                                     }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
                                                 </div>
                                                 <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
-                                                    if (confirm(`Hapus jilid "${p.type}"?`)) {
+                                                    if (confirm(`Hapus jilid "${p.name}"?`)) {
                                                         setBindPrices(bindPrices.filter((_, i) => i !== idx));
                                                     }
                                                 }}><FiTrash2 /></button>
@@ -562,9 +540,9 @@ export default function SettingsPage() {
                                             {bindPrices.map((p, idx) => (
                                                 <tr key={p.id}>
                                                     <td data-label="Jenis Jilid">
-                                                        <input className="form-input" value={p.type} onChange={(e) => {
+                                                        <input className="form-input" value={p.name} onChange={(e) => {
                                                             const newPrices = [...bindPrices];
-                                                            newPrices[idx] = { ...newPrices[idx], type: e.target.value };
+                                                            newPrices[idx] = { ...newPrices[idx], name: e.target.value };
                                                             setBindPrices(newPrices);
                                                         }} style={{ width: '250px' }} placeholder="Nama jenis jilid" />
                                                     </td>
@@ -581,7 +559,7 @@ export default function SettingsPage() {
                                                     </td>
                                                     <td data-label="Aksi">
                                                         <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                            if (confirm(`Hapus jilid "${p.type}"?`)) {
+                                                            if (confirm(`Hapus jilid "${p.name}"?`)) {
                                                                 setBindPrices(bindPrices.filter((_, i) => i !== idx));
                                                             }
                                                         }}><FiTrash2 /></button>

@@ -34,6 +34,7 @@ import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
 import PrintReceiptPage from './pages/PrintReceiptPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
+import ServiceInvoicePage from './pages/ServiceInvoicePage';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -326,6 +327,7 @@ export default function App() {
       case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
+      case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       default: return <DashboardPage onNavigate={handleNavigate} />;
     }
   };
