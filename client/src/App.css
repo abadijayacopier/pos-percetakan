@@ -19,6 +19,14 @@
   --glass-bg: var(--bg-glass);
 }
 
+[data-theme="dark"] .premium-pos-wrapper {
+  --bg-panel: var(--bg-secondary);
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-hover: rgba(255, 255, 255, 0.08);
+  --border-c: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(16, 25, 34, 0.6);
+}
+
 .premium-pos-wrapper .pos-catalog {
   flex: 1;
   display: flex;

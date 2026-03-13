@@ -367,7 +367,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                         <button
                             onClick={() => handlePrintReceipt(transactionComplete)}
                             style={{
-                                flex: 1, background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db',
+                                flex: 1, background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)',
                                 borderRadius: '6px', padding: '16px', fontSize: '1.05rem', fontWeight: 600,
                                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                             }}
@@ -391,9 +391,9 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
         return (
             <div>
-                <div style={{ padding: '16px', backgroundColor: '#f9fafb', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
-                    <p style={{ color: '#6b7280' }}>Total Tagihan</p>
-                    <p style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', margin: '8px 0' }}>{formatRupiah(cartTotal)}</p>
+                <div style={{ padding: '16px', backgroundColor: 'var(--bg-input)', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
+                    <p style={{ color: 'var(--text-secondary)' }}>Total Tagihan</p>
+                    <p style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)', margin: '8px 0' }}>{formatRupiah(cartTotal)}</p>
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
@@ -402,9 +402,9 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                         {['tunai', 'qris', 'kartu'].map(method => (
                             <button key={method} onClick={() => setPaymentMethod(method)} style={{
                                 flex: 1, padding: '12px', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase',
-                                border: paymentMethod === method ? '2px solid #10b981' : '2px solid #d1d5db',
-                                backgroundColor: paymentMethod === method ? '#d1fae5' : 'white',
-                                color: paymentMethod === method ? '#065f46' : '#374151',
+                                border: paymentMethod === method ? '2px solid var(--success)' : '2px solid var(--border)',
+                                backgroundColor: paymentMethod === method ? 'var(--bg-glass)' : 'var(--bg-secondary)',
+                                color: paymentMethod === method ? 'var(--success)' : 'var(--text-primary)',
                                 fontWeight: 600
                             }}>{method}</button>
                         ))}
@@ -420,7 +420,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                             value={amountPaid}
                             onChange={e => setAmountPaid(e.target.value)}
                             placeholder="e.g. 100000"
-                            style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '1.25rem' }}
+                            style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '1.25rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
                         />
                     </div>
                 )}
@@ -444,8 +444,8 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {isMobile && (
-                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', backgroundColor: '#ffffff', borderBottom: '1px solid #e5e7eb' }}>
-                    <button onClick={() => onNavigate('dashboard')} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: 600, color: '#4b5563', cursor: 'pointer', padding: 0 }}>
+                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
+                    <button onClick={() => onNavigate('dashboard')} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', padding: 0 }}>
                         <FiArrowLeft size={20} />
                         Kembali ke Dashboard
                     </button>

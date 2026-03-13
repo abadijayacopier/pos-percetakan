@@ -223,7 +223,118 @@ const createTables = async () => {
       )
     `);
 
-    console.log('✅ Semua tabel (14 tabel) berhasil dibuat atau sudah ada (Skipped).');
+    // 15. SPK (Surat Perintah Kerja)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS spk (
+        id VARCHAR(50) PRIMARY KEY,
+        spk_number VARCHAR(50) UNIQUE NOT NULL,
+        customer_id VARCHAR(50) NULL,
+        customer_name VARCHAR(150) NOT NULL,
+        customer_phone VARCHAR(30) NULL,
+        customer_company VARCHAR(150) NULL,
+        product_name VARCHAR(200) NOT NULL,
+        product_qty INT NOT NULL DEFAULT 1,
+        product_unit VARCHAR(30) NOT NULL DEFAULT 'pcs',
+        specs_material TEXT NULL,
+        specs_finishing TEXT NULL,
+        specs_notes TEXT NULL,
+        biaya_cetak DECIMAL(12,2) NOT NULL DEFAULT 0,
+        biaya_material DECIMAL(12,2) NOT NULL DEFAULT 0,
+        biaya_finishing DECIMAL(12,2) NOT NULL DEFAULT 0,
+        biaya_desain DECIMAL(12,2) NOT NULL DEFAULT 0,
+        biaya_lainnya DECIMAL(12,2) NOT NULL DEFAULT 0,
+        total_biaya DECIMAL(12,2) NOT NULL DEFAULT 0,
+        dp_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        sisa_tagihan DECIMAL(12,2) NOT NULL DEFAULT 0,
+        status ENUM('Menunggu Antrian', 'Dalam Proses Cetak', 'Finishing', 'Quality Control', 'Selesai', 'Siap Diambil', 'Diambil') NOT NULL DEFAULT 'Menunggu Antrian',
+        priority ENUM('Rendah', 'Normal', 'Tinggi', 'Urgent') NOT NULL DEFAULT 'Normal',
+        assigned_to VARCHAR(50) NULL,
+        deadline DATETIME NULL,
+        completed_at DATETIME NULL,
+        created_by VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        offset_order_id VARCHAR(50) NULL,
+        FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 16. SPK Logs
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS spk_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        spk_id VARCHAR(50) NOT NULL,
+        user_id VARCHAR(50) NULL,
+        action VARCHAR(100) NOT NULL,
+        description TEXT NULL,
+        old_value VARCHAR(100) NULL,
+        new_value VARCHAR(100) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (spk_id) REFERENCES spk(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 17. SPK Payments
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS spk_payments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        spk_id VARCHAR(50) NOT NULL,
+        payment_type ENUM('DP', 'Pelunasan') NOT NULL DEFAULT 'Pelunasan',
+        method ENUM('Tunai', 'QRIS', 'Transfer') NOT NULL DEFAULT 'Tunai',
+        amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+        bank_ref VARCHAR(100) NULL,
+        status ENUM('Pending', 'Berhasil', 'Gagal') NOT NULL DEFAULT 'Berhasil',
+        paid_by VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (spk_id) REFERENCES spk(id) ON DELETE CASCADE,
+        FOREIGN KEY (paid_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 18. SPK Handovers
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS spk_handovers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        spk_id VARCHAR(50) NOT NULL,
+        received_by_name VARCHAR(150) NOT NULL,
+        received_by_phone VARCHAR(30) NULL,
+        signature_data LONGTEXT NULL,
+        photo_evidence TEXT NULL,
+        notes TEXT NULL,
+        handed_by VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (spk_id) REFERENCES spk(id) ON DELETE CASCADE,
+        FOREIGN KEY (handed_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 19. WA Config
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS wa_config (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        config_key VARCHAR(100) UNIQUE NOT NULL,
+        config_value TEXT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB
+    `);
+
+    // Seed WA Config if empty
+    const [waRows] = await connection.query('SELECT COUNT(*) as count FROM wa_config');
+    if (waRows[0].count === 0) {
+      await connection.query(`
+        INSERT INTO wa_config (config_key, config_value) VALUES
+        ('api_url', 'https://api.fonnte.com/send'),
+        ('api_token', ''),
+        ('template_spk_selesai', 'Halo {nama}, pesanan *{produk}* (SPK: {spk_number}) Anda sudah selesai dan siap diambil. Sisa tagihan: *Rp {sisa_tagihan}*. Terima kasih! 🙏'),
+        ('template_invoice', 'Halo {nama}, berikut invoice untuk pesanan Anda:\\n\\nNo. SPK: {spk_number}\\nProduk: {produk}\\nTotal: Rp {total}\\nDP: Rp {dp}\\nSisa: Rp {sisa}\\n\\nTerima kasih! 🧾'),
+        ('auto_notify_on_complete', 'true')
+      `);
+    }
+
+    console.log('✅ Semua tabel (19 tabel) berhasil dibuat atau sudah ada.');
     connection.release();
     process.exit(0);
   } catch (err) {

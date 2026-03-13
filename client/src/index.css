@@ -1,8 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background-light: #f6f7f8;
+  --color-background-dark: #101922;
+  --color-primary: #137fec;
+}
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 /* ============================================
    FOTOCOPY ABADI JAYA - POS DESIGN SYSTEM
    ============================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ---- Theme Variables ---- */
 :root {
@@ -170,14 +178,17 @@ img {
 .custom-scrollbar::-webkit-scrollbar {
   height: 8px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: var(--bg-input);
   border-radius: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--text-muted);
   border-radius: 4px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 }

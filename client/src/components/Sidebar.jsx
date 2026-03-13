@@ -171,16 +171,16 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                                                     <div style={{
                                                                                         width: 1,
                                                                                         height: si === 0 ? 20 : 10,
-                                                                                        background: '#cbd5e1',
+                                                                                        background: 'var(--border)',
                                                                                     }} />
                                                                                     <div style={{
                                                                                         width: 12,
                                                                                         height: 1,
-                                                                                        background: '#cbd5e1',
+                                                                                        background: 'var(--border)',
                                                                                         alignSelf: 'flex-end',
                                                                                     }} />
                                                                                     {si < arr.length - 1 && (
-                                                                                        <div style={{ flex: 1, width: 1, background: '#cbd5e1', minHeight: 10 }} />
+                                                                                        <div style={{ flex: 1, width: 1, background: 'var(--border)', minHeight: 10 }} />
                                                                                     )}
                                                                                 </div>
                                                                                 <button
