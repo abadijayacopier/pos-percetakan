@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PosPage from './pages/PosPage';
+import IntegratedPos from './pages/IntegratedPos';
 import PrintingPage from './pages/PrintingPage';
 import DigitalPrintingPage from './pages/DigitalPrintingPage';
 import OffsetPrintingPage from './pages/OffsetPrintingPage';
@@ -295,7 +296,8 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard': return <DashboardPage onNavigate={handleNavigate} />;
-      case 'pos': return <PosPage onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
+      case 'pos': return <IntegratedPos onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
+      case 'pos-v1': return <PosPage onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
       case 'printing': return <PrintingPage onNavigate={handleNavigate} />;
       case 'digital-printing': return <DigitalPrintingPage onNavigate={handleNavigate} />;
       case 'cetak-offset': return <OffsetPrintingPage onNavigate={handleNavigate} />;
