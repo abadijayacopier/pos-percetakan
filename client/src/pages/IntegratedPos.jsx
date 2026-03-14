@@ -5,6 +5,7 @@ import seedData from '../seed';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
+import ThemeToggle from '../components/ThemeToggle';
 import { FiCheckCircle, FiTrash2, FiPlus, FiMinus, FiSearch, FiBell, FiUser, FiPrinter, FiSave, FiChevronRight, FiTag, FiShoppingCart, FiFile, FiBook, FiPrinter as FiPrinterIcon } from 'react-icons/fi';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
@@ -310,6 +311,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         )}
                     </button>
                     <div className="flex gap-2">
+                        <ThemeToggle className="hidden sm:flex" />
                         <button className="hidden sm:flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
                             <FiBell />
                         </button>

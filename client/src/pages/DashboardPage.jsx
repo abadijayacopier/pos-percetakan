@@ -12,7 +12,7 @@ export default function DashboardPage({ onNavigate }) {
         omset: 0, trxCount: 0, saldo: 0,
         lowStock: [], pendingOrders: [], activeService: [], notifications: []
     });
-    const [recentTrx, setRecentTrx] = useState([]);
+    const [chartBars, setChartBars] = useState([]);
 
     useEffect(() => {
         const fetchDashboardInfo = async () => {
@@ -36,11 +36,15 @@ export default function DashboardPage({ onNavigate }) {
                     omset: data.todaySales || 0,
                     trxCount: data.trxCount || 0,
                     saldo: data.saldo || 0,
-                    lowStock, pendingOrders, activeService
+                    lowStock, pendingOrders, activeService,
+                    activityLog: data.activityLog || []
                 });
 
+                if (data.chartData) {
+                    setChartBars(data.chartData);
+                }
+
                 if (trxRes.data) {
-                    // Sorting by date desc
                     const sorted = trxRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     setRecentTrx(sorted.slice(0, 5));
                 }
@@ -48,17 +52,6 @@ export default function DashboardPage({ onNavigate }) {
         };
         fetchDashboardInfo();
     }, []);
-
-    // Placeholder chart data
-    const chartBars = [
-        { day: 'Sen', h1: 30, h2: 40 },
-        { day: 'Sel', h1: 50, h2: 70 },
-        { day: 'Rab', h1: 20, h2: 30 },
-        { day: 'Kam', h1: 80, h2: 90 },
-        { day: 'Jum', h1: 100, h2: 120 },
-        { day: 'Sab', h1: 40, h2: 60 },
-        { day: 'Min', h1: 20, h2: 40 },
-    ];
 
     return (
         <div className="p-4 sm:p-8 space-y-8 font-display">
@@ -135,19 +128,32 @@ export default function DashboardPage({ onNavigate }) {
                         </div>
                     </div>
                     <div className="relative h-64 w-full bg-slate-50 dark:bg-slate-800/50 rounded-lg overflow-hidden flex flex-col justify-end">
-                        <div className="flex items-end justify-between px-6 h-full pb-8">
-                            <div className="w-8 md:w-16 bg-primary/20 hover:bg-primary/40 transition-colors cursor-pointer rounded-t h-[40%]"></div>
-                            <div className="w-8 md:w-16 bg-primary/20 hover:bg-primary/40 transition-colors cursor-pointer rounded-t h-[60%]"></div>
-                            <div className="w-8 md:w-16 bg-primary/40 hover:bg-primary/60 transition-colors cursor-pointer rounded-t h-[35%]"></div>
-                            <div className="w-8 md:w-16 bg-primary/30 hover:bg-primary/50 transition-colors cursor-pointer rounded-t h-[75%]"></div>
-                            <div className="w-8 md:w-16 bg-primary hover:bg-primary-dark transition-colors cursor-pointer rounded-t h-[90%] relative group">
-                                <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Rp 1.2M</div>
-                            </div>
-                            <div className="w-8 md:w-16 bg-primary/20 hover:bg-primary/40 transition-colors cursor-pointer rounded-t h-[45%]"></div>
-                            <div className="w-8 md:w-16 bg-primary/60 hover:bg-primary/80 transition-colors cursor-pointer rounded-t h-[55%]"></div>
+                        <div className="flex items-end justify-between px-6 h-full pb-8 pt-10">
+                            {chartBars.length > 0 ? chartBars.map((bar, i) => {
+                                const maxVal = Math.max(...chartBars.map(b => b.total), 1000);
+                                const height = (bar.total / maxVal) * 100;
+                                return (
+                                    <div key={i} className="flex flex-col items-center gap-2 group flex-1">
+                                        <div
+                                            className="w-8 md:w-16 bg-primary hover:bg-primary-dark transition-all duration-500 rounded-t relative group"
+                                            style={{ height: `${Math.max(5, height)}%` }}
+                                        >
+                                            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+                                                {formatRupiah(bar.total)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }) : (
+                                <div className="w-full text-center text-slate-400 text-xs italic pb-10">Belum ada data transaksi 7 hari terakhir</div>
+                            )}
                         </div>
                         <div className="flex justify-between px-6 pb-2 text-[10px] font-bold text-slate-400 uppercase border-t border-slate-200 dark:border-slate-800 pt-2">
-                            <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span>
+                            {chartBars.length > 0 ? chartBars.map((bar, i) => (
+                                <span key={i} className="flex-1 text-center">{bar.label}</span>
+                            )) : (
+                                <><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -218,38 +224,41 @@ export default function DashboardPage({ onNavigate }) {
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
                             {recentTrx.length > 0 ? recentTrx.map((trx, idx) => (
-                                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-6 py-4 font-bold text-slate-500 dark:text-slate-400">#TX-{idx + 8490}</td>
-                                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{trx.customer_name || 'Pelanggan Umum'}</td>
+                                <tr key={trx.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-bold
+                                        <div className="font-bold text-slate-900 dark:text-white">{trx.invoiceNo || `#TX-${idx + 1000}`}</div>
+                                        <div className="text-[10px] text-slate-500 font-medium">
+                                            {new Date(trx.created_at || trx.date).toLocaleDateString('id-ID')} {new Date(trx.created_at || trx.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">{trx.customer_name || trx.customerName || 'Pelanggan Umum'}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter
                                             ${trx.type === 'service' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
-                                                trx.type === 'print' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' :
+                                                trx.type === 'digital_printing' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' :
                                                     'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
                                             <span className="material-symbols-outlined text-xs">
-                                                {trx.type === 'service' ? 'build' : trx.type === 'print' ? 'print_connect' : 'print'}
+                                                {trx.type === 'service' ? 'build' : 'print'}
                                             </span>
-                                            {trx.type?.charAt(0).toUpperCase() + trx.type?.slice(1) || 'Fotokopi'}
+                                            {trx.type?.replace('_', ' ') || 'Fotokopi'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">{formatRupiah(trx.total || trx.grand_total)}</td>
+                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{formatRupiah(trx.total || trx.grand_total || 0)}</td>
                                     <td className="px-6 py-4">
                                         <span className={`flex items-center gap-1.5 font-bold text-xs
-                                            ${trx.status === 'selesai' ? 'text-emerald-600 dark:text-emerald-400' :
-                                                trx.status === 'proses' ? 'text-blue-600 dark:text-blue-400' :
-                                                    trx.status === 'batal' ? 'text-rose-600 dark:text-rose-400' :
-                                                        'text-slate-500 dark:text-slate-400'}`}>
+                                            ${trx.status === 'completed' || trx.status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' :
+                                                trx.status === 'pending' || trx.status === 'unpaid' ? 'text-amber-600 dark:text-amber-400' :
+                                                    'text-slate-500 dark:text-slate-400'}`}>
                                             <span className={`w-1.5 h-1.5 rounded-full
-                                                ${trx.status === 'selesai' ? 'bg-emerald-600' :
-                                                    trx.status === 'proses' ? 'bg-blue-600' :
-                                                        trx.status === 'batal' ? 'bg-rose-600' :
-                                                            'bg-slate-500'}`}></span>
-                                            {trx.status ? trx.status.charAt(0).toUpperCase() + trx.status.slice(1) : 'Selesai'}
+                                                ${trx.status === 'completed' || trx.status === 'paid' ? 'bg-emerald-600' :
+                                                    trx.status === 'pending' || trx.status === 'unpaid' ? 'bg-amber-600' :
+                                                        'bg-slate-500'}`}></span>
+                                            {trx.status?.toUpperCase() || 'SUKSES'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="text-slate-400 hover:text-primary transition-colors">
-                                            <span className="material-symbols-outlined">more_horiz</span>
+                                        <button className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all text-slate-400 hover:text-primary">
+                                            <span className="material-symbols-outlined">visibility</span>
                                         </button>
                                     </td>
                                 </tr>

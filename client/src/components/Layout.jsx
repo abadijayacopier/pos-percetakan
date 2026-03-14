@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
+import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { FiSun, FiMoon, FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch, FiMonitor } from 'react-icons/fi';
+import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch } from 'react-icons/fi';
 
 export default function Layout({ activePage, onNavigate, children, isFullscreen }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,22 +68,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
                         <div className="flex items-center gap-4">
                             {/* Theme Toggle */}
-                            <div className="hidden lg:flex p-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                                {[
-                                    { id: 'light', icon: FiSun, title: 'Terang' },
-                                    { id: 'dark', icon: FiMoon, title: 'Gelap' },
-                                    { id: 'system', icon: FiMonitor, title: 'Sistem' },
-                                ].map(t => (
-                                    <button
-                                        key={t.id}
-                                        className={`p-1.5 rounded-md transition-colors ${themeMode === t.id ? 'bg-white dark:bg-slate-600 text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                                        onClick={() => setTheme(t.id)}
-                                        title={`Tema ${t.title}`}
-                                    >
-                                        <t.icon size={14} />
-                                    </button>
-                                ))}
-                            </div>
+                            <ThemeToggle />
 
                             <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative">
                                 <span className="material-symbols-outlined">notifications</span>

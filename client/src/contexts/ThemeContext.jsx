@@ -17,6 +17,11 @@ export const ThemeProvider = ({ children }) => {
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', activeTheme);
+        if (activeTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
         localStorage.setItem('pos_theme', themeMode);
     }, [themeMode, activeTheme]);
 
