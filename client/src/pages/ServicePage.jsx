@@ -66,7 +66,8 @@ export default function ServicePage({ onNavigate }) {
         const matchesSearch =
             s.serviceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
             s.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            s.machineInfo.toLowerCase().includes(searchQuery.toLowerCase());
+            s.machineInfo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (s.serialNo && s.serialNo.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
@@ -253,7 +254,7 @@ export default function ServicePage({ onNavigate }) {
                                         <div className="flex flex-col">
                                             <span className="font-bold text-slate-900 dark:text-white uppercase text-sm tracking-tight">{srv.customerName}</span>
                                             <span className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                                <FiBox className="text-[10px]" /> {srv.machineInfo}
+                                                <FiBox className="text-[10px]" /> {srv.machineInfo} {srv.serialNo && `(SN: ${srv.serialNo})`}
                                             </span>
                                         </div>
                                     </td>

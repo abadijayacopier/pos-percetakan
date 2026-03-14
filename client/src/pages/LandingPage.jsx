@@ -62,10 +62,11 @@ export default function LandingPage({ onNavigate }) {
         const name = e.target[0].value;
         const phone = e.target[1].value;
         const model = e.target[2].value;
-        const address = e.target[3].value;
-        const issue = e.target[4].value;
+        const serialNo = e.target[3].value;
+        const address = e.target[4].value;
+        const issue = e.target[5].value;
 
-        const message = `Halo ${storeInfo.name}, saya ingin request service mesin:%0A- Nama: ${name}%0A- WhatsApp: ${phone}%0A- Model: ${model}%0A- Alamat: ${address}%0A- Keluhan: ${issue}`;
+        const message = `Halo ${storeInfo.name}, saya ingin request service mesin:%0A- Nama: ${name}%0A- WhatsApp: ${phone}%0A- Model: ${model}%0A- SN: ${serialNo || '-'}%0A- Alamat: ${address}%0A- Keluhan: ${issue}`;
         const waUrl = `https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`;
 
         window.open(waUrl, '_blank');
@@ -458,6 +459,10 @@ export default function LandingPage({ onNavigate }) {
                                 <div className="lp-form-group">
                                     <label>Model Mesin</label>
                                     <input type="text" className="lp-form-input" placeholder="Contoh: Canon iR 6000 / Kyocera" required />
+                                </div>
+                                <div className="lp-form-group">
+                                    <label>Serial Number (Opsional)</label>
+                                    <input type="text" className="lp-form-input" placeholder="Masukkan nomor seri mesin Anda" />
                                 </div>
                                 <div className="lp-form-group">
                                     <label>Alamat Lengkap / Lokasi Unit</label>
