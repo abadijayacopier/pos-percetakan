@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink } from 'react-icons/fi';
+import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -275,7 +275,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                         disabled={donePage === 1}
                                         className="dd-page-btn"
                                     >
-                                        <FiClock style={{ transform: 'rotate(180deg)', fontSize: '0.8rem' }} /> Prev
+                                        <FiChevronLeft style={{ fontSize: '0.8rem' }} /> Prev
                                     </button>
                                     <span className="dd-page-num">{donePage} / {Math.ceil(doneTasks.length / doneItemsPerPage)}</span>
                                     <button
@@ -283,7 +283,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                         disabled={donePage === Math.ceil(doneTasks.length / doneItemsPerPage)}
                                         className="dd-page-btn"
                                     >
-                                        Next <FiClock style={{ fontSize: '0.8rem' }} />
+                                        Next <FiChevronRight style={{ fontSize: '0.8rem' }} />
                                     </button>
                                 </div>
                             </div>

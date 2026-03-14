@@ -3,7 +3,7 @@ import db from '../db';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
-import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle, FiZap, FiClipboard } from 'react-icons/fi';
 import { generateInvoice } from '../utils';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -363,8 +363,8 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                     'bg-green-100 dark:bg-green-900/30 text-green-600'
                                                 }`}>
                                                 {d.status === 'menunggu_desain' ? 'Menunggu' :
-                                                    d.status === 'ditugaskan' ? '📋 Ditugaskan' :
-                                                        '⚡ Dikerjakan'}
+                                                    d.status === 'ditugaskan' ? <span className="flex items-center gap-1"><FiClipboard size={12} /> Ditugaskan</span> :
+                                                        <span className="flex items-center gap-1"><FiZap size={12} /> Dikerjakan</span>}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-1">
@@ -403,7 +403,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                 className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-bold ml-2 cursor-default"
                                                 disabled
                                             >
-                                                ✅ Sudah Ditugaskan
+                                                <FiCheckCircle size={16} className="text-green-500 mr-1" /> Sudah Ditugaskan
                                             </button>
                                         )}
                                     </div>
@@ -794,7 +794,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                             <p className="text-xs text-slate-500">{d.username}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 text-xs font-bold">🟢 Tersedia</span>
+                                            <span className="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 text-xs font-bold flex items-center gap-1"><FiCheckCircle size={10} /> Tersedia</span>
                                             <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition">arrow_forward</span>
                                         </div>
                                     </button>
