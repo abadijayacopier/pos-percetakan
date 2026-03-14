@@ -240,6 +240,10 @@ export default function MaterialsPage({ onNavigate }) {
     const [stokItem, setStokItem] = useState(null);
     const [toastMsg, setToastMsg] = useState(null);
 
+    // Pagination States
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+
     const toast = useCallback((msg, type = 'success') => setToastMsg({ msg, type }), []);
 
     const fetchMaterials = useCallback(async () => {
@@ -256,12 +260,20 @@ export default function MaterialsPage({ onNavigate }) {
 
     useEffect(() => { fetchMaterials(); }, []);
 
-    const displayed = materials.filter(m => {
+    const filtered = materials.filter(m => {
         const q = search.toLowerCase();
         const matchSearch = !q || m.nama_bahan.toLowerCase().includes(q) || m.kategori.toLowerCase().includes(q);
         const matchFilter = filter === 'all' || (filter === 'low' ? parseFloat(m.stok_saat_ini) <= parseFloat(m.stok_minimum) : m.kategori === filter);
         return matchSearch && matchFilter;
     });
+
+    // Handle pagination reset on filter change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filter]);
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const lowStockCount = materials.filter(m => parseFloat(m.stok_saat_ini) <= parseFloat(m.stok_minimum) && parseFloat(m.stok_minimum) > 0).length;
 
@@ -461,6 +473,51 @@ export default function MaterialsPage({ onNavigate }) {
                         </table>
                     </div>
                 )}
+
+                {/* ── Pagination ── */}
+                {!loading && filtered.length > 0 && (
+                    <div className="ms-pagination">
+                        <div className="ms-pagination-info">
+                            Menampilkan <b>{(currentPage - 1) * itemsPerPage + 1}</b> - <b>{Math.min(currentPage * itemsPerPage, filtered.length)}</b> dari <b>{filtered.length}</b> bahan
+                        </div>
+                        <div className="ms-pagination-controls">
+                            <button
+                                className="ms-page-btn"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            >
+                                <span className="material-symbols-outlined">chevron_left</span>
+                            </button>
+
+                            {[...Array(totalPages)].map((_, i) => {
+                                const p = i + 1;
+                                // Show first, last, and pages around current
+                                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                                    return (
+                                        <button
+                                            key={p}
+                                            className={`ms-page-btn ${currentPage === p ? 'ms-page-active' : ''}`}
+                                            onClick={() => setCurrentPage(p)}
+                                        >
+                                            {p}
+                                        </button>
+                                    );
+                                } else if (p === currentPage - 2 || p === currentPage + 2) {
+                                    return <span key={p} className="ms-page-dots">...</span>;
+                                }
+                                return null;
+                            })}
+
+                            <button
+                                className="ms-page-btn"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            >
+                                <span className="material-symbols-outlined">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -568,4 +625,18 @@ select.ms-input { appearance:auto; }
 
 .ms-stok-preview { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#eff6ff; border-radius:10px; font-size:.85rem; font-weight:600; }
 [data-theme="dark"] .ms-stok-preview { background:#1e3a5f; }
+
+/* Pagination Styles */
+.ms-pagination { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-top:1px solid #f1f5f9; background:#fff; }
+[data-theme="dark"] .ms-pagination { background:#0f172a; border-color:#1e293b; }
+.ms-pagination-info { font-size:.75rem; color:#64748b; }
+.ms-pagination-info b { color:#0f172a; }
+[data-theme="dark"] .ms-pagination-info b { color:#f1f5f9; }
+.ms-pagination-controls { display:flex; align-items:center; gap:5px; }
+.ms-page-btn { min-width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; font-size:.75rem; font-weight:700; cursor:pointer; transition:all .15s; }
+[data-theme="dark"] .ms-page-btn { background:#1e293b; border-color:#334155; color:#94a3b8; }
+.ms-page-btn:hover:not(:disabled) { border-color:#bfdbfe; color:#2563eb; background:#eff6ff; }
+.ms-page-btn:disabled { opacity:.4; cursor:not-allowed; }
+.ms-page-active { background:#2563eb!important; color:#fff!important; border-color:#2563eb!important; }
+.ms-page-dots { color:#94a3b8; font-size:.75rem; padding:0 4px; }
 `;
