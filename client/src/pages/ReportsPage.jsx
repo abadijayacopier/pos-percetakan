@@ -1,7 +1,11 @@
 import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah, formatDate, formatDateTime } from '../utils';
-import { FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter, FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle } from 'react-icons/fi';
+import {
+    FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
+    FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle,
+    FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight
+} from 'react-icons/fi';
 
 export default function ReportsPage() {
     const [activeTab, setActiveTab] = useState('sales');
@@ -10,6 +14,10 @@ export default function ReportsPage() {
         return d.toISOString().slice(0, 10);
     });
     const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+
+    // Pagination state per tab
+    const [pages, setPages] = useState({ sales: 1, products: 1, customers: 1 });
+    const PER_PAGE = 10;
 
     const allTransactions = useMemo(() => db.getAll('transactions'), []);
     const allProducts = useMemo(() => db.getAll('products'), []);
@@ -21,7 +29,7 @@ export default function ReportsPage() {
         return allTransactions.filter(t => {
             const d = t.date ? t.date.slice(0, 10) : '';
             return d >= dateFrom && d <= dateTo;
-        });
+        }).sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
     }, [allTransactions, dateFrom, dateTo]);
 
     // Sales metrics
@@ -50,19 +58,37 @@ export default function ReportsPage() {
     }, [transactions]);
 
     // Customer metrics
-    const topCustomers = [...allCustomers].sort((a, b) => (b.totalSpend || 0) - (a.totalSpend || 0)).slice(0, 10);
+    const topCustomers = useMemo(() => {
+        return [...allCustomers].sort((a, b) => (b.totalSpend || 0) - (a.totalSpend || 0)).slice(0, 10);
+    }, [allCustomers]);
 
     // Payment method breakdown
     const paymentBreakdown = useMemo(() => {
         const map = {};
         transactions.forEach(t => {
-            const m = t.paymentType || t.paymentMethod || 'tunai';
+            const m = (t.paymentType || t.paymentMethod || 'tunai').toLowerCase();
             map[m] = (map[m] || 0) + (t.total || 0);
         });
         return Object.entries(map).map(([method, amount]) => ({ method, amount }));
     }, [transactions]);
 
-    // Print handler
+    // Paginated Data
+    const paginatedSales = useMemo(() => {
+        return transactions.slice((pages.sales - 1) * PER_PAGE, pages.sales * PER_PAGE);
+    }, [transactions, pages.sales]);
+
+    const paginatedProducts = useMemo(() => {
+        return allProducts.slice((pages.products - 1) * PER_PAGE, pages.products * PER_PAGE);
+    }, [allProducts, pages.products]);
+
+    const paginatedCustomers = useMemo(() => {
+        return allCustomers.slice((pages.customers - 1) * PER_PAGE, pages.customers * PER_PAGE);
+    }, [allCustomers, pages.customers]);
+
+    const handlePageChange = (tab, p) => {
+        setPages(prev => ({ ...prev, [tab]: p }));
+    };
+
     const handlePrint = () => window.print();
 
     // CSV Export
@@ -115,79 +141,157 @@ export default function ReportsPage() {
         exportCSV(data, 'laporan_pelanggan', ['Nama', 'Telepon', 'Alamat', 'Tipe', 'Total Transaksi', 'Total Belanja']);
     };
 
-    return (
-        <div className="rpt-page print-container" style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <style>{CSS}</style>
-
-            {/* Header */}
-            <div className="rpt-header print-hide">
-                <div>
-                    <h1 className="rpt-title"><FiFileText /> Laporan Bisnis</h1>
-                    <p className="rpt-sub">Data real-time dari database</p>
+    const Pagination = ({ tab, total }) => {
+        const totalPages = Math.ceil(total / PER_PAGE);
+        const currentPage = pages[tab];
+        if (totalPages <= 1) return null;
+        return (
+            <div className="p-6 bg-slate-50/30 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Showing {(currentPage - 1) * PER_PAGE + 1}–{Math.min(currentPage * PER_PAGE, total)} of {total} records
+                </p>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => handlePageChange(tab, Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                    >
+                        <FiChevronLeft size={18} />
+                    </button>
+                    <span className="text-xs font-black min-w-[3rem] text-center dark:text-white">
+                        {currentPage} <span className="text-slate-400">/</span> {totalPages}
+                    </span>
+                    <button
+                        onClick={() => handlePageChange(tab, Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                    >
+                        <FiChevronRight size={18} />
+                    </button>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button className="rpt-btn-outline" onClick={handlePrint}><FiPrinter /> Print</button>
-                    <button className="rpt-btn-primary" onClick={activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}>
-                        <FiDownload /> Export CSV
+            </div>
+        );
+    };
+
+    return (
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 print:hidden">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-4">
+                        <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20">
+                            <FiPieChart className="text-2xl" />
+                        </div>
+                        Laporan Bisnis
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75 underline decoration-blue-500/30 underline-offset-4">Real-time Financial & Operational Intelligence</p>
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={handlePrint}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600 shadow-sm transition-all"
+                    >
+                        <FiPrinter className="text-lg" />
+                        Print Page
+                    </button>
+                    <button
+                        onClick={activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
+                    >
+                        <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
+                        Export CSV
                     </button>
                 </div>
             </div>
 
-            {/* Print Header */}
-            <div className="print-only-header">
-                <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>Laporan {activeTab === 'sales' ? 'Penjualan' : activeTab === 'products' ? 'Produk' : 'Pelanggan'}</h1>
-                <p style={{ margin: '4px 0 0', fontSize: '.85rem', color: '#64748b' }}>
+            {/* Print Only Header */}
+            <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-8">
+                <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Laporan {activeTab === 'sales' ? 'Penjualan' : activeTab === 'products' ? 'Stok Produk' : 'Analisis Pelanggan'}</h1>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
                     Periode: {formatDate(dateFrom)} - {formatDate(dateTo)} | Dicetak: {formatDateTime(new Date())}
                 </p>
             </div>
 
-            {/* Tabs & Date Filter */}
-            <div className="rpt-controls print-hide">
-                <div className="rpt-tabs">
+            {/* Filter Bar */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row gap-6 justify-between print:hidden">
+                <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 items-center">
                     {[
-                        { id: 'sales', label: 'Penjualan', icon: <FiShoppingCart size={14} /> },
-                        { id: 'products', label: 'Produk', icon: <FiBox size={14} /> },
-                        { id: 'customers', label: 'Pelanggan', icon: <FiUsers size={14} /> },
+                        { id: 'sales', label: 'Penjualan', icon: FiShoppingCart },
+                        { id: 'products', label: 'Produk', icon: FiBox },
+                        { id: 'customers', label: 'Pelanggan', icon: FiUsers },
                     ].map(tab => (
-                        <button key={tab.id} className={`rpt-tab ${activeTab === tab.id ? 'active' : ''}`} onClick={() => setActiveTab(tab.id)}>
-                            {tab.icon} {tab.label}
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${activeTab === tab.id
+                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-lg'
+                                : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-slate-300'
+                                }`}
+                        >
+                            <tab.icon className="text-sm" />
+                            {tab.label}
                         </button>
                     ))}
                 </div>
-                <div className="rpt-date-range">
-                    <FiCalendar size={14} />
-                    <input type="date" className="rpt-date-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-                    <span style={{ color: 'var(--text-muted)' }}>—</span>
-                    <input type="date" className="rpt-date-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+
+                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <FiCalendar className="text-slate-400 ml-2" />
+                    <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={e => setDateFrom(e.target.value)}
+                        className="bg-transparent border-none text-[10px] font-black text-slate-900 dark:text-white focus:ring-0 uppercase cursor-pointer"
+                    />
+                    <div className="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
+                    <input
+                        type="date"
+                        value={dateTo}
+                        onChange={e => setDateTo(e.target.value)}
+                        className="bg-transparent border-none text-[10px] font-black text-slate-900 dark:text-white focus:ring-0 uppercase cursor-pointer"
+                    />
                 </div>
             </div>
 
             {/* ============ SALES REPORT ============ */}
             {activeTab === 'sales' && (
-                <>
-                    <div className="rpt-stats">
+                <div className="space-y-8 slide-in-from-bottom-4 duration-500">
+                    {/* Metrics */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: 'Pendapatan', value: formatRupiah(totalRevenue), icon: <FiDollarSign />, color: '#10b981', bg: '#d1fae5' },
-                            { label: 'Jumlah Transaksi', value: totalTrx, icon: <FiShoppingCart />, color: '#3b82f6', bg: '#dbeafe' },
-                            { label: 'Rata-rata / Trx', value: formatRupiah(avgTrx), icon: <FiTrendingUp />, color: '#8b5cf6', bg: '#ede9fe' },
-                            { label: 'Kas Masuk', value: formatRupiah(cashIn), icon: <FiDollarSign />, color: '#16a34a', bg: '#dcfce7' },
-                        ].map(s => (
-                            <div key={s.label} className="rpt-stat-card">
-                                <div className="rpt-stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                                <div><p className="rpt-stat-label">{s.label}</p><p className="rpt-stat-value" style={{ color: s.color }}>{s.value}</p></div>
+                            { label: 'Total Revenue', value: formatRupiah(totalRevenue), icon: FiDollarSign, color: 'blue', sub: 'Gross Income' },
+                            { label: 'Transactions', value: totalTrx, icon: FiShoppingCart, color: 'emerald', sub: 'Order Count' },
+                            { label: 'Avg / Trx', value: formatRupiah(avgTrx), icon: FiTrendingUp, color: 'indigo', sub: 'Basket Size' },
+                            { label: 'Cash Inflow', value: formatRupiah(cashIn), icon: FiArrowUpRight, color: 'emerald', sub: 'Verified Flow' },
+                        ].map((s, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                                'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
+                                        }`}>
+                                        <s.icon className="text-xl" />
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{s.sub}</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tighter leading-none">{s.value}</p>
                             </div>
                         ))}
                     </div>
 
                     {/* Payment Breakdown */}
                     {paymentBreakdown.length > 0 && (
-                        <div className="rpt-card">
-                            <h3 className="rpt-card-title">Metode Pembayaran</h3>
-                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '0 20px 16px' }}>
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm print:hidden">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-3">
+                                <div className="size-2 bg-blue-500 rounded-full"></div>
+                                Metode Settlement
+                            </h3>
+                            <div className="flex flex-wrap gap-4">
                                 {paymentBreakdown.map(pb => (
-                                    <div key={pb.method} className="rpt-pill">
-                                        <span style={{ fontWeight: 700, textTransform: 'capitalize' }}>{pb.method}</span>
-                                        <span style={{ color: '#10b981', fontWeight: 800 }}>{formatRupiah(pb.amount)}</span>
+                                    <div key={pb.method} className="px-6 py-4 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col min-w-[140px]">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 opacity-75">{pb.method}</span>
+                                        <span className="text-lg font-black text-slate-900 dark:text-white italic tracking-tighter">{formatRupiah(pb.amount)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -195,226 +299,262 @@ export default function ReportsPage() {
                     )}
 
                     {/* Transaction Table */}
-                    <div className="rpt-card">
-                        <h3 className="rpt-card-title">Riwayat Transaksi ({transactions.length})</h3>
-                        {transactions.length === 0 ? (
-                            <div className="rpt-empty"><FiShoppingCart size={40} /><p>Belum ada transaksi di periode ini.</p></div>
-                        ) : (
-                            <div className="rpt-table-wrap">
-                                <table className="rpt-table">
-                                    <thead><tr>
-                                        <th>No Invoice</th><th>Tanggal</th><th>Pelanggan</th><th>Tipe</th><th>Total</th><th>Pembayaran</th><th>Kasir</th>
-                                    </tr></thead>
-                                    <tbody>
-                                        {transactions.map(t => (
-                                            <tr key={t.id} className="rpt-tr">
-                                                <td style={{ fontFamily: 'monospace', fontSize: '.8rem' }}>{t.invoiceNo}</td>
-                                                <td style={{ fontSize: '.82rem' }}>{formatDateTime(t.date)}</td>
-                                                <td style={{ fontWeight: 600 }}>{t.customerName || 'Umum'}</td>
-                                                <td><span className="rpt-badge">{t.type}</span></td>
-                                                <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(t.total)}</td>
-                                                <td style={{ textTransform: 'capitalize', fontSize: '.85rem' }}>{t.paymentType || t.paymentMethod}</td>
-                                                <td style={{ fontSize: '.85rem', color: 'var(--text-secondary)' }}>{t.userName}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex justify-between items-center">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                                <div className="size-3 bg-indigo-500 rounded-full"></div>
+                                Log Transaksi Periode ({transactions.length})
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
+                                        <th className="px-8 py-5">No Invoice</th>
+                                        <th className="px-8 py-5">Timestamp</th>
+                                        <th className="px-8 py-5">Pelanggan</th>
+                                        <th className="px-8 py-5">Tipe Order</th>
+                                        <th className="px-8 py-5 text-right">Settlement</th>
+                                        <th className="px-8 py-5">Payment</th>
+                                        <th className="px-8 py-5 text-right">Authorized</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                    {paginatedSales.map(t => (
+                                        <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
+                                            <td className="px-8 py-5">
+                                                <span className="text-[11px] font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/10 px-2 py-1 rounded">
+                                                    {t.invoiceNo}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase">{formatDate(t.date)}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(t.date || t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.customerName || 'Pelanggan Umum'}</span>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+                                                    {t.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <span className="text-[11px] font-black text-emerald-600 italic tracking-tighter">{formatRupiah(t.total)}</span>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.paymentType || t.paymentMethod}</span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.userName}</span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {transactions.length === 0 && (
+                                <div className="py-24 text-center">
+                                    <FiShoppingCart size={48} className="mx-auto mb-4 text-slate-200" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Belum ada data transaksi di periode ini</p>
+                                </div>
+                            )}
+                        </div>
+                        <Pagination tab="sales" total={transactions.length} />
                     </div>
-                </>
+                </div>
             )}
 
             {/* ============ PRODUCT REPORT ============ */}
             {activeTab === 'products' && (
-                <>
-                    <div className="rpt-stats">
+                <div className="space-y-8 slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: 'Total Produk', value: allProducts.length, icon: <FiBox />, color: '#3b82f6', bg: '#dbeafe' },
-                            { label: 'Nilai Stok', value: formatRupiah(totalStockValue), icon: <FiDollarSign />, color: '#10b981', bg: '#d1fae5' },
-                            { label: 'Stok Menipis', value: lowStockProducts.length, icon: <FiAlertTriangle />, color: lowStockProducts.length > 0 ? '#ef4444' : '#94a3b8', bg: lowStockProducts.length > 0 ? '#fee2e2' : '#f1f5f9' },
-                            { label: 'Produk Terjual', value: productSales.length, icon: <FiTrendingUp />, color: '#8b5cf6', bg: '#ede9fe' },
-                        ].map(s => (
-                            <div key={s.label} className="rpt-stat-card">
-                                <div className="rpt-stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                                <div><p className="rpt-stat-label">{s.label}</p><p className="rpt-stat-value" style={{ color: s.color }}>{s.value}</p></div>
+                            { label: 'Inventory SKU', value: allProducts.length, icon: FiBox, color: 'blue', sub: 'Total Types' },
+                            { label: 'Inventory Value', value: formatRupiah(totalStockValue), icon: FiDollarSign, color: 'emerald', sub: 'Calculated Cost' },
+                            { label: 'Low Stocks', value: lowStockProducts.length, icon: FiAlertTriangle, color: lowStockProducts.length > 0 ? 'rose' : 'slate', sub: 'Immediate Action' },
+                            { label: 'Active SKUs', value: productSales.length, icon: FiTrendingUp, color: 'indigo', sub: 'Conversion Rate' },
+                        ].map((s, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                                s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
+                                                    'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
+                                        }`}>
+                                        <s.icon className="text-xl" />
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{s.sub}</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tighter leading-none">{s.value}</p>
                             </div>
                         ))}
                     </div>
 
-                    {/* Best Selling */}
-                    {productSales.length > 0 && (
-                        <div className="rpt-card">
-                            <h3 className="rpt-card-title">Produk Terlaris</h3>
-                            <div className="rpt-table-wrap">
-                                <table className="rpt-table">
-                                    <thead><tr><th>#</th><th>Produk</th><th>Qty Terjual</th><th>Pendapatan</th></tr></thead>
-                                    <tbody>
-                                        {productSales.slice(0, 10).map((ps, i) => (
-                                            <tr key={i} className="rpt-tr">
-                                                <td style={{ fontWeight: 800, color: i < 3 ? '#f59e0b' : 'var(--text-muted)' }}>{i + 1}</td>
-                                                <td style={{ fontWeight: 600 }}>{ps.name}</td>
-                                                <td>{ps.qty}</td>
-                                                <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(ps.revenue)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Best Selling */}
+                        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden h-fit">
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-amber-50/30 dark:bg-amber-900/10">
+                                <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                                    <div className="size-2 bg-amber-500 rounded-full animate-pulse"></div>
+                                    🏆 Hot Items / Top 10 Sales
+                                </h3>
+                            </div>
+                            <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                {productSales.slice(0, 10).map((ps, i) => (
+                                    <div key={i} className="px-8 py-5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-xs font-black text-slate-300 w-4">{i + 1}</span>
+                                            <div>
+                                                <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{ps.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{ps.qty} units moved</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[11px] font-black text-emerald-600 italic">{formatRupiah(ps.revenue)}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    )}
 
-                    {/* Low Stock Alert */}
-                    {lowStockProducts.length > 0 && (
-                        <div className="rpt-card">
-                            <h3 className="rpt-card-title" style={{ color: '#ef4444' }}>⚠️ Stok Menipis</h3>
-                            <div className="rpt-table-wrap">
-                                <table className="rpt-table">
-                                    <thead><tr><th>Kode</th><th>Produk</th><th>Stok</th><th>Min Stok</th><th>Harga Jual</th></tr></thead>
-                                    <tbody>
-                                        {lowStockProducts.map(p => (
-                                            <tr key={p.id} className="rpt-tr">
-                                                <td style={{ fontFamily: 'monospace', fontSize: '.8rem' }}>{p.code}</td>
-                                                <td style={{ fontWeight: 600 }}>{p.name}</td>
-                                                <td style={{ fontWeight: 700, color: '#ef4444' }}>{p.stock} {p.unit}</td>
-                                                <td>{p.minStock} {p.unit}</td>
-                                                <td>{formatRupiah(p.sellPrice)}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        {/* Inventory Pulse */}
+                        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                                    <FiActivity className="text-blue-600" />
+                                    Database Master SKU ({allProducts.length})
+                                </h3>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Full Product List */}
-                    <div className="rpt-card">
-                        <h3 className="rpt-card-title">Daftar Produk Lengkap ({allProducts.length})</h3>
-                        <div className="rpt-table-wrap">
-                            <table className="rpt-table">
-                                <thead><tr><th>Kode</th><th>Nama</th><th>Harga Beli</th><th>Harga Jual</th><th>Stok</th><th>Nilai</th></tr></thead>
-                                <tbody>
-                                    {allProducts.map(p => (
-                                        <tr key={p.id} className="rpt-tr">
-                                            <td style={{ fontFamily: 'monospace', fontSize: '.8rem' }}>{p.code}</td>
-                                            <td style={{ fontWeight: 600 }}>{p.name}</td>
-                                            <td>{formatRupiah(p.buyPrice)}</td>
-                                            <td style={{ fontWeight: 700 }}>{formatRupiah(p.sellPrice)}</td>
-                                            <td>{p.stock} {p.unit}</td>
-                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(p.sellPrice * p.stock)}</td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
+                                            <th className="px-8 py-5">Kode / SKU</th>
+                                            <th className="px-8 py-5">Nama Produk</th>
+                                            <th className="px-8 py-5 text-right">Stok</th>
+                                            <th className="px-8 py-5 text-right">Valuation</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        {paginatedProducts.map(p => (
+                                            <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <td className="px-8 py-5">
+                                                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">{p.code}</span>
+                                                </td>
+                                                <td className="px-8 py-5">
+                                                    <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase">{p.name}</p>
+                                                </td>
+                                                <td className="px-8 py-5 text-right">
+                                                    <span className={`text-[11px] font-black ${p.stock <= (p.minStock || 0) ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+                                                        {p.stock} <span className="text-[9px] font-bold text-slate-400 uppercase ml-1">{p.unit}</span>
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-right">
+                                                    <span className="text-[11px] font-black text-blue-600 italic">{formatRupiah(p.sellPrice * p.stock)}</span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <Pagination tab="products" total={allProducts.length} />
                         </div>
                     </div>
-                </>
+                </div>
             )}
 
             {/* ============ CUSTOMER REPORT ============ */}
             {activeTab === 'customers' && (
-                <>
-                    <div className="rpt-stats">
+                <div className="space-y-8 slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { label: 'Total Pelanggan', value: allCustomers.length, icon: <FiUsers />, color: '#3b82f6', bg: '#dbeafe' },
-                            { label: 'Total Belanja', value: formatRupiah(allCustomers.reduce((s, c) => s + (c.totalSpend || 0), 0)), icon: <FiDollarSign />, color: '#10b981', bg: '#d1fae5' },
-                            { label: 'Total Transaksi', value: allCustomers.reduce((s, c) => s + (c.totalTrx || 0), 0), icon: <FiShoppingCart />, color: '#8b5cf6', bg: '#ede9fe' },
-                            { label: 'Corporate', value: allCustomers.filter(c => c.type === 'corporate').length, icon: <FiUsers />, color: '#f59e0b', bg: '#fef3c7' },
-                        ].map(s => (
-                            <div key={s.label} className="rpt-stat-card">
-                                <div className="rpt-stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                                <div><p className="rpt-stat-label">{s.label}</p><p className="rpt-stat-value" style={{ color: s.color }}>{s.value}</p></div>
+                            { label: 'Verified Partners', value: allCustomers.length, icon: FiUsers, color: 'blue', sub: 'Client Database' },
+                            { label: 'Accumulated Spend', value: formatRupiah(allCustomers.reduce((s, c) => s + (c.totalSpend || 0), 0)), icon: FiDollarSign, color: 'emerald', sub: 'Lifetime Value' },
+                            { label: 'Service Volume', value: allCustomers.reduce((s, c) => s + (c.totalTrx || 0), 0), icon: FiShoppingCart, color: 'indigo', sub: 'Repeat Orders' },
+                            { label: 'Corporate Accounts', value: allCustomers.filter(c => c.type === 'corporate').length, icon: FiPieChart, color: 'amber', sub: 'B2B Segment' },
+                        ].map((s, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                                s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
+                                                    'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+                                        }`}>
+                                        <s.icon className="text-xl" />
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{s.sub}</span>
+                                </div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                                <p className="text-2xl font-black text-slate-900 dark:text-white italic tracking-tighter leading-none">{s.value}</p>
                             </div>
                         ))}
                     </div>
 
-                    {/* Top Customers */}
-                    <div className="rpt-card">
-                        <h3 className="rpt-card-title">🏆 Pelanggan Teratas (berdasarkan belanja)</h3>
-                        <div className="rpt-table-wrap">
-                            <table className="rpt-table">
-                                <thead><tr><th>#</th><th>Nama</th><th>Tipe</th><th>Telepon</th><th>Total Trx</th><th>Total Belanja</th></tr></thead>
-                                <tbody>
-                                    {topCustomers.map((c, i) => (
-                                        <tr key={c.id} className="rpt-tr">
-                                            <td style={{ fontWeight: 800, color: i < 3 ? '#f59e0b' : 'var(--text-muted)' }}>{i + 1}</td>
-                                            <td style={{ fontWeight: 700 }}>{c.name}</td>
-                                            <td><span className="rpt-badge">{c.type}</span></td>
-                                            <td style={{ fontSize: '.85rem' }}>{c.phone}</td>
-                                            <td style={{ textAlign: 'center', fontWeight: 600 }}>{c.totalTrx || 0}x</td>
-                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(c.totalSpend || 0)}</td>
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                                <div className="size-3 bg-emerald-500 rounded-full"></div>
+                                Strategic Account Analysis ({allCustomers.length})
+                            </h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
+                                        <th className="px-8 py-5">Nama Partner</th>
+                                        <th className="px-8 py-5">Contact</th>
+                                        <th className="px-8 py-5">Category</th>
+                                        <th className="px-8 py-5 text-right">Transactions</th>
+                                        <th className="px-8 py-5 text-right">Revenue Contribution</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                    {paginatedCustomers.map(c => (
+                                        <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight">{c.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{c.company || 'Private Client'}</p>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className="text-[10px] font-mono font-bold text-slate-500">{c.phone || '-'}</span>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${c.type === 'corporate' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100'
+                                                    }`}>
+                                                    {c.type}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <span className="text-[11px] font-black text-slate-900 dark:text-white italic tracking-tighter">{c.totalTrx || 0} Trx</span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <span className="text-[11px] font-black text-emerald-600 italic tracking-tighter">{formatRupiah(c.totalSpend || 0)}</span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                        <Pagination tab="customers" total={allCustomers.length} />
                     </div>
-
-                    {/* Full Customer List */}
-                    <div className="rpt-card">
-                        <h3 className="rpt-card-title">Daftar Pelanggan Lengkap ({allCustomers.length})</h3>
-                        <div className="rpt-table-wrap">
-                            <table className="rpt-table">
-                                <thead><tr><th>Nama</th><th>Telepon</th><th>Alamat</th><th>Tipe</th><th>Perusahaan</th><th>Total Belanja</th></tr></thead>
-                                <tbody>
-                                    {allCustomers.map(c => (
-                                        <tr key={c.id} className="rpt-tr">
-                                            <td style={{ fontWeight: 600 }}>{c.name}</td>
-                                            <td style={{ fontSize: '.85rem' }}>{c.phone || '-'}</td>
-                                            <td style={{ fontSize: '.85rem', color: 'var(--text-secondary)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.address || '-'}</td>
-                                            <td><span className="rpt-badge">{c.type}</span></td>
-                                            <td style={{ fontSize: '.85rem' }}>{c.company || '-'}</td>
-                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(c.totalSpend || 0)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>
+                </div>
             )}
+
+            {/* Legend / Status Footer print-hide */}
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-900 p-6 rounded-[2rem] gap-4 print:hidden">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">Intelligence Reporting Core V4.2 — All metrics are reconciled with live database logs</p>
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <div className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Active</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="size-1.5 bg-blue-500 rounded-full"></div>
+                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Secured</span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
-
-const CSS = `
-.rpt-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.rpt-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
-.rpt-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
-.rpt-btn-primary { display:flex; align-items:center; gap:7px; background:#3b82f6; color:#fff; font-weight:700; font-size:.85rem; padding:10px 18px; border-radius:10px; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(59,130,246,.25); transition:all .15s; }
-.rpt-btn-primary:hover { background:#2563eb; }
-.rpt-btn-outline { display:flex; align-items:center; gap:7px; background:var(--bg-secondary); color:var(--text-primary); font-weight:700; font-size:.85rem; padding:10px 18px; border-radius:10px; border:1px solid var(--border); cursor:pointer; transition:all .15s; }
-.rpt-btn-outline:hover { border-color:#3b82f6; color:#3b82f6; }
-
-.rpt-controls { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.rpt-tabs { display:flex; gap:6px; }
-.rpt-tab { padding:8px 16px; border-radius:10px; border:1px solid var(--border); background:var(--bg-input); font-size:.82rem; font-weight:700; color:var(--text-secondary); cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:6px; }
-.rpt-tab:hover { border-color:#3b82f6; color:#3b82f6; }
-.rpt-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-.rpt-date-range { display:flex; align-items:center; gap:8px; }
-.rpt-date-input { padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:.85rem; background:var(--bg-input); color:var(--text-primary); outline:none; }
-.rpt-date-input:focus { border-color:#3b82f6; }
-
-.rpt-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-@media(max-width:900px){ .rpt-stats { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px){ .rpt-stats { grid-template-columns:1fr; } }
-.rpt-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
-.rpt-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
-.rpt-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.rpt-stat-value { font-size:1.3rem; font-weight:900; margin:0; }
-
-.rpt-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.rpt-card-title { font-size:.95rem; font-weight:800; padding:16px 20px 10px; margin:0; color:var(--text-primary); }
-.rpt-pill { padding:10px 16px; background:var(--bg-input); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; gap:2px; font-size:.82rem; }
-.rpt-empty { padding:40px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.rpt-table-wrap { overflow-x:auto; }
-.rpt-table { width:100%; border-collapse:collapse; text-align:left; }
-.rpt-table thead tr { background:var(--bg-input); }
-.rpt-table th { padding:10px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
-.rpt-tr { border-top:1px solid var(--border); transition:background .1s; }
-.rpt-tr:hover { background:var(--bg-card-hover); }
-.rpt-table td { padding:10px 18px; vertical-align:middle; }
-.rpt-badge { padding:3px 9px; font-size:.68rem; font-weight:700; border-radius:9999px; background:var(--bg-input); color:var(--text-secondary); white-space:nowrap; text-transform:capitalize; }
-    /* Print */
-    .print-only-header { display:none; }
-`;

@@ -14,7 +14,7 @@ import {
     FiChevronRight,
     FiFileText,
     FiPlusCircle,
-    FiCalculator,
+    FiPaperclip,
     FiTag,
     FiCalendar,
     FiPackage
@@ -353,7 +353,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
                         <div className="flex items-center justify-between mb-8 relative z-10">
                             <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span className="p-2 bg-primary/10 text-primary rounded-lg"><FiCalculator /></span>
+                                <span className="p-2 bg-primary/10 text-primary rounded-lg"><FiPaperclip /></span>
                                 Estimasi Biaya
                             </h2>
                         </div>

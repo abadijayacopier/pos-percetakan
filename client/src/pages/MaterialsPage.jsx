@@ -1,21 +1,27 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api';
-import { FiCheck, FiX, FiSave } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    FiCheck, FiX, FiSave, FiSearch, FiPlus, FiBox,
+    FiAlertCircle, FiArrowRight, FiArrowLeft, FiEdit3,
+    FiSettings, FiGrid, FiList, FiFilter, FiDownload, FiTruck, FiActivity
+} from 'react-icons/fi';
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
 function Toast({ msg, type, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
-    const bg = type === 'error' ? '#ef4444' : type === 'warn' ? '#f59e0b' : '#22c55e';
     return (
-        <div style={{
-            position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-            background: bg, color: '#fff', padding: '12px 20px',
-            borderRadius: 12, fontWeight: 600, fontSize: '.85rem',
-            boxShadow: '0 8px 24px rgba(0,0,0,.18)', maxWidth: 320,
-            animation: 'ms-fadeIn .25s ease',
-        }}>{msg}</div>
+        <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl font-semibold shadow-2xl flex items-center gap-3 text-white ${type === 'error' ? 'bg-rose-500' : type === 'warn' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+        >
+            {type === 'error' ? <FiAlertCircle /> : type === 'warn' ? <FiAlertCircle /> : <FiCheck />}
+            <span className="text-sm">{msg}</span>
+        </motion.div>
     );
 }
 
@@ -54,31 +60,54 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
     };
 
     return (
-        <div className="ms-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="ms-modal">
-                <div className="ms-modal-head">
-                    <h3>{initial ? 'Edit Bahan Cetak' : 'Tambah Bahan Baru'}</h3>
-                    <button className="ms-close-btn" onClick={onClose}>✕</button>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}
+            />
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-slate-800"
+            >
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+                    <div>
+                        <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                            <FiBox className="text-primary" />
+                            {initial ? 'Edit Bahan Cetak' : 'Tambah Bahan Baru'}
+                        </h3>
+                        <p className="text-sm text-slate-500 mt-1">Lengkapi informasi detail stok dan harga bahan.</p>
+                    </div>
+                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-slate-400" onClick={onClose}>
+                        <FiX size={20} />
+                    </button>
                 </div>
-                <form onSubmit={handleSubmit} className="ms-modal-body">
-                    <div className="ms-row">
-                        <div className="ms-group" style={{ flex: 3 }}>
-                            <label className="ms-label">Nama Bahan *</label>
-                            <input className="ms-input" placeholder="Frontlite Standard 280gr"
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Nama Bahan *</label>
+                            <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 dark:text-white transition-all outline-none"
+                                placeholder="Contoh: Art Paper 260gr"
                                 value={form.nama_bahan} onChange={e => set('nama_bahan', e.target.value)} />
                         </div>
-                        <div className="ms-group">
-                            <label className="ms-label">Kategori</label>
-                            <select className="ms-input" value={form.kategori} onChange={e => set('kategori', e.target.value)}>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Kategori</label>
+                            <select className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 dark:text-white transition-all outline-none appearance-none"
+                                value={form.kategori} onChange={e => set('kategori', e.target.value)}>
                                 <option value="digital">Digital Printing</option>
                                 <option value="offset">Offset / Cetak Offset</option>
                                 <option value="atk">ATK</option>
                                 <option value="lainnya">Lainnya</option>
                             </select>
                         </div>
-                        <div className="ms-group">
-                            <label className="ms-label">Satuan</label>
-                            <select className="ms-input" value={form.satuan} onChange={e => set('satuan', e.target.value)}>
+
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Satuan</label>
+                            <select className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 dark:text-white transition-all outline-none appearance-none"
+                                value={form.satuan} onChange={e => set('satuan', e.target.value)}>
                                 <option value="m2">m² (meter persegi)</option>
                                 <option value="lembar">Lembar</option>
                                 <option value="rim">Rim</option>
@@ -86,49 +115,74 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
                                 <option value="roll">Roll</option>
                             </select>
                         </div>
-                    </div>
-                    <div className="ms-row">
-                        <div className="ms-group">
-                            <label className="ms-label">Harga Modal (Rp)</label>
-                            <input className="ms-input" type="number" min="0" placeholder="15000"
-                                value={form.harga_modal} onChange={e => set('harga_modal', e.target.value)} />
+
+                        <div className="p-4 bg-emerald-50/50 dark:bg-emerald-500/5 rounded-2xl border border-emerald-100/50 dark:border-emerald-500/10 grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-2">Harga Modal (Rp)</label>
+                                <input className="w-full bg-white dark:bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-emerald-500/50 dark:text-white outline-none" type="number" min="0"
+                                    value={form.harga_modal} onChange={e => set('harga_modal', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-2">Harga Jual (Rp)</label>
+                                <input className="w-full bg-white dark:bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-emerald-500/50 dark:text-white outline-none font-bold" type="number" min="0"
+                                    value={form.harga_jual} onChange={e => set('harga_jual', e.target.value)} />
+                            </div>
                         </div>
-                        <div className="ms-group">
-                            <label className="ms-label">Harga Jual (Rp)</label>
-                            <input className="ms-input" type="number" min="0" placeholder="25000"
-                                value={form.harga_jual} onChange={e => set('harga_jual', e.target.value)} />
+
+                        <div className="p-4 bg-blue-50/50 dark:bg-blue-500/5 rounded-2xl border border-blue-100/50 dark:border-blue-500/10 grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">Stok Saat Ini</label>
+                                <input className="w-full bg-white dark:bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 dark:text-white outline-none" type="number" min="0" step="0.01"
+                                    value={form.stok_saat_ini} onChange={e => set('stok_saat_ini', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">Stok Minimum</label>
+                                <input className="w-full bg-white dark:bg-slate-900 border-none rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 dark:text-white outline-none" type="number" min="0" step="0.01"
+                                    value={form.stok_minimum} onChange={e => set('stok_minimum', e.target.value)} />
+                            </div>
                         </div>
-                    </div>
-                    <div className="ms-row">
-                        <div className="ms-group">
-                            <label className="ms-label">Stok Saat Ini</label>
-                            <input className="ms-input" type="number" min="0" step="0.01" placeholder="50"
-                                value={form.stok_saat_ini} onChange={e => set('stok_saat_ini', e.target.value)} />
-                        </div>
-                        <div className="ms-group">
-                            <label className="ms-label">Stok Minimum (notifikasi)</label>
-                            <input className="ms-input" type="number" min="0" step="0.01" placeholder="5"
-                                value={form.stok_minimum} onChange={e => set('stok_minimum', e.target.value)} />
-                        </div>
+
                         {initial && (
-                            <div className="ms-group">
-                                <label className="ms-label">Status</label>
-                                <select className="ms-input" value={form.is_active ? '1' : '0'}
-                                    onChange={e => set('is_active', e.target.value === '1')}>
-                                    <option value="1">Aktif</option>
-                                    <option value="0">Nonaktif</option>
-                                </select>
+                            <div className="md:col-span-2">
+                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Status Bahan</label>
+                                <div className="flex gap-4">
+                                    {[
+                                        { val: true, label: 'Aktif', icon: <FiCheck />, color: 'emerald' },
+                                        { val: false, label: 'Nonaktif', icon: <FiX />, color: 'rose' }
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.label}
+                                            type="button"
+                                            onClick={() => set('is_active', opt.val)}
+                                            className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-2xl border-2 transition-all ${form.is_active === opt.val
+                                                ? `bg-${opt.color}-50 dark:bg-${opt.color}-500/10 border-${opt.color}-500 text-${opt.color}-600 dark:text-${opt.color}-400`
+                                                : 'bg-transparent border-slate-100 dark:border-slate-800 text-slate-400'
+                                                }`}
+                                        >
+                                            {opt.icon} {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
-                    <div className="ms-modal-footer">
-                        <button type="button" className="ms-btn-cancel" onClick={onClose}>Batal</button>
-                        <button type="submit" className="ms-btn-save" disabled={saving}>
-                            {saving ? '⏳ Menyimpan...' : '💾 Simpan'}
-                        </button>
-                    </div>
                 </form>
-            </div>
+
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 justify-end items-center">
+                    <button type="button" className="px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-bold hover:shadow-lg transition-all" onClick={onClose}>
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="px-8 py-3 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {saving ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><LU_AVATARS.loading /></motion.div> : <FiSave />}
+                        {saving ? 'Menyimpan...' : 'Simpan Bahan'}
+                    </button>
+                </div>
+            </motion.div>
         </div>
     );
 }
@@ -163,70 +217,111 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
     };
 
     return (
-        <div className="ms-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="ms-modal" style={{ maxWidth: 450 }}>
-                <div className="ms-modal-head">
-                    <h3>Sesuaikan Stok</h3>
-                    <button className="ms-close-btn" onClick={onClose}>✕</button>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}
+            />
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/20 dark:border-slate-800"
+            >
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                        <FiActivity className="text-primary" />
+                        Sesuaikan Stok
+                    </h3>
+                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full dark:text-slate-400" onClick={onClose}>
+                        <FiX size={20} />
+                    </button>
                 </div>
-                <form onSubmit={handleSubmit} className="ms-modal-body">
-                    <div className="ms-bahan-info">
-                        <span className="ms-bahan-badge">{bahan.kategori}</span>
-                        <span style={{ fontWeight: 700 }}>{bahan.nama_bahan}</span>
-                        <span style={{ color: '#94a3b8', fontSize: '.8rem' }}>
-                            Stok saat ini: <b style={{ color: '#0f172a' }}>{parseFloat(bahan.stok_saat_ini).toFixed(2)} {bahan.satuan}</b>
-                        </span>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[10px] font-bold uppercase tracking-widest bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                {bahan.kategori}
+                            </span>
+                        </div>
+                        <p className="font-bold dark:text-white">{bahan.nama_bahan}</p>
+                        <p className="text-xs text-slate-500 mt-1">
+                            Stok saat ini: <span className="font-bold text-slate-900 dark:text-slate-200">{parseFloat(bahan.stok_saat_ini).toFixed(2)} {bahan.satuan}</span>
+                        </p>
                     </div>
-                    <div className="ms-group">
-                        <label className="ms-label">Jenis Mutasi</label>
-                        <div className="ms-radio-group">
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Jenis Mutasi</label>
+                        <div className="grid grid-cols-3 gap-2">
                             {[
-                                { val: 'masuk', label: '📥 Barang Masuk', color: '#16a34a' },
-                                { val: 'keluar', label: '📤 Barang Keluar', color: '#dc2626' },
-                                { val: 'penyesuaian', label: '⚖️ Set Manual', color: '#7c3aed' },
+                                { val: 'masuk', label: 'Masuk', icon: '📥', color: 'emerald' },
+                                { val: 'keluar', label: 'Keluar', icon: '📤', color: 'rose' },
+                                { val: 'penyesuaian', label: 'Set', icon: '⚖️', color: 'violet' },
                             ].map(opt => (
-                                <label key={opt.val} className={`ms-radio-btn ${form.tipe === opt.val ? 'ms-radio-active' : ''}`}
-                                    style={form.tipe === opt.val ? { borderColor: opt.color, background: opt.color + '15', color: opt.color } : {}}>
-                                    <input type="radio" style={{ display: 'none' }} value={opt.val}
-                                        checked={form.tipe === opt.val}
-                                        onChange={() => setForm(f => ({ ...f, tipe: opt.val }))} />
-                                    {opt.label}
-                                </label>
+                                <button
+                                    key={opt.val}
+                                    type="button"
+                                    onClick={() => setForm(f => ({ ...f, tipe: opt.val }))}
+                                    className={`flex flex-col items-center gap-1 p-3 rounded-2xl border-2 transition-all ${form.tipe === opt.val
+                                        ? `bg-${opt.color}-50 dark:bg-${opt.color}-500/10 border-${opt.color}-500 text-${opt.color}-600 dark:text-${opt.color}-400`
+                                        : 'bg-transparent border-slate-50 dark:border-slate-800 text-slate-400 opacity-60'
+                                        }`}
+                                >
+                                    <span className="text-xl">{opt.icon}</span>
+                                    <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+                                </button>
                             ))}
                         </div>
                     </div>
-                    <div className="ms-row">
-                        <div className="ms-group" style={{ flex: 2 }}>
-                            <label className="ms-label">
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                                 {form.tipe === 'penyesuaian' ? `Set ke (${bahan.satuan})` : `Jumlah (${bahan.satuan})`}
                             </label>
-                            <input className="ms-input ms-input-big" type="number" min="0" step="0.01" placeholder="0"
+                            <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 text-center text-xl font-bold focus:ring-2 focus:ring-primary/50 dark:text-white outline-none"
+                                type="number" min="0" step="0.01" placeholder="0"
                                 value={form.jumlah} onChange={e => setForm(f => ({ ...f, jumlah: e.target.value }))} />
                         </div>
-                        <div className="ms-group" style={{ flex: 3 }}>
-                            <label className="ms-label">Keterangan</label>
-                            <input className="ms-input" placeholder="Pembelian dari supplier, dll."
+                        <div className="flex flex-col justify-end">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Keterangan</label>
+                            <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 dark:text-white text-sm outline-none"
+                                placeholder="Supplier..."
                                 value={form.catatan} onChange={e => setForm(f => ({ ...f, catatan: e.target.value }))} />
                         </div>
                     </div>
 
-                    {form.jumlah && (
-                        <div className="ms-stok-preview">
-                            <span>Stok setelah penyesuaian:</span>
-                            <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#2563eb' }}>
-                                {preview().toFixed(2)} {bahan.satuan}
-                            </span>
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {form.jumlah && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex items-center justify-between"
+                            >
+                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Pratinjau akhir:</span>
+                                <span className="text-xl font-black text-primary">
+                                    {preview().toFixed(2)} {bahan.satuan}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    <div className="ms-modal-footer">
-                        <button type="button" className="ms-btn-cancel" onClick={onClose}>Batal</button>
-                        <button type="submit" className="ms-btn-save" disabled={saving}>
-                            {saving ? '⏳...' : <>Simpan <FiSave /></>}
+                    <div className="flex gap-3 mt-4">
+                        <button type="button" className="flex-1 py-4 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold" onClick={onClose}>
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="flex-1 py-4 px-6 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {saving ? '...' : <>Simpan <FiSave /></>}
                         </button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 }
@@ -267,37 +362,31 @@ export default function MaterialsPage({ onNavigate }) {
         return matchSearch && matchFilter;
     });
 
-    // Handle pagination reset on filter change
     useEffect(() => {
         setCurrentPage(1);
     }, [search, filter]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
     const lowStockCount = materials.filter(m => parseFloat(m.stok_saat_ini) <= parseFloat(m.stok_minimum) && parseFloat(m.stok_minimum) > 0).length;
 
     const handleSaved = () => {
-        setShowForm(false);
-        setEditItem(null);
         setStokItem(null);
         fetchMaterials();
     };
 
     const KATGORI_COLORS = {
-        digital: { color: '#2563eb', bg: '#dbeafe' },
-        offset: { color: '#7c3aed', bg: '#ede9fe' },
-        atk: { color: '#d97706', bg: '#fef3c7' },
-        lainnya: { color: '#475569', bg: '#f1f5f9' },
+        digital: { color: 'text-blue-600', bg: 'bg-blue-50', darkText: 'dark:text-blue-400', darkBg: 'dark:bg-blue-500/10' },
+        offset: { color: 'text-violet-600', bg: 'bg-violet-50', darkText: 'dark:text-violet-400', darkBg: 'dark:bg-violet-500/10' },
+        atk: { color: 'text-amber-600', bg: 'bg-amber-50', darkText: 'dark:text-amber-400', darkBg: 'dark:bg-amber-500/10' },
+        lainnya: { color: 'text-slate-600', bg: 'bg-slate-50', darkText: 'dark:text-slate-400', darkBg: 'dark:bg-slate-500/10' },
     };
 
     return (
-        <div className="ms-page">
-            <style>{CSS}</style>
-
-            {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
-
-            {/* Modal FormBahanModal has been replaced by MaterialFormPage */}
+        <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0b0f1a] font-display">
+            <AnimatePresence>
+                {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
+            </AnimatePresence>
 
             {stokItem && (
                 <StokModal
@@ -308,335 +397,279 @@ export default function MaterialsPage({ onNavigate }) {
                 />
             )}
 
-            {/* ── Header ── */}
-            <div className="ms-topbar">
-                <div>
-                    <h1 className="ms-title">Stok Bahan Cetak</h1>
-                    <p className="ms-sub">Manajemen master bahan dan penyesuaian stok.</p>
-                </div>
-                <button className="ms-btn-primary" onClick={() => onNavigate('tambah-bahan')}>
-                    <span className="material-symbols-outlined">add</span>
-                    Tambah Bahan
-                </button>
+            {/* ── Top Header ── */}
+            <div className="px-8 py-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                    className="space-y-1"
+                >
+                    <h1 className="text-3xl font-black dark:text-white tracking-tight">Katalog Bahan</h1>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">Manajemen stok & inventaris produksi percetakan.</p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-3"
+                >
+                    <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all active:scale-95">
+                        <FiDownload /> Export
+                    </button>
+                    <button
+                        onClick={() => onNavigate('tambah-bahan')}
+                        className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/95 transition-all active:scale-95"
+                    >
+                        <FiPlus /> Tambah Bahan
+                    </button>
+                </motion.div>
             </div>
 
-            {/* ── Stats ── */}
-            <div className="ms-stats-row">
+            {/* ── Stats Bar ── */}
+            <div className="px-8 grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
                 {[
-                    { label: 'Total Bahan', value: materials.length, icon: 'inventory_2', color: '#2563eb', bg: '#dbeafe' },
-                    { label: 'Bahan Aktif', value: materials.filter(m => m.is_active).length, icon: 'check_circle', color: '#16a34a', bg: '#dcfce7' },
-                    { label: 'Stok Menipis', value: lowStockCount, icon: 'warning', color: lowStockCount > 0 ? '#dc2626' : '#94a3b8', bg: lowStockCount > 0 ? '#fee2e2' : '#f1f5f9' },
-                    { label: 'Kategori', value: [...new Set(materials.map(m => m.kategori))].length, icon: 'category', color: '#7c3aed', bg: '#ede9fe' },
-                ].map(s => (
-                    <div key={s.label} className="ms-stat-card">
-                        <div className="ms-stat-icon" style={{ background: s.bg, color: s.color }}>
-                            <span className="material-symbols-outlined">{s.icon}</span>
+                    { label: 'Total Bahan', value: materials.length, icon: <FiBox />, color: 'primary' },
+                    { label: 'Aktif', value: materials.filter(m => m.is_active).length, icon: <FiCheck />, color: 'emerald' },
+                    { label: 'Stok Menipis', value: lowStockCount, icon: <FiAlertCircle />, color: lowStockCount > 0 ? 'rose' : 'slate' },
+                    { label: 'Kategori', value: [...new Set(materials.map(m => m.kategori))].length, icon: <FiGrid />, color: 'violet' },
+                ].map((s, i) => (
+                    <motion.div
+                        key={s.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="p-5 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-5"
+                    >
+                        <div className={`w-14 h-14 rounded-2xl bg-${s.color}-50 dark:bg-${s.color}-500/10 flex items-center justify-center text-xl text-${s.color}-600 dark:text-${s.color}-400`}>
+                            {s.icon}
                         </div>
                         <div>
-                            <p className="ms-stat-label">{s.label}</p>
-                            <p className="ms-stat-value" style={{ color: s.color }}>{s.value}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{s.label}</p>
+                            <p className="text-2xl font-black dark:text-white leading-tight">{s.value}</p>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
-            {/* ── Filter & Search ── */}
-            <div className="ms-card">
-                <div className="ms-filter-bar">
-                    <div className="ms-search-wrap">
-                        <span className="material-symbols-outlined ms-search-icon">search</span>
-                        <input className="ms-search-input" placeholder="Cari nama bahan..." value={search}
-                            onChange={e => setSearch(e.target.value)} />
+            {/* ── Main Content ── */}
+            <div className="px-8 pb-12 flex-1">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full ring-8 ring-slate-100/50 dark:ring-slate-900/30"
+                >
+                    {/* Header Table / Search */}
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-6 bg-slate-50/50 dark:bg-slate-900/50">
+                        <div className="relative w-full lg:max-w-md group">
+                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                            <input
+                                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/50 shadow-sm dark:text-white transition-all outline-none text-sm"
+                                placeholder="Cari nama bahan atau kategori..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar w-full lg:w-auto">
+                            {[
+                                { id: 'all', label: 'Semua', icon: <FiGrid /> },
+                                { id: 'digital', label: 'Digital', icon: <FiActivity /> },
+                                { id: 'offset', label: 'Offset', icon: <FiList /> },
+                                { id: 'atk', label: 'ATK', icon: <FiEdit3 /> },
+                                { id: 'low', label: 'Menipis', icon: <FiAlertCircle />, count: lowStockCount, color: 'rose' },
+                            ].map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setFilter(f.id)}
+                                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${filter === f.id
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                                            : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                        }`}
+                                >
+                                    {f.icon} {f.label}
+                                    {f.count > 0 && (
+                                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${filter === f.id ? 'bg-white/20' : 'bg-rose-500 text-white animate-pulse'}`}>
+                                            {f.count}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="ms-filter-tabs">
-                        {[
-                            { id: 'all', label: 'Semua', icon: '' },
-                            { id: 'digital', label: 'Digital', icon: 'print' },
-                            { id: 'offset', label: 'Offset', icon: 'layers' },
-                            { id: 'atk', label: 'ATK', icon: 'edit' },
-                            { id: 'low', label: `Menipis (${lowStockCount})`, icon: 'warning' },
-                        ].map(f => (
-                            <button key={f.id} className={`ms-tab ${filter === f.id ? 'ms-tab-active' : ''}`}
-                                onClick={() => setFilter(f.id)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {f.icon && <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{f.icon}</span>}
-                                    {f.label}
+
+                    {/* Table Container */}
+                    <div className="flex-1 overflow-x-auto custom-scrollbar">
+                        {loading ? (
+                            <div className="p-24 flex flex-col items-center justify-center gap-4">
+                                <motion.div
+                                    animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                                    className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full"
+                                />
+                                <p className="text-slate-500 font-bold animate-pulse">Menghubungkan ke inventaris...</p>
+                            </div>
+                        ) : displayed.length === 0 ? (
+                            <div className="p-24 flex flex-col items-center justify-center gap-4">
+                                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300">
+                                    <FiBox size={48} />
                                 </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                                <div className="text-center">
+                                    <p className="text-slate-800 dark:text-white font-black text-xl">Bahan Tidak Ditemukan</p>
+                                    <p className="text-slate-500 text-sm mt-1 mx-auto max-w-xs">
+                                        {search ? `Tidak ada hasil untuk "${search}" dalam kategori ini.` : 'Inventaris Anda kosong. Tambahkan bahan pertama Anda sekarang.'}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <table className="w-full text-left border-collapse">
+                                <thead className="sticky top-0 z-10">
+                                    <tr className="bg-slate-50/50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Identitas Bahan</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Kategori</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Modal / Jual</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Profit Margin</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Level Stok</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                    {displayed.map((m, idx) => {
+                                        const modal = parseFloat(m.harga_modal) || 0;
+                                        const jual = parseFloat(m.harga_jual) || 0;
+                                        const margin = modal > 0 ? Math.round(((jual - modal) / modal) * 100) : 0;
+                                        const stok = parseFloat(m.stok_saat_ini) || 0;
+                                        const minStok = parseFloat(m.stok_minimum) || 0;
+                                        const isLow = stok <= minStok && minStok > 0;
+                                        const kc = KATGORI_COLORS[m.kategori] || KATGORI_COLORS.lainnya;
 
-                {/* ── Table ── */}
-                {loading ? (
-                    <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 40, animation: 'ms-spin 1s linear infinite' }}>progress_activity</span>
-                        <p>Memuat data bahan...</p>
-                    </div>
-                ) : displayed.length === 0 ? (
-                    <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 48 }}>inventory_2</span>
-                        <p>{search ? 'Bahan tidak ditemukan.' : 'Belum ada bahan cetak. Klik "Tambah Bahan".'}</p>
-                    </div>
-                ) : (
-                    <div className="ms-table-wrap">
-                        <table className="ms-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama Bahan</th>
-                                    <th>Kategori</th>
-                                    <th>Satuan</th>
-                                    <th>Harga Modal</th>
-                                    <th>Harga Jual</th>
-                                    <th>Margin</th>
-                                    <th>Stok</th>
-                                    <th>Status</th>
-                                    <th className="ms-th-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {displayed.map(m => {
-                                    const modal = parseFloat(m.harga_modal) || 0;
-                                    const jual = parseFloat(m.harga_jual) || 0;
-                                    const margin = modal > 0 ? Math.round(((jual - modal) / modal) * 100) : 0;
-                                    const stok = parseFloat(m.stok_saat_ini) || 0;
-                                    const minStok = parseFloat(m.stok_minimum) || 0;
-                                    const isLow = stok <= minStok && minStok > 0;
-                                    const kc = KATGORI_COLORS[m.kategori] || KATGORI_COLORS.lainnya;
-
-                                    return (
-                                        <tr key={m.id} className="ms-tr">
-                                            <td>
-                                                <span style={{ fontWeight: 700, fontSize: '.86rem' }}>{m.nama_bahan}</span>
-                                            </td>
-                                            <td>
-                                                <span className="ms-badge" style={{ background: kc.bg, color: kc.color }}>
-                                                    {m.kategori}
-                                                </span>
-                                            </td>
-                                            <td style={{ color: '#64748b', fontSize: '.83rem' }}>{m.satuan}</td>
-                                            <td style={{ fontSize: '.83rem' }}>{fmt(m.harga_modal)}</td>
-                                            <td style={{ fontWeight: 700 }}>{fmt(m.harga_jual)}</td>
-                                            <td>
-                                                <span style={{
-                                                    fontWeight: 700, fontSize: '.78rem',
-                                                    color: margin >= 30 ? '#16a34a' : margin >= 10 ? '#d97706' : '#dc2626',
-                                                }}>
-                                                    {margin}%
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                                    <span className={`ms-stok-val ${isLow ? 'ms-stok-low' : ''}`}>
-                                                        {isLow && '⚠️ '}
-                                                        {stok.toFixed(2)} {m.satuan}
-                                                    </span>
-                                                    {minStok > 0 && (
-                                                        <span style={{ fontSize: '.68rem', color: '#94a3b8' }}>
-                                                            Min: {minStok.toFixed(2)}
-                                                        </span>
-                                                    )}
-                                                    {minStok > 0 && (
-                                                        <div className="ms-stok-bar">
-                                                            <div className="ms-stok-bar-fill"
-                                                                style={{
-                                                                    width: `${Math.min(100, (stok / (minStok * 3)) * 100)}%`,
-                                                                    background: isLow ? '#ef4444' : '#22c55e',
-                                                                }} />
+                                        return (
+                                            <motion.tr
+                                                key={m.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                                className="hover:bg-slate-50/80 dark:hover:bg-blue-500/[0.02] transition-colors group"
+                                            >
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-10 h-10 rounded-xl ${kc.bg} ${kc.darkBg} flex items-center justify-center ${kc.color} ${kc.darkText}`}>
+                                                            {m.kategori === 'digital' ? <FiActivity /> : <FiBox />}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className="ms-badge" style={
-                                                    m.is_active
-                                                        ? { background: '#dcfce7', color: '#15803d' }
-                                                        : { background: '#f1f5f9', color: '#94a3b8' }
-                                                }>
-                                                    {m.is_active ? 'Aktif' : 'Nonaktif'}
-                                                </span>
-                                            </td>
-                                            <td className="ms-td-action">
-                                                <button className="ms-action-btn" title="Sesuaikan Stok"
-                                                    onClick={() => setStokItem(m)}>
-                                                    <span className="material-symbols-outlined">tune</span>
-                                                </button>
-                                                <button className="ms-action-btn" title="Edit Bahan"
-                                                    onClick={() => onNavigate('tambah-bahan', { material: m })}>
-                                                    <span className="material-symbols-outlined">edit</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                        <div>
+                                                            <p className="font-bold dark:text-white text-sm group-hover:text-primary transition-colors">{m.nama_bahan}</p>
+                                                            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">SKU-MATERIAL-{m.id}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase ${kc.bg} ${kc.color} ${kc.darkText} ${kc.darkBg}`}>
+                                                        <div className={`w-1 h-1 rounded-full ${kc.color === 'text-slate-600' ? 'bg-slate-400' : 'bg-current'}`} />
+                                                        {m.kategori}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">M: {fmt(m.harga_modal)}</p>
+                                                        <p className="text-sm font-black dark:text-white">{fmt(m.harga_jual)}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className={`text-sm font-black ${margin >= 30 ? 'text-emerald-500' : margin >= 10 ? 'text-amber-500' : 'text-rose-500'}`}>
+                                                        {margin}%
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-end justify-between gap-4">
+                                                            <div className={`text-xs font-black ${isLow ? 'text-rose-600 dark:text-rose-400' : 'dark:text-white'}`}>
+                                                                {stok.toFixed(2)} <span className="text-[10px] font-bold text-slate-400">{m.satuan}</span>
+                                                            </div>
+                                                            {minStok > 0 && <span className="text-[10px] text-slate-400 font-bold">Min: {minStok}</span>}
+                                                        </div>
+                                                        {minStok > 0 && (
+                                                            <div className="h-1.5 w-32 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                                <motion.div
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${Math.min(100, (stok / (minStok * 3)) * 100)}%` }}
+                                                                    className={`h-full rounded-full ${isLow ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]'}`}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            onClick={() => setStokItem(m)}
+                                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-primary-50 dark:hover:bg-primary/20 hover:text-primary transition-all active:scale-95"
+                                                            title="Sesuaikan Stok"
+                                                        >
+                                                            <FiSettings size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => onNavigate('tambah-bahan', { material: m })}
+                                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 hover:text-emerald-500 transition-all active:scale-95"
+                                                            title="Edit Bahan"
+                                                        >
+                                                            <FiEdit3 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
-                )}
 
-                {/* ── Pagination ── */}
-                {!loading && filtered.length > 0 && (
-                    <div className="ms-pagination">
-                        <div className="ms-pagination-info">
-                            Menampilkan <b>{(currentPage - 1) * itemsPerPage + 1}</b> - <b>{Math.min(currentPage * itemsPerPage, filtered.length)}</b> dari <b>{filtered.length}</b> bahan
+                    {/* Pagination */}
+                    {!loading && filtered.length > 0 && (
+                        <div className="p-6 bg-slate-50/50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <p className="text-xs font-bold text-slate-400">
+                                MENAMPILKAN <span className="text-slate-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filtered.length)}</span> DARI <span className="text-slate-900 dark:text-white">{filtered.length}</span> BAHAN
+                            </p>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-30 dark:text-white"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                >
+                                    <FiArrowLeft size={16} />
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                    {[...Array(totalPages)].map((_, i) => {
+                                        const p = i + 1;
+                                        if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
+                                            return (
+                                                <button
+                                                    key={p}
+                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl font-black text-xs transition-all ${currentPage === p
+                                                            ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-110'
+                                                            : 'bg-white dark:bg-slate-800 text-slate-400'
+                                                        }`}
+                                                    onClick={() => setCurrentPage(p)}
+                                                >
+                                                    {p}
+                                                </button>
+                                            );
+                                        } else if (p === currentPage - 2 || p === currentPage + 2) {
+                                            return <span key={p} className="text-slate-300">...</span>;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+
+                                <button
+                                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 disabled:opacity-30 dark:text-white"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                >
+                                    <FiArrowRight size={16} />
+                                </button>
+                            </div>
                         </div>
-                        <div className="ms-pagination-controls">
-                            <button
-                                className="ms-page-btn"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            >
-                                <span className="material-symbols-outlined">chevron_left</span>
-                            </button>
-
-                            {[...Array(totalPages)].map((_, i) => {
-                                const p = i + 1;
-                                // Show first, last, and pages around current
-                                if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) {
-                                    return (
-                                        <button
-                                            key={p}
-                                            className={`ms-page-btn ${currentPage === p ? 'ms-page-active' : ''}`}
-                                            onClick={() => setCurrentPage(p)}
-                                        >
-                                            {p}
-                                        </button>
-                                    );
-                                } else if (p === currentPage - 2 || p === currentPage + 2) {
-                                    return <span key={p} className="ms-page-dots">...</span>;
-                                }
-                                return null;
-                            })}
-
-                            <button
-                                className="ms-page-btn"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            >
-                                <span className="material-symbols-outlined">chevron_right</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </motion.div>
             </div>
         </div>
     );
 }
-
-/* ── CSS ─────────────────────────────────────────────────────────────── */
-const CSS = `
-@keyframes ms-fadeIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none} }
-@keyframes ms-spin    { to{transform:rotate(360deg)} }
-
-.ms-page  { padding:28px 32px; display:flex; flex-direction:column; gap:24px; min-height:100%; }
-.ms-topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.ms-title { font-size:1.4rem; font-weight:800; margin:0; letter-spacing:-.02em; }
-.ms-sub   { color:#64748b; margin:4px 0 0; font-size:.875rem; }
-
-.ms-btn-primary { display:flex; align-items:center; gap:7px; background:#2563eb; color:#fff; font-weight:700; font-size:.875rem; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(37,99,235,.25); transition:background .15s; }
-.ms-btn-primary:hover { background:#1d4ed8; }
-
-/* Stats */
-.ms-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-@media(max-width:860px){.ms-stats-row{grid-template-columns:repeat(2,1fr);}}
-.ms-stat-card { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
-[data-theme="dark"] .ms-stat-card { background:#0f172a; border-color:#1e293b; }
-.ms-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.ms-stat-label { font-size:.72rem; color:#94a3b8; font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.ms-stat-value { font-size:1.6rem; font-weight:900; margin:0; }
-
-/* Card & filter */
-.ms-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
-[data-theme="dark"] .ms-card { background:#0f172a; border-color:#1e293b; }
-.ms-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
-[data-theme="dark"] .ms-filter-bar { border-color:#1e293b; }
-
-.ms-search-wrap  { position:relative; flex:1; min-width:180px; }
-.ms-search-icon  { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:18px!important; }
-.ms-search-input { width:100%; padding:8px 12px 8px 36px; border:1px solid #e2e8f0; border-radius:8px; font-size:.875rem; outline:none; box-sizing:border-box; background:#f8fafc; }
-.ms-search-input:focus { border-color:#2563eb; background:#fff; box-shadow:0 0 0 3px #dbeafe; }
-[data-theme="dark"] .ms-search-input { background:#1e293b; border-color:#334155; color:#f1f5f9; }
-
-.ms-filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-.ms-tab { padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0; background:#f8fafc; font-size:.75rem; font-weight:600; color:#64748b; cursor:pointer; transition:all .15s; }
-.ms-tab:hover { background:#eff6ff; border-color:#bfdbfe; color:#2563eb; }
-.ms-tab.ms-tab-active { background:#2563eb; color:#fff; border-color:#2563eb; }
-
-/* Table */
-.ms-table-wrap { overflow-x:auto; }
-.ms-table { width:100%; border-collapse:collapse; text-align:left; }
-.ms-table thead tr { background:#f8fafc; }
-[data-theme="dark"] .ms-table thead tr { background:#1e293b; }
-.ms-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; white-space:nowrap; }
-.ms-th-right { text-align:right; }
-.ms-tr { border-top:1px solid #f1f5f9; transition:background .1s; }
-[data-theme="dark"] .ms-tr { border-color:#1e293b; }
-.ms-tr:hover { background:#f8fafc; }
-[data-theme="dark"] .ms-tr:hover { background:#1e293b; }
-.ms-table td { padding:12px 18px; vertical-align:middle; }
-.ms-td-action { text-align:right; display:flex; justify-content:flex-end; gap:4px; }
-
-.ms-badge { padding:3px 9px; font-size:.68rem; font-weight:700; border-radius:9999px; white-space:nowrap; }
-.ms-stok-val { font-size:.83rem; font-weight:600; }
-.ms-stok-low { color:#dc2626!important; }
-.ms-stok-bar { height:4px; background:#e2e8f0; border-radius:9999px; width:80px; margin-top:3px; overflow:hidden; }
-.ms-stok-bar-fill { height:100%; border-radius:9999px; transition:width .4s; }
-
-.ms-action-btn { background:none; border:none; cursor:pointer; color:#94a3b8; display:flex; align-items:center; padding:5px; border-radius:7px; transition:all .15s; }
-.ms-action-btn:hover { color:#2563eb; background:#eff6ff; }
-
-/* Modal */
-.ms-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:flex; align-items:center; justify-content:center; padding:24px; }
-.ms-modal { background:#fff; border-radius:18px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,.2); animation:ms-fadeIn .2s ease; }
-[data-theme="dark"] .ms-modal { background:#0f172a; }
-.ms-modal-head { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #f1f5f9; }
-[data-theme="dark"] .ms-modal-head { border-color:#1e293b; }
-.ms-modal-head h3 { font-size:1.05rem; font-weight:800; margin:0; }
-.ms-close-btn { background:none; border:none; font-size:1.1rem; cursor:pointer; color:#94a3b8; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:7px; }
-.ms-close-btn:hover { background:#f1f5f9; color:#475569; }
-.ms-modal-body { padding:18px 22px; display:flex; flex-direction:column; gap:14px; max-height:70vh; overflow-y:auto; }
-.ms-modal-footer { display:flex; gap:10px; justify-content:flex-end; padding:14px 22px; border-top:1px solid #f1f5f9; }
-[data-theme="dark"] .ms-modal-footer { border-color:#1e293b; }
-
-.ms-label { display:block; font-size:.77rem; font-weight:600; color:#475569; margin-bottom:5px; }
-[data-theme="dark"] .ms-label { color:#94a3b8; }
-.ms-input { width:100%; padding:8px 12px; border:1px solid #e2e8f0; border-radius:8px; font-size:.875rem; outline:none; box-sizing:border-box; background:#fff; color:#0f172a; transition:border-color .15s,box-shadow .15s; }
-.ms-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px #dbeafe; }
-[data-theme="dark"] .ms-input { background:#1e293b; border-color:#334155; color:#f1f5f9; }
-.ms-input-big { font-size:1.2rem; font-weight:700; text-align:center; padding:10px; }
-select.ms-input { appearance:auto; }
-.ms-row { display:flex; gap:12px; }
-.ms-group { display:flex; flex-direction:column; flex:1; }
-
-.ms-btn-save { display:flex; align-items:center; gap:6px; background:#2563eb; color:#fff; font-weight:700; font-size:.875rem; padding:9px 20px; border-radius:9px; border:none; cursor:pointer; }
-.ms-btn-save:hover { background:#1d4ed8; }
-.ms-btn-save:disabled { opacity:.6; cursor:not-allowed; }
-.ms-btn-cancel { background:#f1f5f9; color:#475569; font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:none; cursor:pointer; }
-[data-theme="dark"] .ms-btn-cancel { background:#1e293b; color:#94a3b8; }
-
-.ms-bahan-info { display:flex; flex-direction:column; gap:4px; padding:12px 14px; background:#f8fafc; border-radius:10px; }
-[data-theme="dark"] .ms-bahan-info { background:#1e293b; }
-[data-theme="dark"] .ms-bahan-info span:first-child { color:#f1f5f9; }
-
-.ms-radio-group { display:flex; gap:8px; flex-wrap:wrap; }
-.ms-radio-btn { padding:8px 14px; border:2px solid #e2e8f0; border-radius:9px; font-size:.8rem; font-weight:600; cursor:pointer; transition:all .15s; color:#64748b; }
-.ms-radio-btn:hover { border-color:#bfdbfe; color:#2563eb; }
-.ms-radio-active { border-color:#2563eb; background:#eff6ff; color:#2563eb; }
-
-.ms-stok-preview { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:#eff6ff; border-radius:10px; font-size:.85rem; font-weight:600; }
-[data-theme="dark"] .ms-stok-preview { background:#1e3a5f; }
-
-/* Pagination Styles */
-.ms-pagination { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-top:1px solid #f1f5f9; background:#fff; }
-[data-theme="dark"] .ms-pagination { background:#0f172a; border-color:#1e293b; }
-.ms-pagination-info { font-size:.75rem; color:#64748b; }
-.ms-pagination-info b { color:#0f172a; }
-[data-theme="dark"] .ms-pagination-info b { color:#f1f5f9; }
-.ms-pagination-controls { display:flex; align-items:center; gap:5px; }
-.ms-page-btn { min-width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#64748b; font-size:.75rem; font-weight:700; cursor:pointer; transition:all .15s; }
-[data-theme="dark"] .ms-page-btn { background:#1e293b; border-color:#334155; color:#94a3b8; }
-.ms-page-btn:hover:not(:disabled) { border-color:#bfdbfe; color:#2563eb; background:#eff6ff; }
-.ms-page-btn:disabled { opacity:.4; cursor:not-allowed; }
-.ms-page-active { background:#2563eb!important; color:#fff!important; border-color:#2563eb!important; }
-.ms-page-dots { color:#94a3b8; font-size:.75rem; padding:0 4px; }
-`;

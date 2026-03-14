@@ -3,7 +3,7 @@ import db from '../db';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
-import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle, FiZap, FiClipboard, FiUser, FiHistory, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle, FiZap, FiClipboard, FiUser, FiClock, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare } from 'react-icons/fi';
 import { generateInvoice } from '../utils';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -560,7 +560,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             <div className="mt-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
                     <h3 className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-3 text-slate-900 dark:text-white">
-                        <span className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg"><FiHistory /></span>
+                        <span className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg"><FiClock /></span>
                         Riwayat Kerja & Operasional
                     </h3>
                     <div className="flex items-center gap-2">

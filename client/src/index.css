@@ -133,14 +133,11 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
-  overflow: hidden;
-  height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
 #root {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 a {
@@ -198,6 +195,19 @@ img {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* ---- Utilities ---- */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* ============================================
