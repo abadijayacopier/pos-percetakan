@@ -64,6 +64,7 @@ export default function SettingsPage() {
     const [storeName, setStoreName] = useState(getSetting('store_name') || 'FOTOCOPY ABADI JAYA');
     const [storeAddress, setStoreAddress] = useState(getSetting('store_address') || '');
     const [storePhone, setStorePhone] = useState(getSetting('store_phone') || '');
+    const [storeMapsUrl, setStoreMapsUrl] = useState(getSetting('store_maps_url') || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
     const [storeLogo, setStoreLogo] = useState(getSetting('store_logo') || '');
     const [receiptFooter, setReceiptFooter] = useState(getSetting('receipt_footer') || '');
     const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
@@ -75,6 +76,10 @@ export default function SettingsPage() {
     const [printPrices, setPrintPrices] = useState([]);
 
     const [bindPrices, setBindPrices] = useState([]);
+    const [galleryImages, setGalleryImages] = useState(() => {
+        const saved = getSetting('landing_gallery');
+        try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+    });
 
     const defaultFcDiscounts = [
         { id: '1', minQty: 100, discountPerSheet: 50 },
@@ -97,12 +102,14 @@ export default function SettingsPage() {
         set('store_name', storeName);
         set('store_address', storeAddress);
         set('store_phone', storePhone);
+        set('store_maps_url', storeMapsUrl);
         set('store_logo', storeLogo);
         set('receipt_footer', receiptFooter);
         set('printer_size', printerSize);
         set('printer_name', printerName);
         set('paper_size', paperSize);
         set('auto_print', autoPrint ? 'true' : 'false');
+        set('landing_gallery', JSON.stringify(galleryImages));
         db.setAll('print_prices', printPrices);
         db.setAll('binding_prices', bindPrices);
         showToast('Pengaturan berhasil disimpan!', 'success');
@@ -117,6 +124,23 @@ export default function SettingsPage() {
             setStoreLogo(ev.target.result);
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleGalleryUpload = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                setGalleryImages(prev => [...prev, ev.target.result]);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const removeGalleryImage = (index) => {
+        setGalleryImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSaveUser = () => {
@@ -174,6 +198,7 @@ export default function SettingsPage() {
     const TABS = [
         { id: 'general', icon: <FiSettings />, text: 'Umum' },
         { id: 'fotocopy', icon: <FiFile />, text: 'Harga Layanan' },
+        { id: 'landing', icon: <FiImage />, text: 'Landing Page' },
         { id: 'users', icon: <FiUsers />, text: 'Users' },
         { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
         { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
@@ -201,20 +226,7 @@ export default function SettingsPage() {
             {activeTab === 'general' && (
                 <div className="card">
                     <div className="card-body">
-                        <div className="form-group"><label className="form-label">Nama Toko</label><input className="form-input" value={storeName} onChange={e => setStoreName(e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">Alamat</label><textarea className="form-textarea" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">No. Telepon</label><input className="form-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} /></div>
                         <div className="form-group">
-                            <label className="form-label">Logo Toko (Opsional)</label>
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                {storeLogo && <img src={storeLogo} alt="Logo" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} />}
-                                <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ fontSize: '0.8rem' }} />
-                                {storeLogo && <button className="btn btn-ghost btn-sm" onClick={() => setStoreLogo('')} style={{ color: 'var(--danger)' }}>Hapus Logo</button>}
-                            </div>
-                        </div>
-
-                        {/* Theme Mode Selector */}
-                        <div className="form-group" style={{ marginTop: '8px' }}>
                             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiMonitor size={14} /> Mode Tampilan</label>
                             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                                 {[
@@ -222,36 +234,63 @@ export default function SettingsPage() {
                                     { id: 'dark', icon: <FiMoon size={16} />, label: 'Gelap' },
                                     { id: 'system', icon: <FiMonitor size={16} />, label: 'Sistem' },
                                 ].map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => themeCtx.setTheme(t.id)}
-                                        style={{
-                                            flex: 1,
-                                            padding: '12px 8px',
-                                            borderRadius: '12px',
-                                            border: themeCtx.themeMode === t.id ? '2px solid var(--primary, #6366f1)' : '2px solid var(--border, #e2e8f0)',
-                                            backgroundColor: themeCtx.themeMode === t.id ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-card, #f8fafc)',
-                                            color: themeCtx.themeMode === t.id ? 'var(--primary, #6366f1)' : 'var(--text-primary, #374151)',
-                                            fontWeight: 600,
-                                            fontSize: '0.85rem',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '6px',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: themeCtx.themeMode === t.id ? '0 2px 8px rgba(99, 102, 241, 0.15)' : 'none'
-                                        }}
-                                    >
-                                        {t.icon}
-                                        {t.label}
-                                    </button>
+                                    <button key={t.id} onClick={() => themeCtx.setTheme(t.id)} className={`btn ${themeCtx.themeMode === t.id ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>{t.icon}{t.label}</button>
                                 ))}
                             </div>
                         </div>
-
-                        <button className="btn btn-primary" onClick={saveSettings} style={{ marginTop: '8px' }}><FiSave /> Simpan Pengaturan</button>
+                        <button className="btn btn-primary" onClick={saveSettings} style={{ marginTop: '16px' }}><FiSave /> Simpan Tema</button>
                     </div>
+                </div>
+            )}
+
+            {/* Landing Page Settings */}
+            {activeTab === 'landing' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="card">
+                        <div className="card-header"><h3><FiSettings /> Identitas & Lokasi Toko</h3></div>
+                        <div className="card-body">
+                            <div className="form-group"><label className="form-label">Nama Toko</label><input className="form-input" value={storeName} onChange={e => setStoreName(e.target.value)} /></div>
+                            <div className="form-group"><label className="form-label">Alamat Lengkap</label><textarea className="form-textarea" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} /></div>
+                            <div className="form-group"><label className="form-label">WhatsApp (No. Telepon)</label><input className="form-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} /></div>
+                            <div className="form-group"><label className="form-label">Link Google Maps (URL)</label><input className="form-input" value={storeMapsUrl} onChange={e => setStoreMapsUrl(e.target.value)} placeholder="Contool: https://maps.app.goo.gl/..." /></div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3><FiImage /> Galeri Toko & Hasil Kerja</h3>
+                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                                <FiPlus /> Tambah Foto
+                                <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ display: 'none' }} />
+                            </label>
+                        </div>
+                        <div className="card-body">
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                Upload foto interior toko, peralatan, atau hasil cetakan yang pernah dikerjakan.
+                            </p>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+                                {galleryImages.map((img, idx) => (
+                                    <div key={idx} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '1/1', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                                        <img src={img} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            onClick={() => removeGalleryImage(idx)}
+                                            style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                                            title="Hapus Foto"
+                                        >
+                                            <FiTrash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {galleryImages.length === 0 && (
+                                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '2px dashed var(--border)', color: 'var(--text-secondary)' }}>
+                                        <FiImage size={32} style={{ marginBottom: '12px', opacity: 0.5 }} /><br />
+                                        Belum ada foto galeri. Klik "Tambah Foto" untuk mengunggah.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <button className="btn btn-primary" onClick={saveSettings} style={{ alignSelf: 'flex-start' }}><FiSave /> Simpan Semua Pengaturan Landing Page</button>
                 </div>
             )}
 

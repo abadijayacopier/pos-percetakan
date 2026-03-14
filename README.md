@@ -1,100 +1,44 @@
-# POS Percetakan Abadi Jaya
+# POS Abadi Jaya Copier
 
-Aplikasi Point of Sale (POS) dan Manajemen Alur Produksi berbasis Web, dirancang khusus untuk memenuhi kebutuhan operasional harian Toko Fotocopy dan Percetakan (Digital/Offset) **Abadi Jaya**.
+Sistem Kasir (Point of Sale) khusus untuk usaha Fotocopy, Percetakan, dan Alat Tulis Kantor (ATK).
 
-Aplikasi ini mengintegrasikan seluruh proses inti bisnis, dari penerimaan pesanan di kasir, manajemen material (stok bahan), penugasan operator desain, pemantauan status produksi (Kanban Board), hingga serah terima pesanan ke pelanggan.
+## Fitur Unggulan Terbaru
 
-## Fitur Utama
+Aplikasi ini baru saja mendapatkan pembaruan besar pada bagian **Landing Page** publik untuk memperkuat kehadiran online bisnis:
 
-### 1. Sistem Kasir (Point of Sale)
-- **Kalkulator Kasir Cepat:** Melayani transaksi tunai & non-tunai (Transfer/QRIS) dengan cepat.
-- **Support Jenis Pembayaran:** DP (Uang Muka) dan Pelunasan untuk pesanan yang butuh proses (seperti percetakan).
-- **Cetak Struk/Nota:** Dukungan pencetakan struk termal (58mm/80mm) dan dot-matrix/inkjet via Web API atau Bluetooth (RawBT).
-- **Berbagi Struk Digital:** Fitur *Share Receipt* via WhatsApp atau salin ke *clipboard*.
+### 1. Landing Page Premium & Responsif
+Halaman depan publik yang elegan dengan desain modern. Sangat responsif dan nyaman diakses melalui HP, Tablet, maupun Komputer.
 
-### 2. Manajemen Digital Printing (Pesanan Desain & Cetak)
-- **Kalkulator Harga Dinamis:** Menghitung total estimasi harga secara otomatis berdasarkan kalkulasi per-meter atau per-pcs bahan cetak (Banner, Stiker, Kartu Nama, dl).
-- **Penugasan Desainer Terpusat:** Admin dapat melihat status ketersediaan Desainer secara *real-time* ("Tersedia" atau "Sibuk") dan memberikan tugas secara proporsional.
-- **Catatan & Instruksi Khusus:** Instruksi kasir tersambung langsung hingga ke layar desainer dan operator mesin.
+### 2. Integrasi WhatsApp (Automated Messaging)
+- **Pemesanan Produk**: Pelanggan bisa memesan produk ATK langsung ke WhatsApp toko dengan pesan yang sudah terisi otomatis.
+- **Request Service**: Form permintaan service mesin fotocopy yang langsung terkirim ke WhatsApp teknisi.
 
-### 3. Dashboard Khusus Operator Desain
-- **Antarmuka Bebas Distraksi:** Didesain agar *User Role* Desainer hanya melihat tugas yang diberikan kepadanya.
-- **Timer Pekerjaan (Live):** Saat Desainer memulai pekerjaan, timer akan berjalan sehingga Admin bisa memantau "*Time Spent*" per desain.
-- **Sistem Serah Terima Berkas:** Desainer dapat dengan mudah menyematkan URL/Tautan Google Drive hasil desain yang telah disetujui untuk diakses oleh Operator Mesin.
+### 3. Manajemen Galeri Dinamis
+Kini pemilik toko bisa mengunggah foto interior toko atau hasil kerja (percetakan/jilid) langsung dari menu **Pengaturan -> Landing Page**. Foto-foto tersebut akan muncul secara otomatis di galeri halaman depan.
 
-### 4. Antrean & Monitoring Produksi (Kanban Board)
-- **Sistem Drag & Drop:** Operator Mesin memantau seluruh antrean pesanan menggunakan antarmuka *Kanban* (Menunggu -> Proses Cetak -> Finishing -> QC -> Selesai).
-- **Indikator Prioritas & Lampiran File:** Memungkinkan operator mengunduh langsung file desain dari kartu tugas tanpa perlu bertanya ke desainer.
+### 4. Sinkronisasi Lokasi & QR Code
+- **Maps Sync**: Link Google Maps toko dapat diubah melalui pengaturan dan akan otomatis mengupdate tombol navigasi di landing page.
+- **Dynamic QR Code**: QR Code lokasi akan di-generate secara otomatis sesuai link Maps yang aktif, memudahkan pelanggan men-scan lokasi saat berkunjung.
 
-### 5. Keamanan Serah Terima Barang
-- **Sinkronisasi Kasir & Produksi:** Tombol "Serah Terima" pada pesanan cetak secara otomatis terkunci dengan badge `⚠️ Sedang Produksi` hingga kartu pesanan di Kanban Board benar-benar dipindahkan ke kolom "Selesai". Hal ini mencegah kasir secara tidak sengaja menyerahkan pesanan yang belum selesai ke pelanggan.
+### 5. Katalog Produk & Price List Live
+- Menampilkan daftar harga fotocopy, print, dan jilid secara real-time dari database.
+- Showcase produk ATK unggulan dengan fitur filter per kategori (Kertas, Buku, Alat Tulis, dll).
 
-### 6. Kelola Data & Inventori (Master Data)
-- Manajemen Pelanggan (Umum / Member).
-- Kelola Stok Produk Jadi & ATK (Otomatis berkurang saat terjual).
-- Kelola Bahan Baku Cetak (HPL, Banner, Stiker, dll) & perhitungan modal.
-- Laporan Keuangan (Omzet, Arus Kas).
+### 6. Kepercayaan Pelanggan (Social Proof)
+- **Testimonials**: Menampilkan feedback asli dari pelanggan.
+- **FAQ Section**: Daftar pertanyaan yang sering diajukan untuk membantu pelanggan mendapatkan informasi cepat.
 
-## Pembaruan Terbaru (Changelog v2.1)
-- **Modul Servis Fotocopy Lengkap**: Alur servis dari penerimaan hingga penyerahan kembali dengan sistem invoice modern.
-- **Integrasi Dashboard Riil**: Dasbor kini menampilkan data asli dari database (transaksi dan grafik).
-- **Dark Mode 2.0 & ThemeToggle**: Rekonstruksi sistem tema untuk konsistensi di POS dan Service.
-- **Aktivasi PWA**: Dukungan Progressive Web App resmi diaktifkan.
-- **Fix NaN Calculation**: Perbaikan logika hitung total biaya pada modul servis.
+## Cara Instalasi & Menjalankan
 
-## Teknologi yang Digunakan
+### Frontend
+1. Masuk ke folder `client`
+2. `npm install`
+3. `npm run dev`
 
-Aplikasi ini dibangun menggunakan arsitektur modern Javascript:
-
-*   **Frontend (Client):**
-    *   [React.js](https://reactjs.org/) (Vite)
-    *   Tailwind CSS (Styling & Modern UI/UX)
-    *   React Router (SPA Navigation)
-    *   React Icons
-    *   *LocalStorage DB (sebagai penyimpanan sementara)*
-
-*   **Backend (Server):**
-    *   [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/)
-    *   [MySQL](https://www.mysql.com/) (Database Data Utama)
-    *   Bcrypt.js (Keamanan Password)
-
-## Instalasi dan Menjalankan Proyek Secara Lokal
-
-Agar dapat menjalankan aplikasi ini di komputer lokal, pastikan Anda telah menginstal **Node.js** dan **MySQL** (XAMPP/Laragon).
-
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/abadijayacopier/pos-percetakan.git
-   cd pos-percetakan
-   ```
-
-2. **Setup Backend (Server)**
-   Buka terminal, dan masuk ke direktori server:
-   ```bash
-   cd server
-   npm install
-   ```
-   *   Buat database MySQL baru dengan nama `pos_abadi`.
-   *   Salin file `.env.example` (jika ada) ke `.env`, lalu masukkan konfigurasi database Anda.
-   *   *(Opsional: Jalankan script migrasi/seeder jika dikonfigurasi).*
-   *   Nyalakan server backend:
-   ```bash
-   npm start
-   ```
-
-3. **Setup Frontend (Client)**
-   Buka tab terminal baru, navigasikan ke direktori client:
-   ```bash
-   cd client
-   npm install
-   ```
-   *   Nyalakan development server:
-   ```bash
-   npm run dev
-   ```
-
-4. **Akses Aplikasi**
-   Buka *browser* dan akses URL yang diberikan oleh Vite (biasanya `http://localhost:5173`).
+### Backend
+1. Masuk ke folder `server`
+2. `npm install`
+3. `npm start` (atau gunakan `nodemon`)
 
 ---
-*Dibuat untuk Percetakan Abadi Jaya.*
+Dikembangkan dengan ❤️ untuk **Abadi Jaya Copier**.

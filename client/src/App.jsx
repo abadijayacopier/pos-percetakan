@@ -35,14 +35,18 @@ import PrintReceiptPage from './pages/PrintReceiptPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
+import LandingPage from './pages/LandingPage';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [activePage, setActivePage] = useState(() => {
+    // Public landing page by default if not logged in
+    if (!user) return 'landing';
     // Auto-redirect desainer to their dashboard
     if (user?.role === 'desainer') return 'dashboard-desainer';
     return 'dashboard';
   });
+  const [showLoginInPortal, setShowLoginInPortal] = useState(false);
   const [pageState, setPageState] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -57,6 +61,17 @@ export default function App() {
   const handleNavigate = (pageId, state = null) => {
     if (pageId === 'logout') {
       logout();
+      setActivePage('landing');
+      return;
+    }
+    if (pageId === 'login') {
+      setShowLoginInPortal(true);
+      setActivePage('login');
+      return;
+    }
+    if (pageId === 'landing') {
+      setShowLoginInPortal(false);
+      setActivePage('landing');
       return;
     }
     setActivePage(pageId);
@@ -296,7 +311,12 @@ export default function App() {
     );
   }
 
-  if (!user) return <LoginPage />;
+  if (!user) {
+    if (activePage === 'login' || showLoginInPortal) {
+      return <LoginPage onNavigate={handleNavigate} />;
+    }
+    return <LandingPage onNavigate={handleNavigate} />;
+  }
 
   const renderPage = () => {
     switch (activePage) {
