@@ -14,40 +14,69 @@ export default function ProductionQueuePage({ onNavigate }) {
         tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
     });
     const [viewDesignModal, setViewDesignModal] = useState(null);
+    const [activeTab, setActiveTab] = useState('Semua');
 
     const loadProductionData = async () => {
         let assignments = [];
+        let spkTasks = [];
         try {
             const { data } = await api.get('/designers/assignments');
             assignments = data;
+
+            // Fetch Offset SPKs
+            const { data: spkRes } = await api.get('/spk');
+            spkTasks = (spkRes.data || []).map(s => ({
+                id: s.spk_number,
+                real_id: s.id, // for API calls
+                status: s.status === 'Menunggu Antrian' ? 'produksi' :
+                    s.status === 'Proses Cetak' ? 'cetak' :
+                        s.status === 'Finishing' ? 'finishing' :
+                            s.status === 'QC' ? 'qc' :
+                                s.status === 'Selesai' ? 'selesai' : 'produksi',
+                customerName: s.customer_name,
+                title: s.product_name,
+                priority: s.priority?.toLowerCase(),
+                technician_name: s.assigned_name,
+                type: 'offset',
+                updatedAt: s.updated_at
+            }));
         } catch (err) {
-            console.error('Failed to fetch assignments:', err);
+            console.error('Failed to fetch production data:', err);
         }
 
         const allTasks = db.getAll('dp_tasks');
-        // Filter for production tasks
-        const prodTasks = allTasks.filter(t => !['desain', 'checkout', 'batal'].includes(t.status));
+        // Filter for production-ready tasks from LocalStorage (Digital)
+        // Note: ditugaskan/menunggu_desain are translated to 'produksi' (Menunggu) for the Kanban board
+        const prodTasks = allTasks.filter(t => !['checkout', 'batal'].includes(t.status))
+            .map(t => ({
+                ...t,
+                type: t.type || 'digital',
+                status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi'].includes(t.status) ? 'produksi' : t.status
+            }));
 
-        // Map assignment data to tasks
-        const enrichedTasks = prodTasks.map(t => {
+        // Combine both sources
+        const combinedTasks = [...prodTasks, ...spkTasks];
+
+        // Map assignment data to tasks (primarily for design links in digital)
+        const enrichedTasks = combinedTasks.map(t => {
             const assignment = assignments.find(a => a.task_id === t.id && a.status === 'selesai');
             return { ...t, designData: assignment };
         });
 
         setTasks(enrichedTasks);
 
-        // Update Tech Stats
+        // Update Tech Stats based on combined tasks
         const newStats = {
             tech1: { name: 'Andi Pratama', count: 0, status: 'emerald' },
             tech2: { name: 'Siti Aminah', count: 0, status: 'amber' },
             tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
         };
-        prodTasks.forEach(t => {
+        combinedTasks.forEach(t => {
             if (t.technician_id && newStats[t.technician_id]) {
                 newStats[t.technician_id].count++;
             }
         });
-        // Update status colors based on count
+        // Update status colors
         Object.keys(newStats).forEach(id => {
             const c = newStats[id].count;
             newStats[id].status = c > 7 ? 'rose' : c > 4 ? 'amber' : 'emerald';
@@ -68,7 +97,13 @@ export default function ProductionQueuePage({ onNavigate }) {
         loadProductionData();
     };
 
-    const getTasksByStatus = (status) => tasks.filter(t => t.status === status);
+    const getTasksByStatus = (status) => {
+        return tasks.filter(t => {
+            const matchesStatus = t.status === status;
+            const matchesTab = activeTab === 'Semua' || t.type?.toLowerCase() === activeTab.toLowerCase();
+            return matchesStatus && matchesTab;
+        });
+    };
 
     return (
         <div className="flex-1 flex flex-col h-full bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-hidden">
@@ -169,9 +204,18 @@ export default function ProductionQueuePage({ onNavigate }) {
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="flex bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <button className="px-4 py-1.5 bg-[#137fec] text-white text-xs font-bold rounded-md shadow-md shadow-[#137fec]/20 transition-colors">Semua</button>
-                            <button className="px-4 py-1.5 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Digital</button>
-                            <button className="px-4 py-1.5 text-slate-500 text-xs font-bold rounded-md hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Offset</button>
+                            <button
+                                onClick={() => setActiveTab('Semua')}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${activeTab === 'Semua' ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                            >Semua</button>
+                            <button
+                                onClick={() => setActiveTab('Digital')}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${activeTab === 'Digital' ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                            >Digital</button>
+                            <button
+                                onClick={() => setActiveTab('Offset')}
+                                className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${activeTab === 'Offset' ? 'bg-[#137fec] text-white shadow-md shadow-[#137fec]/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                            >Offset</button>
                         </div>
                         <div className="h-8 w-px bg-slate-200 dark:border-slate-700 hidden sm:block"></div>
                         <div className="flex items-center gap-2">

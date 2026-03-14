@@ -13,6 +13,7 @@ export default function DashboardPage({ onNavigate }) {
         lowStock: [], pendingOrders: [], activeService: [], notifications: []
     });
     const [chartBars, setChartBars] = useState([]);
+    const [recentTrx, setRecentTrx] = useState([]);
 
     useEffect(() => {
         const fetchDashboardInfo = async () => {

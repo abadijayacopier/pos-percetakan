@@ -189,6 +189,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             priority: 'normal',
             time: '--:--:--', // Timer belum berjalan, diatur oleh operator desain
             pesan_desainer: pesanDesainer || null, // Catatan spesifik dari Admin
+            type: 'digital',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
