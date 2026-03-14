@@ -35,11 +35,12 @@ Aplikasi ini mengintegrasikan seluruh proses inti bisnis, dari penerimaan pesana
 - Kelola Bahan Baku Cetak (HPL, Banner, Stiker, dll) & perhitungan modal.
 - Laporan Keuangan (Omzet, Arus Kas).
 
-## Pembaruan Terbaru (Changelog v2.0)
-- **Implementasi Fitur Operator Desain Lengkap**: Alur "Pelanggan -> Kasir -> Desainer -> Mesin Cetak" telah terhubung sepenuhnya. Kasir dapat menitipkan pesan/catatan spesifik untuk desainer. Desainer wajib memberikan URL File Hasil Desain (serta *link* unduhan) setelah selesai agar kualitas cetak terjaga.
-- **Serah Terima Anti-Bocor**: Tombol "Serah Terima" akan mengunci dirinya sendiri jika pesanan cetak desain belum ditandai *"Selesai"* di papan operasi. Hal ini mencegah kasir menyerahkan barang yang sejatinya belum selesai diolah.
-- **Sinkronisasi Kasir & Mesin Cetak Otomatis**: Pesanan cetak yang sedang dalam *Antrean Mesin* langsung muncul di antarmuka Kasir sebagai **Belum Lunas**. Ini berarti pelanggan bebas membayar uang muka (DP) kapan saja walaupun desainnya masih dibuat.
-- **Pencetakan & Pembagian Struk Visual**: Struk lunas kini dapat ditarik menggunakan tombol khusus pada halaman "Pelunasan Kasir" dan struk *thermal-sized* tersebut bisa langsung dicetak maupun dibagikan ke WhatsApp pelanggan langsung dari web app.
+## Pembaruan Terbaru (Changelog v2.1)
+- **Modul Servis Fotocopy Lengkap**: Alur servis dari penerimaan hingga penyerahan kembali dengan sistem invoice modern.
+- **Integrasi Dashboard Riil**: Dasbor kini menampilkan data asli dari database (transaksi dan grafik).
+- **Dark Mode 2.0 & ThemeToggle**: Rekonstruksi sistem tema untuk konsistensi di POS dan Service.
+- **Aktivasi PWA**: Dukungan Progressive Web App resmi diaktifkan.
+- **Fix NaN Calculation**: Perbaikan logika hitung total biaya pada modul servis.
 
 ## Teknologi yang Digunakan
 
