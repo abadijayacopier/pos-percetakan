@@ -6,17 +6,68 @@ import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { formatDateTime, printViaRawBT } from '../utils';
 import Modal from '../components/Modal';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiTool, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage } from 'react-icons/fi';
 
 export default function SettingsPage() {
     const { user } = useAuth();
     const { showToast } = useToast();
     const themeCtx = useTheme();
+
+    // Core states
     const [activeTab, setActiveTab] = useState('general');
-    const [fotocopyPrices, setFotocopyPrices] = useState([]);
-    const [users, setUsers] = useState(() => db.getAll('users'));
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+    // Settings memo and helper
+    const settings = useMemo(() => {
+        const all = db.getAll('settings');
+        const map = {};
+        all.forEach(s => { map[s.key] = s; });
+        return map;
+    }, []);
+
+    const getSetting = (key) => settings[key]?.value || '';
+
+    // Data States
+    const [fotocopyPrices, setFotocopyPrices] = useState([]);
+    const [users, setUsers] = useState(() => db.getAll('users'));
+    const [printPrices, setPrintPrices] = useState(db.getAll('print_prices') || []);
+    const [bindPrices, setBindPrices] = useState(db.getAll('binding_prices') || []);
+    const [systemPrinters, setSystemPrinters] = useState([]);
+    const [galleryImages, setGalleryImages] = useState(() => {
+        const saved = getSetting('landing_gallery');
+        try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+    });
+
+    const defaultFcDiscounts = [
+        { id: '1', minQty: 100, discountPerSheet: 50 },
+        { id: '2', minQty: 500, discountPerSheet: 75 },
+        { id: '3', minQty: 1000, discountPerSheet: 100 }
+    ];
+    const [fcDiscounts, setFcDiscounts] = useState(() => {
+        const saved = getSetting('fc_discounts');
+        return saved ? JSON.parse(saved) : defaultFcDiscounts;
+    });
+
+    // Branding & Terminal States
+    const [storeName, setStoreName] = useState(getSetting('store_name') || 'FOTOCOPY ABADI JAYA');
+    const [storeAddress, setStoreAddress] = useState(getSetting('store_address') || '');
+    const [storePhone, setStorePhone] = useState(getSetting('store_phone') || '');
+    const [storeMapsUrl, setStoreMapsUrl] = useState(getSetting('store_maps_url') || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
+    const [storeLogo, setStoreLogo] = useState(getSetting('store_logo') || '');
+    const [receiptFooter, setReceiptFooter] = useState(getSetting('receipt_footer') || '');
+    const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
+    const [printerName, setPrinterName] = useState(getSetting('printer_name') || '');
+    const [paperSize, setPaperSize] = useState(getSetting('paper_size') || 'A4');
+    const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
+
+    // UI/Form States
+    const [userFormOpen, setUserFormOpen] = useState(false);
+    const [editUser, setEditUser] = useState(null);
+    const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'kasir', isActive: true });
+
+    const activityLog = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50), []);
+
+    // Effects
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
@@ -25,10 +76,11 @@ export default function SettingsPage() {
 
     useEffect(() => {
         api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data)).catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
-        setPrintPrices(db.getAll('print_prices'));
-        setBindPrices(db.getAll('binding_prices'));
         api.get('/print/printers').then(res => setSystemPrinters(res.data)).catch(() => { });
     }, []);
+
+    // Functions
+    const refreshUsers = () => setUsers(db.getAll('users'));
 
     const updateFotocopyPrice = async (id, newPrice) => {
         try {
@@ -47,51 +99,6 @@ export default function SettingsPage() {
             api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data));
         } catch { showToast('Gagal menyimpan harga fotocopy', 'error'); }
     };
-    const activityLog = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50), []);
-    const [userFormOpen, setUserFormOpen] = useState(false);
-    const [editUser, setEditUser] = useState(null);
-    const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'kasir', isActive: true });
-
-    // Settings
-    const settings = useMemo(() => {
-        const all = db.getAll('settings');
-        const map = {};
-        all.forEach(s => { map[s.key] = s; });
-        return map;
-    }, []);
-
-    const getSetting = (key) => settings[key]?.value || '';
-    const [storeName, setStoreName] = useState(getSetting('store_name') || 'FOTOCOPY ABADI JAYA');
-    const [storeAddress, setStoreAddress] = useState(getSetting('store_address') || '');
-    const [storePhone, setStorePhone] = useState(getSetting('store_phone') || '');
-    const [storeMapsUrl, setStoreMapsUrl] = useState(getSetting('store_maps_url') || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
-    const [storeLogo, setStoreLogo] = useState(getSetting('store_logo') || '');
-    const [receiptFooter, setReceiptFooter] = useState(getSetting('receipt_footer') || '');
-    const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
-    const [printerName, setPrinterName] = useState(getSetting('printer_name') || '');
-    const [paperSize, setPaperSize] = useState(getSetting('paper_size') || 'A4');
-    const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
-    const [systemPrinters, setSystemPrinters] = useState([]);
-
-    const [printPrices, setPrintPrices] = useState([]);
-
-    const [bindPrices, setBindPrices] = useState([]);
-    const [galleryImages, setGalleryImages] = useState(() => {
-        const saved = getSetting('landing_gallery');
-        try { return saved ? JSON.parse(saved) : []; } catch { return []; }
-    });
-
-    const defaultFcDiscounts = [
-        { id: '1', minQty: 100, discountPerSheet: 50 },
-        { id: '2', minQty: 500, discountPerSheet: 75 },
-        { id: '3', minQty: 1000, discountPerSheet: 100 }
-    ];
-    const [fcDiscounts, setFcDiscounts] = useState(() => {
-        const saved = getSetting('fc_discounts');
-        return saved ? JSON.parse(saved) : defaultFcDiscounts;
-    });
-
-    const refreshUsers = () => setUsers(db.getAll('users'));
 
     const saveSettings = () => {
         const set = (key, value) => {
