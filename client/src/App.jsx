@@ -37,7 +37,7 @@ import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [activePage, setActivePage] = useState(() => {
     // Auto-redirect desainer to their dashboard
     if (user?.role === 'desainer') return 'dashboard-desainer';
@@ -55,6 +55,10 @@ export default function App() {
   }, [user, activePage]);
 
   const handleNavigate = (pageId, state = null) => {
+    if (pageId === 'logout') {
+      logout();
+      return;
+    }
     setActivePage(pageId);
     setPageState(state);
   };
