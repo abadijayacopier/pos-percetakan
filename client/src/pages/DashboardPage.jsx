@@ -10,34 +10,31 @@ import {
 export default function DashboardPage({ onNavigate }) {
     const [stats, setStats] = useState({
         omset: 0, trxCount: 0, saldo: 0,
-        lowStock: [], pendingOrders: [], activeService: [], notifications: []
+        lowStockCount: 0, pendingPrintCount: 0, pendingServiceCount: 0,
+        activityLog: []
     });
     const [chartBars, setChartBars] = useState([]);
     const [recentTrx, setRecentTrx] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardInfo = async () => {
+            setLoading(true);
             try {
-                const res = await api.get('/finance/stats');
-                const productsRes = await api.get('/products');
-                const printRes = await api.get('/print-orders');
-                const srvRes = await api.get('/service-orders');
-                const trxRes = await api.get('/transactions');
+                const [statsRes, trxRes] = await Promise.all([
+                    api.get('/finance/stats'),
+                    api.get('/transactions')
+                ]);
 
-                const data = res.data;
-                const products = productsRes.data || [];
-                const printOrders = printRes.data || [];
-                const serviceOrders = srvRes.data || [];
-
-                const lowStock = products.filter(p => p.stock <= p.min_stock);
-                const pendingOrders = printOrders.filter(o => !['selesai', 'diambil'].includes(o.status));
-                const activeService = serviceOrders.filter(o => !['selesai', 'diambil'].includes(o.status));
+                const data = statsRes.data;
 
                 setStats({
                     omset: data.todaySales || 0,
                     trxCount: data.trxCount || 0,
                     saldo: data.saldo || 0,
-                    lowStock, pendingOrders, activeService,
+                    lowStockCount: data.lowStock || 0,
+                    pendingPrintCount: data.pendingPrint || 0,
+                    pendingServiceCount: data.pendingService || 0,
                     activityLog: data.activityLog || []
                 });
 
@@ -46,10 +43,14 @@ export default function DashboardPage({ onNavigate }) {
                 }
 
                 if (trxRes.data) {
-                    const sorted = trxRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    const sorted = trxRes.data.sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
                     setRecentTrx(sorted.slice(0, 5));
                 }
-            } catch (e) { console.error('Gagal load dashboard', e) }
+            } catch (e) {
+                console.error('Gagal load dashboard', e);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchDashboardInfo();
     }, []);
@@ -80,10 +81,10 @@ export default function DashboardPage({ onNavigate }) {
                         <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
                             <span className="material-symbols-outlined">print</span>
                         </div>
-                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center">{Math.min(3, stats.pendingOrders.length)} Baru</span>
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center">Antrean SPK</span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium relative z-10">Antrean Cetak</p>
-                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.pendingOrders.length} Tugas</h3>
+                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.pendingPrintCount} Tugas</h3>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
@@ -94,10 +95,10 @@ export default function DashboardPage({ onNavigate }) {
                         <div className="p-2 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
                             <span className="material-symbols-outlined">home_repair_service</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center">Tepat waktu</span>
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center">Servis Berjalan</span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium relative z-10">Servis Aktif</p>
-                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.activeService.length} Tiket</h3>
+                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.pendingServiceCount} Tiket</h3>
                 </div>
 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
@@ -110,8 +111,8 @@ export default function DashboardPage({ onNavigate }) {
                         </div>
                         <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center">Penting</span>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium relative z-10">Stok ATK Menipis</p>
-                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.lowStock.length} Barang</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium relative z-10">Stok Barang Menipis</p>
+                    <h3 className="text-2xl font-bold mt-1 text-slate-900 dark:text-white relative z-10">{stats.lowStockCount} Barang</h3>
                 </div>
             </div>
 
@@ -205,88 +206,114 @@ export default function DashboardPage({ onNavigate }) {
                 </div>
             </div>
 
-            {/* Recent Transactions Table */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Transaksi Terakhir</h3>
-                    <button className="text-primary text-xs font-bold hover:underline" onClick={() => onNavigate('reports')}>Lihat Semua Catatan</button>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4">ID Transaksi</th>
-                                <th className="px-6 py-4">Pelanggan</th>
-                                <th className="px-6 py-4">Jenis Layanan</th>
-                                <th className="px-6 py-4">Jumlah</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                            {recentTrx.length > 0 ? recentTrx.map((trx, idx) => (
-                                <tr key={trx.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-slate-900 dark:text-white">{trx.invoiceNo || `#TX-${idx + 1000}`}</div>
-                                        <div className="text-[10px] text-slate-500 font-medium">
-                                            {new Date(trx.created_at || trx.date).toLocaleDateString('id-ID')} {new Date(trx.created_at || trx.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">{trx.customer_name || trx.customerName || 'Pelanggan Umum'}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter
-                                            ${trx.type === 'service' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
-                                                trx.type === 'digital_printing' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' :
-                                                    'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'}`}>
-                                            <span className="material-symbols-outlined text-xs">
-                                                {trx.type === 'service' ? 'build' : 'print'}
+            {/* Recent Transactions & Activity Log */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Transactions Table */}
+                <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 sticky top-0 z-10">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Transaksi Terakhir</h3>
+                        <button className="text-primary text-xs font-bold hover:underline" onClick={() => onNavigate('reports')}>Lihat Semua</button>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                                <tr>
+                                    <th className="px-6 py-4">ID Transaksi</th>
+                                    <th className="px-6 py-4">Pelanggan</th>
+                                    <th className="px-6 py-4">Jumlah</th>
+                                    <th className="px-6 py-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                                {loading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <tr key={i} className="animate-pulse">
+                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-24"></div></td>
+                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-32"></div></td>
+                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-20"></div></td>
+                                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-16"></div></td>
+                                        </tr>
+                                    ))
+                                ) : recentTrx.length > 0 ? recentTrx.map((trx) => (
+                                    <tr key={trx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer" onClick={() => onNavigate('print-receipt', { trxId: trx.id })}>
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-slate-900 dark:text-white">{trx.invoice_no || trx.invoiceNo}</div>
+                                            <div className="text-[10px] text-slate-500 font-medium">
+                                                {new Date(trx.date || trx.created_at).toLocaleDateString('id-ID')}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">{trx.customer_name || trx.customerName || 'Umum'}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{formatRupiah(trx.total || 0)}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-tighter
+                                                ${trx.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                {trx.status === 'paid' ? 'Lunas' : 'Piutang'}
                                             </span>
-                                            {trx.type?.replace('_', ' ') || 'Fotokopi'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{formatRupiah(trx.total || trx.grand_total || 0)}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`flex items-center gap-1.5 font-bold text-xs
-                                            ${trx.status === 'completed' || trx.status === 'paid' ? 'text-emerald-600 dark:text-emerald-400' :
-                                                trx.status === 'pending' || trx.status === 'unpaid' ? 'text-amber-600 dark:text-amber-400' :
-                                                    'text-slate-500 dark:text-slate-400'}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full
-                                                ${trx.status === 'completed' || trx.status === 'paid' ? 'bg-emerald-600' :
-                                                    trx.status === 'pending' || trx.status === 'unpaid' ? 'bg-amber-600' :
-                                                        'bg-slate-500'}`}></span>
-                                            {trx.status?.toUpperCase() || 'SUKSES'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg transition-all text-slate-400 hover:text-primary">
-                                            <span className="material-symbols-outlined">visibility</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                    <td className="px-6 py-4 font-bold text-slate-500">#TX-8492</td>
-                                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">Sarah Wilson</td>
-                                    <td className="px-6 py-4">
-                                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold">
-                                            <span className="material-symbols-outlined text-xs">print</span> Fotokopi
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">Rp 24.000</td>
-                                    <td className="px-6 py-4">
-                                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Selesai
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button className="text-slate-400 hover:text-primary transition-colors">
-                                            <span className="material-symbols-outlined">more_horiz</span>
-                                        </button>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="4" className="px-6 py-10 text-center text-slate-500 text-sm italic">
+                                            <span className="material-symbols-outlined block text-3xl mb-2 opacity-20">inbox</span>
+                                            Belum ada transaksi hari ini
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Activity Log */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Log Aktivitas</h3>
+                        <span className="material-symbols-outlined text-slate-400 text-sm">history</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto max-h-[400px] p-6 space-y-6 custom-scrollbar">
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <div key={i} className="flex gap-3 animate-pulse">
+                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0"></div>
+                                    <div className="space-y-2 flex-1">
+                                        <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded w-full"></div>
+                                        <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : stats.activityLog.length > 0 ? stats.activityLog.map((log) => (
+                            <div key={log.id} className="relative flex gap-4 group">
+                                <div className="absolute left-[15px] top-8 bottom-[-24px] w-px bg-slate-100 dark:bg-slate-800 group-last:hidden"></div>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 shadow-sm
+                                    ${log.action === 'add' ? 'bg-emerald-100 text-emerald-600' :
+                                        log.action === 'edit' || log.action?.includes('update') ? 'bg-blue-100 text-blue-600' :
+                                            log.action === 'delete' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600'}`}>
+                                    <span className="material-symbols-outlined text-base">
+                                        {log.action?.includes('transaction') ? 'payments' :
+                                            log.action?.includes('stock') ? 'inventory_2' :
+                                                log.action?.includes('service') ? 'build' : 'notifications'}
+                                    </span>
+                                </div>
+                                <div className="pb-4">
+                                    <p className="text-sm font-medium text-slate-900 dark:text-white leading-snug">
+                                        <span className="font-bold">{log.user_name}</span> {log.action?.replace(/_/g, ' ')}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-0.5">{log.detail}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                                        {(() => {
+                                            const d = new Date(log.timestamp);
+                                            const diff = Date.now() - d.getTime();
+                                            if (diff < 60000) return 'Baru Saja';
+                                            if (diff < 3600000) return `${Math.floor(diff / 60000)}m yang lalu`;
+                                            return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                                        })()}
+                                    </p>
+                                </div>
+                            </div>
+                        )) : (
+                            <div className="text-center py-10 text-slate-400 text-sm italic">Belum ada aktivitas tercatat</div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
