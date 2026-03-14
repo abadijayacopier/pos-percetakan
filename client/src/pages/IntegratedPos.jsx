@@ -6,9 +6,13 @@ import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import ThemeToggle from '../components/ThemeToggle';
-import { FiCheckCircle, FiTrash2, FiPlus, FiMinus, FiSearch, FiBell, FiUser, FiPrinter, FiSave, FiChevronRight, FiTag, FiShoppingCart, FiFile, FiBook, FiPrinter as FiPrinterIcon } from 'react-icons/fi';
+import { FiCheckCircle, FiTrash2, FiPlus, FiMinus, FiSearch, FiBell, FiUser, FiPrinter, FiSave, FiChevronRight, FiTag, FiShoppingCart, FiFile, FiBook, FiPrinter as FiPrinterIcon, FiZap } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
+    const { user } = useAuth();
+    const { showToast } = useToast();
     // Basic States
     const [activeServiceTab, setActiveServiceTab] = useState('fotocopy'); // 'fotocopy' | 'jilid' | 'cetak'
     const [products, setProducts] = useState([]);
@@ -44,6 +48,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
 
+    // Printer Settings
+    const [printerSettings, setPrinterSettings] = useState({
+        autoPrint: false,
+        printerName: '',
+        printerSize: '80mm',
+        paperSize: 'A4'
+    });
+
     // Search Input Ref for F5 focus
     const searchInputRef = useRef(null);
 
@@ -56,6 +68,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         api.get('/transactions/fotocopy-prices')
             .then(res => setFotocopyPrices(res.data))
             .catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
+
+        // Load Printer Settings
+        const allSettings = db.getAll('settings');
+        const sMap = {};
+        allSettings.forEach(s => { sMap[s.key] = s.value; });
+        setPrinterSettings({
+            autoPrint: sMap.auto_print === 'true',
+            printerName: sMap.printer_name || '',
+            printerSize: sMap.printer_size || '80mm',
+            paperSize: sMap.paper_size || 'A4'
+        });
     }, []);
 
     // Service Calc Logic (Ported from PosPage)
@@ -203,6 +226,40 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setCart(prev => [...prev, newItem]);
     };
 
+    const handleDirectPrint = async (transaction) => {
+        if (!printerSettings.printerName && !isMobile) {
+            showToast('Printer belum dikonfigurasi di Pengaturan', 'warning');
+            return;
+        }
+
+        try {
+            const settings = db.getAll('settings').reduce((obj, s) => ({ ...obj, [s.key]: s.value }), {});
+            const receiptText = generateRawReceipt(transaction, {
+                name: settings.store_name || 'Abadi Jaya',
+                address: settings.store_address || '',
+                phone: settings.store_phone || '',
+                footer: settings.receipt_footer || '',
+                userName: user?.name || 'Kasir'
+            }, printerSettings.printerSize);
+
+            if (isMobile) {
+                printViaRawBT(receiptText);
+            } else {
+                await api.post('/print/receipt', {
+                    text: receiptText,
+                    printerName: printerSettings.printerName,
+                    raw: printerSettings.printerSize === 'lx310',
+                    mode: printerSettings.printerSize === 'inkjet' ? 'inkjet' : 'normal',
+                    paperSize: printerSettings.paperSize
+                });
+                showToast('Struk berhasil dikirim ke printer', 'success');
+            }
+        } catch (err) {
+            console.error('Print error:', err);
+            showToast('Gagal mencetak struk ke hardware', 'error');
+        }
+    };
+
     const handleConfirmPayment = () => {
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : total;
@@ -233,6 +290,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         });
 
         setTransactionComplete(transaction);
+
+        // Auto Print if enabled and desktop
+        if (printerSettings.autoPrint && !isMobile) {
+            handleDirectPrint(transaction);
+        }
     };
 
     const saveQueue = () => {
@@ -647,19 +709,22 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         <p className="text-slate-500 mb-6">Transaksi {transactionComplete.invoiceNo} telah berhasil diproses.</p>
                         <div className="space-y-4">
                             <button
-                                onClick={() => {
-                                    if (isMobile) {
-                                        const receiptHtml = generateRawReceipt(transactionComplete, db.getAll('settings').reduce((obj, s) => ({ ...obj, [s.key]: s.value }), {}), '58mm');
-                                        printViaRawBT(receiptHtml);
-                                    } else {
-                                        // Desktop LX310 context
+                                onClick={() => handleDirectPrint(transactionComplete)}
+                                className="w-full py-5 bg-primary text-white rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary/30 hover:bg-primary/90 transition-all active:scale-95"
+                            >
+                                <FiPrinter size={24} /> {isMobile ? 'Cetak Bluetooth' : (printerSettings.printerName ? `Cetak ke ${printerSettings.printerName}` : 'Cetak (Pilih Printer)')}
+                            </button>
+                            {!isMobile && !printerSettings.printerName && (
+                                <button
+                                    onClick={() => {
                                         const settings = db.getAll('settings').reduce((obj, s) => ({ ...obj, [s.key]: s.value }), {});
                                         const receiptText = generateRawReceipt(transactionComplete, {
                                             name: settings.store_name || 'Abadi Jaya',
                                             address: settings.store_address || '',
                                             phone: settings.store_phone || '',
-                                            footer: settings.receipt_footer || ''
-                                        }, 'lx310');
+                                            footer: settings.receipt_footer || '',
+                                            userName: user?.name || 'Kasir'
+                                        }, printerSettings.printerSize);
 
                                         const printWindow = window.open('', '_blank');
                                         printWindow.document.write(`<html><head><title>Print Receipt</title><style>
@@ -673,12 +738,12 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                             printWindow.print();
                                             printWindow.close();
                                         }, 250);
-                                    }
-                                }}
-                                className="w-full py-5 bg-primary text-white rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary/30 hover:bg-primary/90 transition-all active:scale-95"
-                            >
-                                <FiPrinter size={24} /> {isMobile ? 'Cetak Bluetooth' : 'Cetak LX310'}
-                            </button>
+                                    }}
+                                    className="w-full py-3 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <FiFile /> Gunakan Dialog Browser (Fallback)
+                                </button>
+                            )}
                             <button onClick={closePaymentModal} className="w-full py-4 bg-slate-100 dark:bg-slate-800 rounded-2xl font-black text-slate-600 dark:text-slate-400 hover:bg-slate-200 transition-colors">Selesai</button>
                         </div>
                     </div>
@@ -737,11 +802,12 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             Konfirmasi & Selesaikan
                         </button>
                     </div>
-                )}
-            </Modal>
+                )
+                }
+            </Modal >
 
             {/* Shortcut Help Bar */}
-            <div className="bg-slate-800 text-slate-300 py-1.5 px-6 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-t border-slate-700 z-50">
+            < div className="bg-slate-800 text-slate-300 py-1.5 px-6 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-t border-slate-700 z-50" >
                 <span className="text-[10px] font-bold text-primary flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs">keyboard</span> BANTUAN TOMBOL:
                 </span>
@@ -761,7 +827,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         </span>
                     ))}
                 </div>
-            </div>
+            </div >
 
             <footer className="h-10 bg-slate-900 text-white flex items-center justify-between px-6 text-[10px] uppercase tracking-widest font-bold border-t border-slate-800">
                 <div className="flex gap-6">
@@ -773,6 +839,6 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     <span>ID Kasir: 001-ABADI</span>
                 </div>
             </footer>
-        </div>
+        </div >
     );
 }

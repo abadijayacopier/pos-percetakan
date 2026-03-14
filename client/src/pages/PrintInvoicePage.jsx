@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import db from '../db';
+import { FiGlobe, FiPhone, FiMapPin, FiMail } from 'react-icons/fi';
 
 export default function PrintInvoicePage({ onNavigate, pageState }) {
     const spkId = pageState?.spkId || null;
     const [invoiceData, setInvoiceData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [settings, setSettings] = useState({});
 
     useEffect(() => {
         const fetchDetail = async () => {
             if (!spkId) {
-                // Return dummy data if no SPK ID
                 setLoading(false);
                 return;
             }
@@ -18,38 +20,17 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
                 setInvoiceData(res.data);
             } catch (err) {
                 console.error('Gagal fetch detail Invoice:', err);
-                // Fallback to dummy data
             } finally {
                 setLoading(false);
             }
         };
         fetchDetail();
-    }, [spkId]);
 
-    // Tambahkan style cetak ke dalam tag head
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @media print {
-                .no-print { display: none !important; }
-                body { background-color: white !important; }
-                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                /* Ensures colors print correctly */
-                * {
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-            }
-            .paper-a4 {
-                width: 210mm;
-                min-height: 297mm;
-            }
-        `;
-        document.head.appendChild(style);
-        return () => {
-            document.head.removeChild(style);
-        };
-    }, []);
+        const allSettings = db.getAll('settings');
+        const sObj = {};
+        allSettings.forEach(s => sObj[s.key] = s.value);
+        setSettings(sObj);
+    }, [spkId]);
 
     const formatCurrency = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
     const formatDate = (dateStr) => {
@@ -57,9 +38,14 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
         return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
     };
 
+    const storeName = settings.store_name || 'ABADI JAYA';
+    const storeAddress = settings.store_address || 'Jl. Contoh No. 123, Kota';
+    const storePhone = settings.store_phone || '021-12345678';
+    const storeLogo = settings.store_logo || '/logo.png';
+
     // Use fetched data or fallback to dummy values from mockup
     const invNumber = invoiceData ? `INV-${invoiceData.spk_number?.replace('SPK-', '') || spkId}` : 'INV-2024-0524';
-    const customerName = invoiceData?.customer_company || invoiceData?.customer_name || 'PT Maju Jaya Kreatif';
+    const customerName = invoiceData?.customer_company || invoiceData?.customer_name || 'Pelanggan Umum';
     const dateNow = formatDate(new Date());
     const deadline = formatDate(invoiceData?.deadline || '2024-05-31T00:00:00Z');
 
@@ -123,37 +109,37 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
 
                         {/* Header Invoice */}
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10 pb-8 border-b border-slate-100 dark:border-slate-800">
-                            <div className="flex flex-col gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-[#137fec] p-2 rounded-lg text-white">
-                                        <span className="material-symbols-outlined text-4xl">inventory_2</span>
+                            <div className="flex flex-col gap-5">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-20 h-20 bg-white dark:bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                                        <img src={storeLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">PRINTHUB SOLUTIONS</h1>
-                                        <p className="text-xs text-slate-500 font-medium">Layanan Percetakan & Creative Agency</p>
+                                        <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic leading-none">{storeName}</h1>
+                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mt-2">Specialist Printing & Digital Solutions</p>
                                     </div>
                                 </div>
-                                <div className="text-sm text-slate-500 leading-relaxed">
-                                    Jl. Industri Grafika No. 42, Jakarta Selatan<br />
-                                    Telp: (021) 555-0123 | Email: hello@printhub.id<br />
-                                    NPWP: 01.234.567.8-901.000
+                                <div className="space-y-1.5 text-sm text-slate-500 font-medium">
+                                    <p className="flex items-center gap-2"><FiMapPin className="text-blue-500" size={14} /> {storeAddress}</p>
+                                    <p className="flex items-center gap-2"><FiPhone className="text-blue-500" size={14} /> {storePhone}</p>
+                                    <p className="flex items-center gap-2"><FiGlobe className="text-blue-500" size={14} /> www.abadijayapos.com</p>
                                 </div>
                             </div>
                             <div className="flex flex-col items-end gap-2 text-right">
-                                <h2 className="text-4xl font-black text-[#137fec] tracking-tighter italic">INVOICE</h2>
-                                <div className="bg-blue-50 text-[#137fec] px-3 py-1 rounded text-sm font-bold">#{invNumber}</div>
-                                <div className="mt-2 flex flex-col gap-1 items-end">
-                                    <p className="text-sm text-slate-500"><span className="font-semibold text-slate-700 dark:text-slate-300">Tanggal:</span> {dateNow}</p>
-                                    <p className="text-sm text-slate-500"><span className="font-semibold text-slate-700 dark:text-slate-300">Jatuh Tempo:</span> {deadline}</p>
+                                <h2 className="text-5xl font-black text-slate-200 dark:text-slate-800 italic uppercase leading-none tracking-tighter mb-4 select-none">INVOICE</h2>
+                                <div className="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-black shadow-md shadow-blue-500/20">#{invNumber}</div>
+                                <div className="mt-4 flex flex-col gap-1 items-end">
+                                    <p className="text-xs font-bold text-slate-400">Entry Date: <span className="text-slate-700 dark:text-slate-300 ml-2">{formatDate(invoiceData?.createdAt || new Date())}</span></p>
+                                    <p className="text-xs font-bold text-slate-400">Due Date: <span className="text-slate-700 dark:text-slate-300 ml-2">{deadline}</span></p>
                                     {isLunas ? (
-                                        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest">
-                                            <span className="material-symbols-outlined text-[14px] mr-1">check_circle</span>
-                                            LUNAS
+                                        <div className="mt-3 inline-flex items-center px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                            <span className="material-symbols-outlined text-[14px] mr-1.5">verified</span>
+                                            PAID IN FULL
                                         </div>
                                     ) : (
-                                        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-widest">
-                                            <span className="material-symbols-outlined text-[14px] mr-1">pending</span>
-                                            BELUM LUNAS
+                                        <div className="mt-3 inline-flex items-center px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
+                                            <span className="material-symbols-outlined text-[14px] mr-1.5">pending</span>
+                                            PENDING PAYMENT
                                         </div>
                                     )}
                                 </div>
@@ -226,10 +212,10 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.catColor === 'blue' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                                        item.catColor === 'purple' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
-                                                            item.catColor === 'orange' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
-                                                                item.catColor === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
-                                                                    'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                                    item.catColor === 'purple' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                                                        item.catColor === 'orange' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
+                                                            item.catColor === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
+                                                                'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                                     }`}>
                                                     {item.cat}
                                                 </span>

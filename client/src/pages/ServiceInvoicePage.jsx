@@ -27,21 +27,6 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
         setLoading(false);
     }, [serviceId]);
 
-    // Style cetak
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @media print {
-                .no-print { display: none !important; }
-                body { background: white !important; margin: 0; padding: 0; }
-                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            }
-        `;
-        document.head.appendChild(style);
-        return () => document.head.removeChild(style);
-    }, []);
-
     const formatCurrency = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
     if (loading) return <div className="p-20 text-center font-bold">Memuat Invoice...</div>;
@@ -53,9 +38,10 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
         </div>
     );
 
-    const storeName = settings.store_name || 'FOTOCOPY ABADI JAYA';
+    const storeName = settings.store_name || 'ABADI JAYA';
     const storeAddress = settings.store_address || 'Jl. Contoh No. 123, Kota';
     const storePhone = settings.store_phone || '021-12345678';
+    const storeLogo = settings.store_logo || '/logo.png';
 
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-[#0f1117] font-display text-slate-900 dark:text-slate-100 pb-20">
@@ -69,7 +55,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                         <FiArrowLeft size={24} />
                     </button>
                     <div>
-                        <h2 className="font-black tracking-tighter uppercase text-lg italic">Print Service Ticket</h2>
+                        <h2 className="font-black tracking-tighter uppercase text-lg italic">Service Invoice</h2>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Dokumen Penyerahan & Invoice</p>
                     </div>
                 </div>
@@ -99,28 +85,28 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                     <div className="p-10 md:p-14">
                         {/* Header Section */}
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-slate-100 dark:border-slate-800 pb-10 mb-10">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/20">
-                                        <FiTool size={32} />
+                            <div className="space-y-5">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-20 h-20 bg-white dark:bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                                        <img src={storeLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                                     </div>
                                     <div>
-                                        <h1 className="text-3xl font-black tracking-tighter uppercase leading-none italic">{storeName}</h1>
-                                        <p className="text-xs font-bold text-blue-500 uppercase tracking-[0.2em] mt-1">Specialist Maintenance & Parts</p>
+                                        <h1 className="text-3xl font-black text-slate-900 dark:text-white leading-none italic uppercase tracking-tighter">{storeName}</h1>
+                                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-2">Specialist Maintenance & Parts</p>
                                     </div>
                                 </div>
-                                <div className="space-y-1 text-sm text-slate-500 font-medium">
-                                    <p className="flex items-center gap-2"><FiMapPin className="text-blue-500" /> {storeAddress}</p>
-                                    <p className="flex items-center gap-2"><FiPhone className="text-blue-500" /> {storePhone}</p>
-                                    <p className="flex items-center gap-2"><FiGlobe className="text-blue-500" /> www.abadijayapos.com</p>
+                                <div className="space-y-1.5 text-sm text-slate-500 font-medium font-sans">
+                                    <p className="flex items-center gap-2"><FiMapPin className="text-blue-500" size={14} /> {storeAddress}</p>
+                                    <p className="flex items-center gap-2"><FiPhone className="text-blue-500" size={14} /> {storePhone}</p>
+                                    <p className="flex items-center gap-2"><FiGlobe className="text-blue-500" size={14} /> www.abadijayapos.com</p>
                                 </div>
                             </div>
 
                             <div className="text-right">
-                                <h1 className="text-5xl font-black text-slate-200 dark:text-slate-800 italic uppercase leading-none tracking-tighter mb-4">Invoice</h1>
-                                <div className="inline-block bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left leading-none mb-1">Service Number</p>
-                                    <p className="text-xl font-black text-blue-600 dark:text-blue-400 tracking-tight leading-none">#{service.serviceNo}</p>
+                                <h1 className="text-5xl font-black text-slate-200 dark:text-slate-800 italic uppercase leading-none tracking-tighter mb-4 select-none">Invoice</h1>
+                                <div className="inline-block bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md shadow-blue-500/10">
+                                    <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest text-left leading-none mb-1">Service Number</p>
+                                    <p className="text-xl font-black tracking-tight leading-none">#{service.serviceNo}</p>
                                 </div>
                                 <div className="mt-4 space-y-1">
                                     <p className="text-xs font-bold text-slate-400">Entry Date: <span className="text-slate-700 dark:text-slate-300 ml-2">{formatDate(service.entryDate)}</span></p>

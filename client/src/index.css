@@ -3133,3 +3133,104 @@ img {
     font-size: 0.95rem;
   }
 }
+
+/* ============================================
+   GLOBAL PRINT STANDARDS (A4)
+   ============================================ */
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+
+  /* Hide Browser Headers/Footers & UI */
+  .no-print,
+  .print-hide,
+  .sidebar,
+  .top-header,
+  .shortcut-help-bar,
+  footer:not(.print-footer) {
+    display: none !important;
+  }
+
+  /* Force Light Mode for Printing */
+  :root {
+    --bg-primary: #ffffff !important;
+    --bg-secondary: #ffffff !important;
+    --text-primary: #000000 !important;
+    --border: #eeeeee !important;
+  }
+
+  body,
+  html,
+  #root,
+  .main-content,
+  .page-container,
+  .premium-page-wrapper {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* A4 Centering & Container */
+  .print-container {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    padding: 15mm !important;
+    /* Professional Margin */
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    display: block !important;
+  }
+
+  /* Visibility Helpers */
+  .print-only {
+    display: block !important;
+  }
+
+  .print-only-header {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  /* Force Colors */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Table Adjustments */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid #eee !important;
+  }
+
+  /* Avoid Page Breaks inside sections */
+  .card,
+  section,
+  .stat-card,
+  tr {
+    break-inside: avoid;
+  }
+}
+
+.print-only {
+  display: none;
+}

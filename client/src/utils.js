@@ -97,7 +97,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => 
   // === Info Transaksi ===
   lines.push(`No      : ${receipt.invoiceNo}`);
   lines.push(`Tanggal : ${formatDateTime(receipt.date)}`);
-  lines.push(`Kasir   : ${receipt.userName}`);
+  lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
   if (receipt.customerName && receipt.customerName !== 'Umum') {
     lines.push(`Customer: ${receipt.customerName}`);
   }

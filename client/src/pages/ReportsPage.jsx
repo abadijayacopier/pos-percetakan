@@ -116,7 +116,7 @@ export default function ReportsPage() {
     };
 
     return (
-        <div className="rpt-page" style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="rpt-page print-container" style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <style>{CSS}</style>
 
             {/* Header */}
@@ -415,15 +415,6 @@ const CSS = `
 .rpt-tr:hover { background:var(--bg-card-hover); }
 .rpt-table td { padding:10px 18px; vertical-align:middle; }
 .rpt-badge { padding:3px 9px; font-size:.68rem; font-weight:700; border-radius:9999px; background:var(--bg-input); color:var(--text-secondary); white-space:nowrap; text-transform:capitalize; }
-
-/* Print */
-.print-only-header { display:none; }
-@media print {
-    .print-hide { display:none !important; }
-    .print-only-header { display:block !important; text-align:center; margin-bottom:16px; }
-    .rpt-page { padding:0 !important; }
-    .rpt-card, .rpt-stat-card { border:1px solid #ddd !important; box-shadow:none !important; break-inside:avoid; }
-    .rpt-table { font-size:.75rem; }
-    .rpt-stat-value { font-size:1rem; }
-}
+    /* Print */
+    .print-only-header { display:none; }
 `;
