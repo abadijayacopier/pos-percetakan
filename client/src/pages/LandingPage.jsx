@@ -21,6 +21,7 @@ export default function LandingPage({ onNavigate }) {
     const [prices, setPrices] = useState({ fotocopy: [], print: [], binding: [] });
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [galleryImages, setGalleryImages] = useState([]);
+    const [storeLogo, setStoreLogo] = useState('');
 
     useEffect(() => {
         // Fetch Settings
@@ -49,6 +50,21 @@ export default function LandingPage({ onNavigate }) {
         try {
             if (savedGallery) setGalleryImages(JSON.parse(savedGallery));
         } catch (e) { console.error("Gagal load galeri", e); }
+
+        // Fetch Logo & Favicon
+        const logo = getSetting('landing_logo', '');
+        const fav = getSetting('landing_favicon', '');
+        setStoreLogo(logo);
+
+        if (fav) {
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+            link.href = fav;
+        }
 
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
@@ -180,7 +196,11 @@ export default function LandingPage({ onNavigate }) {
             {/* Navigation */}
             <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
                 <div className="lp-logo">
-                    <div className="lp-logo-icon"><FiPrinter /></div>
+                    {storeLogo ? (
+                        <img src={storeLogo} alt="Logo" style={{ height: '32px', marginRight: '8px', objectFit: 'contain' }} />
+                    ) : (
+                        <div className="lp-logo-icon"><FiPrinter /></div>
+                    )}
                     <span>{storeInfo.name}</span>
                 </div>
                 <div className="lp-nav-links desktop-only">

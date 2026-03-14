@@ -54,6 +54,8 @@ export default function SettingsPage() {
     const [storePhone, setStorePhone] = useState(getSetting('store_phone') || '');
     const [storeMapsUrl, setStoreMapsUrl] = useState(getSetting('store_maps_url') || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
     const [storeLogo, setStoreLogo] = useState(getSetting('store_logo') || '');
+    const [landingLogo, setLandingLogo] = useState(getSetting('landing_logo') || '');
+    const [landingFavicon, setLandingFavicon] = useState(getSetting('landing_favicon') || '');
     const [receiptFooter, setReceiptFooter] = useState(getSetting('receipt_footer') || '');
     const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
     const [printerName, setPrinterName] = useState(getSetting('printer_name') || '');
@@ -117,6 +119,9 @@ export default function SettingsPage() {
         set('paper_size', paperSize);
         set('auto_print', autoPrint ? 'true' : 'false');
         set('landing_gallery', JSON.stringify(galleryImages));
+        set('landing_logo', landingLogo);
+        set('landing_favicon', landingFavicon);
+        set('fc_discounts', JSON.stringify(fcDiscounts));
         db.setAll('print_prices', printPrices);
         db.setAll('binding_prices', bindPrices);
         showToast('Pengaturan berhasil disimpan!', 'success');
@@ -259,7 +264,46 @@ export default function SettingsPage() {
                             <div className="form-group"><label className="form-label">Nama Toko</label><input className="form-input" value={storeName} onChange={e => setStoreName(e.target.value)} /></div>
                             <div className="form-group"><label className="form-label">Alamat Lengkap</label><textarea className="form-textarea" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} /></div>
                             <div className="form-group"><label className="form-label">WhatsApp (No. Telepon)</label><input className="form-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} /></div>
-                            <div className="form-group"><label className="form-label">Link Google Maps (URL)</label><input className="form-input" value={storeMapsUrl} onChange={e => setStoreMapsUrl(e.target.value)} placeholder="Contool: https://maps.app.goo.gl/..." /></div>
+                            <div className="form-group"><label className="form-label">Link Google Maps (URL)</label><input className="form-input" value={storeMapsUrl} onChange={e => setStoreMapsUrl(e.target.value)} placeholder="Contoh: https://maps.app.goo.gl/..." /></div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                                <div className="form-group">
+                                    <label className="form-label">Logo Landing Page</label>
+                                    <label className="ps-logo-drop" style={{ height: '120px' }}>
+                                        {landingLogo ? (
+                                            <img src={landingLogo} alt="Landing Logo" className="ps-logo-preview" style={{ maxHeight: '80px' }} />
+                                        ) : (
+                                            <span className="drop-icon"><FiPlus /></span>
+                                        )}
+                                        <p style={{ fontSize: '0.7rem' }}>{landingLogo ? 'Klik ganti logo' : 'Upload Logo'}</p>
+                                        <input type="file" accept="image/*" onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => setLandingLogo(ev.target.result);
+                                            reader.readAsDataURL(file);
+                                        }} style={{ display: 'none' }} />
+                                    </label>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Favicon Landing Page</label>
+                                    <label className="ps-logo-drop" style={{ height: '120px' }}>
+                                        {landingFavicon ? (
+                                            <img src={landingFavicon} alt="Favicon" className="ps-logo-preview" style={{ maxHeight: '60px', width: '60px' }} />
+                                        ) : (
+                                            <span className="drop-icon"><FiPlus /></span>
+                                        )}
+                                        <p style={{ fontSize: '0.7rem' }}>{landingFavicon ? 'Klik ganti favicon' : 'Upload Favicon'}</p>
+                                        <input type="file" accept="image/*" onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = (ev) => setLandingFavicon(ev.target.result);
+                                            reader.readAsDataURL(file);
+                                        }} style={{ display: 'none' }} />
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
