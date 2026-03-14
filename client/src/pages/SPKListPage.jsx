@@ -28,6 +28,10 @@ export default function SPKListPage({ onNavigate }) {
     const [activeFilter, setActiveFilter] = useState('Semua');
     const [search, setSearch] = useState('');
 
+    // Pagination States
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
+
     const fetchSPK = async () => {
         setLoading(true);
         try {
@@ -46,12 +50,20 @@ export default function SPKListPage({ onNavigate }) {
         }
     };
 
-    useEffect(() => { fetchSPK(); }, [activeFilter]);
+    useEffect(() => {
+        setCurrentPage(1);
+        fetchSPK();
+    }, [activeFilter]);
 
     const handleSearch = (e) => {
         e.preventDefault();
+        setCurrentPage(1);
         fetchSPK();
     };
+
+    // Calculate Paginated Data
+    const totalPages = Math.ceil(spkList.length / itemsPerPage);
+    const displayedSPK = spkList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
@@ -142,12 +154,12 @@ export default function SPKListPage({ onNavigate }) {
                                     <span className="material-symbols-outlined animate-spin mr-2">progress_activity</span>
                                     Memuat data...
                                 </td></tr>
-                            ) : spkList.length === 0 ? (
+                            ) : displayedSPK.length === 0 ? (
                                 <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                                     <span className="material-symbols-outlined mr-2 !text-3xl block mb-2">inbox</span>
                                     Belum ada SPK
                                 </td></tr>
-                            ) : spkList.map((spk) => {
+                            ) : displayedSPK.map((spk) => {
                                 const sc = STATUS_COLORS[spk.status] || STATUS_COLORS['Menunggu Antrian'];
                                 const dl = getDeadlineBadge(spk.deadline);
                                 const ready = isReadyForBilling(spk);
@@ -217,9 +229,54 @@ export default function SPKListPage({ onNavigate }) {
                     </table>
                 </div>
 
-                {/* Pagination */}
+                {/* Pagination Controls */}
                 <div className="px-6 py-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                    <span className="text-xs font-medium text-slate-500">Menampilkan {spkList.length} dari {summary.total} SPK</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                            Menampilkan {Math.min(spkList.length, (currentPage - 1) * itemsPerPage + 1)} - {Math.min(spkList.length, currentPage * itemsPerPage)} dari {spkList.length} SPK
+                        </span>
+                    </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <span className="material-symbols-outlined !text-sm">chevron_left</span>
+                            </button>
+
+                            {[...Array(totalPages)].map((_, i) => {
+                                const page = i + 1;
+                                // Hanya tampilkan halaman di sekitar current page jika terlalu banyak
+                                if (totalPages > 5 && Math.abs(page - currentPage) > 1 && page !== 1 && page !== totalPages) {
+                                    if (page === 2 || page === totalPages - 1) return <span key={page} className="px-2 text-slate-400">...</span>;
+                                    return null;
+                                }
+                                return (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`size-8 rounded-lg text-xs font-bold transition-all ${currentPage === page
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent'
+                                            }`}
+                                    >
+                                        {page}
+                                    </button>
+                                );
+                            })}
+
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <span className="material-symbols-outlined !text-sm">chevron_right</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

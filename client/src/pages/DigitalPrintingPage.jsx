@@ -32,6 +32,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
     const [pesanDesainer, setPesanDesainer] = useState('');
     const [errors, setErrors] = useState({});
 
+    // Pagination for Logs
+    const [logPage, setLogPage] = useState(1);
+    const logItemsPerPage = 10;
+
     // CRUD State
     const [selectedTask, setSelectedTask] = useState(null);
     const [showViewModal, setShowViewModal] = useState(false);
@@ -80,8 +84,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
         const designs = allTasks.filter(t => ['menunggu_desain', 'desain', 'ditugaskan'].includes(t.status));
         setActiveDesigns(designs);
 
-        // Filter for logs (showing unique orders or latest updates)
-        const logs = [...allTasks].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 5);
+        // Filter for logs (showing all digital tasks in reverse order)
+        const logs = [...allTasks]
+            .filter(t => t.type === 'digital' || !t.type) // handles legacy tasks too
+            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         setRecentLogs(logs);
 
         // Calculate Stats
@@ -556,52 +562,88 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 </div>
             </div>
 
-            {/* Logs Table */}
-            <div className="mt-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm overflow-x-auto">
-                <h3 className="text-lg font-bold mb-6">Log Aktivitas Terbaru</h3>
-                <table className="w-full min-w-[800px]">
-                    <thead>
-                        <tr className="text-left border-b border-slate-100 dark:border-slate-800">
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Order ID</th>
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Pelanggan</th>
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Layanan</th>
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Tahapan</th>
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Status Pembayaran</th>
-                            <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {recentLogs.map((log, i) => (
-                            <tr key={i}>
-                                <td className="py-4 text-sm font-medium">{log.id}</td>
-                                <td className="py-4 text-sm">{log.customerName}</td>
-                                <td className="py-4 text-sm">{log.material_name}</td>
-                                <td className="py-4">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold ${getTahapanClasses(log.status === 'desain' ? 'amber' : (log.status === 'selesai' ? 'green' : 'blue'))}`}>
-                                        {log.status?.toUpperCase()}
-                                    </span>
-                                </td>
-                                <td className="py-4">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold ${log.isPaid ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                        {log.isPaid ? 'Lunas' : 'Belum Bayar'}
-                                    </span>
-                                </td>
-                                <td className="py-4">
-                                    <button
-                                        onClick={() => {
-                                            if (log.status === 'desain') onNavigate('design-finalization', { taskId: log.id });
-                                            else if (log.status === 'checkout') onNavigate('dp-cart', { taskId: log.id });
-                                            else onNavigate('production-queue');
-                                        }}
-                                        className="text-primary hover:underline text-sm font-bold"
-                                    >
-                                        Detail
-                                    </button>
-                                </td>
+            {/* Logs Table with Pagination */}
+            <div className="mt-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">history</span>
+                        Daftar Tugas & Riwayat Digital Printing
+                    </h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[800px]">
+                        <thead>
+                            <tr className="text-left border-b border-slate-100 dark:border-slate-800">
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Order ID</th>
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Pelanggan</th>
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Layanan</th>
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Tahapan</th>
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase">Status Pembayaran</th>
+                                <th className="pb-4 text-xs font-bold text-slate-500 uppercase text-right">Aksi</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {recentLogs.slice((logPage - 1) * logItemsPerPage, logPage * logItemsPerPage).map((log, i) => (
+                                <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <td className="py-4 text-sm font-bold text-primary">{log.id}</td>
+                                    <td className="py-4 text-sm font-medium">{log.customerName}</td>
+                                    <td className="py-4 text-sm font-medium">{log.material_name}</td>
+                                    <td className="py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${getTahapanClasses(log.status === 'desain' || log.status === 'menunggu_desain' ? 'amber' : (['selesai', 'Diambil'].includes(log.status) ? 'green' : 'blue'))}`}>
+                                            {log.status?.replace('_', ' ').toUpperCase()}
+                                        </span>
+                                    </td>
+                                    <td className="py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${log.isPaid || log.status === 'Diambil' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                                            {log.isPaid || log.status === 'Diambil' ? 'Lunas' : 'Belum Bayar'}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 text-right">
+                                        <button
+                                            onClick={() => {
+                                                if (['desain', 'menunggu_desain', 'ditugaskan', 'dikerjakan'].includes(log.status)) onNavigate('design-finalization', { taskId: log.id });
+                                                else if (log.status === 'checkout') onNavigate('dp-cart', { taskId: log.id });
+                                                else onNavigate('production-queue');
+                                            }}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-300 cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined !text-[16px]">visibility</span>
+                                            Detail
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {recentLogs.length > logItemsPerPage && (
+                    <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                            Menampilkan {Math.min(recentLogs.length, (logPage - 1) * logItemsPerPage + 1)} - {Math.min(recentLogs.length, logPage * logItemsPerPage)} dari {recentLogs.length} Data
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                                disabled={logPage === 1}
+                                className="size-9 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <span className="material-symbols-outlined !text-sm">chevron_left</span>
+                            </button>
+                            <span className="text-xs font-black px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg min-w-[70px] text-center">
+                                {logPage} / {Math.ceil(recentLogs.length / logItemsPerPage)}
+                            </span>
+                            <button
+                                onClick={() => setLogPage(p => Math.min(Math.ceil(recentLogs.length / logItemsPerPage), p + 1))}
+                                disabled={logPage === Math.ceil(recentLogs.length / logItemsPerPage)}
+                                className="size-9 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                <span className="material-symbols-outlined !text-sm">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* View Modal */}

@@ -11,6 +11,11 @@ export default function DesignerDashboardPage({ onNavigate }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [timerSeconds, setTimerSeconds] = useState(0);
+
+    // Pagination for Done Tasks
+    const [donePage, setDonePage] = useState(1);
+    const doneItemsPerPage = 10;
+
     const intervalRef = useRef(null);
 
     // Modal State
@@ -238,7 +243,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
                             Riwayat Selesai ({doneTasks.length})
                         </h3>
                         <div className="dd-task-list">
-                            {doneTasks.slice(0, 5).map(t => (
+                            {doneTasks.slice((donePage - 1) * doneItemsPerPage, donePage * doneItemsPerPage).map(t => (
                                 <div key={t.id} className="dd-task-card dd-task-done">
                                     <div className="dd-task-card-info">
                                         <div>
@@ -257,6 +262,32 @@ export default function DesignerDashboardPage({ onNavigate }) {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {doneTasks.length > doneItemsPerPage && (
+                            <div className="dd-pagination">
+                                <span className="dd-pagination-info">
+                                    Melihat {Math.min(doneTasks.length, (donePage - 1) * doneItemsPerPage + 1)}-{Math.min(doneTasks.length, donePage * doneItemsPerPage)} dari {doneTasks.length}
+                                </span>
+                                <div className="dd-pagination-btns">
+                                    <button
+                                        onClick={() => setDonePage(p => Math.max(1, p - 1))}
+                                        disabled={donePage === 1}
+                                        className="dd-page-btn"
+                                    >
+                                        <FiClock style={{ transform: 'rotate(180deg)', fontSize: '0.8rem' }} /> Prev
+                                    </button>
+                                    <span className="dd-page-num">{donePage} / {Math.ceil(doneTasks.length / doneItemsPerPage)}</span>
+                                    <button
+                                        onClick={() => setDonePage(p => Math.min(Math.ceil(doneTasks.length / doneItemsPerPage), p + 1))}
+                                        disabled={donePage === Math.ceil(doneTasks.length / doneItemsPerPage)}
+                                        className="dd-page-btn"
+                                    >
+                                        Next <FiClock style={{ fontSize: '0.8rem' }} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </section>
                 )}
             </main>
@@ -386,4 +417,11 @@ const CSS = `
 
 .dd-start-btn{width:100%;margin-top:12px;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;box-shadow:0 4px 14px rgba(37,99,235,.3);}
 .dd-start-btn:hover{background:#1d4ed8;transform:translateY(-1px);}
+.dd-pagination{margin-top:20px;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.05);}
+.dd-pagination-info{font-size:.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.dd-pagination-btns{display:flex;align-items:center;gap:12px;}
+.dd-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#e2e8f0;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;}
+.dd-page-btn:hover:not(:disabled){background:rgba(255,255,255,.1);color:#fff;}
+.dd-page-btn:disabled{opacity:.3;cursor:not-allowed;}
+.dd-page-num{font-size:.75rem;font-weight:800;color:#60a5fa;min-width:40px;text-align:center;}
 `;
