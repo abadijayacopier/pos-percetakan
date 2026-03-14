@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import ConfirmationModal from './ConfirmationModal';
 import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch } from 'react-icons/fi';
 
 export default function Layout({ activePage, onNavigate, children, isFullscreen }) {
@@ -10,6 +11,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
     const { user, logout } = useAuth();
     const { themeMode, setTheme } = useTheme();
     const [profileOpen, setProfileOpen] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const profileRef = useRef(null);
 
     // Close profile dropdown when clicking outside
@@ -127,9 +129,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                                         <button
                                             onClick={() => {
                                                 setProfileOpen(false);
-                                                if (window.confirm('Apakah Anda yakin ingin keluar?')) {
-                                                    logout();
-                                                }
+                                                setShowLogoutModal(true);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                         >
@@ -151,7 +151,18 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                     </div>
                 )}
             </main>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={logout}
+                title="Konfirmasi Keluar"
+                message="Apakah Anda yakin ingin keluar dari aplikasi ini? Sesi Anda akan dihentikan."
+                confirmText="Ya, Keluar"
+                cancelText="Batal"
+                type="danger"
+            />
         </div>
     );
 }
-

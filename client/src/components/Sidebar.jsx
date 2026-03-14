@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmationModal from './ConfirmationModal';
 
 const MENU_GROUPS = [
     {
@@ -55,11 +56,11 @@ const MENU_GROUPS = [
 ];
 
 export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     // Track which parent menus are expanded (by item id)
     const [expanded, setExpanded] = useState(() => {
-        // Auto-expand "printing" if any sub-page is active
         const printingSubIds = ['digital-printing', 'production-queue', 'cetak-offset', 'stok-bahan', 'spk-list', 'manajemen-desainer'];
         return printingSubIds.includes(activePage) ? { printing: true } : {};
     });
@@ -135,7 +136,8 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors w-full text-left
                                                         ${highlightParent
                                                             ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                        }`}
                                                 >
                                                     <span className="material-symbols-outlined">{item.icon}</span>
                                                     <span className="text-sm flex-1">{item.label}</span>
@@ -162,7 +164,6 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                         }}
                                                     >
                                                         <div className="mt-1 flex flex-col gap-0.5 pl-4">
-                                                            {/* Vertical connector line */}
                                                             <div className="relative">
                                                                 {item.subItems
                                                                     .filter(sub => user && (user.role === 'admin' || sub.roles.includes(user.role)))
@@ -192,7 +193,8 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg font-medium transition-colors w-full text-left my-0.5
                                                                                         ${subActive
                                                                                             ? 'bg-primary/10 text-primary font-semibold'
-                                                                                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                                                                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200'
+                                                                                        }`}
                                                                                 >
                                                                                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{sub.icon}</span>
                                                                                     <span className="text-xs">{sub.label}</span>
@@ -219,25 +221,34 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors w-full text-left
                                 ${activePage === 'settings'
                                     ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
                         >
                             <span className="material-symbols-outlined">settings</span>
                             <span className="text-sm">Pengaturan</span>
                         </button>
                         <button
                             className="w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-2.5 rounded-lg font-semibold text-sm hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors mt-2"
-                            onClick={() => {
-                                if (window.confirm('Keluar dari aplikasi?')) {
-                                    handleNav('logout'); // Assuming parent handles this or uses AuthContext directly
-                                }
-                            }}
+                            onClick={() => setShowLogoutConfirm(true)}
                         >
-                            <span className="material-symbols-outlined text-lg">logout</span>
+                            <span className="material-symbols-outlined text-sm">logout</span>
                             Logout / Keluar
                         </button>
                     </div>
                 </div>
             </aside>
+
+            {/* Premium Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={logout}
+                title="Konfirmasi Keluar"
+                message="Keluarkan akun Anda dari sistem ini sekarang?"
+                confirmText="Ya, Keluar"
+                cancelText="Batal"
+                type="danger"
+            />
         </>
     );
 }
