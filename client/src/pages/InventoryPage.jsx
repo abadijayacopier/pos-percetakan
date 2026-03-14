@@ -2,9 +2,58 @@ import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah } from '../utils';
 import Modal from '../components/Modal';
-import { FiPackage, FiPlus, FiEdit, FiTrash2, FiSearch, FiAlertTriangle, FiSave, FiX, FiBox, FiTag, FiLayers, FiDollarSign, FiPenTool, FiBookOpen, FiFolder, FiPaperclip, FiDroplet, FiFileText, FiPrinter, FiImage, FiTool, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import {
+    FiPackage,
+    FiPlus,
+    FiEdit,
+    FiTrash2,
+    FiSearch,
+    FiAlertTriangle,
+    FiSave,
+    FiX,
+    FiBox,
+    FiLayers,
+    FiDollarSign,
+    FiPenTool,
+    FiBookOpen,
+    FiFolder,
+    FiPaperclip,
+    FiDroplet,
+    FiFileText,
+    FiPrinter,
+    FiImage,
+    FiTool,
+    FiChevronLeft,
+    FiChevronRight,
+    FiTag,
+    FiInfo
+} from 'react-icons/fi';
 
 const emptyForm = { code: '', name: '', categoryId: '', buyPrice: '', sellPrice: '', stock: '', minStock: '', unit: 'pcs', emoji: '📦', image: '' };
+
+const CAT_ICONS = {
+    c1: <FiPenTool size={18} />,
+    c2: <FiBookOpen size={18} />,
+    c3: <FiFolder size={18} />,
+    c4: <FiPaperclip size={18} />,
+    c5: <FiDroplet size={18} />,
+    c6: <FiFileText size={18} />,
+    c7: <FiPrinter size={18} />,
+    c8: <FiImage size={18} />,
+    c9: <FiTool size={18} />,
+};
+
+const CAT_ICON_SMALL = {
+    c1: <FiPenTool size={12} />,
+    c2: <FiBookOpen size={12} />,
+    c3: <FiFolder size={12} />,
+    c4: <FiPaperclip size={12} />,
+    c5: <FiDroplet size={12} />,
+    c6: <FiFileText size={12} />,
+    c7: <FiPrinter size={12} />,
+    c8: <FiImage size={12} />,
+    c9: <FiTool size={12} />,
+};
 
 export default function InventoryPage() {
     const [products, setProducts] = useState(() => db.getAll('products'));
@@ -33,7 +82,6 @@ export default function InventoryPage() {
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-    // Reset page when filter/search changes
     const handleSearch = (v) => { setSearch(v); setPage(1); };
     const handleFilter = (v) => { setFilterCat(v); setPage(1); };
 
@@ -66,126 +114,171 @@ export default function InventoryPage() {
     const handleDelete = (id) => { db.delete('products', id); setConfirmDelete(null); reload(); };
 
     const getCatName = (catId) => { const c = categories.find(c => c.id === catId); return c ? c.name : '-'; };
-
-    const CAT_ICONS = {
-        c1: <FiPenTool size={18} />,
-        c2: <FiBookOpen size={18} />,
-        c3: <FiFolder size={18} />,
-        c4: <FiPaperclip size={18} />,
-        c5: <FiDroplet size={18} />,
-        c6: <FiFileText size={18} />,
-        c7: <FiPrinter size={18} />,
-        c8: <FiImage size={18} />,
-        c9: <FiTool size={18} />,
-    };
     const getCatIcon = (catId) => CAT_ICONS[catId] || <FiBox size={18} />;
-
-    const CAT_ICON_SMALL = {
-        c1: <FiPenTool size={12} />,
-        c2: <FiBookOpen size={12} />,
-        c3: <FiFolder size={12} />,
-        c4: <FiPaperclip size={12} />,
-        c5: <FiDroplet size={12} />,
-        c6: <FiFileText size={12} />,
-        c7: <FiPrinter size={12} />,
-        c8: <FiImage size={12} />,
-        c9: <FiTool size={12} />,
-    };
     const getCatIconSmall = (catId) => CAT_ICON_SMALL[catId] || <FiBox size={12} />;
 
     return (
-        <div style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <style>{CSS}</style>
-
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
             {/* Header */}
-            <div className="inv-header">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
-                    <h1 className="inv-title"><FiPackage style={{ verticalAlign: 'middle' }} /> Data Inventori</h1>
-                    <p className="inv-sub">Kelola produk dan stok barang</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <span className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-100 dark:shadow-none"><FiPackage /></span>
+                        Data Inventori
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Product Management & Stock Control System</p>
                 </div>
-                <button className="inv-btn-primary" onClick={openAdd}><FiPlus /> Tambah Produk</button>
+                <button
+                    onClick={openAdd}
+                    className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+                >
+                    <FiPlus /> Tambah Produk
+                </button>
             </div>
 
             {/* Stats */}
-            <div className="inv-stats">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Produk', value: products.length, icon: <FiBox />, color: '#3b82f6', bg: '#dbeafe' },
-                    { label: 'Kategori', value: catCount, icon: <FiLayers />, color: '#8b5cf6', bg: '#ede9fe' },
-                    { label: 'Stok Menipis', value: lowStockCount, icon: <FiAlertTriangle />, color: lowStockCount > 0 ? '#ef4444' : '#94a3b8', bg: lowStockCount > 0 ? '#fee2e2' : '#f1f5f9' },
-                    { label: 'Nilai Inventori', value: formatRupiah(totalValue), icon: <FiDollarSign />, color: '#10b981', bg: '#d1fae5' },
-                ].map(s => (
-                    <div key={s.label} className="inv-stat-card">
-                        <div className="inv-stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                        <div>
-                            <p className="inv-stat-label">{s.label}</p>
-                            <p className="inv-stat-value" style={{ color: s.color }}>{s.value}</p>
+                    { label: 'Total Produk', value: products.length, icon: <FiBox />, color: 'blue', sub: 'Active Inventory' },
+                    { label: 'Kategori', value: catCount, icon: <FiLayers />, color: 'indigo', sub: 'Product Groups' },
+                    { label: 'Stok Menipis', value: lowStockCount, icon: <FiAlertTriangle />, color: lowStockCount > 0 ? 'rose' : 'slate', sub: 'Need Restock' },
+                    { label: 'Nilai Inventori', value: formatRupiah(totalValue), icon: <FiDollarSign />, color: 'emerald', sub: 'Total Asset Value' },
+                ].map((s, idx) => (
+                    <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                    s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
+                                        s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
+                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                                'bg-slate-50 dark:bg-slate-800 text-slate-400'
+                                }`}>
+                                {s.icon}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.sub}</span>
                         </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                        <h4 className={`text-2xl font-black tracking-tighter italic ${s.color === 'rose' ? 'text-rose-600' : 'text-slate-900 dark:text-white'
+                            }`}>
+                            {typeof s.value === 'number' ? String(s.value).padStart(2, '0') : s.value}
+                        </h4>
                     </div>
                 ))}
             </div>
 
-            {/* Filter & Search */}
-            <div className="inv-card">
-                <div className="inv-filter-bar">
-                    <div className="inv-search-wrap">
-                        <FiSearch className="inv-search-icon" />
-                        <input className="inv-search" placeholder="Cari nama / kode produk..." value={search} onChange={e => handleSearch(e.target.value)} />
+            {/* Main Content Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                {/* Filter Bar */}
+                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row gap-6 bg-slate-50/30 dark:bg-slate-800/20">
+                    <div className="relative group flex-1 max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-1 flex items-center pointer-events-none transition-transform group-focus-within:translate-x-1">
+                            <div className="p-2 border border-transparent group-focus-within:text-blue-600 text-slate-400">
+                                <FiSearch size={16} />
+                            </div>
+                        </div>
+                        <input
+                            className="block w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3.5 pl-11 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                            placeholder="Cari nama atau kode produk..."
+                            value={search}
+                            onChange={e => handleSearch(e.target.value)}
+                        />
                     </div>
-                    <div className="inv-filter-tabs">
-                        <button className={`inv-tab ${filterCat === 'all' ? 'active' : ''}`} onClick={() => handleFilter('all')}>Semua</button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterCat === 'all' ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'}`}
+                            onClick={() => handleFilter('all')}
+                        >
+                            Semua
+                        </button>
                         {categories.map(c => (
-                            <button key={c.id} className={`inv-tab ${filterCat === c.id ? 'active' : ''}`} onClick={() => handleFilter(c.id)}>
-                                {getCatIconSmall(c.id)} {c.name}
+                            <button
+                                key={c.id}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterCat === c.id ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'}`}
+                                onClick={() => handleFilter(c.id)}
+                            >
+                                {getCatIconSmall(c.id)}
+                                {c.name}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Table */}
-                {filtered.length === 0 ? (
-                    <div className="inv-empty"><FiPackage size={48} /><p>{search ? 'Produk tidak ditemukan.' : 'Belum ada produk.'}</p></div>
-                ) : (
-                    <div className="inv-table-wrap">
-                        <table className="inv-table">
+                {/* Table Area */}
+                <div className="overflow-x-auto">
+                    {filtered.length === 0 ? (
+                        <div className="py-24 text-center">
+                            <FiBox size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">{search ? 'Hasil pencarian tidak ditemukan' : 'Inventori kosong'}</p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
                             <thead>
-                                <tr>
-                                    <th>Produk</th>
-                                    <th>Kode</th>
-                                    <th>Kategori</th>
-                                    <th>Harga Beli</th>
-                                    <th>Harga Jual</th>
-                                    <th>Stok</th>
-                                    <th style={{ textAlign: 'right' }}>Aksi</th>
+                                <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produk & Unit</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Harga Beli</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Harga Jual</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Stok</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                 {paginated.map(p => {
                                     const isLow = p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0;
                                     return (
-                                        <tr key={p.id} className="inv-tr">
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span className="inv-product-icon">{getCatIcon(p.categoryId)}</span>
+                                        <tr key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all shadow-sm">
+                                                        {getCatIcon(p.categoryId)}
+                                                    </div>
                                                     <div>
-                                                        <div style={{ fontWeight: 700, fontSize: '.88rem' }}>{p.name}</div>
-                                                        <div style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>{p.unit}</div>
+                                                        <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{p.name}</p>
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-75">{p.unit}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={{ fontFamily: 'monospace', fontSize: '.8rem', color: 'var(--text-secondary)' }}>{p.code}</td>
-                                            <td><span className="inv-badge">{getCatName(p.categoryId)}</span></td>
-                                            <td style={{ fontSize: '.85rem' }}>{formatRupiah(p.buyPrice)}</td>
-                                            <td style={{ fontWeight: 700 }}>{formatRupiah(p.sellPrice)}</td>
-                                            <td>
-                                                <span style={{ fontWeight: 700, color: isLow ? '#ef4444' : 'var(--text-primary)' }}>
-                                                    {isLow && <FiAlertTriangle size={13} style={{ marginRight: 3, verticalAlign: 'middle' }} />}{p.stock} {p.unit}
+                                            <td className="px-6 py-4">
+                                                <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-lg">
+                                                    {p.code}
                                                 </span>
-                                                {p.minStock > 0 && <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>Min: {p.minStock}</div>}
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                                                    <button className="inv-action-btn" onClick={() => openEdit(p)} title="Edit"><FiEdit size={15} /></button>
-                                                    <button className="inv-action-btn del" onClick={() => setConfirmDelete(p)} title="Hapus"><FiTrash2 size={15} /></button>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                                    {getCatName(p.categoryId)}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right text-xs font-bold text-slate-500 italic">
+                                                {formatRupiah(p.buyPrice)}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <p className="text-xs font-black text-slate-900 dark:text-white italic tracking-tighter">
+                                                    {formatRupiah(p.sellPrice)}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className={`text-[11px] font-black uppercase tracking-tight flex items-center gap-1.5 ${isLow ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
+                                                        {isLow && <FiAlertTriangle className="animate-pulse" />}
+                                                        {p.stock} <span className="text-[9px] font-bold text-slate-400">{p.unit}</span>
+                                                    </span>
+                                                    {p.minStock > 0 && <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Min: {p.minStock}</p>}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 transition-transform">
+                                                    <button
+                                                        onClick={() => openEdit(p)}
+                                                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                    >
+                                                        <FiEdit size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setConfirmDelete(p)}
+                                                        className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                    >
+                                                        <FiTrash2 size={14} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -193,151 +286,176 @@ export default function InventoryPage() {
                                 })}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Pagination */}
                 {filtered.length > PER_PAGE && (
-                    <div className="inv-pagination">
-                        <span className="inv-page-info">Menampilkan {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} dari {filtered.length}</span>
-                        <div className="inv-page-btns">
-                            <button className="inv-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FiChevronLeft size={16} /> Prev</button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                                <button key={n} className={`inv-page-num ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                            ))}
-                            <button className="inv-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next <FiChevronRight size={16} /></button>
+                    <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Displaying {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} products
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronLeft size={18} />
+                            </button>
+                            <span className="text-xs font-black min-w-[3rem] text-center dark:text-white">
+                                {page} <span className="text-slate-400">/</span> {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronRight size={18} />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Add/Edit Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Produk' : 'Tambah Produk Baru'} footer={
-                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <button className="inv-btn-ghost" onClick={() => setShowModal(false)}><FiX /> Batal</button>
-                    <button className="inv-btn-primary" onClick={handleSave}><FiSave /> Simpan</button>
-                </div>
-            }>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div className="inv-form-row">
-                        <div className="inv-form-group" style={{ flex: 2 }}>
-                            <label className="inv-label">Nama Produk *</label>
-                            <input className="inv-input" placeholder="Pulpen Pilot BP-1RT" value={form.name} onChange={e => set('name', e.target.value)} />
-                        </div>
-                        <div className="inv-form-group">
-                            <label className="inv-label">Kode</label>
-                            <input className="inv-input" placeholder="ATK-001" value={form.code} onChange={e => set('code', e.target.value)} />
-                        </div>
+            {/* Product Modal */}
+            <Modal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                title={editItem ? 'Koreksi Data Produk' : 'Registrasi Produk Baru'}
+                icon={editItem ? <FiEdit className="text-blue-600" /> : <FiPlus className="text-emerald-600" />}
+                footer={
+                    <div className="flex gap-4 w-full">
+                        <button className="flex-1 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500" onClick={() => setShowModal(false)}>
+                            <FiX className="inline mr-2" /> Batal
+                        </button>
+                        <button className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center" onClick={handleSave}>
+                            <FiSave className="mr-2" /> Simpan Produk
+                        </button>
                     </div>
-                    <div className="inv-form-row">
-                        <div className="inv-form-group">
-                            <label className="inv-label">Kategori</label>
-                            <select className="inv-input" value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
-                                <option value="">-- Pilih --</option>
-                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                }
+            >
+                <div className="space-y-6">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/50 flex gap-4 items-center">
+                        <div className="size-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+                            <FiInfo />
+                        </div>
+                        <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase leading-relaxed tracking-wide">Lengkapi data produk dengan benar untuk akurasi laporan stok dan keuangan.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="md:col-span-2 space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Produk *</label>
+                            <input
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400/50"
+                                placeholder="Contoh: Kertas HVS A4 80gr"
+                                value={form.name}
+                                onChange={e => set('name', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kode Produk</label>
+                            <input
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400/50 font-mono"
+                                placeholder="Otomatis"
+                                value={form.code}
+                                onChange={e => set('code', e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Satuan Unit</label>
+                            <select
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                                value={form.unit}
+                                onChange={e => set('unit', e.target.value)}
+                            >
+                                {['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'].map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
                             </select>
                         </div>
-                        <div className="inv-form-group">
-                            <label className="inv-label">Satuan</label>
-                            <select className="inv-input" value={form.unit} onChange={e => set('unit', e.target.value)}>
-                                {['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'].map(u => <option key={u} value={u}>{u}</option>)}
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
+                            <select
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                                value={form.categoryId}
+                                onChange={e => set('categoryId', e.target.value)}
+                            >
+                                <option value="">-- ILIH KATEGORI --</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name.toUpperCase()}</option>)}
                             </select>
                         </div>
-                    </div>
-                    <div className="inv-form-row">
-                        <div className="inv-form-group">
-                            <label className="inv-label">Harga Beli (Rp)</label>
-                            <input className="inv-input" type="number" min="0" placeholder="3500" value={form.buyPrice} onChange={e => set('buyPrice', e.target.value)} />
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stok Awal</label>
+                            <input
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                type="number"
+                                value={form.stock}
+                                onChange={e => set('stock', e.target.value)}
+                            />
                         </div>
-                        <div className="inv-form-group">
-                            <label className="inv-label">Harga Jual (Rp)</label>
-                            <input className="inv-input" type="number" min="0" placeholder="5000" value={form.sellPrice} onChange={e => set('sellPrice', e.target.value)} />
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga Beli</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 italic">Rp</span>
+                                <input
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 pl-10 pr-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                    type="number"
+                                    value={form.buyPrice}
+                                    onChange={e => set('buyPrice', e.target.value)}
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="inv-form-row">
-                        <div className="inv-form-group">
-                            <label className="inv-label">Stok</label>
-                            <input className="inv-input" type="number" min="0" placeholder="50" value={form.stock} onChange={e => set('stock', e.target.value)} />
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga Jual</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 italic">Rp</span>
+                                <input
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 pl-10 pr-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                    type="number"
+                                    value={form.sellPrice}
+                                    onChange={e => set('sellPrice', e.target.value)}
+                                />
+                            </div>
                         </div>
-                        <div className="inv-form-group">
-                            <label className="inv-label">Stok Minimum</label>
-                            <input className="inv-input" type="number" min="0" placeholder="10" value={form.minStock} onChange={e => set('minStock', e.target.value)} />
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Batas Stok Minimum</label>
+                            <input
+                                className="w-full bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-800/50 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-indigo-600 placeholder:text-indigo-400/50"
+                                type="number"
+                                value={form.minStock}
+                                onChange={e => set('minStock', e.target.value)}
+                                placeholder="Alert stock level..."
+                            />
                         </div>
                     </div>
                 </div>
             </Modal>
 
-            {/* Delete Confirmation */}
-            <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Hapus Produk" footer={
-                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <button className="inv-btn-ghost" onClick={() => setConfirmDelete(null)}>Batal</button>
-                    <button className="inv-btn-danger" onClick={() => handleDelete(confirmDelete.id)}><FiTrash2 /> Hapus</button>
+            {/* Confirm Delete */}
+            <Modal
+                isOpen={!!confirmDelete}
+                onClose={() => setConfirmDelete(null)}
+                title="Konfirmasi Penghapusan"
+                icon={<FiAlertTriangle className="text-rose-600" />}
+                footer={
+                    <div className="grid grid-cols-2 gap-4 w-full">
+                        <button className="py-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-200" onClick={() => setConfirmDelete(null)}>Gagalkan</button>
+                        <button className="py-3.5 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-xl shadow-rose-500/20 active:scale-95" onClick={() => handleDelete(confirmDelete.id)}>Ya, Hapus Permanen</button>
+                    </div>
+                }
+            >
+                <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-900/50 mb-4">
+                    <p className="text-xs font-bold text-rose-700 dark:text-rose-400 leading-relaxed text-center italic">
+                        "Apakah Anda yakin ingin menghapus produk <span className="uppercase not-italic font-black text-rose-800 dark:text-rose-300">[{confirmDelete?.name}]</span>? Data yang dihapus tidak dapat dipulihkan kembali."
+                    </p>
                 </div>
-            }>
-                <p>Yakin ingin menghapus produk <strong>{confirmDelete?.name}</strong>? Tindakan ini tidak dapat dibatalkan.</p>
             </Modal>
         </div>
     );
 }
-
-const CSS = `
-.inv-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.inv-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
-.inv-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
-.inv-btn-primary { display:flex; align-items:center; gap:7px; background:#3b82f6; color:#fff; font-weight:700; font-size:.875rem; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(59,130,246,.25); transition:all .15s; }
-.inv-btn-primary:hover { background:#2563eb; }
-.inv-btn-ghost { display:flex; align-items:center; gap:6px; background:var(--bg-input); color:var(--text-secondary); font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:1px solid var(--border); cursor:pointer; flex:1; justify-content:center; }
-.inv-btn-danger { display:flex; align-items:center; gap:6px; background:#ef4444; color:#fff; font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:none; cursor:pointer; flex:1; justify-content:center; }
-
-.inv-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-@media(max-width:900px){ .inv-stats { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px){ .inv-stats { grid-template-columns:1fr; } }
-.inv-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
-.inv-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
-.inv-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.inv-stat-value { font-size:1.4rem; font-weight:900; margin:0; }
-
-.inv-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.inv-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.inv-search-wrap { position:relative; flex:1; min-width:180px; }
-.inv-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; }
-.inv-search { width:100%; padding:8px 12px 8px 36px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); }
-.inv-search:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.inv-filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-.inv-tab { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.73rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; white-space:nowrap; }
-.inv-tab:hover { border-color:#3b82f6; color:#3b82f6; }
-.inv-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-
-.inv-empty { padding:48px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.inv-table-wrap { overflow-x:auto; }
-.inv-table { width:100%; border-collapse:collapse; text-align:left; }
-.inv-table thead tr { background:var(--bg-input); }
-.inv-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
-.inv-tr { border-top:1px solid var(--border); transition:background .1s; }
-.inv-tr:hover { background:var(--bg-card-hover); }
-.inv-table td { padding:12px 18px; vertical-align:middle; }
-.inv-badge { padding:3px 9px; font-size:.68rem; font-weight:700; border-radius:9999px; background:var(--bg-input); color:var(--text-secondary); white-space:nowrap; }
-.inv-product-icon { width:36px; height:36px; border-radius:8px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); flex-shrink:0; }
-.inv-tab { display:flex; align-items:center; gap:4px; }
-.inv-action-btn { background:none; border:none; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; padding:6px; border-radius:7px; transition:all .15s; }
-.inv-action-btn:hover { color:#3b82f6; background:rgba(59,130,246,.1); }
-.inv-action-btn.del:hover { color:#ef4444; background:rgba(239,68,68,.1); }
-
-.inv-form-row { display:flex; gap:12px; }
-@media(max-width:500px){ .inv-form-row { flex-direction:column; } }
-.inv-form-group { display:flex; flex-direction:column; flex:1; }
-.inv-label { display:block; font-size:.77rem; font-weight:600; color:var(--text-secondary); margin-bottom:5px; }
-.inv-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); box-sizing:border-box; }
-.inv-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-select.inv-input { appearance:auto; }
-
-.inv-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px; }
-.inv-page-info { font-size:.78rem; color:var(--text-muted); font-weight:600; }
-.inv-page-btns { display:flex; align-items:center; gap:4px; }
-.inv-page-btn { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
-.inv-page-btn:hover:not(:disabled) { border-color:#3b82f6; color:#3b82f6; }
-.inv-page-btn:disabled { opacity:.4; cursor:not-allowed; }
-.inv-page-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
-.inv-page-num:hover { border-color:#3b82f6; color:#3b82f6; }
-.inv-page-num.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-`;

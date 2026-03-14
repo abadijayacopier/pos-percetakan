@@ -1,7 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import db from '../db';
 import { formatRupiah, formatDateTime } from '../utils';
-import { FiWifi, FiCheckCircle, FiClock, FiAlertTriangle, FiDollarSign, FiRefreshCw, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
+import {
+    FiWifi,
+    FiCheckCircle,
+    FiClock,
+    FiAlertTriangle,
+    FiDollarSign,
+    FiRefreshCw,
+    FiChevronLeft,
+    FiChevronRight,
+    FiSearch,
+    FiActivity,
+    FiZap
+} from 'react-icons/fi';
 
 export default function QRISMonitorPage() {
     const [transactions, setTransactions] = useState(() => db.getAll('transactions'));
@@ -50,162 +62,193 @@ export default function QRISMonitorPage() {
     const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
     return (
-        <div style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <style>{CSS}</style>
-
-            <div className="qr-header">
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
-                    <h1 className="qr-title"><FiWifi /> Monitoring QRIS</h1>
-                    <p className="qr-sub">Pantau status pembayaran QRIS secara real-time</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <span className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-100 dark:shadow-none"><FiWifi className="animate-pulse" /></span>
+                        Monitoring QRIS
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Real-time Digital Payment Settlement Monitor</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div className="qr-live-badge">
-                        <span className="qr-pulse"></span>
-                        <span>Live • {lastRefresh.toLocaleTimeString('id-ID')}</span>
+
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl shadow-sm text-[10px] font-black text-emerald-600 uppercase tracking-widest flex-1 sm:flex-none">
+                        <div className="size-2 bg-emerald-500 rounded-full animate-ping"></div>
+                        Live • {lastRefresh.toLocaleTimeString('id-ID')}
                     </div>
-                    <button className="qr-refresh-btn" onClick={handleRefresh}><FiRefreshCw size={16} /> Refresh</button>
+                    <button
+                        onClick={handleRefresh}
+                        className="p-3 bg-white dark:bg-slate-900 text-slate-400 hover:text-blue-600 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all shadow-sm group"
+                    >
+                        <FiRefreshCw className="group-hover:rotate-180 transition-transform duration-500" />
+                    </button>
                 </div>
             </div>
 
             {/* Stats */}
-            <div className="qr-stats">
-                <div className="qr-stat-card">
-                    <div className="qr-stat-icon" style={{ background: '#dbeafe', color: '#3b82f6' }}><FiDollarSign /></div>
-                    <div><p className="qr-stat-label">Total QRIS Masuk</p><p className="qr-stat-value" style={{ color: '#3b82f6' }}>{formatRupiah(totalAmount)}</p></div>
-                </div>
-                <div className="qr-stat-card">
-                    <div className="qr-stat-icon" style={{ background: '#d1fae5', color: '#10b981' }}><FiCheckCircle /></div>
-                    <div><p className="qr-stat-label">Sukses</p><p className="qr-stat-value" style={{ color: '#10b981' }}>{successCount}</p></div>
-                </div>
-                <div className="qr-stat-card">
-                    <div className="qr-stat-icon" style={{ background: '#fef3c7', color: '#f59e0b' }}><FiClock /></div>
-                    <div><p className="qr-stat-label">Pending</p><p className="qr-stat-value" style={{ color: '#f59e0b' }}>{pendingCount}</p></div>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {[
+                    { label: 'Total QRIS Masuk', value: formatRupiah(totalAmount), icon: <FiDollarSign />, color: 'blue', sub: 'Gross Settlement' },
+                    { label: 'Sukses', value: successCount, icon: <FiCheckCircle />, color: 'emerald', sub: 'Verified Payments' },
+                    { label: 'Pending', value: pendingCount, icon: <FiClock />, color: 'amber', sub: 'Awaiting Settlement' },
+                ].map((s, idx) => (
+                    <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                    s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                        'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+                                }`}>
+                                {s.icon}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.sub}</span>
+                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter italic">
+                            {typeof s.value === 'number' ? String(s.value).padStart(2, '0') : s.value}
+                        </h4>
+                    </div>
+                ))}
             </div>
 
-            {/* Table */}
-            <div className="qr-card">
-                <div className="qr-filter-bar">
-                    <div className="qr-search-wrap">
-                        <FiSearch className="qr-search-icon" />
-                        <input className="qr-search" placeholder="Cari invoice / pelanggan..." value={search} onChange={e => handleSearch(e.target.value)} />
+            {/* Main Table Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                {/* Filter Bar */}
+                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row gap-6 bg-slate-50/30 dark:bg-slate-800/20">
+                    <div className="relative group flex-1 max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-1 flex items-center pointer-events-none transition-transform group-focus-within:translate-x-1">
+                            <div className="p-2 border border-transparent group-focus-within:text-blue-600 text-slate-400">
+                                <FiSearch size={16} />
+                            </div>
+                        </div>
+                        <input
+                            className="block w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3.5 pl-11 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                            placeholder="Cari nomor invoice atau pelanggan..."
+                            value={search}
+                            onChange={e => handleSearch(e.target.value)}
+                        />
                     </div>
-                    <div className="qr-filter-tabs">
+                    <div className="flex flex-wrap items-center gap-2">
                         {[
-                            { key: 'all', label: 'Semua' },
+                            { key: 'all', label: 'Semua Transaksi' },
                             { key: 'success', label: `Sukses (${successCount})` },
                             { key: 'pending', label: `Pending (${pendingCount})` },
                         ].map(f => (
-                            <button key={f.key} className={`qr-tab ${filterStatus === f.key ? 'active' : ''}`} onClick={() => handleFilter(f.key)}>{f.label}</button>
+                            <button
+                                key={f.key}
+                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterStatus === f.key ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'}`}
+                                onClick={() => handleFilter(f.key)}
+                            >
+                                {f.label}
+                            </button>
                         ))}
                     </div>
                 </div>
 
-                {paginated.length === 0 ? (
-                    <div className="qr-empty"><FiWifi size={48} /><p>{qrisTransactions.length === 0 ? 'Belum ada transaksi QRIS.' : 'Tidak ditemukan.'}</p></div>
-                ) : (
-                    <div className="qr-table-wrap">
-                        <table className="qr-table">
-                            <thead><tr>
-                                <th>Waktu</th><th>Invoice</th><th>Pelanggan</th><th>Kasir</th><th>Nominal</th><th>Status</th>
-                            </tr></thead>
-                            <tbody>
+                {/* Table Area */}
+                <div className="overflow-x-auto">
+                    {paginated.length === 0 ? (
+                        <div className="py-24 text-center">
+                            <FiActivity size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Tidak ada log transaksi QRIS</p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pelanggan</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Settlement</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Hub</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Petugas</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                 {paginated.map(t => {
                                     const isSuccess = t.paidAmount >= t.total;
+                                    const time = new Date(t.date || t.createdAt);
                                     return (
-                                        <tr key={t.id} className="qr-tr">
-                                            <td>
-                                                <div style={{ fontSize: '.82rem', fontWeight: 600 }}>{new Date(t.date || t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
-                                                <div style={{ fontSize: '.7rem', color: 'var(--text-muted)' }}>{new Date(t.date || t.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                                        <tr key={t.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-slate-900 dark:text-white">{time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{time.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</span>
+                                                </div>
                                             </td>
-                                            <td style={{ fontFamily: 'monospace', fontSize: '.8rem', fontWeight: 600 }}>{t.invoiceNo}</td>
-                                            <td style={{ fontWeight: 600 }}>{t.customerName || 'Umum'}</td>
-                                            <td style={{ fontSize: '.82rem', color: 'var(--text-secondary)' }}>{t.userName || '-'}</td>
-                                            <td style={{ fontWeight: 800, color: '#3b82f6' }}>{formatRupiah(t.total)}</td>
-                                            <td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-[11px] font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                                    {t.invoiceNo}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.customerName || 'Pelanggan Umum'}</p>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <p className="text-xs font-black text-blue-600 italic tracking-tighter">
+                                                    {formatRupiah(t.total)}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 {isSuccess ? (
-                                                    <span className="qr-status-badge success"><FiCheckCircle size={12} /> Berhasil</span>
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/30">
+                                                        <FiCheckCircle size={12} /> Terverifikasi
+                                                    </span>
                                                 ) : (
-                                                    <span className="qr-status-badge pending"><FiClock size={12} /> Pending</span>
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/30">
+                                                        <FiClock size={12} /> Menunggu
+                                                    </span>
                                                 )}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.userName || '-'}</span>
                                             </td>
                                         </tr>
                                     );
                                 })}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </div>
 
+                {/* Pagination */}
                 {filtered.length > PER_PAGE && (
-                    <div className="qr-pagination">
-                        <span className="qr-page-info">Menampilkan {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} dari {filtered.length}</span>
-                        <div className="qr-page-btns">
-                            <button className="qr-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FiChevronLeft size={16} /> Prev</button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                                <button key={n} className={`qr-page-num ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                            ))}
-                            <button className="qr-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next <FiChevronRight size={16} /></button>
+                    <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Displaying {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} logs
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronLeft size={18} />
+                            </button>
+                            <span className="text-xs font-black min-w-[3rem] text-center dark:text-white">
+                                {page} <span className="text-slate-400">/</span> {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronRight size={18} />
+                            </button>
                         </div>
                     </div>
                 )}
 
-                <div className="qr-footer">
-                    <p>Menampilkan {qrisTransactions.length} transaksi QRIS • Auto-refresh setiap 15 detik</p>
+                {/* Footer Status */}
+                <div className="p-4 bg-slate-900 flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Monitoring System Operational — Total {qrisTransactions.length} Settlements Recorded</p>
+                    <div className="flex items-center gap-2">
+                        <FiZap className="text-blue-500 animate-pulse" />
+                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest italic opacity-75">Auto-Refresh Engine V4.0 Active</span>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
-
-const CSS = `
-.qr-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.qr-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
-.qr-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
-.qr-live-badge { display:flex; align-items:center; gap:8px; padding:6px 14px; border-radius:9999px; background:#d1fae5; color:#059669; font-size:.72rem; font-weight:700; }
-.qr-pulse { width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 0 0 rgba(16,185,129,.6); animation:qr-ping 1.5s infinite; }
-@keyframes qr-ping { 0% { box-shadow:0 0 0 0 rgba(16,185,129,.6); } 70% { box-shadow:0 0 0 8px rgba(16,185,129,0); } 100% { box-shadow:0 0 0 0 rgba(16,185,129,0); } }
-.qr-refresh-btn { display:flex; align-items:center; gap:6px; padding:8px 16px; border-radius:10px; border:1px solid var(--border); background:var(--bg-secondary); font-size:.82rem; font-weight:700; color:var(--text-primary); cursor:pointer; transition:all .15s; }
-.qr-refresh-btn:hover { border-color:#3b82f6; color:#3b82f6; }
-
-.qr-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-@media(max-width:700px){ .qr-stats { grid-template-columns:1fr; } }
-.qr-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
-.qr-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
-.qr-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.qr-stat-value { font-size:1.4rem; font-weight:900; margin:0; }
-
-.qr-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.qr-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.qr-search-wrap { position:relative; flex:1; min-width:180px; }
-.qr-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; }
-.qr-search { width:100%; padding:8px 12px 8px 36px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); }
-.qr-search:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.qr-filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-.qr-tab { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.73rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; white-space:nowrap; }
-.qr-tab:hover { border-color:#3b82f6; color:#3b82f6; }
-.qr-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-.qr-empty { padding:48px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.qr-table-wrap { overflow-x:auto; }
-.qr-table { width:100%; border-collapse:collapse; text-align:left; }
-.qr-table thead tr { background:var(--bg-input); }
-.qr-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
-.qr-tr { border-top:1px solid var(--border); transition:background .1s; }
-.qr-tr:hover { background:var(--bg-card-hover); }
-.qr-table td { padding:12px 18px; vertical-align:middle; }
-.qr-status-badge { padding:4px 10px; font-size:.7rem; font-weight:700; border-radius:9999px; display:inline-flex; align-items:center; gap:4px; }
-.qr-status-badge.success { background:#d1fae5; color:#059669; }
-.qr-status-badge.pending { background:#fef3c7; color:#d97706; }
-.qr-footer { padding:12px 20px; border-top:1px solid var(--border); text-align:center; }
-.qr-footer p { font-size:.75rem; color:var(--text-muted); margin:0; }
-
-.qr-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px; }
-.qr-page-info { font-size:.78rem; color:var(--text-muted); font-weight:600; }
-.qr-page-btns { display:flex; align-items:center; gap:4px; }
-.qr-page-btn { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
-.qr-page-btn:hover:not(:disabled) { border-color:#3b82f6; color:#3b82f6; }
-.qr-page-btn:disabled { opacity:.4; cursor:not-allowed; }
-.qr-page-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; }
-.qr-page-num:hover { border-color:#3b82f6; color:#3b82f6; }
-.qr-page-num.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-`;

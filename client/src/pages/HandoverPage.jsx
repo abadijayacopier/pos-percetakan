@@ -2,7 +2,23 @@ import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah, formatDateTime } from '../utils';
 import Modal from '../components/Modal';
-import { FiPackage, FiSearch, FiCheckCircle, FiAlertTriangle, FiUser, FiPhone, FiFileText, FiClock, FiChevronLeft, FiChevronRight, FiPrinter } from 'react-icons/fi';
+import {
+    FiPackage,
+    FiSearch,
+    FiCheckCircle,
+    FiAlertTriangle,
+    FiUser,
+    FiPhone,
+    FiFileText,
+    FiClock,
+    FiChevronLeft,
+    FiChevronRight,
+    FiPrinter,
+    FiInfo,
+    FiX,
+    FiInbox,
+    FiCalendar
+} from 'react-icons/fi';
 
 export default function HandoverPage() {
     const [transactions] = useState(() => db.getAll('transactions'));
@@ -64,90 +80,164 @@ export default function HandoverPage() {
     const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
     return (
-        <div style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <style>{CSS}</style>
-
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
             {/* Header */}
-            <div className="ho-header">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
-                    <h1 className="ho-title"><FiPackage /> Serah Terima Barang</h1>
-                    <p className="ho-sub">Proses verifikasi dan penyerahan pesanan kepada pelanggan</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <span className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-lg shadow-emerald-100 dark:shadow-none"><FiInbox /></span>
+                        Serah Terima Barang
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Customer Pickup & Order Verification System</p>
                 </div>
-                <div className="ho-date">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm text-xs font-black text-slate-500">
+                    <FiCalendar className="text-emerald-600" />
+                    {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
             </div>
 
             {/* Stats */}
-            <div className="ho-stats">
-                <div className="ho-stat-card">
-                    <div className="ho-stat-icon" style={{ background: '#dbeafe', color: '#3b82f6' }}><FiPackage /></div>
-                    <div><p className="ho-stat-label">Total Pesanan</p><p className="ho-stat-value" style={{ color: '#3b82f6' }}>{transactions.length}</p></div>
-                </div>
-                <div className="ho-stat-card">
-                    <div className="ho-stat-icon" style={{ background: '#fef3c7', color: '#f59e0b' }}><FiClock /></div>
-                    <div><p className="ho-stat-label">Menunggu</p><p className="ho-stat-value" style={{ color: '#f59e0b' }}>{pendingCount}</p></div>
-                </div>
-                <div className="ho-stat-card">
-                    <div className="ho-stat-icon" style={{ background: '#d1fae5', color: '#10b981' }}><FiCheckCircle /></div>
-                    <div><p className="ho-stat-label">Sudah Diserahkan</p><p className="ho-stat-value" style={{ color: '#10b981' }}>{doneCount}</p></div>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {[
+                    { label: 'Total Pesanan', value: transactions.length, icon: <FiPackage />, color: 'blue', sub: 'Total Records' },
+                    { label: 'Menunggu', value: pendingCount, icon: <FiClock />, color: 'amber', sub: 'Ready for Pickup' },
+                    { label: 'Selesai', value: doneCount, icon: <FiCheckCircle />, color: 'emerald', sub: 'Completed Handovers' },
+                ].map((s, idx) => (
+                    <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
+                                    s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
+                                        'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                                }`}>
+                                {s.icon}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{s.sub}</span>
+                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter italic">
+                            {String(s.value).padStart(2, '0')}
+                        </h4>
+                    </div>
+                ))}
             </div>
 
-            {/* Search & Filter */}
-            <div className="ho-card">
-                <div className="ho-filter-bar">
-                    <div className="ho-search-wrap">
-                        <FiSearch className="ho-search-icon" />
-                        <input className="ho-search" placeholder="Cari invoice / nama pelanggan..." value={search} onChange={e => handleSearch(e.target.value)} />
+            {/* Main Content Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                {/* Filter Bar */}
+                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row gap-6 bg-slate-50/30 dark:bg-slate-800/20">
+                    <div className="relative group flex-1 max-w-md">
+                        <div className="absolute inset-y-0 left-0 pl-1 flex items-center pointer-events-none transition-transform group-focus-within:translate-x-1">
+                            <div className="p-2 border border-transparent group-focus-within:text-emerald-600 text-slate-400">
+                                <FiSearch size={16} />
+                            </div>
+                        </div>
+                        <input
+                            className="block w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3.5 pl-11 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
+                            placeholder="Cari nomor invoice atau nama pelanggan..."
+                            value={search}
+                            onChange={e => handleSearch(e.target.value)}
+                        />
                     </div>
-                    <div className="ho-filter-tabs">
+                    <div className="flex flex-wrap items-center gap-2">
                         {[
-                            { key: 'all', label: 'Semua' },
-                            { key: 'pending', label: `Menunggu (${pendingCount})` },
+                            { key: 'all', label: 'Semua Status' },
+                            { key: 'pending', label: `Pending (${pendingCount})` },
                             { key: 'done', label: `Selesai (${doneCount})` },
                         ].map(f => (
-                            <button key={f.key} className={`ho-tab ${filterStatus === f.key ? 'active' : ''}`} onClick={() => handleFilter(f.key)}>{f.label}</button>
+                            <button
+                                key={f.key}
+                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterStatus === f.key ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600'}`}
+                                onClick={() => handleFilter(f.key)}
+                            >
+                                {f.label}
+                            </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Table */}
-                {paginated.length === 0 ? (
-                    <div className="ho-empty"><FiPackage size={48} /><p>Tidak ada pesanan ditemukan.</p></div>
-                ) : (
-                    <div className="ho-table-wrap">
-                        <table className="ho-table">
-                            <thead><tr>
-                                <th>Invoice</th><th>Tanggal</th><th>Pelanggan</th><th>Total</th><th>Status</th><th style={{ textAlign: 'right' }}>Aksi</th>
-                            </tr></thead>
-                            <tbody>
+                {/* Table Area */}
+                <div className="overflow-x-auto">
+                    {paginated.length === 0 ? (
+                        <div className="py-24 text-center">
+                            <FiInbox size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Tidak ada antrean serah terima</p>
+                        </div>
+                    ) : (
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice Ref</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal Order</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pelanggan</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Total Transaksi</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Logistik</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Konfirmasi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                 {paginated.map(t => {
                                     const ho = getHandoverStatus(t.id);
                                     return (
-                                        <tr key={t.id} className="ho-tr">
-                                            <td style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '.82rem' }}>{t.invoiceNo}</td>
-                                            <td style={{ fontSize: '.82rem' }}>{formatDateTime(t.date)}</td>
-                                            <td style={{ fontWeight: 600 }}>{t.customerName || 'Umum'}</td>
-                                            <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(t.total)}</td>
-                                            <td>
+                                        <tr key={t.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <span className="text-[11px] font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                                    {t.invoiceNo}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase">
+                                                {formatDateTime(t.date)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors shadow-sm">
+                                                        <FiUser size={14} />
+                                                    </div>
+                                                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.customerName || 'Pelanggan Umum'}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <p className="text-xs font-black text-emerald-600 italic tracking-tighter">
+                                                    {formatRupiah(t.total)}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4">
                                                 {ho ? (
-                                                    <span className="ho-badge done"><FiCheckCircle size={12} /> Diserahkan</span>
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/30">
+                                                        <FiCheckCircle size={12} /> Diserahkan
+                                                    </span>
                                                 ) : (
-                                                    <span className="ho-badge pending"><FiClock size={12} /> Menunggu</span>
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/30">
+                                                        <FiClock size={12} /> Menunggu
+                                                    </span>
                                                 )}
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td className="px-6 py-4 text-right">
                                                 {ho ? (
-                                                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>oleh {ho.receiverName}</span>
+                                                    <div className="flex flex-col items-end">
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Penerima</p>
+                                                        <p className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase">{ho.receiverName}</p>
+                                                    </div>
                                                 ) : (
                                                     (() => {
                                                         const isDp = t.type === 'digital_printing';
                                                         const dpTask = isDp && t.dp_task_id ? dpTasks.find(d => d.id === t.dp_task_id) : null;
                                                         const dpStatus = dpTask ? dpTask.status : null;
 
-                                                        if (isDp && dpStatus && dpStatus !== 'selesai') {
-                                                            return <span className="ho-badge pending" style={{ background: '#fef3c7', color: '#d97706', padding: '6px 12px', border: '1px solid #fde68a' }} title={`Status Produksi: ${dpStatus}`}>Sedang Produksi</span>;
+                                                        if (isDp && dpStatus && dpStatus !== 'selesai' && dpStatus !== 'Diambil') {
+                                                            return (
+                                                                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-900/50">
+                                                                    <FiPrinter size={12} /> Produksi: {dpStatus}
+                                                                </span>
+                                                            );
                                                         }
-                                                        return <button className="ho-btn-sm" onClick={() => openHandover(t)}><FiCheckCircle size={14} /> Serah Terima</button>;
+                                                        return (
+                                                            <button
+                                                                onClick={() => openHandover(t)}
+                                                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center gap-2 ml-auto"
+                                                            >
+                                                                <FiCheckCircle size={14} /> Serah Terima
+                                                            </button>
+                                                        );
                                                     })()
                                                 )}
                                             </td>
@@ -156,50 +246,125 @@ export default function HandoverPage() {
                                 })}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Pagination */}
                 {filtered.length > PER_PAGE && (
-                    <div className="ho-pagination">
-                        <span className="ho-page-info">Menampilkan {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} dari {filtered.length}</span>
-                        <div className="ho-page-btns">
-                            <button className="ho-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FiChevronLeft size={16} /> Prev</button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                                <button key={n} className={`ho-page-num ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                            ))}
-                            <button className="ho-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next <FiChevronRight size={16} /></button>
+                    <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Displaying {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} transactions
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronLeft size={18} />
+                            </button>
+                            <span className="text-xs font-black min-w-[3rem] text-center dark:text-white">
+                                {page} <span className="text-slate-400">/</span> {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                            >
+                                <FiChevronRight size={18} />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
             {/* Handover Modal */}
-            <Modal isOpen={!!selectedTrx} onClose={() => setSelectedTrx(null)} title="Proses Serah Terima" footer={
-                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <button className="ho-btn-ghost" onClick={() => setSelectedTrx(null)}>Batal</button>
-                    <button className="ho-btn-primary" onClick={handleHandover} disabled={!receiverName.trim()}><FiCheckCircle /> Barang Diserahkan</button>
-                </div>
-            }>
+            <Modal
+                isOpen={!!selectedTrx}
+                onClose={() => setSelectedTrx(null)}
+                title="Lengkapi Berita Acara Serah Terima"
+                icon={<FiCheckCircle className="text-emerald-600" />}
+                footer={
+                    <div className="flex gap-4 w-full">
+                        <button className="flex-1 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500" onClick={() => setSelectedTrx(null)}>
+                            <FiX className="inline mr-2" /> Gagalkan
+                        </button>
+                        <button
+                            className="flex-1 py-3.5 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center disabled:opacity-40 disabled:scale-100"
+                            onClick={handleHandover}
+                            disabled={!receiverName.trim()}
+                        >
+                            <FiCheckCircle className="mr-2" /> Konfirmasi Penyerahan
+                        </button>
+                    </div>
+                }
+            >
                 {selectedTrx && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <div className="ho-info-box">
-                            <div className="ho-info-row"><span>No. Invoice</span><strong>{selectedTrx.invoiceNo}</strong></div>
-                            <div className="ho-info-row"><span>Pelanggan</span><strong>{selectedTrx.customerName || 'Umum'}</strong></div>
-                            <div className="ho-info-row"><span>Total</span><strong style={{ color: '#10b981' }}>{formatRupiah(selectedTrx.total)}</strong></div>
-                            <div className="ho-info-row"><span>Tipe</span><strong>{selectedTrx.type}</strong></div>
+                    <div className="space-y-6">
+                        <div className="p-5 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/50 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-transform"></div>
+                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-4 relative z-10">Ringkasan Transaksi</p>
+                            <div className="space-y-3 relative z-10">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                    <span>Nomor Invoice:</span>
+                                    <span className="text-slate-900 dark:text-white font-black">{selectedTrx.invoiceNo}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                    <span>Atas Nama:</span>
+                                    <span className="text-slate-900 dark:text-white uppercase italic">{selectedTrx.customerName || 'Umum'}</span>
+                                </div>
+                                <div className="h-px bg-emerald-100 dark:bg-emerald-800/50 my-2"></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tagihan Total</span>
+                                    <span className="text-lg font-black text-emerald-600 italic tracking-tighter">{formatRupiah(selectedTrx.total)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="ho-form-group">
-                            <label className="ho-label"><FiUser size={13} /> Nama Penerima *</label>
-                            <input className="ho-input" value={receiverName} onChange={e => setReceiverName(e.target.value)} placeholder="Nama penerima barang" />
+
+                        <div className="space-y-4">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <FiUser size={13} className="text-emerald-600" /> Nama Penerima Barang *
+                                </label>
+                                <input
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400/50"
+                                    value={receiverName}
+                                    onChange={e => setReceiverName(e.target.value)}
+                                    placeholder="Input nama lengkap penerima..."
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <FiPhone size={13} className="text-emerald-600" /> No. Telepon Penerima
+                                </label>
+                                <input
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400/50"
+                                    value={receiverPhone}
+                                    onChange={e => setReceiverPhone(e.target.value)}
+                                    placeholder="08xxxxxxxxxx"
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    <FiFileText size={13} className="text-emerald-600" /> Catatan Serah Terima
+                                </label>
+                                <textarea
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-medium focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400/50 resize-none"
+                                    rows={3}
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    placeholder="Warna box, kondisi barang, dll..."
+                                />
+                            </div>
                         </div>
-                        <div className="ho-form-group">
-                            <label className="ho-label"><FiPhone size={13} /> Telepon Penerima</label>
-                            <input className="ho-input" value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} placeholder="081234567890" />
-                        </div>
-                        <div className="ho-form-group">
-                            <label className="ho-label"><FiFileText size={13} /> Catatan</label>
-                            <textarea className="ho-input" rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Catatan tambahan serah terima..." style={{ resize: 'none' }} />
+
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-dashed border-amber-200 dark:border-amber-800/50 flex gap-4 items-center">
+                            <div className="size-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center text-amber-600 shadow-sm shrink-0">
+                                <FiInfo size={18} />
+                            </div>
+                            <p className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase leading-relaxed tracking-wide italic">Dengan menekan tombol konfirmasi, maka status pesanan akan dinyatakan telah diterima sepenuhnya oleh pelanggan.</p>
                         </div>
                     </div>
                 )}
@@ -207,59 +372,3 @@ export default function HandoverPage() {
         </div>
     );
 }
-
-const CSS = `
-.ho-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.ho-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
-.ho-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
-.ho-date { font-size:.82rem; color:var(--text-secondary); font-weight:600; padding:8px 14px; background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; }
-.ho-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-@media(max-width:700px){ .ho-stats { grid-template-columns:1fr; } }
-.ho-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
-.ho-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
-.ho-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.ho-stat-value { font-size:1.4rem; font-weight:900; margin:0; }
-.ho-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.ho-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.ho-search-wrap { position:relative; flex:1; min-width:180px; }
-.ho-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; }
-.ho-search { width:100%; padding:8px 12px 8px 36px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); }
-.ho-search:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.ho-filter-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-.ho-tab { padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.73rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; white-space:nowrap; }
-.ho-tab:hover { border-color:#3b82f6; color:#3b82f6; }
-.ho-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-.ho-empty { padding:48px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.ho-table-wrap { overflow-x:auto; }
-.ho-table { width:100%; border-collapse:collapse; text-align:left; }
-.ho-table thead tr { background:var(--bg-input); }
-.ho-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
-.ho-tr { border-top:1px solid var(--border); transition:background .1s; }
-.ho-tr:hover { background:var(--bg-card-hover); }
-.ho-table td { padding:12px 18px; vertical-align:middle; }
-.ho-badge { padding:4px 10px; font-size:.7rem; font-weight:700; border-radius:9999px; display:inline-flex; align-items:center; gap:4px; }
-.ho-badge.done { background:#d1fae5; color:#059669; }
-.ho-badge.pending { background:#fef3c7; color:#d97706; }
-.ho-btn-sm { display:inline-flex; align-items:center; gap:5px; padding:6px 14px; font-size:.78rem; font-weight:700; border-radius:8px; border:none; cursor:pointer; background:#3b82f6; color:#fff; transition:all .15s; }
-.ho-btn-sm:hover { background:#2563eb; }
-.ho-btn-primary { display:flex; align-items:center; gap:6px; background:#10b981; color:#fff; font-weight:700; font-size:.875rem; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; flex:1; justify-content:center; }
-.ho-btn-primary:disabled { opacity:.4; cursor:not-allowed; }
-.ho-btn-ghost { display:flex; align-items:center; gap:6px; background:var(--bg-input); color:var(--text-secondary); font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:1px solid var(--border); cursor:pointer; flex:1; justify-content:center; }
-.ho-info-box { background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:14px; }
-.ho-info-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:.85rem; }
-.ho-info-row:last-child { border:none; }
-.ho-info-row span { color:var(--text-muted); }
-.ho-form-group { display:flex; flex-direction:column; }
-.ho-label { font-size:.77rem; font-weight:600; color:var(--text-secondary); margin-bottom:5px; display:flex; align-items:center; gap:5px; }
-.ho-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); box-sizing:border-box; }
-.ho-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.ho-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px; }
-.ho-page-info { font-size:.78rem; color:var(--text-muted); font-weight:600; }
-.ho-page-btns { display:flex; align-items:center; gap:4px; }
-.ho-page-btn { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
-.ho-page-btn:hover:not(:disabled) { border-color:#3b82f6; color:#3b82f6; }
-.ho-page-btn:disabled { opacity:.4; cursor:not-allowed; }
-.ho-page-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; }
-.ho-page-num:hover { border-color:#3b82f6; color:#3b82f6; }
-.ho-page-num.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-`;

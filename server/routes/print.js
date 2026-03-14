@@ -81,4 +81,37 @@ router.post('/receipt', verifyToken, requireRole(['kasir', 'admin']), (req, res)
     }
 });
 
+// 3. Kick Cash Drawer (ESC/POS command)
+router.post('/open-drawer', verifyToken, requireRole(['kasir', 'admin']), (req, res) => {
+    try {
+        const { printerName } = req.body;
+        if (!printerName) return res.status(400).json({ message: 'Printer belum dipilih!' });
+
+        // Kommand standar ESC/POS untuk Kick Drawer: ESC p m t1 t2
+        // Decimal: 27 112 0 25 250
+        // Buffer ini dikirim langsung ke printer
+        const drawerCommand = Buffer.from([0x1B, 0x70, 0x00, 0x19, 0xFA]).toString('binary');
+
+        const tmpDir = path.join(__dirname, '../temp');
+        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
+
+        const fileName = `drawer-${Date.now()}.txt`;
+        const filePath = path.join(tmpDir, fileName);
+
+        // Simpan command sebagai file binary
+        fs.writeFileSync(filePath, drawerCommand, 'binary');
+
+        const scriptPath = path.join(__dirname, '../scripts/raw-print.ps1');
+        const command = `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -PrinterName "${printerName}" -FilePath "${filePath}"`;
+
+        exec(command, (error) => {
+            fs.unlink(filePath, () => { });
+            if (error) return res.status(500).json({ message: 'Gagal membuka laci' });
+            res.json({ message: 'Laci berhasil dibuka' });
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 module.exports = router;

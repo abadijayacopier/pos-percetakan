@@ -67,7 +67,20 @@ export default function SettingsPage() {
     const [editUser, setEditUser] = useState(null);
     const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'kasir', isActive: true });
 
-    const activityLog = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 50), []);
+    // Price Pagination States
+    const [fcPage, setFcPage] = useState(1);
+    const [printPage, setPrintPage] = useState(1);
+    const [bindPage, setBindPage] = useState(1);
+    const pageSize = 10;
+
+    const [logPage, setLogPage] = useState(1);
+    const [logPageSize] = useState(15);
+    const allLogs = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)), []);
+    const activityLog = useMemo(() => {
+        const start = (logPage - 1) * logPageSize;
+        return allLogs.slice(start, start + logPageSize);
+    }, [allLogs, logPage, logPageSize]);
+    const totalLogPages = Math.ceil(allLogs.length / logPageSize);
 
     // Effects
     useEffect(() => {
@@ -218,259 +231,560 @@ export default function SettingsPage() {
     ];
 
     return (
-        <div className="premium-settings-wrapper premium-page-wrapper" style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
-
-            <div className="tabs" style={{ marginBottom: '16px' }}>
-                {TABS.map(t => (
-                    <button
-                        key={t.id}
-                        className={`tab-btn ${activeTab === t.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(t.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-                    >
-                        <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon}</span>
-                        {t.text}
-                    </button>
-                ))}
+        <div className="p-4 md:p-8 max-w-[1400px] mx-auto min-h-screen bg-slate-50 dark:bg-slate-930">
+            {/* Header */}
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                    <FiSettings className="text-blue-600" /> Pengaturan Sistem
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">Kelola harga layanan, identitas toko, dan konfigurasi perangkat keras.</p>
             </div>
 
-            {/* General */}
+            {/* Navigation Tabs */}
+            <div className="mb-8 overflow-x-auto no-scrollbar pb-1 border-b border-slate-200 dark:border-slate-800">
+                <div className="flex gap-1 min-w-max">
+                    {TABS.map(t => (
+                        <button
+                            key={t.id}
+                            className={`flex items-center gap-2 px-5 py-3 transition-all duration-200 border-b-2 font-medium ${activeTab === t.id
+                                ? 'border-blue-600 text-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
+                                : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                                }`}
+                            onClick={() => {
+                                setActiveTab(t.id);
+                                if (t.id === 'log') setLogPage(1);
+                            }}
+                        >
+                            <span className="text-lg">{t.icon}</span>
+                            <span className="whitespace-nowrap">{t.text}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* General (Theme) */}
             {activeTab === 'general' && (
-                <div className="card">
-                    <div className="card-body">
-                        <div className="form-group">
-                            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiMonitor size={14} /> Mode Tampilan</label>
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                {[
-                                    { id: 'light', icon: <FiSun size={16} />, label: 'Terang' },
-                                    { id: 'dark', icon: <FiMoon size={16} />, label: 'Gelap' },
-                                    { id: 'system', icon: <FiMonitor size={16} />, label: 'Sistem' },
-                                ].map(t => (
-                                    <button key={t.id} onClick={() => themeCtx.setTheme(t.id)} className={`btn ${themeCtx.themeMode === t.id ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>{t.icon}{t.label}</button>
-                                ))}
-                            </div>
+                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 max-w-2xl">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                            <FiMonitor size={20} />
                         </div>
-                        <button className="btn btn-primary" onClick={saveSettings} style={{ marginTop: '16px' }}><FiSave /> Simpan Tema</button>
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Mode Tampilan</h3>
+                            <p className="text-sm text-slate-500">Pilih tema yang paling nyaman untuk mata Anda.</p>
+                        </div>
                     </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-8">
+                        {[
+                            { id: 'light', icon: <FiSun size={20} />, label: 'Terang' },
+                            { id: 'dark', icon: <FiMoon size={20} />, label: 'Gelap' },
+                            { id: 'system', icon: <FiMonitor size={20} />, label: 'Sistem' },
+                        ].map(t => (
+                            <button
+                                key={t.id}
+                                onClick={() => themeCtx.setTheme(t.id)}
+                                className={`flex flex-col items-center justify-center gap-3 p-5 rounded-xl border-2 transition-all ${themeCtx.themeMode === t.id
+                                    ? 'border-blue-600 bg-blue-50 text-blue-600 dark:bg-blue-900/20'
+                                    : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-slate-700'
+                                    }`}
+                            >
+                                {t.icon}
+                                <span className="text-sm font-medium">{t.label}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                        onClick={saveSettings}
+                    >
+                        <FiSave /> Simpan Pengaturan
+                    </button>
                 </div>
             )}
 
             {/* Landing Page Settings */}
             {activeTab === 'landing' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div className="card">
-                        <div className="card-header"><h3><FiSettings /> Identitas & Lokasi Toko</h3></div>
-                        <div className="card-body">
-                            <div className="form-group"><label className="form-label">Nama Toko</label><input className="form-input" value={storeName} onChange={e => setStoreName(e.target.value)} /></div>
-                            <div className="form-group"><label className="form-label">Alamat Lengkap</label><textarea className="form-textarea" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} /></div>
-                            <div className="form-group"><label className="form-label">WhatsApp (No. Telepon)</label><input className="form-input" value={storePhone} onChange={e => setStorePhone(e.target.value)} /></div>
-                            <div className="form-group"><label className="form-label">Link Google Maps (URL)</label><input className="form-input" value={storeMapsUrl} onChange={e => setStoreMapsUrl(e.target.value)} placeholder="Contoh: https://maps.app.goo.gl/..." /></div>
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30">
+                            <FiSettings className="text-blue-600" />
+                            <h3 className="font-bold text-slate-800 dark:text-white">Identitas & Lokasi Toko</h3>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nama Toko</label>
+                                    <input className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" value={storeName} onChange={e => setStoreName(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Alamat Lengkap</label>
+                                    <textarea className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white min-h-[100px]" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">WhatsApp (No. Telepon)</label>
+                                    <input className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" value={storePhone} onChange={e => setStorePhone(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Link Google Maps (URL)</label>
+                                    <input className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white" value={storeMapsUrl} onChange={e => setStoreMapsUrl(e.target.value)} placeholder="https://maps.app.goo.gl/..." />
+                                </div>
+                            </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
-                                <div className="form-group">
-                                    <label className="form-label">Logo Landing Page</label>
-                                    <label className="ps-logo-drop" style={{ height: '120px' }}>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Logo Landing Page</label>
+                                    <div className="relative group aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center p-4 transition-all hover:border-blue-400 cursor-pointer overflow-hidden">
                                         {landingLogo ? (
-                                            <img src={landingLogo} alt="Landing Logo" className="ps-logo-preview" style={{ maxHeight: '80px' }} />
+                                            <img src={landingLogo} alt="Landing Logo" className="max-h-full object-contain" />
                                         ) : (
-                                            <span className="drop-icon"><FiPlus /></span>
+                                            <div className="text-center">
+                                                <FiPlus className="mx-auto text-slate-400 mb-2" size={24} />
+                                                <span className="text-xs text-slate-500">Upload Logo</span>
+                                            </div>
                                         )}
-                                        <p style={{ fontSize: '0.7rem' }}>{landingLogo ? 'Klik ganti logo' : 'Upload Logo'}</p>
-                                        <input type="file" accept="image/*" onChange={(e) => {
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (!file) return;
                                             const reader = new FileReader();
                                             reader.onload = (ev) => setLandingLogo(ev.target.result);
                                             reader.readAsDataURL(file);
-                                        }} style={{ display: 'none' }} />
-                                    </label>
+                                        }} />
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <label className="form-label">Favicon Landing Page</label>
-                                    <label className="ps-logo-drop" style={{ height: '120px' }}>
+                                <div className="space-y-1.5">
+                                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Favicon</label>
+                                    <div className="relative group aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center p-4 transition-all hover:border-blue-400 cursor-pointer overflow-hidden">
                                         {landingFavicon ? (
-                                            <img src={landingFavicon} alt="Favicon" className="ps-logo-preview" style={{ maxHeight: '60px', width: '60px' }} />
+                                            <img src={landingFavicon} alt="Favicon" className="w-12 h-12 object-contain" />
                                         ) : (
-                                            <span className="drop-icon"><FiPlus /></span>
+                                            <div className="text-center">
+                                                <FiPlus className="mx-auto text-slate-400 mb-2" size={24} />
+                                                <span className="text-xs text-slate-500">Upload Icon</span>
+                                            </div>
                                         )}
-                                        <p style={{ fontSize: '0.7rem' }}>{landingFavicon ? 'Klik ganti favicon' : 'Upload Favicon'}</p>
-                                        <input type="file" accept="image/*" onChange={(e) => {
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
                                             const file = e.target.files[0];
                                             if (!file) return;
                                             const reader = new FileReader();
                                             reader.onload = (ev) => setLandingFavicon(ev.target.result);
                                             reader.readAsDataURL(file);
-                                        }} style={{ display: 'none' }} />
-                                    </label>
+                                        }} />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="card">
-                        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3><FiImage /> Galeri Toko & Hasil Kerja</h3>
-                            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <FiImage className="text-blue-600" />
+                                <h3 className="font-bold text-slate-800 dark:text-white">Galeri Toko & Hasil Kerja</h3>
+                            </div>
+                            <label className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl cursor-pointer transition-all text-sm font-semibold">
                                 <FiPlus /> Tambah Foto
-                                <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ display: 'none' }} />
+                                <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" />
                             </label>
                         </div>
-                        <div className="card-body">
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                                Upload foto interior toko, peralatan, atau hasil cetakan yang pernah dikerjakan.
-                            </p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '16px' }}>
+                        <div className="p-6">
+                            <p className="text-sm text-slate-500 mb-6">Upload foto interior toko, peralatan, atau hasil cetakan terbaik Anda.</p>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                                 {galleryImages.map((img, idx) => (
-                                    <div key={idx} style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '1/1', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                                        <img src={img} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        <button
-                                            onClick={() => removeGalleryImage(idx)}
-                                            style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(239, 68, 68, 0.9)', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
-                                            title="Hapus Foto"
-                                        >
-                                            <FiTrash2 size={14} />
-                                        </button>
+                                    <div key={idx} className="relative aspect-square rounded-2xl bg-slate-100 dark:bg-slate-800 overflow-hidden group border border-slate-200 dark:border-slate-700">
+                                        <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                onClick={() => removeGalleryImage(idx)}
+                                                className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg"
+                                                title="Hapus Foto"
+                                            >
+                                                <FiTrash2 size={18} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {galleryImages.length === 0 && (
-                                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', background: 'var(--bg-secondary)', borderRadius: '12px', border: '2px dashed var(--border)', color: 'var(--text-secondary)' }}>
-                                        <FiImage size={32} style={{ marginBottom: '12px', opacity: 0.5 }} /><br />
-                                        Belum ada foto galeri. Klik "Tambah Foto" untuk mengunggah.
+                                    <div className="col-span-full border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl py-12 flex flex-col items-center justify-center text-slate-400">
+                                        <FiImage size={40} className="mb-3 opacity-20" />
+                                        <p className="text-sm">Belum ada foto galeri.</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={saveSettings} style={{ alignSelf: 'flex-start' }}><FiSave /> Simpan Semua Pengaturan Landing Page</button>
+
+                    <div className="pb-8">
+                        <button
+                            className="flex items-center gap-2 px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                            onClick={saveSettings}
+                        >
+                            <FiSave /> Simpan Perubahan Landing Page
+                        </button>
+                    </div>
                 </div>
             )}
 
             {/* Fotocopy Prices */}
             {activeTab === 'fotocopy' && (
-                <div className="card">
-                    <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <FiFile style={{ fontSize: '1.2rem', color: 'var(--primary)' }} />
-                            <h3 style={{ margin: 0 }}>Master Harga Fotocopy</h3>
+                <div className="space-y-8 pb-12">
+                    {/* Master Harga Fotocopy */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                    <FiFile size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Fotocopy</h3>
+                            </div>
+                            <div className="flex w-full sm:w-auto gap-3">
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
+                                    const newId = 'fc' + Date.now();
+                                    const newItem = { id: newId, paper: 'HVS A4', color: 'bw', side: '1', price: 0, label: 'Baru' };
+                                    setFotocopyPrices([...fotocopyPrices, newItem]);
+                                }}><FiPlus /> Tambah</button>
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveAllFotocopyPrices}><FiSave /> Simpan</button>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn btn-secondary btn-sm" onClick={() => {
-                                const newId = 'fc' + Date.now();
-                                const newItem = { id: newId, paper: 'HVS A4', color: 'bw', side: '1', price: 0, label: 'Baru' };
-                                setFotocopyPrices([...fotocopyPrices, newItem]);
-                            }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiPlus /> Tambah Aturan</button>
-                            <button className="btn btn-primary" onClick={saveAllFotocopyPrices} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiSave /> Simpan Harga</button>
+
+                        <div className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Kertas</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Warna</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Sisi</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Harga (Rp)</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {fotocopyPrices.slice((fcPage - 1) * pageSize, fcPage * pageSize).map((p, idx) => {
+                                            const realIdx = (fcPage - 1) * pageSize + idx;
+                                            return (
+                                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
+                                                    <td className="px-6 py-3">
+                                                        <select className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[140px] dark:text-white font-medium" value={p.paper} onChange={(e) => {
+                                                            const newPrices = [...fotocopyPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], paper: e.target.value };
+                                                            setFotocopyPrices(newPrices);
+                                                        }}>
+                                                            {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <select className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[140px] dark:text-white font-medium" value={p.color} onChange={(e) => {
+                                                            const newPrices = [...fotocopyPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], color: e.target.value };
+                                                            setFotocopyPrices(newPrices);
+                                                        }}>
+                                                            <option value="bw">Hitam Putih</option>
+                                                            <option value="color">Berwarna</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <select className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[120px] dark:text-white font-medium" value={p.side} onChange={(e) => {
+                                                            const newPrices = [...fotocopyPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], side: e.target.value };
+                                                            setFotocopyPrices(newPrices);
+                                                        }}>
+                                                            <option value="1">1 Sisi</option>
+                                                            <option value="2">Bolak-balik</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <div className="relative w-full max-w-[120px]">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Rp</span>
+                                                            <input type="number" className="pl-9 pr-3 py-2 w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                                                                value={p.price}
+                                                                onChange={(e) => {
+                                                                    const newPrices = [...fotocopyPrices];
+                                                                    newPrices[realIdx].price = e.target.value;
+                                                                    setFotocopyPrices(newPrices);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right">
+                                                        <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
+                                                            if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
+                                                                setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== realIdx));
+                                                            }
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {fotocopyPrices.length === 0 && (
+                                            <tr>
+                                                <td colSpan="5" className="py-12 text-center text-slate-400">Belum ada data harga fotocopy</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Controls */}
+                            {fotocopyPrices.length > pageSize && (
+                                <div className="mt-6 flex justify-center gap-2">
+                                    {Array.from({ length: Math.ceil(fotocopyPrices.length / pageSize) }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setFcPage(i + 1)}
+                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${fcPage === i + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <div className="card-body">
-                        {isMobile ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                {fotocopyPrices.map((p, idx) => (
-                                    <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Kertas</label>
-                                                <select className="form-select" value={p.paper} onChange={(e) => {
-                                                    const newPrices = [...fotocopyPrices];
-                                                    newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
-                                                    setFotocopyPrices(newPrices);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
-                                                    {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
-                                                </select>
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Warna</label>
-                                                <select className="form-select" value={p.color} onChange={(e) => {
-                                                    const newPrices = [...fotocopyPrices];
-                                                    newPrices[idx] = { ...newPrices[idx], color: e.target.value };
-                                                    setFotocopyPrices(newPrices);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
-                                                    <option value="bw">Hitam Putih</option>
-                                                    <option value="color">Berwarna</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Sisi</label>
-                                                <select className="form-select" value={p.side} onChange={(e) => {
-                                                    const newPrices = [...fotocopyPrices];
-                                                    newPrices[idx] = { ...newPrices[idx], side: e.target.value };
-                                                    setFotocopyPrices(newPrices);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
-                                                    <option value="1">1 Sisi</option>
-                                                    <option value="2">Bolak-balik</option>
-                                                </select>
-                                            </div>
-                                            <div style={{ flex: 1.5 }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
-                                                <input type="number" className="form-input" value={p.price} onChange={(e) => {
-                                                    const newPrices = [...fotocopyPrices];
-                                                    newPrices[idx].price = e.target.value;
-                                                    setFotocopyPrices(newPrices);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
-                                            </div>
-                                            <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
-                                                if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
-                                                    setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
-                                                }
-                                            }}><FiTrash2 /></button>
-                                        </div>
-                                    </div>
-                                ))}
+
+                    {/* Master Harga Print */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                                    <FiPrinter size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Jasa Print</h3>
                             </div>
-                        ) : (
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Sisi</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                    <tbody>
-                                        {fotocopyPrices.map((p, idx) => (
-                                            <tr key={p.id}>
-                                                <td data-label="Jenis Kertas">
-                                                    <select className="form-select" value={p.paper} onChange={(e) => {
-                                                        const newPrices = [...fotocopyPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
-                                                        setFotocopyPrices(newPrices);
-                                                    }} style={{ width: '130px' }}>
-                                                        {['HVS A4', 'HVS F4', 'HVS A3'].map(o => <option key={o} value={o}>{o}</option>)}
-                                                    </select>
-                                                </td>
-                                                <td data-label="Warna">
-                                                    <select className="form-select" value={p.color} onChange={(e) => {
-                                                        const newPrices = [...fotocopyPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], color: e.target.value };
-                                                        setFotocopyPrices(newPrices);
-                                                    }} style={{ width: '120px' }}>
-                                                        <option value="bw">Hitam Putih</option>
-                                                        <option value="color">Berwarna</option>
-                                                    </select>
-                                                </td>
-                                                <td data-label="Sisi">
-                                                    <select className="form-select" value={p.side} onChange={(e) => {
-                                                        const newPrices = [...fotocopyPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], side: e.target.value };
-                                                        setFotocopyPrices(newPrices);
-                                                    }} style={{ width: '100px' }}>
-                                                        <option value="1">1 Sisi</option>
-                                                        <option value="2">Bolak-balik</option>
-                                                    </select>
-                                                </td>
-                                                <td data-label="Harga">
-                                                    <input type="number" className="form-input"
-                                                        value={p.price}
+                            <div className="flex w-full sm:w-auto gap-3">
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
+                                    setPrintPrices([...printPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', price: 0 }]);
+                                }}><FiPlus /> Tambah</button>
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveSettings}><FiSave /> Simpan</button>
+                            </div>
+                        </div>
+                        <div className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Kertas</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Warna</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Harga (Rp) / Lembar</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {printPrices.slice((printPage - 1) * pageSize, printPage * pageSize).map((p, idx) => {
+                                            const realIdx = (printPage - 1) * pageSize + idx;
+                                            return (
+                                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                    <td className="px-6 py-3">
+                                                        <input className="w-full max-w-[200px] px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-medium" value={p.paper} onChange={(e) => {
+                                                            const newPrices = [...printPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], paper: e.target.value };
+                                                            setPrintPrices(newPrices);
+                                                        }} />
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <select className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[140px] dark:text-white font-medium" value={p.color} onChange={(e) => {
+                                                            const newPrices = [...printPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], color: e.target.value };
+                                                            setPrintPrices(newPrices);
+                                                        }}>
+                                                            <option value="bw">Hitam Putih</option>
+                                                            <option value="color">Berwarna</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <div className="relative w-full max-w-[120px]">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Rp</span>
+                                                            <input type="number" className="pl-9 pr-3 py-2 w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                                                                value={p.price}
+                                                                onChange={(e) => {
+                                                                    const newPrices = [...printPrices];
+                                                                    newPrices[realIdx].price = e.target.value;
+                                                                    setPrintPrices(newPrices);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right">
+                                                        <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
+                                                            if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
+                                                                setPrintPrices(printPrices.filter((_, i) => i !== realIdx));
+                                                            }
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {printPrices.length === 0 && (
+                                            <tr>
+                                                <td colSpan="4" className="py-12 text-center text-slate-400">Belum ada data harga print</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Controls */}
+                            {printPrices.length > pageSize && (
+                                <div className="mt-6 flex justify-center gap-2">
+                                    {Array.from({ length: Math.ceil(printPrices.length / pageSize) }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setPrintPage(i + 1)}
+                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${printPage === i + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Master Harga Jilid */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
+                                    <FiBook size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Penjilidan</h3>
+                            </div>
+                            <div className="flex w-full sm:w-auto gap-3">
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
+                                    setBindPrices([...bindPrices, { id: Date.now().toString(), name: '', price: 0 }]);
+                                }}><FiPlus /> Tambah</button>
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveSettings}><FiSave /> Simpan</button>
+                            </div>
+                        </div>
+                        <div className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[400px]">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Jilid</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Harga (Rp) / Buku</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {bindPrices.slice((bindPage - 1) * pageSize, bindPage * pageSize).map((p, idx) => {
+                                            const realIdx = (bindPage - 1) * pageSize + idx;
+                                            return (
+                                                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                    <td className="px-6 py-3">
+                                                        <input className="w-full max-w-[300px] px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-medium" value={p.name} onChange={(e) => {
+                                                            const newPrices = [...bindPrices];
+                                                            newPrices[realIdx] = { ...newPrices[realIdx], name: e.target.value };
+                                                            setBindPrices(newPrices);
+                                                        }} placeholder="Nama jenis jilid" />
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <div className="relative w-full max-w-[150px]">
+                                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Rp</span>
+                                                            <input type="number" className="pl-9 pr-3 py-2 w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                                                                value={p.price}
+                                                                onChange={(e) => {
+                                                                    const newPrices = [...bindPrices];
+                                                                    newPrices[realIdx].price = e.target.value;
+                                                                    setBindPrices(newPrices);
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-3 text-right">
+                                                        <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
+                                                            if (confirm(`Hapus jilid "${p.name}"?`)) {
+                                                                setBindPrices(bindPrices.filter((_, i) => i !== realIdx));
+                                                            }
+                                                        }}><FiTrash2 /></button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {bindPrices.length === 0 && (
+                                            <tr>
+                                                <td colSpan="3" className="py-12 text-center text-slate-400">Belum ada data harga jilid</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Controls */}
+                            {bindPrices.length > pageSize && (
+                                <div className="mt-6 flex justify-center gap-2">
+                                    {Array.from({ length: Math.ceil(bindPrices.length / pageSize) }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setBindPage(i + 1)}
+                                            className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${bindPage === i + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Aturan Diskon Grosir */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                    <FiTag size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Aturan Diskon Grosir Fotocopy</h3>
+                            </div>
+                            <div className="flex w-full sm:w-auto gap-3">
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
+                                    setFcDiscounts([...fcDiscounts, { id: Date.now().toString(), minQty: 0, discountPerSheet: 0 }]);
+                                }}><FiPlus /> Tambah</button>
+                                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveSettings}><FiSave /> Simpan</button>
+                            </div>
+                        </div>
+                        <div className="p-0 sm:p-6">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[500px]">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 dark:border-slate-800">
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Minimal Jumlah / Lembar (≥)</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Potongan Harga (Rp) / Lembar</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {fcDiscounts.map((d, idx) => (
+                                            <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                <td className="px-6 py-3">
+                                                    <input type="number" className="w-full max-w-[150px] px-3 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-medium"
+                                                        value={d.minQty}
                                                         onChange={(e) => {
-                                                            const newPrices = [...fotocopyPrices];
-                                                            newPrices[idx].price = e.target.value;
-                                                            setFotocopyPrices(newPrices);
+                                                            const newDiscounts = [...fcDiscounts];
+                                                            newDiscounts[idx].minQty = e.target.value;
+                                                            setFcDiscounts(newDiscounts);
                                                         }}
-                                                        style={{ width: '120px' }}
                                                     />
                                                 </td>
-                                                <td data-label="Aksi">
-                                                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                        if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
-                                                            setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== idx));
-                                                        }
+                                                <td className="px-6 py-3">
+                                                    <div className="relative w-full max-w-[150px]">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">Rp</span>
+                                                        <input type="number" className="pl-9 pr-3 py-2 w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:text-white font-bold"
+                                                            value={d.discountPerSheet}
+                                                            onChange={(e) => {
+                                                                const newDiscounts = [...fcDiscounts];
+                                                                newDiscounts[idx].discountPerSheet = e.target.value;
+                                                                setFcDiscounts(newDiscounts);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-3 text-right">
+                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
+                                                        const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
+                                                        setFcDiscounts(newDiscounts);
                                                     }}><FiTrash2 /></button>
                                                 </td>
                                             </tr>
@@ -478,504 +792,287 @@ export default function SettingsPage() {
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-                        <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3><FiPrinter /> Master Harga Jasa Print</h3>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button className="btn btn-secondary btn-sm" onClick={() => {
-                                        setPrintPrices([...printPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', price: 0 }]);
-                                    }}><FiPlus /> Tambah Aturan</button>
-                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Print</button>
+
+                            {/* Note Section */}
+                            <div className="mx-6 my-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                <div className="flex gap-3">
+                                    <FiInfo className="text-blue-500 mt-0.5" size={18} />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300">Catatan Diskon</h4>
+                                        <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-1 leading-relaxed">
+                                            Diskon volume akan otomatis memotong harga per-lembar saat <strong>Fotocopy</strong> mencapai target kuantitas di atas.
+                                            Pastikan mengurutkannya mulai dari lembar paling tinggi untuk hasil pemotongan diskon yang maksimal.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                            {isMobile ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {printPrices.map((p, idx) => (
-                                        <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                                            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                                                <div style={{ flex: 1 }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Kertas</label>
-                                                    <input className="form-input" value={p.paper} onChange={(e) => {
-                                                        const newPrices = [...printPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
-                                                        setPrintPrices(newPrices);
-                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Warna</label>
-                                                    <select className="form-select" value={p.color} onChange={(e) => {
-                                                        const newPrices = [...printPrices];
-                                                        newPrices[idx] = { ...newPrices[idx], color: e.target.value };
-                                                        setPrintPrices(newPrices);
-                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }}>
-                                                        <option value="bw">Hitam Putih</option>
-                                                        <option value="color">Berwarna</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                                                <div style={{ flex: 1.5 }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
-                                                    <input type="number" className="form-input" value={p.price} onChange={(e) => {
-                                                        const newPrices = [...printPrices];
-                                                        newPrices[idx].price = e.target.value;
-                                                        setPrintPrices(newPrices);
-                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
-                                                </div>
-                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
-                                                    if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
-                                                        setPrintPrices(printPrices.filter((_, i) => i !== idx));
-                                                    }
-                                                }}><FiTrash2 /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table className="data-table">
-                                        <thead><tr><th>Jenis Kertas</th><th>Warna</th><th>Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                        <tbody>
-                                            {printPrices.map((p, idx) => (
-                                                <tr key={p.id}>
-                                                    <td data-label="Jenis Kertas">
-                                                        <input className="form-input" value={p.paper} onChange={(e) => {
-                                                            const newPrices = [...printPrices];
-                                                            newPrices[idx] = { ...newPrices[idx], paper: e.target.value };
-                                                            setPrintPrices(newPrices);
-                                                        }} style={{ width: '150px' }} />
-                                                    </td>
-                                                    <td data-label="Warna">
-                                                        <select className="form-select" value={p.color} onChange={(e) => {
-                                                            const newPrices = [...printPrices];
-                                                            newPrices[idx] = { ...newPrices[idx], color: e.target.value };
-                                                            setPrintPrices(newPrices);
-                                                        }} style={{ width: '120px' }}>
-                                                            <option value="bw">Hitam Putih</option>
-                                                            <option value="color">Berwarna</option>
-                                                        </select>
-                                                    </td>
-                                                    <td data-label="Harga">
-                                                        <input type="number" className="form-input"
-                                                            value={p.price}
-                                                            onChange={(e) => {
-                                                                const newPrices = [...printPrices];
-                                                                newPrices[idx].price = e.target.value;
-                                                                setPrintPrices(newPrices);
-                                                            }}
-                                                            style={{ width: '120px' }}
-                                                        />
-                                                    </td>
-                                                    <td data-label="Aksi">
-                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                            if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
-                                                                setPrintPrices(printPrices.filter((_, i) => i !== idx));
-                                                            }
-                                                        }}><FiTrash2 /></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3><FiBook /> Master Harga Penjilidan</h3>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button className="btn btn-secondary btn-sm" onClick={() => {
-                                        setBindPrices([...bindPrices, { id: Date.now().toString(), name: '', price: 0 }]);
-                                    }}><FiPlus /> Tambah Aturan</button>
-                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Harga Jilid</button>
-                                </div>
-                            </div>
-                            {isMobile ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {bindPrices.map((p, idx) => (
-                                        <div key={p.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                                            <div style={{ marginBottom: '12px' }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Jenis Jilid</label>
-                                                <input className="form-input" value={p.name} onChange={(e) => {
-                                                    const newPrices = [...bindPrices];
-                                                    newPrices[idx] = { ...newPrices[idx], name: e.target.value };
-                                                    setBindPrices(newPrices);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} placeholder="Nama jenis jilid" />
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                                                <div style={{ flex: 1.5 }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Harga (Rp)</label>
-                                                    <input type="number" className="form-input" value={p.price} onChange={(e) => {
-                                                        const newPrices = [...bindPrices];
-                                                        newPrices[idx].price = e.target.value;
-                                                        setBindPrices(newPrices);
-                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
-                                                </div>
-                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
-                                                    if (confirm(`Hapus jilid "${p.name}"?`)) {
-                                                        setBindPrices(bindPrices.filter((_, i) => i !== idx));
-                                                    }
-                                                }}><FiTrash2 /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table className="data-table">
-                                        <thead><tr><th>Jenis Jilid</th><th>Harga (Rp) / Buku</th><th>Aksi</th></tr></thead>
-                                        <tbody>
-                                            {bindPrices.map((p, idx) => (
-                                                <tr key={p.id}>
-                                                    <td data-label="Jenis Jilid">
-                                                        <input className="form-input" value={p.name} onChange={(e) => {
-                                                            const newPrices = [...bindPrices];
-                                                            newPrices[idx] = { ...newPrices[idx], name: e.target.value };
-                                                            setBindPrices(newPrices);
-                                                        }} style={{ width: '250px' }} placeholder="Nama jenis jilid" />
-                                                    </td>
-                                                    <td data-label="Harga">
-                                                        <input type="number" className="form-input"
-                                                            value={p.price}
-                                                            onChange={(e) => {
-                                                                const newPrices = [...bindPrices];
-                                                                newPrices[idx].price = e.target.value;
-                                                                setBindPrices(newPrices);
-                                                            }}
-                                                            style={{ width: '150px' }}
-                                                        />
-                                                    </td>
-                                                    <td data-label="Aksi">
-                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                            if (confirm(`Hapus jilid "${p.name}"?`)) {
-                                                                setBindPrices(bindPrices.filter((_, i) => i !== idx));
-                                                            }
-                                                        }}><FiTrash2 /></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '2px dashed var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                <h3><FiTag /> Aturan Diskon Grosir Fotocopy</h3>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button className="btn btn-secondary btn-sm" onClick={() => {
-                                        setFcDiscounts([...fcDiscounts, { id: Date.now().toString(), minQty: 0, discountPerSheet: 0 }]);
-                                    }}><FiPlus /> Tambah Aturan</button>
-                                    <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Diskon</button>
-                                </div>
-                            </div>
-                            {isMobile ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {fcDiscounts.map((d, idx) => (
-                                        <div key={d.id} style={{ backgroundColor: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-                                            <div style={{ marginBottom: '12px' }}>
-                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Minimal Jumlah / Lembar ({'>='})</label>
-                                                <input type="number" className="form-input" value={d.minQty} onChange={(e) => {
-                                                    const newDiscounts = [...fcDiscounts];
-                                                    newDiscounts[idx].minQty = e.target.value;
-                                                    setFcDiscounts(newDiscounts);
-                                                }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                                                <div style={{ flex: 1.5 }}>
-                                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '6px' }}>Potongan Harga (Rp) / Lbr</label>
-                                                    <input type="number" className="form-input" value={d.discountPerSheet} onChange={(e) => {
-                                                        const newDiscounts = [...fcDiscounts];
-                                                        newDiscounts[idx].discountPerSheet = e.target.value;
-                                                        setFcDiscounts(newDiscounts);
-                                                    }} style={{ width: '100%', backgroundColor: 'var(--bg-primary)', fontWeight: 'bold' }} />
-                                                </div>
-                                                <button className="btn btn-secondary" style={{ color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px' }} onClick={() => {
-                                                    const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
-                                                    setFcDiscounts(newDiscounts);
-                                                }}><FiTrash2 /></button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {fcDiscounts.length === 0 && (
-                                        <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Belum ada aturan diskon tercatat.</div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table className="data-table">
-                                        <thead><tr><th>Minimal Jumlah / Lembar ({'>='})</th><th>Potongan Harga (Rp) / Lembar</th><th>Aksi</th></tr></thead>
-                                        <tbody>
-                                            {fcDiscounts.map((d, idx) => (
-                                                <tr key={d.id}>
-                                                    <td data-label="Min. Jumlah / Lbr">
-                                                        <input type="number" className="form-input"
-                                                            value={d.minQty}
-                                                            onChange={(e) => {
-                                                                const newDiscounts = [...fcDiscounts];
-                                                                newDiscounts[idx].minQty = e.target.value;
-                                                                setFcDiscounts(newDiscounts);
-                                                            }}
-                                                            style={{ width: '150px' }}
-                                                        />
-                                                    </td>
-                                                    <td data-label="Potongan (Rp) / Lbr">
-                                                        <input type="number" className="form-input"
-                                                            value={d.discountPerSheet}
-                                                            onChange={(e) => {
-                                                                const newDiscounts = [...fcDiscounts];
-                                                                newDiscounts[idx].discountPerSheet = e.target.value;
-                                                                setFcDiscounts(newDiscounts);
-                                                            }}
-                                                            style={{ width: '150px' }}
-                                                        />
-                                                    </td>
-                                                    <td data-label="Aksi">
-                                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => {
-                                                            const newDiscounts = fcDiscounts.filter((_, i) => i !== idx);
-                                                            setFcDiscounts(newDiscounts);
-                                                        }}><FiTrash2 /></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {fcDiscounts.length === 0 && (
-                                                <tr><td colSpan="3" style={{ textAlign: 'center', padding: '16px' }}>Belum ada aturan diskon tercatat.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                        </div>
-
-                        <div style={{ marginTop: '24px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 'var(--radius)' }}>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--info)' }}>
-                                <FiInfo /> <strong>Catatan:</strong><br />
-                                Diskon volume akan otomatis memotong harga per-lembar saat <strong>Fotocopy</strong> mencapai target kuantitas di atas. Pastikan mengurutkannya mulai dari lembar paling tinggi untuk hasil pemotongan diskon yang maksimal.
-                            </p>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Users */}
+            {/* Users Management */}
             {activeTab === 'users' && (
-                <div className="card">
-                    <div className="card-header">
-                        <h3><FiUsers /> Manajemen User</h3>
-                        <button className="btn btn-primary btn-sm" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}><FiPlus /> Tambah</button>
-                    </div>
-                    <div style={{ overflow: 'auto' }}>
-                        <table className="data-table">
-                            <thead><tr><th>Nama</th><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead>
-                            <tbody>
-                                {users.map(u => (
-                                    <tr key={u.id}>
-                                        <td><strong>{u.name}</strong></td>
-                                        <td>{u.username}</td>
-                                        <td><span className="badge badge-primary">{u.role}</span></td>
-                                        <td><span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>{u.isActive ? 'Aktif' : 'Nonaktif'}</span></td>
-                                        <td><button className="btn btn-ghost btn-sm" onClick={() => { setEditUser(u); setUserForm({ ...u, password: '' }); setUserFormOpen(true); }}><FiEdit /></button></td>
+                <div className="space-y-6 pb-12">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                    <FiUsers size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Manajemen Pengguna</h3>
+                            </div>
+                            <button className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}>
+                                <FiPlus /> Tambah User
+                            </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Nama</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Username</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Role</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                    {users.map(u => (
+                                        <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold text-xs">
+                                                        {u.name.substring(0, 1)}
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{u.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{u.username}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                                                    }`}>
+                                                    {u.role}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${u.isActive ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                                                    }`}>
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                                    {u.isActive ? 'Aktif' : 'Nonaktif'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all" onClick={() => { setEditUser(u); setUserForm({ ...u, password: '' }); setUserFormOpen(true); }}>
+                                                    <FiEdit size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Printer & Nota */}
             {activeTab === 'printer' && (
-                <div className="printer-settings-grid">
-                    {/* Left Column */}
-                    <div className="ps-main">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+                    <div className="lg:col-span-2 space-y-6">
                         {/* Hardware Settings */}
-                        <div className="ps-section">
-                            <div className="ps-section-header">
-                                <div className="ps-section-icon"><FiPrinter /></div>
-                                <h3>Pengaturan Perangkat Keras</h3>
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                                    <FiPrinter size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Pengaturan Perangkat Keras</h3>
                             </div>
 
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>Tipe Printer & Kertas Nota</label>
-                            <div className="ps-type-grid">
-                                {[
-                                    { id: '58mm', icon: <FiFileText />, title: 'Thermal 58mm', desc: 'Printer POS kecil' },
-                                    { id: '80mm', icon: <FiFileText />, title: 'Thermal 80mm', desc: 'Printer POS standar' },
-                                    { id: 'lx310', icon: <FiPrinter />, title: 'Dot Matrix LX310', desc: 'Kertas continuous 12×14cm' },
-                                    { id: 'inkjet', icon: <FiPrinter />, title: 'Inkjet / Laser', desc: 'Ukuran A4 / A5 / Folio' },
-                                ].map(t => (
-                                    <button key={t.id} className={`ps-type-card ${printerSize === t.id ? 'selected' : ''}`} onClick={() => setPrinterSize(t.id)}>
-                                        <span className="ps-type-icon">{t.icon}</span>
-                                        <div className="ps-type-info">
-                                            <h4>{t.title}</h4>
-                                            <p>{t.desc}</p>
-                                        </div>
-                                        <span className="ps-type-check"><FiCheckCircle /></span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {printerSize === 'inkjet' && (
-                                <div style={{ marginBottom: '16px' }}>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>Ukuran Kertas</label>
-                                    <div className="ps-size-pills">
-                                        {['A5', 'A4', 'Folio'].map(sz => (
-                                            <button key={sz} className={`ps-size-pill ${paperSize === sz ? 'active' : ''}`} onClick={() => setPaperSize(sz)}>{sz}</button>
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-4">Tipe Printer & Kertas Nota</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {[
+                                            { id: '58mm', icon: <FiFileText />, title: 'Thermal 58mm', desc: 'Printer POS kecil' },
+                                            { id: '80mm', icon: <FiFileText />, title: 'Thermal 80mm', desc: 'Printer POS standar' },
+                                            { id: 'lx310', icon: <FiPrinter />, title: 'Dot Matrix LX310', desc: 'Kertas continuous 12×14cm' },
+                                            { id: 'inkjet', icon: <FiPrinter />, title: 'Inkjet / Laser', desc: 'Ukuran A4 / A5 / Folio' },
+                                        ].map(t => (
+                                            <button key={t.id} className={`flex text-left p-4 rounded-2xl border-2 transition-all group ${printerSize === t.id
+                                                ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
+                                                : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
+                                                }`} onClick={() => setPrinterSize(t.id)}>
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mr-4 transition-colors ${printerSize === t.id ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                                                    }`}>
+                                                    {t.icon}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className={`font-bold text-sm ${printerSize === t.id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-200'}`}>{t.title}</h4>
+                                                    <p className="text-[11px] text-slate-500 mt-0.5">{t.desc}</p>
+                                                </div>
+                                                {printerSize === t.id && <FiCheckCircle className="text-blue-600 self-start mt-1" />}
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
-                            )}
 
-                            <div className="ps-toggle-info">
-                                <span>Cetak Struk Otomatis setelah Pembayaran</span>
-                                <span>Memicu pencetakan secara otomatis saat transaksi selesai</span>
+                                {printerSize === 'inkjet' && (
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Ukuran Kertas</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['A5', 'A4', 'Folio'].map(sz => (
+                                                <button key={sz} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${paperSize === sz
+                                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700'
+                                                    }`} onClick={() => setPaperSize(sz)}>{sz}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
+                                    <div className="max-w-[80%]">
+                                        <h4 className="text-sm font-bold text-slate-700 dark:text-white">Cetak Struk Otomatis</h4>
+                                        <p className="text-[11px] text-slate-500 mt-1">Memicu pencetakan secara otomatis saat transaksi selesai.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" checked={autoPrint} onChange={e => setAutoPrint(e.target.checked)} />
+                                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+
+                                <div className="p-5 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/50">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <FiZap className="text-blue-600" />
+                                        <label className="text-sm font-bold text-blue-800 dark:text-blue-300">Mode Cetak Cepat (Direct Print)</label>
+                                    </div>
+                                    <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mb-4 leading-relaxed">Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
+                                    <select className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={printerName} onChange={e => setPrinterName(e.target.value)}>
+                                        <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
+                                        {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
+                                    </select>
+                                </div>
                             </div>
-                            <label className="ps-switch">
-                                <input type="checkbox" checked={autoPrint} onChange={e => setAutoPrint(e.target.checked)} />
-                                <span className="ps-switch-slider"></span>
-                            </label>
-                        </div>
-
-                        <div className="ps-direct-print" style={{ marginTop: '16px' }}>
-                            <label><FiZap /> Mode Cetak Cepat (Direct Print)</label>
-                            <p>Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
-                            <select className="form-select" style={{ width: '100%' }} value={printerName} onChange={e => setPrinterName(e.target.value)}>
-                                <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
-                                {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
-                            </select>
                         </div>
 
                         {/* Branding Header & Footer */}
-                        <div className="ps-section">
-                            <div className="ps-section-header">
-                                <div className="ps-section-icon"><FiEdit /></div>
-                                <h3>Branding Header & Footer</h3>
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                    <FiEdit size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Branding Header & Footer</h3>
                             </div>
-                            <div className="ps-form-grid">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div className="ps-form-group">
-                                        <label>Nama Toko</label>
-                                        <input type="text" value={storeName} onChange={e => setStoreName(e.target.value)} />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nama Toko</label>
+                                        <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={storeName} onChange={e => setStoreName(e.target.value)} />
                                     </div>
-                                    <div className="ps-form-group">
-                                        <label>Alamat</label>
-                                        <textarea rows="2" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Alamat Toko</label>
+                                        <textarea rows="3" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={storeAddress} onChange={e => setStoreAddress(e.target.value)} />
                                     </div>
-                                    <div className="ps-form-group">
-                                        <label>Nomor Telepon</label>
-                                        <input type="text" value={storePhone} onChange={e => setStorePhone(e.target.value)} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nomor Telepon</label>
+                                        <input type="text" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={storePhone} onChange={e => setStorePhone(e.target.value)} />
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div className="ps-form-group">
-                                        <label>Pesan Kaki (Footer Struk)</label>
-                                        <textarea rows="2" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" />
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pesan Footer Struk</label>
+                                        <textarea rows="3" className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={receiptFooter} onChange={e => setReceiptFooter(e.target.value)} placeholder="Terima kasih telah berbelanja!" />
                                     </div>
-                                    <div className="ps-form-group">
-                                        <label className="ps-logo-drop">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Logo Struk</label>
+                                        <div className="relative group overflow-hidden bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl p-6 transition-all flex flex-col items-center justify-center cursor-pointer">
                                             {storeLogo ? (
-                                                <img src={storeLogo} alt="Logo" className="ps-logo-preview" />
+                                                <img src={storeLogo} alt="Logo" className="h-16 object-contain mb-3" />
                                             ) : (
-                                                <span className="drop-icon"><FiUpload /></span>
+                                                <FiUpload size={24} className="text-slate-400 mb-2" />
                                             )}
-                                            <p>{storeLogo ? 'Klik untuk ganti logo' : 'Unggah Logo (PNG/JPG, maks 500KB)'}</p>
-                                            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
-                                        </label>
+                                            <p className="text-[10px] text-slate-500 font-bold group-hover:text-blue-500 uppercase tracking-widest">{storeLogo ? 'Ganti Logo' : 'Unggah Logo'}</p>
+                                            <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Digital Receipts */}
-                        <div className="ps-section">
-                            <div className="ps-section-header">
-                                <div className="ps-section-icon"><FiMessageCircle /></div>
-                                <h3>Struk Digital</h3>
+                        {/* Struk Digital */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                                    <FiMessageCircle size={20} />
+                                </div>
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">Layanan Struk Digital</h3>
                             </div>
-                            <div className="ps-digital-grid">
-                                <div className="ps-digital-card">
-                                    <div className="ps-digital-icon whatsapp"><FiMessageCircle /></div>
-                                    <div className="ps-digital-content">
-                                        <div className="d-header">
-                                            <h4>Struk WhatsApp</h4>
-                                            <label className="ps-switch" style={{ transform: 'scale(0.8)' }}>
-                                                <input type="checkbox" defaultChecked />
-                                                <span className="ps-switch-slider" style={{ backgroundColor: 'var(--border)' }}></span>
-                                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-lg shadow-green-200 dark:shadow-none">
+                                        <FiMessageCircle size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <h4 className="font-bold text-sm text-slate-700 dark:text-white">WhatsApp Struk</h4>
+                                            <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" />
                                         </div>
-                                        <p>Kirim struk PDF melalui API WhatsApp</p>
+                                        <p className="text-[10px] text-slate-500 font-medium">Kirim otomatis via API WhatsApp</p>
                                     </div>
                                 </div>
-                                <div className="ps-digital-card">
-                                    <div className="ps-digital-icon email"><FiFileText /></div>
-                                    <div className="ps-digital-content">
-                                        <div className="d-header">
-                                            <h4>Struk Email</h4>
-                                            <label className="ps-switch" style={{ transform: 'scale(0.8)' }}>
-                                                <input type="checkbox" />
-                                                <span className="ps-switch-slider"></span>
-                                            </label>
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center gap-4 opacity-70">
+                                    <div className="w-12 h-12 rounded-xl bg-blue-500 text-white flex items-center justify-center">
+                                        <FiFileText size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-0.5">
+                                            <h4 className="font-bold text-sm text-slate-700 dark:text-white">Email Struk</h4>
+                                            <input type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" />
                                         </div>
-                                        <p>Kirim struk ke alamat email pelanggan</p>
+                                        <p className="text-[10px] text-slate-500 font-medium">Kirim struk ke email pelanggan</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <button className="btn btn-primary" onClick={saveSettings}><FiSave /> Simpan Perubahan</button>
-                            <button className="btn btn-secondary" onClick={async () => {
+                        <div className="flex gap-4">
+                            <button className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={saveSettings}>
+                                <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Perubahan Printer
+                            </button>
+                            <button className="flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-sm" onClick={async () => {
+                                // Test print logic (same as before)
                                 const W = printerSize === 'lx310' ? 36 : printerSize === 'inkjet' ? 60 : printerSize === '80mm' ? 42 : 32;
                                 const M = printerSize === 'lx310' ? '  ' : '';
-                                const pad = (label, val) => {
-                                    const sp = W - label.length - val.length;
-                                    return label + ' '.repeat(sp > 0 ? sp : 1) + val;
-                                };
-                                const center = (str) => {
-                                    const p = Math.max(0, Math.floor((W - str.length) / 2));
-                                    return ' '.repeat(p) + str;
-                                };
+                                const pad = (label, val) => { const sp = W - label.length - val.length; return label + ' '.repeat(sp > 0 ? sp : 1) + val; };
+                                const center = (str) => { const p = Math.max(0, Math.floor((W - str.length) / 2)); return ' '.repeat(p) + str; };
+
                                 const lines = [
                                     center(storeName || 'NAMA TOKO'),
                                     center(storeAddress || 'Alamat toko'),
                                     center('Telp: ' + (storePhone || '-')),
-                                ];
-                                if (printerSize === 'lx310' || printerSize === 'inkjet') {
-                                    lines.push('='.repeat(W), center('NOTA PEMBAYARAN'), '='.repeat(W));
-                                } else {
-                                    lines.push('-'.repeat(W));
-                                }
-                                lines.push(
+                                    '-'.repeat(W),
+                                    center('TEST PRINT RECEIPT'),
+                                    '-'.repeat(W),
                                     `No      : TEST-${Date.now().toString(36).toUpperCase()}`,
                                     `Tanggal : ${new Date().toLocaleString('id-ID')}`,
-                                    `Kasir   : Admin`,
                                     '-'.repeat(W),
-                                    'Kertas HVS A4',
-                                    pad('  10x Rp 500', 'Rp 5.000'),
-                                    'Pulpen Pilot',
-                                    pad('  1x Rp 3.000', 'Rp 3.000'),
+                                    pad('  ITEM TEST 1', 'Rp 10.000'),
+                                    pad('  ITEM TEST 2', 'Rp 5.000'),
                                     '-'.repeat(W),
-                                    pad('TOTAL    :', 'Rp 8.000'),
-                                    pad('BAYAR    :', 'Rp 10.000'),
-                                    pad('KEMBALI  :', 'Rp 2.000'),
-                                    pad('Metode   :', 'TUNAI'),
+                                    pad('TOTAL    :', 'Rp 15.000'),
                                     '-'.repeat(W),
-                                    center(receiptFooter || 'Terima kasih!'),
+                                    center('TEST BERHASIL'),
                                     '',
                                     `Dicetak: ${new Date().toLocaleString('id-ID')}`,
-                                );
-                                let testText = lines.map(l => M + l).join('\n') + '\n';
-                                if (printerSize === 'lx310') {
-                                    testText += '\n\n\n\n';
-                                } else if (printerSize !== 'inkjet') {
-                                    testText += '\n\n\n';
-                                }
+                                ];
+                                let testText = lines.map(l => M + l).join('\n') + '\n\n\n';
+
                                 if (window.innerWidth < 1024) {
                                     printViaRawBT(testText);
-                                    showToast('Draft dikirim ke aplikasi Bluetooth Printer', 'success');
+                                    showToast('Draft dikirim ke Bluetooth Printer', 'success');
                                     return;
                                 }
 
@@ -983,126 +1080,292 @@ export default function SettingsPage() {
                                     try {
                                         const payload = { text: testText, printerName };
                                         if (printerSize === 'lx310') payload.raw = true;
-                                        else if (printerSize === 'inkjet') { payload.mode = 'inkjet'; payload.paperSize = paperSize; }
                                         await api.post('/print/receipt', payload);
-                                        showToast(`Test print berhasil dikirim ke ${printerName}!`, 'success');
+                                        showToast(`Test print dikirim ke ${printerName}`, 'success');
                                     } catch (err) {
-                                        showToast(err.response?.data?.message || 'Gagal mengirim test print', 'error');
+                                        showToast('Gagal mengirim test print', 'error');
                                     }
                                 } else {
-                                    showToast('Pilih printer dulu di dropdown Direct Print', 'error');
+                                    showToast('Pilih printer dulu', 'error');
                                 }
-                            }}><FiActivity /> Cetak Uji Coba</button>
+                            }}>
+                                <FiActivity /> Test Print
+                            </button>
                         </div>
                     </div>
 
                     {/* Right Column: Live Preview */}
-                    <div className="ps-section ps-preview-panel">
-                        <h3><FiEye /> Pratinjau Langsung</h3>
-                        <div className="ps-receipt-frame">
-                            <div className="ps-receipt">
-                                <div className="r-logo">
-                                    {storeLogo ? <img src={storeLogo} alt="Logo" /> : <FiPrinter style={{ color: '#94a3b8', fontSize: '16px' }} />}
+                    <div className="space-y-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden sticky top-32">
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                                <div className="flex items-center gap-2">
+                                    <FiEye className="text-blue-500" />
+                                    <h3 className="font-bold text-slate-700 dark:text-white text-sm">Pratinjau Struk</h3>
                                 </div>
-                                <div className="r-store">{storeName || 'NAMA TOKO'}</div>
-                                <div className="r-addr">{storeAddress || 'Alamat toko'}</div>
-                                <div className="r-phone">TELP: {storePhone || '-'}</div>
-                                <hr className="r-divider" />
-                                <div className="r-meta">
-                                    <span>{new Date().toLocaleDateString('id-ID')}</span>
-                                    <span>#INV-9823</span>
+                            </div>
+                            <div className="p-8 flex justify-center bg-slate-100/50 dark:bg-slate-950/50">
+                                <div className="bg-white dark:bg-white text-slate-800 w-full max-w-[280px] min-h-[400px] shadow-2xl p-6 relative">
+                                    {/* Paper Texture Effect */}
+                                    <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                                    <div className="relative">
+                                        <div className="flex justify-center mb-4">
+                                            {storeLogo ? (
+                                                <img src={storeLogo} alt="Logo" className="h-10 object-contain" />
+                                            ) : (
+                                                <div className="w-10 h-10 border-2 border-slate-200 flex items-center justify-center text-slate-300">
+                                                    <FiPrinter size={16} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="text-center">
+                                            <h4 className="font-black text-xs uppercase tracking-tighter leading-tight">{storeName || 'NAMA TOKO'}</h4>
+                                            <p className="text-[9px] mt-1 leading-snug">{storeAddress || 'Alamat lengkap toko Anda mencakup jalan, kota, dan kode pos'}</p>
+                                            <p className="text-[9px] font-bold mt-0.5">TELP: {storePhone || '-'}</p>
+                                        </div>
+                                        <div className="border-t border-dashed border-slate-300 my-4"></div>
+                                        <div className="flex justify-between text-[9px] mb-2 font-mono">
+                                            <span>#INV-9823</span>
+                                            <span>{new Date().toLocaleDateString('id-ID')}</span>
+                                        </div>
+                                        <div className="border-t border-dashed border-slate-300 my-4"></div>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between text-[10px]">
+                                                <span>Fotocopi A4 BW x50</span>
+                                                <span className="font-bold">25.000</span>
+                                            </div>
+                                            <div className="flex justify-between text-[10px]">
+                                                <span>Kertas A4 (Rim)</span>
+                                                <span className="font-bold">55.000</span>
+                                            </div>
+                                            <div className="flex justify-between text-[10px]">
+                                                <span>Jasa Jilid Spiral</span>
+                                                <span className="font-bold">15.000</span>
+                                            </div>
+                                        </div>
+                                        <div className="border-t border-dashed border-slate-500 my-4 opacity-30"></div>
+                                        <div className="flex justify-between text-sm font-black">
+                                            <span>TOTAL</span>
+                                            <span>95.000</span>
+                                        </div>
+                                        <div className="border-t border-dashed border-slate-300 my-4"></div>
+                                        <div className="text-center italic text-[9px] px-2 leading-relaxed text-slate-500">
+                                            {receiptFooter || 'Terima kasih telah berbelanja!'}
+                                        </div>
+                                        <div className="mt-6 text-center">
+                                            <div className="w-12 h-12 border border-slate-200 mx-auto flex items-center justify-center opacity-30">
+                                                <FiZap size={24} />
+                                            </div>
+                                            <p className="text-[7px] text-slate-300 mt-1 uppercase font-bold tracking-[0.2em]">{storeName || 'BADJAH'}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <hr className="r-divider" />
-                                <div className="r-item"><span>Fotokopi (50 x 500)</span><span>25.000</span></div>
-                                <div className="r-item"><span>Kertas A4 (Rim)</span><span>55.000</span></div>
-                                <div className="r-item"><span>Jasa Penjilidan</span><span>15.000</span></div>
-                                <hr className="r-divider" />
-                                <div className="r-total"><span>Total</span><span>95.000</span></div>
-                                <hr className="r-divider" />
-                                <div className="r-footer">{receiptFooter || 'Terima kasih telah berbelanja!'}</div>
+                            </div>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/10 text-center">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Mockup: {printerSize === '58mm' ? 'Thermal 58mm' : printerSize === '80mm' ? 'Thermal 80mm' : printerSize === 'lx310' ? 'Dot Matrix' : `Inkjet ${paperSize}`}
+                                </p>
                             </div>
                         </div>
-                        <p className="ps-preview-label">
-                            Pratinjau format {printerSize === '58mm' ? 'Thermal 58mm' : printerSize === '80mm' ? 'Thermal 80mm' : printerSize === 'lx310' ? 'Dot Matrix' : `Inkjet ${paperSize}`}
-                        </p>
                     </div>
                 </div>
             )}
 
             {/* Activity Log */}
             {activeTab === 'log' && (
-                <div className="card">
-                    <div className="card-header"><h3><FiEdit /> Log Aktivitas </h3></div>
-                    <div style={{ overflow: 'auto', maxHeight: '500px' }}>
-                        <table className="data-table">
-                            <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Detail</th></tr></thead>
-                            <tbody>
-                                {activityLog.map(l => (
-                                    <tr key={l.id}><td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(l.timestamp)}</td><td>{l.userName}</td><td><span className="badge badge-info">{l.action}</span></td><td>{l.detail}</td></tr>
-                                ))}
-                                {activityLog.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada aktivitas</td></tr>}
-                            </tbody>
-                        </table>
+                <div className="space-y-6 pb-12">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                    <FiActivity size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800 dark:text-white">Log Aktivitas Sistem</h3>
+                                    <p className="text-[10px] text-slate-500 font-medium">Rekaman jejak aktivitas admin dan kasir</p>
+                                </div>
+                            </div>
+                            <div className="flex w-full md:w-auto gap-3">
+                                <span className="text-sm text-slate-500">Halaman <span className="font-bold text-slate-800 dark:text-slate-200">{logPage}</span> dari <span className="font-bold text-slate-800 dark:text-slate-200">{totalLogPages || 1}</span></span>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse min-w-[800px]">
+                                <thead>
+                                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Waktu</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">User</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Aksi</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Detail</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                    {activityLog.map(l => (
+                                        <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
+                                                {formatDateTime(l.timestamp)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase tracking-tighter">
+                                                        {(l.userName || 'AD').substring(0, 2)}
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{l.userName}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${l.action?.includes('Tambah') || l.action?.includes('Simpan') ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
+                                                    l.action?.includes('Update') || l.action?.includes('Edit') ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
+                                                        l.action?.includes('Hapus') || l.action?.includes('Restore') ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
+                                                            'bg-slate-100 text-slate-600 dark:bg-slate-800'
+                                                    }`}>
+                                                    {l.action}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md truncate hover:whitespace-normal transition-all">
+                                                {l.detail}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {activityLog.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="py-24 text-center">
+                                                <FiClock size={48} className="mx-auto text-slate-200 dark:text-slate-800 mb-4" />
+                                                <p className="text-slate-400 font-medium">Belum ada aktivitas tercatat</p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="px-6 py-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/30 dark:bg-slate-800/10">
+                            <span className="text-sm text-slate-500">
+                                Halaman <span className="font-bold text-slate-800 dark:text-slate-200">{logPage}</span> dari <span className="font-bold text-slate-800 dark:text-slate-200">{totalLogPages || 1}</span>
+                            </span>
+                            <div className="flex gap-2">
+                                {[...Array(totalLogPages)].map((_, i) => {
+                                    const pageNum = i + 1;
+                                    const range = isMobile ? 1 : 2;
+                                    if (pageNum === 1 || pageNum === totalLogPages || (pageNum >= logPage - range && pageNum <= logPage + range)) {
+                                        return (
+                                            <button key={pageNum} onClick={() => setLogPage(pageNum)} className={`w-9 h-9 flex items-center justify-center rounded-xl text-xs font-bold transition-all ${logPage === pageNum
+                                                ? 'bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none'
+                                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700'
+                                                }`}>
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    } else if (pageNum === logPage - (range + 1) || pageNum === logPage + (range + 1)) {
+                                        return <span key={pageNum} className="text-slate-400 px-1 self-end mb-2">...</span>;
+                                    }
+                                    return null;
+                                })}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Backup & Restore */}
             {activeTab === 'backup' && (
-                <div>
-                    <div className="dashboard-grid">
-                        <div className="card">
-                            <div className="card-header"><h3><FiSave /> Backup Data</h3></div>
-                            <div className="card-body">
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Export seluruh data POS ke file JSON. Simpan file ini sebagai backup.</p>
-                                <button className="btn btn-primary btn-block" onClick={handleBackup}><FiDownload /> Download Backup</button>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6 shadow-sm border border-blue-50 dark:border-blue-800/50 mx-auto md:mx-0">
+                            <FiSave size={28} />
                         </div>
-                        <div className="card">
-                            <div className="card-header"><h3><FiUpload /> Restore Data</h3></div>
-                            <div className="card-body">
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>Import data dari file backup JSON. Data saat ini akan ditimpa.</p>
-                                <label className="btn btn-warning btn-block" style={{ textAlign: 'center' }}>
-                                    <FiFolder /> Pilih File Backup
-                                    <input type="file" accept=".json" onChange={handleRestore} style={{ display: 'none' }} />
-                                </label>
-                            </div>
-                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pencadangan Data</h3>
+                        <p className="text-slate-500 text-sm mb-8 leading-relaxed">Ekspor seluruh data POS (Harga, Log, Member, Transaksi) ke file JSON yang aman.</p>
+                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={handleBackup}>
+                            <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
+                        </button>
                     </div>
-                    <div className="card" style={{ marginTop: '16px' }}>
-                        <div className="card-header"><h3><FiAlertCircle /> Reset Data</h3></div>
-                        <div className="card-body">
-                            <p style={{ fontSize: '0.85rem', color: 'var(--danger)', marginBottom: '16px' }}>Hapus semua data dan kembalikan ke data awal (demo). Tindakan ini tidak dapat dibatalkan!</p>
-                            <button className="btn btn-danger" onClick={resetData}><FiTrash2 /> Reset Semua Data</button>
+
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                        <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 mb-6 shadow-sm border border-orange-50 dark:border-orange-800/50 mx-auto md:mx-0">
+                            <FiUpload size={28} />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pemulihan Data</h3>
+                        <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup JSON sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
+                        <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl cursor-pointer transition-all border border-slate-200 dark:border-slate-700">
+                            <FiFolder /> Pilih File Backup
+                            <input type="file" accept=".json" onChange={handleRestore} className="hidden" />
+                        </label>
+                    </div>
+
+                    <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 p-8">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4 text-center md:text-left">
+                                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 flex-shrink-0 mx-auto md:mx-0">
+                                    <FiAlertCircle size={24} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-red-800 dark:text-red-400">Reset Data Pabrik</h4>
+                                    <p className="text-sm text-red-700/70 dark:text-red-400/70">Hapus semua data transaksi dan pengaturan kembali ke awal.</p>
+                                </div>
+                            </div>
+                            <button className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 dark:shadow-none" onClick={resetData}>
+                                <FiTrash2 className="inline mr-2" /> Reset Sekarang
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* User Form Modal */}
-            <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? <><FiEdit /> Edit User</> : <><FiPlus /> User Baru</>}>
-                <div className="form-group"><label className="form-label">Nama</label><input className="form-input" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Username</label><input className="form-input" value={userForm.username} onChange={e => setUserForm(f => ({ ...f, username: e.target.value }))} /></div>
-                <div className="form-group"><label className="form-label">Password {editUser && '(kosongkan jika tidak diubah)'}</label><input className="form-input" type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} /></div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label className="form-label">Role</label>
-                        <select className="form-select" value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}>
-                            <option value="admin">Admin</option>
-                            <option value="kasir">Kasir</option>
-                            <option value="operator"><FiPrinter /> Operator</option>
-                            <option value="teknisi"><FiTool /> Teknisi</option>
-                        </select>
+            <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiEdit className="text-blue-500" /> Edit Pengguna</div> : <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiPlus className="text-blue-500" /> Tambah User Baru</div>}>
+                <div className="space-y-5 py-2">
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lengkap</label>
+                        <div className="relative">
+                            <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Masukkan nama lengkap" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} />
+                        </div>
                     </div>
-                    <div className="form-group">
-                        <label className="form-label">Status</label>
-                        <select className="form-select" value={userForm.isActive} onChange={e => setUserForm(f => ({ ...f, isActive: e.target.value === 'true' }))}>
-                            <option value="true">Aktif</option>
-                            <option value="false">Nonaktif</option>
-                        </select>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Username</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
+                            <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="username" value={userForm.username} onChange={e => setUserForm(f => ({ ...f, username: e.target.value }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Password {editUser && '(opsional)'}</label>
+                        <div className="relative">
+                            <FiPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" type="password" placeholder={editUser ? "Kosongkan jika tidak diubah" : "••••••••"} value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Role Akses</label>
+                            <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}>
+                                <option value="admin">Admin</option>
+                                <option value="kasir">Kasir</option>
+                                <option value="operator">Operator</option>
+                                <option value="teknisi">Teknisi</option>
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Status Akun</label>
+                            <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.isActive} onChange={e => setUserForm(f => ({ ...f, isActive: e.target.value === 'true' }))}>
+                                <option value="true">Aktif</option>
+                                <option value="false">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="pt-4">
+                        <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center justify-center gap-2 group" onClick={handleSaveUser}>
+                            <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Konfigurasi User
+                        </button>
                     </div>
                 </div>
-                <button className="btn btn-primary btn-block" onClick={handleSaveUser}><FiSave /> Simpan</button>
             </Modal>
         </div>
     );

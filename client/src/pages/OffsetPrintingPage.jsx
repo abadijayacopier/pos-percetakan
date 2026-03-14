@@ -1,8 +1,28 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
+import {
+    FiPrinter,
+    FiClock,
+    FiPlay,
+    FiPause,
+    FiRefreshCw,
+    FiLayers,
+    FiUsers,
+    FiEye,
+    FiSearch,
+    FiChevronLeft,
+    FiChevronRight,
+    FiFileText,
+    FiPlusCircle,
+    FiCalculator,
+    FiTag,
+    FiCalendar,
+    FiPackage
+} from 'react-icons/fi';
+
+const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
 export default function OffsetPrintingPage({ onNavigate }) {
-
     // Backend Data States
     const [products, setProducts] = useState([]);
     const [customers, setCustomers] = useState([]);
@@ -16,11 +36,14 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const [selectedSize, setSelectedSize] = useState('A4');
     const [selectedMaterial, setSelectedMaterial] = useState('HVS 80gr');
 
+    // Pagination
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 10;
+
     // UI Styles helpers
     const SIZES = ['A4', 'A5', 'A6', 'Custom'];
     const MATERIALS = ['HVS 80gr', 'Art Paper 150gr', 'Art Carton 260gr', 'NCR Paper'];
 
-    // Kalkulator States
     // Result States
     const [subtotal, setSubtotal] = useState(0);
     const [tax, setTax] = useState(0);
@@ -124,7 +147,6 @@ export default function OffsetPrintingPage({ onNavigate }) {
             const res = await api.post('/spk', payload);
 
             if (res.data && res.data.id) {
-                // Success: reset timer and navigate
                 setDesignSeconds(0);
                 setDesignRunning(false);
                 onNavigate('spk-detail', { spkId: res.data.id });
@@ -138,83 +160,90 @@ export default function OffsetPrintingPage({ onNavigate }) {
     };
 
     return (
-        <div className="p-8">
-            {/* Header Area */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
+            {/* Header */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
                 <div>
-                    <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Manajemen Cetak Offset</h1>
-                    <p className="text-slate-500 mt-1 text-sm">Kalkulasi biaya produksi dan pengelolaan pesanan offset skala besar.</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <span className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-100 dark:shadow-none"><FiPrinter /></span>
+                        Manajemen Cetak Offset
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Large Format Production & SPK Pipeline Manager</p>
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex items-center gap-6 shadow-sm min-w-[320px]">
-                    <div className="flex items-center gap-3">
-                        <div className={`size-10 ${designRunning ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-600'} rounded-full flex items-center justify-center transition-colors`}>
-                            <span className="material-symbols-outlined">timer</span>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">
+                    {/* Timer UI */}
+                    <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-6 py-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm w-full sm:w-auto group">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-2xl transition-all duration-500 ${designRunning ? 'bg-orange-500 text-white animate-pulse' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600'}`}>
+                                <FiClock size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Durasi Desain</p>
+                                <p className="text-xl font-mono font-black text-slate-900 dark:text-white tracking-tighter">{formatTime(designSeconds)}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Waktu Desain</p>
-                            <p className="text-xl font-mono font-bold text-slate-800 dark:text-slate-100">{formatTime(designSeconds)}</p>
+                        <div className="h-10 w-px bg-slate-100 dark:bg-slate-800 mx-2"></div>
+                        <div className="flex-1 min-w-[120px]">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Estimasi Biaya</p>
+                            <p className="text-lg font-black text-orange-600 tracking-tighter italic">{fmt(biayaDesain)}</p>
+                        </div>
+
+                        <div className="flex gap-1.5 ml-2">
+                            {designRunning ? (
+                                <button onClick={() => setDesignRunning(false)} className="size-10 bg-slate-900 dark:bg-slate-800 text-white rounded-xl flex items-center justify-center hover:bg-black transition-all shadow-md active:scale-95">
+                                    <FiPause />
+                                </button>
+                            ) : (
+                                <button onClick={() => setDesignRunning(true)} className="size-10 bg-orange-600 text-white rounded-xl flex items-center justify-center hover:bg-orange-700 transition-all shadow-lg shadow-orange-200 dark:shadow-none active:scale-95">
+                                    <FiPlay />
+                                </button>
+                            )}
+                            {designSeconds > 0 && !designRunning && (
+                                <button onClick={() => { setDesignSeconds(0); setDesignRunning(false); }} className="size-10 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-xl flex items-center justify-center hover:text-rose-600 transition-all active:scale-95">
+                                    <FiRefreshCw />
+                                </button>
+                            )}
                         </div>
                     </div>
-                    <div className="h-10 w-px bg-slate-100 dark:bg-slate-800"></div>
-                    <div className="flex-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estimasi Biaya</p>
-                        <p className="text-lg font-bold text-orange-600 flex items-center gap-1">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(biayaDesain)}
-                        </p>
-                    </div>
-
-                    {designRunning ? (
-                        <button onClick={() => setDesignRunning(false)} className="bg-slate-800 dark:bg-slate-700 text-white p-2 rounded-lg hover:bg-slate-700 transition-colors flex items-center shadow-lg cursor-pointer">
-                            <span className="material-symbols-outlined">stop</span>
-                        </button>
-                    ) : (
-                        <button onClick={() => setDesignRunning(true)} className="bg-primary text-white p-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center shadow-lg shadow-primary/20 cursor-pointer">
-                            <span className="material-symbols-outlined">play_arrow</span>
-                        </button>
-                    )}
-
-                    {designSeconds > 0 && !designRunning && (
-                        <button onClick={() => { setDesignSeconds(0); setDesignRunning(false); }} className="p-2 text-slate-400 hover:text-red-500 transition-colors cursor-pointer" title="Reset Timer">
-                            <span className="material-symbols-outlined">refresh</span>
-                        </button>
-                    )}
                 </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-                {/* Left Column Section */}
-                <div className="xl:col-span-8 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div className="lg:col-span-8 space-y-8">
                     {/* Catalog Section */}
                     <section>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">category</span>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span className="p-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-lg"><FiLayers /></span>
                                 Katalog Produk Offset
                             </h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {products.length === 0 ? (
-                                <div className="col-span-full py-12 text-center text-slate-400">
-                                    <span className="material-symbols-outlined text-4xl mb-2">inventory_2</span>
-                                    <p>Belum ada produk offset di katalog.</p>
+                                <div className="col-span-full py-16 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-slate-400">
+                                    <FiPackage size={48} className="mx-auto mb-4 opacity-20" />
+                                    <p className="text-xs font-black uppercase tracking-widest">Belum ada produk offset</p>
                                 </div>
                             ) : products.map(p => (
                                 <div
                                     key={p.id}
                                     onClick={() => setSelectedProduct(p)}
-                                    className={`bg-white dark:bg-slate-900 border rounded-2xl p-5 hover:border-primary/50 transition-all cursor-pointer group shadow-sm flex flex-col ${selectedProduct?.id === p.id ? 'border-primary ring-1 ring-primary/20' : 'border-slate-200 dark:border-slate-800'}`}
+                                    className={`relative group bg-white dark:bg-slate-900 border rounded-3xl p-6 transition-all duration-300 cursor-pointer overflow-hidden ${selectedProduct?.id === p.id ? 'border-indigo-600 ring-4 ring-indigo-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'}`}
                                 >
-                                    <div className={`size-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${p.is_best_seller ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-500' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-500'}`}>
-                                        <span className="material-symbols-outlined !text-3xl">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-12 -mt-12 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                    <div className={`size-14 rounded-2xl flex items-center justify-center mb-5 transition-all transform group-hover:scale-110 shadow-sm ${p.is_best_seller ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600'}`}>
+                                        <span className="material-symbols-outlined !text-2xl">
                                             {p.nama_produk.toLowerCase().includes('nota') ? 'receipt_long' : p.nama_produk.toLowerCase().includes('kalender') ? 'calendar_month' : 'menu_book'}
                                         </span>
                                     </div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white capitalize">{p.nama_produk}</h3>
-                                    <p className="text-xs text-slate-500 mt-1 mb-4 leading-relaxed">Produk unggulan dengan kualitas cetak premium.</p>
-                                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50 dark:border-slate-800/50">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Mulai Dari</span>
-                                        <span className="text-sm font-bold text-primary">Rp {p.harga_base.toLocaleString('id-ID')}/{p.satuan}</span>
+                                    <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-sm mb-1">{p.nama_produk}</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic opacity-75">Premium Printing Solution</p>
+
+                                    <div className="mt-8 pt-4 border-t border-slate-50 dark:border-slate-800/50 flex items-center justify-between">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Mulai Dari</span>
+                                        <span className="text-sm font-black text-indigo-600 italic tracking-tighter">{fmt(p.harga_base)}</span>
                                     </div>
                                 </div>
                             ))}
@@ -222,60 +251,63 @@ export default function OffsetPrintingPage({ onNavigate }) {
                     </section>
 
                     {/* Active Orders Section */}
-                    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Pesanan Offset Berjalan</h2>
+                    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-lg"><FiFileText /></span>
+                                Pesanan Offset Berjalan
+                            </h2>
                             <button
                                 onClick={fetchOffsetData}
-                                className="text-primary text-xs font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                                className="group p-2.5 bg-white dark:bg-slate-800 text-slate-400 hover:text-indigo-600 rounded-xl border border-slate-100 dark:border-slate-700 transition-all shadow-sm"
                             >
-                                REFRESH <span className="material-symbols-outlined !text-sm">refresh</span>
+                                <FiRefreshCw className="group-hover:rotate-180 transition-transform duration-500" />
                             </button>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th className="px-6 py-3">Produk</th>
-                                        <th className="px-6 py-3">Pelanggan</th>
-                                        <th className="px-6 py-3">Jumlah</th>
-                                        <th className="px-6 py-3">Status</th>
-                                        <th className="px-6 py-3 text-right">Aksi</th>
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-left">
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Order & SPK</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pelanggan</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kuantitas</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                     {loading ? (
-                                        <tr><td colSpan="5" className="py-12 text-center text-slate-400">Memuat data...</td></tr>
+                                        <tr><td colSpan="5" className="py-20 text-center"><span className="animate-spin inline-block text-indigo-600"><FiRefreshCw size={24} /></span></td></tr>
                                     ) : activeOrders.length === 0 ? (
-                                        <tr><td colSpan="5" className="py-12 text-center text-slate-400">Tidak ada pesanan offset yang berjalan.</td></tr>
-                                    ) : activeOrders.map(o => (
-                                        <tr key={o.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors text-sm">
+                                        <tr><td colSpan="5" className="py-20 text-center text-slate-400 text-xs font-black uppercase tracking-widest">Belum ada pesanan aktif</td></tr>
+                                    ) : activeOrders.slice((page - 1) * itemsPerPage, page * itemsPerPage).map((o, i) => (
+                                        <tr key={i} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div>
-                                                    <p className="font-bold text-slate-800 dark:text-white">{o.product_name}</p>
-                                                    <p className="text-xs text-slate-400">{o.spk_number}</p>
+                                                    <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{o.product_name}</p>
+                                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest opacity-75">{o.spk_number}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">
+                                            <td className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-300 uppercase italic">
                                                 {o.customer_name}
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                                                {o.product_qty} {o.product_unit}
+                                            <td className="px-6 py-4 text-xs font-black text-slate-900 dark:text-white">
+                                                {o.product_qty} <span className="text-[10px] font-bold text-slate-400 italic">/{o.product_unit}</span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-[10px] font-black ${o.status === 'Selesai' ? 'bg-green-100 text-green-700' :
-                                                    o.status === 'Produksi' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-slate-100 text-slate-700'
+                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${o.status === 'Selesai' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
+                                                    o.status === 'Produksi' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
+                                                        'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                                                     }`}>
-                                                    {o.status.toUpperCase()}
+                                                    {o.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={() => onNavigate('spk-detail', { spkId: o.id })}
-                                                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-primary transition-all cursor-pointer"
+                                                    className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl transition-all shadow-sm group-hover:shadow"
                                                 >
-                                                    <span className="material-symbols-outlined !text-xl">visibility</span>
+                                                    <FiEye />
                                                 </button>
                                             </td>
                                         </tr>
@@ -283,100 +315,154 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* Pagination */}
+                        {activeOrders.length > itemsPerPage && (
+                            <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    Displaying {Math.min(activeOrders.length, (page - 1) * itemsPerPage + 1)}-{Math.min(activeOrders.length, page * itemsPerPage)} of {activeOrders.length}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        disabled={page === 1}
+                                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                                    >
+                                        <FiChevronLeft size={18} />
+                                    </button>
+                                    <span className="text-xs font-black px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl min-w-[70px] text-center shadow-sm">
+                                        {page} / {Math.ceil(activeOrders.length / itemsPerPage)}
+                                    </span>
+                                    <button
+                                        onClick={() => setPage(p => Math.min(Math.ceil(activeOrders.length / itemsPerPage), p + 1))}
+                                        disabled={page === Math.ceil(activeOrders.length / itemsPerPage)}
+                                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
+                                    >
+                                        <FiChevronRight size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </section>
                 </div>
 
-                {/* Right Column Section - Calculator */}
-                <div className="xl:col-span-4">
-                    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 sticky top-24">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold flex items-center gap-2 dark:text-white">
-                                <span className="material-symbols-outlined text-primary">calculate</span>
+                <div className="lg:col-span-4 space-y-8">
+                    {/* Calculator Section */}
+                    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+
+                        <div className="flex items-center justify-between mb-8 relative z-10">
+                            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
+                                <span className="p-2 bg-primary/10 text-primary rounded-lg"><FiCalculator /></span>
                                 Estimasi Biaya
                             </h2>
-                            <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded-lg">CALC v2.1</span>
                         </div>
-                        <form className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pelanggan</label>
-                                <select
-                                    value={selectedCustomer || ''}
-                                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                                    className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary text-sm py-2.5 mb-4"
-                                >
-                                    <option value="">Pelanggan Umum</option>
-                                    {customers.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
 
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Pilih Produk</label>
-                                <select
-                                    value={selectedProduct?.id || ''}
-                                    onChange={(e) => {
-                                        const p = products.find(p => p.id === parseInt(e.target.value));
-                                        setSelectedProduct(p);
-                                    }}
-                                    className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary text-sm py-2.5"
-                                >
-                                    {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.nama_produk}</option>
-                                    ))}
-                                </select>
+                        <form className="space-y-6 relative z-10" onSubmit={e => e.preventDefault()}>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pelanggan</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <FiUsers size={14} />
+                                    </div>
+                                    <select
+                                        value={selectedCustomer || ''}
+                                        onChange={(e) => setSelectedCustomer(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Pelanggan Umum</option>
+                                        {customers.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Produk Terpilih</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                        <FiTag size={14} />
+                                    </div>
+                                    <select
+                                        value={selectedProduct?.id || ''}
+                                        onChange={(e) => {
+                                            const p = products.find(p => p.id === parseInt(e.target.value));
+                                            setSelectedProduct(p);
+                                        }}
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
+                                    >
+                                        {products.map(p => (
+                                            <option key={p.id} value={p.id}>{p.nama_produk}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Jumlah</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kuantitas</label>
                                     <input
                                         type="number"
                                         min="1"
                                         value={quantity}
                                         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                        className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary text-sm"
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-sm font-black focus:ring-2 focus:ring-primary/20 transition-all"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Ukuran</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ukuran</label>
                                     <select
                                         value={selectedSize}
                                         onChange={(e) => setSelectedSize(e.target.value)}
-                                        className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary text-sm"
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
                                     >
                                         {SIZES.map(s => <option key={s}>{s}</option>)}
                                     </select>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Bahan Kertas</label>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Material Kertas</label>
                                 <select
                                     value={selectedMaterial}
                                     onChange={(e) => setSelectedMaterial(e.target.value)}
-                                    className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary text-sm"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
                                 >
                                     {MATERIALS.map(m => <option key={m}>{m}</option>)}
                                 </select>
                             </div>
-                            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm text-slate-500">Subtotal</span>
-                                    <span className="text-sm font-semibold dark:text-white">Rp {Math.round(subtotal).toLocaleString('id-ID')}</span>
+
+                            <div className="pt-6 border-t border-slate-50 dark:border-slate-800 space-y-3">
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                    <span>Subtotal Produksi</span>
+                                    <span className="dark:text-white uppercase tracking-tighter">{fmt(subtotal)}</span>
                                 </div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className="text-sm text-slate-500">Estimasi Pajak (11%)</span>
-                                    <span className="text-sm font-semibold dark:text-white">Rp {Math.round(tax).toLocaleString('id-ID')}</span>
+                                <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                    <span>Pajak (PPN 11%)</span>
+                                    <span className="dark:text-white uppercase tracking-tighter">{fmt(tax)}</span>
                                 </div>
-                                <div className="bg-primary/5 rounded-xl p-4 flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Total Estimasi Biaya</span>
-                                    <span className="text-2xl font-black text-primary">Rp {Math.round(total + biayaDesain).toLocaleString('id-ID')}</span>
+
+                                <div className="mt-6 p-6 bg-slate-900 rounded-3xl shadow-xl shadow-slate-200 dark:shadow-none relative overflow-hidden group/total">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 relative z-10">Grand Total Estimasi</p>
+                                    <div className="flex justify-between items-end relative z-10">
+                                        <h4 className="text-2xl font-black text-primary italic tracking-tighter">
+                                            {fmt(total + biayaDesain)}
+                                        </h4>
+                                        <div className="p-2 bg-primary/20 text-primary rounded-xl">
+                                            <FiPlusCircle size={18} />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
                             <button
                                 onClick={handleBuatPesanan}
-                                type="button"
-                                className="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 cursor-pointer mt-2"
+                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] mt-4"
                             >
-                                <span className="material-symbols-outlined">add_circle</span>
-                                Buat Pesanan Baru
+                                <span className="material-symbols-outlined !text-xl">add_task</span>
+                                Terbitkan SPK Baru
                             </button>
                         </form>
                     </section>
@@ -384,14 +470,20 @@ export default function OffsetPrintingPage({ onNavigate }) {
             </div>
 
             {/* Footer */}
-            <footer className="mt-12 py-8 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-xs text-slate-400">© 2024 PrintManager - Sistem Manajemen Percetakan Offset Terpadu</p>
-                    <div className="flex gap-6 text-xs font-semibold text-slate-400 uppercase">
-                        <a className="hover:text-primary transition-colors cursor-pointer" href="#">Panduan Pengguna</a>
-                        <a className="hover:text-primary transition-colors cursor-pointer" href="#">Support</a>
-                        <a className="hover:text-primary transition-colors cursor-pointer" href="#">Privasi</a>
+            <footer className="mt-12 py-10 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-8">
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="size-6 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+                            <FiPrinter size={12} />
+                        </div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">PrintManager PRO</span>
                     </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic leading-relaxed">Enterprise Printing Workflow System — © 2024</p>
+                </div>
+                <div className="flex gap-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <a className="hover:text-indigo-600 transition-colors" href="#">System Status</a>
+                    <a className="hover:text-indigo-600 transition-colors" href="#">Documentation</a>
+                    <a className="hover:text-indigo-600 transition-colors" href="#">Internal Audit</a>
                 </div>
             </footer>
         </div>

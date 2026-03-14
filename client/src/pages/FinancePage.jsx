@@ -61,220 +61,296 @@ export default function FinancePage() {
     const handleTab = (v) => { setActiveTab(v); setPage(1); };
 
     return (
-        <div style={{ padding: '24px 28px', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <style>{CSS}</style>
-
-            <div className="fin-header">
+        <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                 <div>
-                    <h1 className="fin-title"><FiDollarSign /> Kas & Keuangan</h1>
-                    <p className="fin-sub">Jurnal umum, kas masuk & keluar</p>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                        <span className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-200 dark:shadow-none"><FiDollarSign /></span>
+                        Kas & Keuangan
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1">Jurnal umum, kas masuk & keluar</p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <button className="fin-btn-success" onClick={() => openAdd('in')}><FiArrowDownCircle /> Kas Masuk</button>
-                    <button className="fin-btn-danger" onClick={() => openAdd('out')}><FiArrowUpCircle /> Kas Keluar</button>
-                </div>
-            </div>
-
-            {/* Stats */}
-            <div className="fin-stats">
-                <div className="fin-stat-card">
-                    <div className="fin-stat-icon" style={{ background: '#d1fae5', color: '#10b981' }}><FiTrendingUp /></div>
-                    <div><p className="fin-stat-label">Kas Masuk</p><p className="fin-stat-value" style={{ color: '#10b981' }}>{formatRupiah(totalIn)}</p></div>
-                </div>
-                <div className="fin-stat-card">
-                    <div className="fin-stat-icon" style={{ background: '#fee2e2', color: '#ef4444' }}><FiTrendingDown /></div>
-                    <div><p className="fin-stat-label">Kas Keluar</p><p className="fin-stat-value" style={{ color: '#ef4444' }}>{formatRupiah(totalOut)}</p></div>
-                </div>
-                <div className="fin-stat-card">
-                    <div className="fin-stat-icon" style={{ background: '#dbeafe', color: '#3b82f6' }}><FiDollarSign /></div>
-                    <div><p className="fin-stat-label">Saldo</p><p className="fin-stat-value" style={{ color: saldo >= 0 ? '#10b981' : '#ef4444' }}>{formatRupiah(saldo)}</p></div>
-                </div>
-                <div className="fin-stat-card">
-                    <div className="fin-stat-icon" style={{ background: '#ede9fe', color: '#8b5cf6' }}><FiBookOpen /></div>
-                    <div><p className="fin-stat-label">Total Entri</p><p className="fin-stat-value" style={{ color: '#8b5cf6' }}>{cashFlow.length}</p></div>
+                <div className="flex w-full sm:w-auto gap-3">
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-100 dark:shadow-none" onClick={() => openAdd('in')}>
+                        <FiArrowDownCircle /> Kas Masuk
+                    </button>
+                    <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-rose-100 dark:shadow-none" onClick={() => openAdd('out')}>
+                        <FiArrowUpCircle /> Kas Keluar
+                    </button>
                 </div>
             </div>
 
-            {/* Tabs & Search */}
-            <div className="fin-card">
-                <div className="fin-filter-bar">
-                    <div className="fin-tabs">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                    { label: 'Kas Masuk', value: totalIn, icon: <FiTrendingUp />, color: 'emerald', tag: 'Total In' },
+                    { label: 'Kas Keluar', value: totalOut, icon: <FiTrendingDown />, color: 'rose', tag: 'Total Out' },
+                    { label: 'Saldo Akhir', value: saldo, icon: <FiDollarSign />, color: saldo >= 0 ? 'blue' : 'orange', tag: 'Balance' },
+                    { label: 'Total Entri', value: cashFlow.length, icon: <FiBookOpen />, color: 'purple', tag: 'Journal', isCount: true },
+                ].map(s => (
+                    <div key={s.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 bg-${s.color}-100 dark:bg-${s.color}-900/30 text-${s.color}-600 dark:text-${s.color}-400 rounded-xl`}>
+                                {s.icon}
+                            </div>
+                            <span className={`text-[9px] font-black px-2 py-1 rounded bg-${s.color}-50 dark:bg-${s.color}-900/20 text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-widest`}>
+                                {s.tag}
+                            </span>
+                        </div>
+                        <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-[0.15em]">{s.label}</p>
+                        <h3 className={`text-xl font-black mt-1 ${s.isCount ? 'text-slate-900 dark:text-white' : (s.color === 'emerald' ? 'text-emerald-600' : s.color === 'rose' ? 'text-rose-600' : 'text-slate-900 dark:text-white')}`}>
+                            {s.isCount ? s.value : formatRupiah(s.value)}
+                        </h3>
+                    </div>
+                ))}
+            </div>
+
+            {/* Main Content Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
+                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm w-full lg:w-auto overflow-x-auto no-scrollbar">
                         {[
-                            { key: 'journal', label: 'Jurnal Umum', icon: <FiBookOpen size={14} /> },
-                            { key: 'in', label: 'Kas Masuk', icon: <FiArrowDownCircle size={14} /> },
-                            { key: 'out', label: 'Kas Keluar', icon: <FiArrowUpCircle size={14} /> },
+                            { key: 'journal', label: 'Jurnal Umum', icon: <FiBookOpen /> },
+                            { key: 'in', label: 'Kas Masuk', icon: <FiArrowDownCircle /> },
+                            { key: 'out', label: 'Kas Keluar', icon: <FiArrowUpCircle /> },
                         ].map(t => (
-                            <button key={t.key} className={`fin-tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => handleTab(t.key)}>{t.icon} {t.label}</button>
+                            <button
+                                key={t.key}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === t.key
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 dark:shadow-none'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                                    }`}
+                                onClick={() => handleTab(t.key)}
+                            >
+                                {t.icon} {t.label}
+                            </button>
                         ))}
                     </div>
-                    <div className="fin-search-wrap">
-                        <FiSearch className="fin-search-icon" />
-                        <input className="fin-search" placeholder="Cari deskripsi / kategori..." value={search} onChange={e => handleSearch(e.target.value)} />
+
+                    <div className="relative w-full lg:w-96 group">
+                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input
+                            className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all dark:text-white"
+                            placeholder="Cari deskripsi / kategori..."
+                            value={search}
+                            onChange={e => handleSearch(e.target.value)}
+                        />
                     </div>
                 </div>
 
-                {paginated.length === 0 ? (
-                    <div className="fin-empty"><FiBookOpen size={48} /><p>Belum ada entri jurnal.</p></div>
-                ) : (
-                    <div className="fin-table-wrap">
-                        <table className="fin-table">
-                            <thead><tr>
-                                <th>Tanggal</th><th>Deskripsi</th><th>Kategori</th><th>Referensi</th><th>Debit</th><th>Kredit</th><th style={{ textAlign: 'right' }}>Aksi</th>
-                            </tr></thead>
-                            <tbody>
+                <div className="flex-1 overflow-x-auto">
+                    {paginated.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-32 text-slate-300 dark:text-slate-700">
+                            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-full mb-4">
+                                <FiBookOpen size={48} className="opacity-20" />
+                            </div>
+                            <p className="text-sm font-black uppercase tracking-[0.2em]">Belum ada data jurnal</p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50/50 dark:bg-slate-800/30">
+                                <tr>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tanggal</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Keterangan</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Kategori</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Referasi</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Debit (In)</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Kredit (Out)</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                                 {paginated.map(c => (
-                                    <tr key={c.id} className="fin-tr">
-                                        <td style={{ fontSize: '.82rem', whiteSpace: 'nowrap' }}>{formatDate(c.date || c.createdAt)}</td>
-                                        <td style={{ fontWeight: 600 }}>{c.description}</td>
-                                        <td><span className={`fin-badge ${c.type}`}>{c.category || c.type === 'in' ? 'Masuk' : 'Keluar'}</span></td>
-                                        <td style={{ fontSize: '.8rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.reference || '-'}</td>
-                                        <td style={{ fontWeight: 700, color: c.type === 'in' ? '#10b981' : 'var(--text-muted)' }}>{c.type === 'in' ? formatRupiah(c.amount) : '-'}</td>
-                                        <td style={{ fontWeight: 700, color: c.type === 'out' ? '#ef4444' : 'var(--text-muted)' }}>{c.type === 'out' ? formatRupiah(c.amount) : '-'}</td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                                                <button className="fin-action-btn" onClick={() => openEdit(c)}><FiEdit size={15} /></button>
-                                                <button className="fin-action-btn del" onClick={() => setConfirmDelete(c)}><FiTrash2 size={15} /></button>
+                                    <tr key={c.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-all">
+                                        <td className="px-8 py-5">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tighter">
+                                                    {formatDate(c.date || c.createdAt)}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                                                    {new Date(c.date || c.createdAt).getFullYear()}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-relaxed max-w-sm">
+                                                {c.description}
+                                            </p>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${c.type === 'in'
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800'
+                                                : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800'
+                                                }`}>
+                                                {c.category || (c.type === 'in' ? 'Masuk' : 'Keluar')}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                                {c.reference || '---'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className={`text-sm font-black tracking-tighter ${c.type === 'in' ? 'text-emerald-600' : 'text-slate-300 dark:text-slate-700'}`}>
+                                                {c.type === 'in' ? formatRupiah(c.amount) : '---'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <span className={`text-sm font-black tracking-tighter ${c.type === 'out' ? 'text-rose-600' : 'text-slate-300 dark:text-slate-700'}`}>
+                                                {c.type === 'out' ? formatRupiah(c.amount) : '---'}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-0 translate-x-4">
+                                                <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all" onClick={() => openEdit(c)}>
+                                                    <FiEdit size={16} />
+                                                </button>
+                                                <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all" onClick={() => setConfirmDelete(c)}>
+                                                    <FiTrash2 size={16} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                    </div>
-                )}
+                    )}
+                </div>
 
+                {/* Pagination Footer */}
                 {filtered.length > PER_PAGE && (
-                    <div className="fin-pagination">
-                        <span className="fin-page-info">Menampilkan {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} dari {filtered.length}</span>
-                        <div className="fin-page-btns">
-                            <button className="fin-page-btn" disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FiChevronLeft size={16} /> Prev</button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                                <button key={n} className={`fin-page-num ${page === n ? 'active' : ''}`} onClick={() => setPage(n)}>{n}</button>
-                            ))}
-                            <button className="fin-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next <FiChevronRight size={16} /></button>
+                    <div className="px-8 py-6 border-t border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-6 bg-slate-50/20">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                            Entri <span className="text-slate-900 dark:text-white">{(page - 1) * PER_PAGE + 1}</span> sampai <span className="text-slate-900 dark:text-white">{Math.min(page * PER_PAGE, filtered.length)}</span> dari <span className="text-slate-900 dark:text-white">{filtered.length}</span>
+                        </p>
+                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage(p => p - 1)}
+                                className="p-2 hover:bg-white dark:hover:bg-slate-900 rounded-xl disabled:opacity-30 transition-all shadow-sm group"
+                            >
+                                <FiChevronLeft size={18} className="group-active:-translate-x-1 transition-transform" />
+                            </button>
+                            <div className="flex gap-1 px-2">
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    let pageNum = page;
+                                    if (totalPages <= 5) pageNum = i + 1;
+                                    else if (page <= 3) pageNum = i + 1;
+                                    else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+                                    else pageNum = page - 2 + i;
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            className={`w-9 h-9 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${page === pageNum
+                                                ? 'bg-white dark:bg-slate-900 text-blue-600 shadow-sm border border-slate-200 dark:border-slate-700'
+                                                : 'text-slate-400 hover:text-slate-600'
+                                                }`}
+                                            onClick={() => setPage(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <button
+                                disabled={page >= totalPages}
+                                onClick={() => setPage(p => p + 1)}
+                                className="p-2 hover:bg-white dark:hover:bg-slate-900 rounded-xl disabled:opacity-30 transition-all shadow-sm group"
+                            >
+                                <FiChevronRight size={18} className="group-active:translate-x-1 transition-transform" />
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Add/Edit Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Entri Kas' : `Tambah Kas ${form.type === 'in' ? 'Masuk' : 'Keluar'}`} footer={
-                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <button className="fin-btn-ghost" onClick={() => setShowModal(false)}><FiX /> Batal</button>
-                    <button className="fin-btn-primary" onClick={handleSave}><FiSave /> Simpan</button>
+            {/* Form Modal */}
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={
+                <div className="flex items-center gap-2 text-slate-800 dark:text-white">
+                    {editItem ? <FiEdit className="text-blue-500" /> : <FiPlus className="text-emerald-500" />}
+                    {editItem ? 'Edit Entri Kas' : 'Tambah Arus Kas Baru'}
                 </div>
             }>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div className="fin-form-row">
-                        <div className="fin-form-group">
-                            <label className="fin-label">Tanggal</label>
-                            <input className="fin-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
+                <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tanggal</label>
+                            <div className="relative">
+                                <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                <input className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
+                            </div>
                         </div>
-                        <div className="fin-form-group">
-                            <label className="fin-label">Tipe</label>
-                            <select className="fin-input" value={form.type} onChange={e => set('type', e.target.value)}>
-                                <option value="in">Kas Masuk</option>
-                                <option value="out">Kas Keluar</option>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jenis Kas</label>
+                            <select className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={form.type} onChange={e => set('type', e.target.value)}>
+                                <option value="in">Kas Masuk (Debit)</option>
+                                <option value="out">Kas Keluar (Kredit)</option>
                             </select>
                         </div>
                     </div>
-                    <div className="fin-form-group">
-                        <label className="fin-label">Deskripsi *</label>
-                        <input className="fin-input" placeholder="Penjualan fotocopy 500 lembar" value={form.description} onChange={e => set('description', e.target.value)} />
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Keterangan / Deskripsi *</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Contoh: Penjualan ATK atau Bayar Listrik" value={form.description} onChange={e => set('description', e.target.value)} />
                     </div>
-                    <div className="fin-form-row">
-                        <div className="fin-form-group">
-                            <label className="fin-label">Jumlah (Rp) *</label>
-                            <input className="fin-input" type="number" min="0" placeholder="150000" value={form.amount} onChange={e => set('amount', e.target.value)} />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jumlah (Rp) *</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs">Rp</span>
+                                <input className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-black shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" type="number" min="0" placeholder="0" value={form.amount} onChange={e => set('amount', e.target.value)} />
+                            </div>
                         </div>
-                        <div className="fin-form-group">
-                            <label className="fin-label">Kategori</label>
-                            <select className="fin-input" value={form.category} onChange={e => set('category', e.target.value)}>
-                                <option value="">-- Pilih --</option>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kategori</label>
+                            <select className="w-full px-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={form.category} onChange={e => set('category', e.target.value)}>
+                                <option value="">-- Pilih Kategori --</option>
                                 {(form.type === 'in' ? CATEGORIES_IN : CATEGORIES_OUT).map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
                     </div>
-                    <div className="fin-form-group">
-                        <label className="fin-label">Referensi / No. Bukti</label>
-                        <input className="fin-input" placeholder="INV-001 (opsional)" value={form.reference} onChange={e => set('reference', e.target.value)} />
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">No. Referensi / Bukti (Opsional)</label>
+                        <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white font-mono" placeholder="INV-2024-001" value={form.reference} onChange={e => set('reference', e.target.value)} />
+                    </div>
+
+                    <div className="pt-6 flex gap-3">
+                        <button className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-2xl transition-all uppercase tracking-widest text-[11px]" onClick={() => setShowModal(false)}>
+                            Batal
+                        </button>
+                        <button className="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-3 uppercase tracking-widest text-[11px] group" onClick={handleSave}>
+                            <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Entri Kas
+                        </button>
                     </div>
                 </div>
             </Modal>
 
-            {/* Delete */}
-            <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Hapus Entri" footer={
-                <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                    <button className="fin-btn-ghost" onClick={() => setConfirmDelete(null)}>Batal</button>
-                    <button className="fin-btn-del" onClick={() => handleDelete(confirmDelete.id)}><FiTrash2 /> Hapus</button>
+            {/* Confirm Delete Modal */}
+            <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title={<div className="flex items-center gap-2 text-rose-600"><FiTrash2 /> Hapus Entri Kas</div>}>
+                <div className="p-4 text-center">
+                    <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <FiTrash2 size={40} />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Konfirmasi Hapus</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
+                        Yakin ingin menghapus entri <span className="font-black text-slate-900 dark:text-white uppercase">"{confirmDelete?.description}"</span>?<br />
+                        Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                    <div className="flex gap-4">
+                        <button className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-2xl transition-all uppercase tracking-widest text-[11px]" onClick={() => setConfirmDelete(null)}>
+                            Batal
+                        </button>
+                        <button className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-rose-100 dark:shadow-none uppercase tracking-widest text-[11px]" onClick={() => handleDelete(confirmDelete.id)}>
+                            Ya, Hapus
+                        </button>
+                    </div>
                 </div>
-            }>
-                <p>Yakin ingin menghapus entri <strong>{confirmDelete?.description}</strong>?</p>
             </Modal>
         </div>
     );
 }
 
-const CSS = `
-.fin-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.fin-title { font-size:1.4rem; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; color:var(--text-primary); }
-.fin-sub { color:var(--text-secondary); margin:4px 0 0; font-size:.875rem; }
-.fin-btn-success { display:flex; align-items:center; gap:6px; background:#10b981; color:#fff; font-weight:700; font-size:.82rem; padding:9px 16px; border-radius:10px; border:none; cursor:pointer; transition:all .15s; }
-.fin-btn-success:hover { background:#059669; }
-.fin-btn-danger { display:flex; align-items:center; gap:6px; background:#ef4444; color:#fff; font-weight:700; font-size:.82rem; padding:9px 16px; border-radius:10px; border:none; cursor:pointer; transition:all .15s; }
-.fin-btn-danger:hover { background:#dc2626; }
-.fin-btn-primary { display:flex; align-items:center; gap:6px; background:#3b82f6; color:#fff; font-weight:700; font-size:.875rem; padding:10px 20px; border-radius:10px; border:none; cursor:pointer; flex:1; justify-content:center; }
-.fin-btn-ghost { display:flex; align-items:center; gap:6px; background:var(--bg-input); color:var(--text-secondary); font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:1px solid var(--border); cursor:pointer; flex:1; justify-content:center; }
-.fin-btn-del { display:flex; align-items:center; gap:6px; background:#ef4444; color:#fff; font-weight:700; font-size:.875rem; padding:9px 16px; border-radius:9px; border:none; cursor:pointer; flex:1; justify-content:center; }
-
-.fin-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
-@media(max-width:900px){ .fin-stats { grid-template-columns:repeat(2,1fr); } }
-@media(max-width:500px){ .fin-stats { grid-template-columns:1fr; } }
-.fin-stat-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:18px; display:flex; align-items:center; gap:14px; }
-.fin-stat-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2rem; }
-.fin-stat-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin:0 0 3px; text-transform:uppercase; letter-spacing:.04em; }
-.fin-stat-value { font-size:1.2rem; font-weight:900; margin:0; }
-
-.fin-card { background:var(--bg-secondary); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-.fin-filter-bar { display:flex; align-items:center; gap:14px; padding:16px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.fin-tabs { display:flex; gap:6px; }
-.fin-tab { padding:7px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:5px; white-space:nowrap; }
-.fin-tab:hover { border-color:#3b82f6; color:#3b82f6; }
-.fin-tab.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-.fin-search-wrap { position:relative; flex:1; min-width:160px; }
-.fin-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; }
-.fin-search { width:100%; padding:8px 12px 8px 36px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); }
-.fin-search:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-.fin-empty { padding:48px; text-align:center; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:8px; }
-.fin-table-wrap { overflow-x:auto; }
-.fin-table { width:100%; border-collapse:collapse; text-align:left; }
-.fin-table thead tr { background:var(--bg-input); }
-.fin-table th { padding:11px 18px; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); white-space:nowrap; }
-.fin-tr { border-top:1px solid var(--border); transition:background .1s; }
-.fin-tr:hover { background:var(--bg-card-hover); }
-.fin-table td { padding:12px 18px; vertical-align:middle; }
-.fin-badge { padding:3px 9px; font-size:.68rem; font-weight:700; border-radius:9999px; white-space:nowrap; }
-.fin-badge.in { background:#d1fae5; color:#059669; }
-.fin-badge.out { background:#fee2e2; color:#dc2626; }
-.fin-action-btn { background:none; border:none; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; padding:6px; border-radius:7px; transition:all .15s; }
-.fin-action-btn:hover { color:#3b82f6; background:rgba(59,130,246,.1); }
-.fin-action-btn.del:hover { color:#ef4444; background:rgba(239,68,68,.1); }
-
-.fin-form-row { display:flex; gap:12px; }
-@media(max-width:500px){ .fin-form-row { flex-direction:column; } }
-.fin-form-group { display:flex; flex-direction:column; flex:1; }
-.fin-label { display:block; font-size:.77rem; font-weight:600; color:var(--text-secondary); margin-bottom:5px; }
-.fin-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:.875rem; outline:none; background:var(--bg-input); color:var(--text-primary); box-sizing:border-box; }
-.fin-input:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
-select.fin-input { appearance:auto; }
-
-.fin-pagination { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border); flex-wrap:wrap; gap:10px; }
-.fin-page-info { font-size:.78rem; color:var(--text-muted); font-weight:600; }
-.fin-page-btns { display:flex; align-items:center; gap:4px; }
-.fin-page-btn { display:flex; align-items:center; gap:4px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:600; color:var(--text-secondary); cursor:pointer; transition:all .15s; }
-.fin-page-btn:hover:not(:disabled) { border-color:#3b82f6; color:#3b82f6; }
-.fin-page-btn:disabled { opacity:.4; cursor:not-allowed; }
-.fin-page-num { width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); font-size:.78rem; font-weight:700; color:var(--text-secondary); cursor:pointer; }
-.fin-page-num:hover { border-color:#3b82f6; color:#3b82f6; }
-.fin-page-num.active { background:#3b82f6; color:#fff; border-color:#3b82f6; }
-`;
+const CSS = ``;

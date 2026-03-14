@@ -23,6 +23,18 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [bindingPrices, setBindingPrices] = useState([]);
     const [printPrices, setPrintPrices] = useState([]);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Customer States
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+    const [manualCustomerName, setManualCustomerName] = useState('');
+
+    // Clock Effect
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     // Update isMobile on resize
     useEffect(() => {
@@ -58,6 +70,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     // Search Input Ref for F5 focus
     const searchInputRef = useRef(null);
+    const barcodeBuffer = useRef('');
+    const lastKeyTime = useRef(Date.now());
 
     // Initial Data Loading
     useEffect(() => {
@@ -65,6 +79,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setProducts(db.getAll('products'));
         setBindingPrices(db.getAll('binding_prices'));
         setPrintPrices(db.getAll('print_prices'));
+        setCustomers(db.getAll('customers'));
         api.get('/transactions/fotocopy-prices')
             .then(res => setFotocopyPrices(res.data))
             .catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
@@ -108,27 +123,71 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     const fcTotal = useMemo(() => fcPrice * fcQty, [fcPrice, fcQty]);
 
-    // Full Screen Handler with F11 (Ported from PosPage)
+    // Barcode & Global Shortcut Listener
     useEffect(() => {
-        const handleF11 = (e) => {
+        const handleKeyPress = (e) => {
+            // F8 (Drawer) and F11 (Fullscreen) should work even inside inputs in some cases, 
+            // but usually we prevent them if an input is focused to avoid accidental triggers.
+            // However, F11 is a system key.
+            if (e.key === 'F8') {
+                e.preventDefault();
+                openCashDrawer();
+                return;
+            }
             if (e.key === 'F11') {
                 e.preventDefault();
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(err => console.log(err));
-                } else {
-                    document.exitFullscreen().catch(err => console.log(err));
+                toggleFullScreen();
+                return;
+            }
+
+            // Ignore barcode logic if in input/textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            const now = Date.now();
+            if (now - lastKeyTime.current > 100) {
+                barcodeBuffer.current = '';
+            }
+            lastKeyTime.current = now;
+
+            if (e.key === 'Enter') {
+                if (barcodeBuffer.current.length > 3) {
+                    const code = barcodeBuffer.current;
+                    const product = products.find(p => p.code === code);
+                    if (product) {
+                        addToCart(product);
+                        showToast(`Ditambahkan: ${product.name}`, 'success');
+                    } else {
+                        showToast(`Produk dengan kode ${code} tidak ditemukan`, 'warning');
+                    }
+                    barcodeBuffer.current = '';
                 }
+            } else if (e.key.length === 1) {
+                barcodeBuffer.current += e.key;
             }
         };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [products, printerSettings]); // Added printerSettings to ensure openCashDrawer has latest state
+
+    // Full Screen Toggle Function
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => console.log(err));
+        } else {
+            document.exitFullscreen().catch(err => console.log(err));
+        }
+    };
+
+    // Full Screen Change Listener
+    useEffect(() => {
         const handleFsChange = () => {
             if (onFullscreenChange) onFullscreenChange(!!document.fullscreenElement);
         };
-        document.addEventListener('keydown', handleF11);
         document.addEventListener('fullscreenchange', handleFsChange);
-        return () => {
-            document.removeEventListener('keydown', handleF11);
-            document.removeEventListener('fullscreenchange', handleFsChange);
-        };
+        return () => document.removeEventListener('fullscreenchange', handleFsChange);
     }, [onFullscreenChange]);
 
     // Handle incoming items from other pages (e.g. Design Finalization)
@@ -174,7 +233,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }).filter(item => item.quantity > 0));
     };
 
-    const removeAll = () => setCart([]);
+    const removeAll = () => {
+        setCart([]);
+        setSelectedCustomerId(null);
+        setManualCustomerName('');
+    };
 
     // Modal Handlers
     const toggleDiscountModal = () => setDiscountModalOpen(!isDiscountModalOpen);
@@ -264,10 +327,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : total;
 
+        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+
         const transaction = {
             id: `TRX-${Date.now()}`,
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
+            customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
+            customerName: customerName,
             items: cart,
             subtotal,
             discount: globalDiscount,
@@ -295,18 +363,44 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         if (printerSettings.autoPrint && !isMobile) {
             handleDirectPrint(transaction);
         }
+
+        // Open Cash Drawer on Cash Payment
+        if (paymentMethod === 'tunai') {
+            openCashDrawer();
+        }
+    };
+
+    const openCashDrawer = async () => {
+        if (!printerSettings.printerName) {
+            showToast('Printer belum diatur di Pengaturan', 'warning');
+            return;
+        }
+        try {
+            await api.post('/print/open-drawer', { printerName: printerSettings.printerName });
+            showToast('Laci uang dibuka', 'success');
+        } catch (err) {
+            console.error('Drawer error:', err);
+            // Non-critical error, just log
+        }
     };
 
     const saveQueue = () => {
         if (cart.length === 0) return;
+        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+
         const queueItem = {
             id: `Q-${Date.now()}`,
+            customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
+            customerName: customerName,
+            title: cart.map(i => i.name).join(', ').substring(0, 50) + (cart.length > 1 ? '...' : ''),
             items: cart,
-            status: 'pending',
+            status: 'produksi',
+            type: 'digital',
             createdAt: new Date().toISOString()
         };
-        db.insert('production_queue', queueItem);
-        alert('Tugas disimpan ke antrean produksi.');
+        db.insert('dp_tasks', queueItem);
+        showToast('Tugas disimpan ke antrean produksi.', 'success');
         setCart([]);
     };
 
@@ -318,6 +412,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         'F1': () => setActiveServiceTab('fotocopy'),
         'F2': () => setActiveServiceTab('jilid'),
         'F3': () => setActiveServiceTab('print'),
+        // F8 & F11 are now handled in the global window listener for better reliability
         'F5': () => searchInputRef.current?.focus(),
         'F9': () => toggleDiscountModal(),
         'F10': () => openPayment(),
@@ -345,19 +440,30 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     <div className="flex items-center justify-center size-10 md:size-12 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
                         <span className="material-symbols-outlined text-2xl md:text-3xl">point_of_sale</span>
                     </div>
-                    <h1 className="text-xl md:text-2xl font-black leading-tight tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 dark:from-white dark:via-slate-200 dark:to-slate-400">Kasir Terpadu</h1>
+                    <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight whitespace-nowrap text-slate-900 dark:text-white">
+                        Kasir <span className="text-primary">Terpadu</span>
+                    </h1>
                 </div>
 
-                <nav className="hidden md:flex flex-1 justify-center gap-12">
+                <nav className="hidden md:flex flex-1 justify-center gap-8 items-center">
                     <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-primary font-semibold border-b-2 border-primary pb-1">
                         <span className="material-symbols-outlined">home</span> Beranda
                     </button>
-                    <button className="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-medium hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined">analytics</span> Laporan
-                    </button>
-                    <button className="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-medium hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined">settings</span> Pengaturan
-                    </button>
+                    <div className="flex items-center gap-6 px-6 py-2 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-2 text-slate-500">
+                            <span className="material-symbols-outlined text-sm">calendar_today</span>
+                            <span className="text-[11px] font-black uppercase tracking-wider">
+                                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </span>
+                        </div>
+                        <div className="w-[1px] h-4 bg-slate-200 dark:bg-slate-700"></div>
+                        <div className="flex items-center gap-2 text-primary">
+                            <span className="material-symbols-outlined text-sm">schedule</span>
+                            <span className="text-sm font-black tracking-widest leading-none">
+                                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                        </div>
+                    </div>
                 </nav>
 
                 <div className="flex items-center gap-3">
@@ -374,6 +480,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     </button>
                     <div className="flex gap-2">
                         <ThemeToggle className="hidden sm:flex" />
+                        <button
+                            onClick={openCashDrawer}
+                            title="Buka Laci (F8)"
+                            className="hidden sm:flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all shadow-sm group"
+                        >
+                            <span className="material-symbols-outlined text-xl group-active:scale-95">inbox</span>
+                        </button>
                         <button className="hidden sm:flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
                             <FiBell />
                         </button>
@@ -595,18 +708,59 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                 {/* Right Side: Cart Summary */}
                 <aside className={`fixed lg:relative top-0 right-0 h-full lg:h-auto w-[85vw] max-w-[400px] lg:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl z-50 transition-transform duration-300 transform ${isMobile && !isCartOpen ? 'translate-x-full' : 'translate-x-0'}`}>
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-bold">Ringkasan</h2>
-                            <div className="text-xs text-slate-500">Order ID: #INV-{new Date().toISOString().slice(0, 10).replace(/-/g, '')}-001</div>
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold">Ringkasan</h2>
+                                <div className="text-xs text-slate-500">Order ID: #INV-{new Date().toISOString().slice(0, 10).replace(/-/g, '')}-001</div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={removeAll} className="size-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                                    <FiTrash2 size={20} />
+                                </button>
+                                <button onClick={() => setIsCartOpen(false)} className="lg:hidden size-10 flex items-center justify-center text-slate-400 hover:text-primary bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={removeAll} className="size-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
-                                <FiTrash2 size={20} />
-                            </button>
-                            <button onClick={() => setIsCartOpen(false)} className="lg:hidden size-10 flex items-center justify-center text-slate-400 hover:text-primary bg-slate-100 dark:bg-slate-800 rounded-lg">
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
+
+                        {/* Customer Selection */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Pelanggan</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                                    <FiUser size={16} />
+                                </div>
+                                <select
+                                    value={selectedCustomerId || ''}
+                                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 focus:border-primary text-sm font-bold appearance-none outline-none transition-all cursor-pointer"
+                                >
+                                    <option value="">Umum / Tanpa Nama</option>
+                                    <option value="manual">+ Input Manual / Baru</option>
+                                    <optgroup label="Daftar Pelanggan">
+                                        {customers.map(c => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                    <span className="material-symbols-outlined text-sm">expand_more</span>
+                                </div>
+                            </div>
+
+                            {selectedCustomerId === 'manual' && (
+                                <div className="animate-in slide-in-from-top-2 duration-300">
+                                    <input
+                                        type="text"
+                                        placeholder="Ketik nama pelanggan..."
+                                        value={manualCustomerName}
+                                        onChange={(e) => setManualCustomerName(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-primary/30 bg-primary/5 focus:border-primary text-sm font-bold outline-none transition-all"
+                                        autoFocus
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -773,10 +927,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-500 uppercase tracking-wider">Jumlah Tunai (Bayar)</label>
                                 <input
-                                    type="number"
-                                    value={amountPaid}
-                                    onChange={e => setAmountPaid(e.target.value)}
-                                    placeholder="0"
+                                    type="text"
+                                    value={amountPaid ? 'Rp ' + Number(amountPaid).toLocaleString('id-ID') : ''}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setAmountPaid(val);
+                                    }}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            const totalDue = subtotal - globalDiscount;
+                                            if ((parseFloat(amountPaid) || 0) >= totalDue) {
+                                                handleConfirmPayment();
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Rp 0"
                                     className="w-full p-4 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-2xl font-black text-center bg-white dark:bg-slate-900 focus:border-primary outline-none transition-all"
                                     autoFocus
                                 />
@@ -817,9 +982,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         { k: 'F2', l: 'Jilid' },
                         { k: 'F3', l: 'PRINT' },
                         { k: 'F5', l: 'Cari ATK' },
+                        { k: 'F8', l: 'Laci' },
                         { k: 'F9', l: 'Diskon' },
                         { k: 'F10', l: 'Bayar' },
-                        { k: 'F12', l: 'Simpan Antrean' },
+                        { k: 'F11', l: 'Layar Penuh' },
+                        { k: 'F12', l: 'Simpan' },
                         { k: 'ESC', l: 'Batal' }
                     ].map(s => (
                         <span key={s.k} className="text-[10px] font-medium">

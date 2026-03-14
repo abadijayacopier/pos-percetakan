@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    --lp-primary: #137fec;
+    --lp-primary: var(--primary, #137fec);
     --lp-secondary: #0f172a;
-    --lp-accent: #8b5cf6;
+    --lp-accent: var(--accent, #8b5cf6);
     --lp-text: #1e293b;
     --lp-text-muted: #64748b;
     --lp-bg: #ffffff;
@@ -48,12 +48,18 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 5%;
+    background: transparent;
+    border-bottom: 1px solid transparent;
+    z-index: 1000;
+    transition: 0.3s ease;
+}
+
+.lp-nav.scrolled {
     background: var(--lp-glass);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--lp-border);
-    z-index: 1000;
-    transition: 0.3s ease;
+    height: 70px;
 }
 
 .lp-logo {
@@ -425,7 +431,12 @@
     }
 
     .lp-hero h1 {
-        font-size: 2.8rem;
+        font-size: 3rem;
+        margin-bottom: 20px;
+    }
+
+    .lp-hero p {
+        font-size: 1.25rem;
     }
 
     .lp-hero-ctas {
@@ -457,13 +468,14 @@
     }
 
     .lp-hero h1 {
-        font-size: 2.2rem;
+        font-size: 2.4rem;
     }
 
     .lp-price-grid {
         grid-template-columns: 1fr;
     }
 }
+
 /* --- Price List --- */
 .lp-price-grid {
     display: grid;
@@ -568,6 +580,7 @@
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    line-clamp: 2;
 }
 
 .lp-product-footer {
@@ -735,4 +748,3 @@
     color: var(--lp-text-muted);
     line-height: 1.6;
 }
-

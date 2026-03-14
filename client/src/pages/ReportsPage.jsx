@@ -56,7 +56,7 @@ export default function ReportsPage() {
     const paymentBreakdown = useMemo(() => {
         const map = {};
         transactions.forEach(t => {
-            const m = t.paymentType || 'tunai';
+            const m = t.paymentType || t.paymentMethod || 'tunai';
             map[m] = (map[m] || 0) + (t.total || 0);
         });
         return Object.entries(map).map(([method, amount]) => ({ method, amount }));
@@ -85,7 +85,7 @@ export default function ReportsPage() {
             'Pelanggan': t.customerName || 'Umum',
             'Tipe': t.type,
             'Total': t.total,
-            'Pembayaran': t.paymentType,
+            'Pembayaran': t.paymentType || t.paymentMethod,
             'Kasir': t.userName,
         }));
         exportCSV(data, 'laporan_penjualan', ['No Invoice', 'Tanggal', 'Pelanggan', 'Tipe', 'Total', 'Pembayaran', 'Kasir']);
@@ -213,7 +213,7 @@ export default function ReportsPage() {
                                                 <td style={{ fontWeight: 600 }}>{t.customerName || 'Umum'}</td>
                                                 <td><span className="rpt-badge">{t.type}</span></td>
                                                 <td style={{ fontWeight: 700, color: '#10b981' }}>{formatRupiah(t.total)}</td>
-                                                <td style={{ textTransform: 'capitalize', fontSize: '.85rem' }}>{t.paymentType}</td>
+                                                <td style={{ textTransform: 'capitalize', fontSize: '.85rem' }}>{t.paymentType || t.paymentMethod}</td>
                                                 <td style={{ fontSize: '.85rem', color: 'var(--text-secondary)' }}>{t.userName}</td>
                                             </tr>
                                         ))}

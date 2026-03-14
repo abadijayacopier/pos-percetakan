@@ -35,6 +35,7 @@ import PrintReceiptPage from './pages/PrintReceiptPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
+import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
 import LandingPage from './pages/LandingPage';
 
 export default function App() {
@@ -352,6 +353,7 @@ export default function App() {
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
       case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-warranty-sticker': return <ServiceWarrantyStickerPage onNavigate={handleNavigate} pageState={pageState} />;
       default: return <DashboardPage onNavigate={handleNavigate} />;
     }
   };

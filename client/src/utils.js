@@ -64,7 +64,6 @@ export const isToday = (dateStr) => {
 export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => {
   // Lebar area konten (karakter) sesuai tipe printer
   // LX-310 12cm: 36 char + margin 2 spasi
-  // Inkjet/Laser: 60 char (Courier New 10pt, margin dihandle PrintDocument)
   const W = printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : printerType === '80mm' ? 42 : 32;
   const MARGIN = printerType === 'lx310' ? '  ' : ''; // 2 spasi margin kiri hanya untuk LX-310
   const isLx310OrInkjet = printerType === 'lx310' || printerType === 'inkjet';
@@ -81,7 +80,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => 
   const lines = [];
 
   // === Header Toko (center) ===
-  lines.push(center(storeInfo.name.toUpperCase()));
+  lines.push(center((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase()));
   if (storeInfo.address) lines.push(center(storeInfo.address));
   if (storeInfo.phone) lines.push(center('Telp: ' + storeInfo.phone));
 
@@ -95,8 +94,8 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => 
   }
 
   // === Info Transaksi ===
-  lines.push(`No      : ${receipt.invoiceNo}`);
-  lines.push(`Tanggal : ${formatDateTime(receipt.date)}`);
+  lines.push(`No      : ${receipt.invoiceNo || '-'}`);
+  lines.push(`Tanggal : ${formatDateTime(receipt.date || new Date())}`);
   lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
   if (receipt.customerName && receipt.customerName !== 'Umum') {
     lines.push(`Customer: ${receipt.customerName}`);
@@ -104,23 +103,35 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => 
   lines.push('-'.repeat(W));
 
   // === Items ===
-  receipt.items.forEach(item => {
-    lines.push(item.name.substring(0, W));
-    lines.push(rightAlign(`  ${item.qty}x ${formatRupiah(item.price)}`, formatRupiah(item.subtotal)));
+  const items = receipt.items || [];
+  items.forEach(item => {
+    const qty = item.qty ?? item.quantity ?? 1;
+    const price = item.price ?? item.sellPrice ?? 0;
+    const subtotal = item.subtotal ?? (qty * price);
+
+    lines.push((item.name || 'Item').substring(0, W));
+    lines.push(rightAlign(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
   });
   lines.push('-'.repeat(W));
 
   // === Totals ===
-  if (receipt.discount > 0) {
-    lines.push(rightAlign('Subtotal :', formatRupiah(receipt.subtotal)));
-    lines.push(rightAlign('Diskon   :', '-' + formatRupiah(receipt.discount)));
+  const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
+  const discountTx = receipt.discount ?? 0;
+  const totalTx = receipt.total ?? (subtotalTx - discountTx);
+  const paidTx = receipt.paid ?? receipt.amountPaid ?? 0;
+  const changeTx = receipt.change ?? (paidTx - totalTx);
+  const paymentTypeTx = receipt.paymentType ?? receipt.paymentMethod ?? 'tunai';
+
+  if (discountTx > 0) {
+    lines.push(rightAlign('Subtotal :', formatRupiah(subtotalTx)));
+    lines.push(rightAlign('Diskon   :', '-' + formatRupiah(discountTx)));
   }
-  lines.push(rightAlign('TOTAL    :', formatRupiah(receipt.total)));
-  lines.push(rightAlign('BAYAR    :', formatRupiah(receipt.paid)));
-  if (receipt.change > 0) {
-    lines.push(rightAlign('KEMBALI  :', formatRupiah(receipt.change)));
+  lines.push(rightAlign('TOTAL    :', formatRupiah(totalTx)));
+  lines.push(rightAlign('BAYAR    :', formatRupiah(paidTx)));
+  if (changeTx > 0) {
+    lines.push(rightAlign('KEMBALI  :', formatRupiah(changeTx)));
   }
-  lines.push(rightAlign('Metode   :', (receipt.paymentType || 'tunai').toUpperCase()));
+  lines.push(rightAlign('Metode   :', paymentTypeTx.toUpperCase()));
 
   // === Footer ===
   lines.push('-'.repeat(W));
@@ -132,10 +143,10 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => 
   let text = lines.map(l => MARGIN + l).join('\n') + '\n';
 
   if (printerType === 'lx310') {
-    // Dot matrix continuous: feed 4 baris untuk spasi sobek (tanpa form feed)
+    // Dot matrix continuous: feed 15 baris untuk spasi sobek
     text += '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n';
   } else if (printerType === 'inkjet') {
-    // Inkjet/Laser: tidak perlu extra feed, PrintDocument handle page
+    // Inkjet/Laser: tidak perlu extra feed
   } else {
     // Thermal: feed lines agar bisa dipotong
     text += '\n\n\n';

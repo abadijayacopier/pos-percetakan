@@ -3,7 +3,7 @@ import {
     FiTool, FiPlus, FiSearch, FiFilter, FiCalendar, FiClock,
     FiCheckCircle, FiAlertCircle, FiChevronRight, FiMoreVertical,
     FiPrinter, FiEdit2, FiTrash2, FiUser, FiInfo, FiActivity,
-    FiSettings, FiBox, FiPhone, FiCreditCard
+    FiSettings, FiBox, FiPhone, FiCreditCard, FiShield
 } from 'react-icons/fi';
 import db from '../db';
 
@@ -294,6 +294,13 @@ export default function ServicePage({ onNavigate }) {
                                                 title="Cetak Invoice"
                                             >
                                                 <FiPrinter size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => onNavigate('print-warranty-sticker', { serviceId: srv.id })}
+                                                className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
+                                                title="Cetak Stiker Garansi"
+                                            >
+                                                <FiShield size={16} />
                                             </button>
                                             <button
                                                 className="p-2 bg-slate-100 dark:bg-slate-800 text-red-500 hover:bg-red-600 hover:text-white rounded-lg transition-all"

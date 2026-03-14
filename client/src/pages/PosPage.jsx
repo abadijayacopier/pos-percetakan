@@ -416,10 +416,18 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                         <label htmlFor="amountPaid" style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>Jumlah Bayar (Tunai)</label>
                         <input
                             id="amountPaid"
-                            type="number"
-                            value={amountPaid}
-                            onChange={e => setAmountPaid(e.target.value)}
-                            placeholder="e.g. 100000"
+                            type="text"
+                            value={amountPaid ? 'Rp ' + Number(amountPaid).toLocaleString('id-ID') : ''}
+                            onChange={e => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setAmountPaid(val);
+                            }}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && isPaymentValid) {
+                                    handleConfirmPayment();
+                                }
+                            }}
+                            placeholder="Rp 0"
                             style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '1.25rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
                         />
                     </div>

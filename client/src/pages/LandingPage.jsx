@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FiPrinter, FiCpu, FiFileText, FiLayers, FiImage, FiSettings, FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiArrowRight, FiCheckCircle, FiTag, FiDollarSign, FiMenu, FiX } from 'react-icons/fi';
 import './LandingPage.css';
 import db from '../db';
@@ -12,6 +12,7 @@ export default function LandingPage({ onNavigate }) {
     const [formSent, setFormSent] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState('All');
+    const containerRef = useRef(null);
     const [storeInfo, setStoreInfo] = useState({
         name: 'FOTOCOPY ABADI JAYA',
         address: 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur',
@@ -66,11 +67,18 @@ export default function LandingPage({ onNavigate }) {
             link.href = fav;
         }
 
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
+        const handleScroll = (e) => {
+            setScrolled(e.target.scrollTop > 20);
         };
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
+        const container = containerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+        };
     }, []);
 
     const handleApplyService = (e) => {
@@ -91,7 +99,8 @@ export default function LandingPage({ onNavigate }) {
     };
 
     const handleOrderProduct = (product) => {
-        const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${product.name}%0A- Harga: Rp ${product.sellingPrice.toLocaleString()}%0A%0AApakah stok masih tersedia?`;
+        const price = product.sellingPrice || product.sellPrice || 0;
+        const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${product.name}%0A- Harga: Rp ${price.toLocaleString()}%0A%0AApakah stok masih tersedia?`;
         const waUrl = `https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`;
         window.open(waUrl, '_blank');
     };
@@ -187,7 +196,7 @@ export default function LandingPage({ onNavigate }) {
         : featuredProducts.filter(p => (p.category === activeCategory) || (activeCategory === 'Lainnya' && !categories.includes(p.category)));
 
     return (
-        <div className="landing-page-root">
+        <div className="landing-page-root" ref={containerRef}>
             {/* Meta tags for SEO */}
             <div style={{ display: 'none' }}>
                 <h1>{storeInfo.name} - Fotocopy, Percetakan & Service Mesin Magetan</h1>

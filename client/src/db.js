@@ -7,8 +7,13 @@ const DB_PREFIX = 'pos_abadi_';
 
 const db = {
     getAll(table) {
-        const data = localStorage.getItem(DB_PREFIX + table);
-        return data ? JSON.parse(data) : [];
+        try {
+            const data = localStorage.getItem(DB_PREFIX + table);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error(`Error parsing table ${table}:`, e);
+            return [];
+        }
     },
 
     setAll(table, data) {
