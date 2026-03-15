@@ -4,7 +4,7 @@ import db from '../db';
 import seedData from '../seed';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile } from 'react-icons/fi';
+import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 
 export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     // Running Text State
@@ -358,31 +358,38 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     const renderPaymentModalContent = () => {
         if (transactionComplete) {
             return (
-                <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <FiCheckCircle size={64} color="#10b981" />
-                    <h3 style={{ fontSize: '1.5rem', marginTop: '16px' }}>Transaksi Berhasil!</h3>
-                    <p style={{ color: '#6b7280' }}>No. Invoice: {transactionComplete.invoiceNo}</p>
+                <div className="text-center p-8">
+                    <FiCheckCircle size={64} className="text-emerald-500 mx-auto" />
+                    <h3 className="text-2xl mt-4 font-bold text-slate-100">Transaksi Berhasil!</h3>
+                    <p className="text-slate-400 mt-2 text-[0.9rem]">No. Invoice: {transactionComplete.invoiceNo}</p>
 
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                    <div className="my-6 p-4 bg-white/3 rounded-xl border border-white/5">
+                        <div className="flex justify-between mb-2">
+                            <span className="text-slate-400">Total Tagihan</span>
+                            <span className="font-bold">{formatRupiah(transactionComplete.total)}</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                            <span className="text-slate-400">Jumlah Bayar</span>
+                            <span className="font-bold">{formatRupiah(transactionComplete.paid)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-dashed border-white/10 pt-2 mt-2">
+                            <span className="text-slate-400">Kembalian</span>
+                            <span className="font-extrabold text-blue-500 text-lg">{formatRupiah(transactionComplete.change)}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 mt-8">
                         <button
                             onClick={() => handlePrintReceipt(transactionComplete)}
-                            style={{
-                                flex: 1, background: 'var(--bg-input)', color: 'var(--text-primary)', border: '1px solid var(--border)',
-                                borderRadius: '6px', padding: '16px', fontSize: '1.05rem', fontWeight: 600,
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                            }}
+                            className="flex-1 p-4 bg-white/5 text-slate-100 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all duration-200"
                         >
                             <FiPrinter /> Cetak Nota
                         </button>
                         <button
                             onClick={closeAndResetModal}
-                            style={{
-                                flex: 1, background: '#3b82f6', color: 'white', border: 'none',
-                                borderRadius: '6px', padding: '16px', fontSize: '1.05rem', fontWeight: 600,
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                            }}
+                            className="flex-1 p-4 bg-blue-600 text-white border-none rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(37,99,235,0.3)] hover:brightness-110 transition-all duration-200"
                         >
-                            <FiCheckCircle /> Transaksi Baru
+                            <FiPlus /> Transaksi Baru
                         </button>
                     </div>
                 </div>
@@ -390,30 +397,30 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
         }
 
         return (
-            <div>
-                <div style={{ padding: '16px', backgroundColor: 'var(--bg-input)', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
-                    <p style={{ color: 'var(--text-secondary)' }}>Total Tagihan</p>
-                    <p style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--success)', margin: '8px 0' }}>{formatRupiah(cartTotal)}</p>
+            <div className="p-1">
+                <div className="p-6 bg-white/3 border border-white/5 rounded-2xl text-center mb-5">
+                    <p className="text-slate-400 text-[0.9rem] mb-1">Total Tagihan</p>
+                    <p className="text-4xl font-extrabold text-emerald-500">{formatRupiah(cartTotal)}</p>
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>Metode Pembayaran</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="mb-5">
+                    <label className="font-semibold block mb-3 text-[0.9rem] text-slate-400 uppercase tracking-tight">Metode Pembayaran</label>
+                    <div className="grid grid-cols-3 gap-2.5">
                         {['tunai', 'qris', 'kartu'].map(method => (
-                            <button key={method} onClick={() => setPaymentMethod(method)} style={{
-                                flex: 1, padding: '12px', borderRadius: '6px', cursor: 'pointer', textTransform: 'uppercase',
-                                border: paymentMethod === method ? '2px solid var(--success)' : '2px solid var(--border)',
-                                backgroundColor: paymentMethod === method ? 'var(--bg-glass)' : 'var(--bg-secondary)',
-                                color: paymentMethod === method ? 'var(--success)' : 'var(--text-primary)',
-                                fontWeight: 600
-                            }}>{method}</button>
+                            <button
+                                key={method}
+                                onClick={() => setPaymentMethod(method)}
+                                className={`p-3 rounded-xl cursor-pointer font-bold text-[0.85rem] uppercase transition-all duration-200 border-2 ${paymentMethod === method ? 'border-emerald-500 bg-emerald-500/10 text-emerald-500' : 'border-transparent bg-white/5 text-slate-400 hover:bg-white/10'}`}
+                            >
+                                {method}
+                            </button>
                         ))}
                     </div>
                 </div>
 
                 {paymentMethod === 'tunai' && (
-                    <div style={{ marginBottom: '16px' }}>
-                        <label htmlFor="amountPaid" style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>Jumlah Bayar (Tunai)</label>
+                    <div className="mb-5">
+                        <label htmlFor="amountPaid" className="font-semibold block mb-3 text-[0.9rem] text-slate-400 uppercase tracking-tight">Jumlah Bayar (Tunai)</label>
                         <input
                             id="amountPaid"
                             type="text"
@@ -428,21 +435,22 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                                 }
                             }}
                             placeholder="Rp 0"
-                            style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '1.25rem', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                            className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-2xl font-bold text-center transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white/8"
                         />
                     </div>
                 )}
 
                 {paymentMethod !== 'tunai' && (
-                    <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
-                        <p>Pembayaran dengan {paymentMethod.toUpperCase()} belum diimplementasikan sepenuhnya.</p>
-                        <p>Klik "Konfirmasi" untuk menyelesaikan transaksi.</p>
+                    <div className="p-6 text-center text-slate-400 bg-white/2 rounded-xl border border-dashed border-white/10 mb-5">
+                        <p>Pembayaran via {paymentMethod.toUpperCase()} akan segera hadir.</p>
+                        <p className="text-[0.85rem] mt-1">Klik "Konfirmasi" untuk melanjutkan.</p>
                     </div>
                 )}
 
                 {changeAmount > 0 && paymentMethod === 'tunai' && (
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600, textAlign: 'right', color: '#3b82f6' }}>
-                        Kembalian: {formatRupiah(changeAmount)}
+                    <div className="p-4 bg-blue-500/10 rounded-xl flex justify-between items-center border border-blue-500/20">
+                        <span className="text-blue-300 font-semibold text-[0.9rem]">Kembalian</span>
+                        <span className="text-2xl font-extrabold text-blue-500">{formatRupiah(changeAmount)}</span>
                     </div>
                 )}
             </div>
@@ -450,125 +458,51 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="flex flex-col h-screen bg-slate-950 text-slate-100 overflow-hidden">
             {isMobile && (
-                <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)' }}>
-                    <button onClick={() => onNavigate('dashboard')} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', padding: 0 }}>
+                <div className="p-3 px-4 flex items-center bg-slate-900 border-b border-white/5">
+                    <button onClick={() => onNavigate('dashboard')} className="bg-transparent border-none flex items-center gap-2 text-[0.95rem] font-semibold text-slate-100 cursor-pointer p-0">
                         <FiArrowLeft size={20} />
-                        Kembali ke Dashboard
+                        Beranda
                     </button>
                 </div>
             )}
-            {/* Running Text / Marquee */}
-            <style>{`
-                @keyframes marquee {
-                    0% { transform: translateX(100%); }
-                    100% { transform: translateX(-100%); }
-                }
-                .running-text {
-                    animation: marquee 150s linear infinite;
-                    white-space: nowrap;
-                    font-family: 'DS-Digital', 'Digital-7', 'Segment7', 'Courier New', monospace;
-                }
-            `}</style>
 
-            <div style={{
-                backgroundColor: '#000000',
-                color: '#ffffff',
-                padding: '14px 0',
-                overflow: 'hidden',
-                borderRadius: '8px',
-                marginBottom: '12px',
-                width: '100%',
-                maxWidth: '100%',
-                fontFamily: 'Arial, Helvetica, sans-serif'
-            }}>
-                <div className="running-text" style={{
-                    display: 'inline-block',
-                    paddingLeft: '100%',
-                    fontSize: '1.8rem',
-                    fontWeight: 'bold',
-                    letterSpacing: '3px'
-                }}>
-                    {runningText.repeat(10)}
+            {/* Running Text */}
+            <div className="bg-gradient-to-r from-slate-800 via-slate-950 to-slate-800 border-b border-blue-500/20 py-2.5 overflow-hidden relative">
+                <div className="inline-block whitespace-nowrap animate-marquee font-bold text-lg text-blue-400 tracking-wider uppercase">
+                    {runningText.repeat(5)}
                 </div>
             </div>
 
-            <div style={{ display: 'flex', flex: 1, padding: '12px', gap: '12px', backgroundColor: 'var(--bg-primary)', minHeight: 0 }}>
+            <div className="flex flex-1 p-4 gap-4 overflow-hidden lg:flex-row flex-col lg:p-4 p-3">
                 {/* Product/Service Area */}
                 {(!isMobile || activeTab !== 'cart') && (
-                    <div style={{ flex: 2, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+                    <div className="flex-[2] bg-slate-800/50 backdrop-blur-md border border-white/5 rounded-2xl p-5 flex flex-col min-w-0">
                         {/* Tab Navigation */}
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '2px solid var(--border)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                        <div className="flex gap-3 mb-5 pb-4 border-b border-white/5">
                             <button
                                 onClick={() => setActiveTab('products')}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    backgroundColor: activeTab === 'products' ? '#3b82f6' : 'var(--bg-input)',
-                                    color: activeTab === 'products' ? 'white' : 'var(--text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                }}
+                                className={`px-5 py-2.5 rounded-xl border-none cursor-pointer font-bold text-[0.9rem] flex items-center gap-2 transition-all duration-200 ${activeTab === 'products' ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                             >
                                 <FiBox size={18} />
-                                PRODUK
+                                Produk
                             </button>
                             <button
                                 onClick={() => setActiveTab('fotocopy')}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '6px',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    backgroundColor: activeTab === 'fotocopy' ? '#3b82f6' : 'var(--bg-input)',
-                                    color: activeTab === 'fotocopy' ? 'white' : 'var(--text-secondary)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                }}
+                                className={`px-5 py-2.5 rounded-xl border-none cursor-pointer font-bold text-[0.9rem] flex items-center gap-2 transition-all duration-200 ${activeTab === 'fotocopy' ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                             >
                                 <FiCopy size={18} />
-                                FOTOCOPY
+                                Fotocopy
                             </button>
                             {isMobile && (
                                 <button
                                     onClick={() => setActiveTab('cart')}
-                                    style={{
-                                        padding: '10px 20px',
-                                        borderRadius: '6px',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        backgroundColor: activeTab === 'cart' ? '#10b981' : 'var(--bg-input)',
-                                        color: activeTab === 'cart' ? 'white' : 'var(--text-secondary)',
-                                        position: 'relative',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center'
-                                    }}
+                                    className={`px-5 py-2.5 rounded-xl border-none cursor-pointer font-bold text-[0.9rem] flex items-center gap-2 transition-all duration-200 ml-auto relative ${activeTab === 'cart' ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                                 >
                                     <FiShoppingCart size={20} />
                                     {cart.length > 0 && (
-                                        <span style={{
-                                            position: 'absolute',
-                                            top: '-5px',
-                                            right: '-5px',
-                                            backgroundColor: '#ef4444',
-                                            color: 'white',
-                                            borderRadius: '50%',
-                                            width: '20px',
-                                            height: '20px',
-                                            fontSize: '0.75rem',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
+                                        <span className="absolute -top-1.25 -right-1.25 bg-red-500 text-white rounded-full w-4.5 h-4.5 text-[0.7rem] flex items-center justify-center">
                                             {cart.length}
                                         </span>
                                     )}
@@ -579,67 +513,63 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                         {/* Tab Content */}
                         {activeTab === 'products' && (
                             <>
-                                <h2 style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '16px' }}>Pilih Produk</h2>
-                                <input
-                                    type="text"
-                                    placeholder="Cari produk (nama/kode)..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    style={{ width: '100%', padding: '12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '1rem', marginBottom: '16px', backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
-                                />
-                                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
-                                        {filteredProducts.map(product => (
-                                            <div key={product.id} onClick={() => addToCart(product)} style={{
-                                                border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s', backgroundColor: 'var(--bg-card)',
-                                                opacity: product.stock > 0 ? 1 : 0.5, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center'
-                                            }}>
-                                                {product.stock === 0 && <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-15deg)', color: 'red', fontWeight: 'bold', fontSize: '1.2rem', background: 'rgba(255,255,255,0.7)', padding: '2px 8px', borderRadius: '4px', zIndex: 1 }}>HABIS</div>}
-                                                {product.image ? (
-                                                    <img src={product.image} alt={product.name} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px' }} />
-                                                ) : (
-                                                    <FiPackage size={48} color="#9ca3af" />
-                                                )}
-                                                <div style={{ fontWeight: 600, marginTop: '8px', minHeight: '40px', textAlign: 'center', fontSize: '0.9rem' }}>{product.name}</div>
-                                                <div style={{ color: 'var(--text-secondary)', textAlign: 'center', fontSize: '0.8rem' }}>Stok: {product.stock}</div>
-                                                <div style={{ color: '#10b981', fontWeight: 700, marginTop: '4px', textAlign: 'center' }}>{formatRupiah(product.sellPrice)}</div>
+                                <h2 className="font-bold text-xl mb-4">Pilih Produk</h2>
+                                <div className="mb-5">
+                                    <input
+                                        type="text"
+                                        placeholder="Cari produk (nama/kode)..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[0.95rem] transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white/8 focus:ring-4 focus:ring-blue-500/10"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 overflow-y-auto pr-1 hide-scrollbar">
+                                    {filteredProducts.map(product => (
+                                        <div
+                                            key={product.id}
+                                            onClick={() => addToCart(product)}
+                                            className={`bg-white/3 border border-white/5 rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 select-none flex flex-col items-center gap-2 hover:bg-white/8 hover:border-white/10 hover:-translate-y-0.5 active:translate-y-0 relative ${product.stock <= 0 ? 'opacity-50' : 'opacity-100'}`}
+                                        >
+                                            {product.stock === 0 && (
+                                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-15 text-red-500 font-bold text-lg bg-white/70 px-2 py-0.5 rounded z-10">
+                                                    HABIS
+                                                </div>
+                                            )}
+                                            {product.image ? (
+                                                <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-xl" />
+                                            ) : (
+                                                <div className="text-[40px] text-slate-500"><FiPackage /></div>
+                                            )}
+                                            <div className="font-semibold text-[0.85rem] text-slate-200 leading-snug h-8 line-clamp-2">
+                                                {product.name}
                                             </div>
-                                        ))}
-                                    </div>
+                                            <div className="text-slate-400 text-[0.75rem]">Stok: {product.stock}</div>
+                                            <div className="font-extrabold text-base text-emerald-400">
+                                                {formatRupiah(product.sellPrice)}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </>
                         )}
 
                         {activeTab === 'fotocopy' && (
                             <>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.1rem' }}><FiFile /></div>
-                                    <h2 style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--text-primary, #111827)', margin: 0 }}>Layanan Fotocopy</h2>
+                                <div className="flex items-center gap-2.5 mb-5">
+                                    <div className="bg-blue-600 w-9 h-9 rounded-lg flex items-center justify-center text-white"><FiFile /></div>
+                                    <h2 className="font-bold text-xl m-0 text-slate-100">Layanan Fotocopy</h2>
                                 </div>
-                                <div className="hide-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingBottom: '20px', paddingRight: '4px' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '500px', margin: '0 auto' }}>
-                                        {/* Paper Type Selection */}
+                                <div className="flex-1 overflow-y-auto pb-5 hide-scrollbar">
+                                    <div className="flex flex-col gap-5 max-w-6xl xl:max-w-7xl mx-auto">
+                                        {/* Paper Type */}
                                         <div>
-                                            <label style={{ fontWeight: 600, display: 'block', marginBottom: '10px', fontSize: '0.85rem', color: 'var(--text-secondary, #6b7280)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>Jenis Kertas</label>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                            <label className="font-semibold block mb-2.5 text-[0.85rem] text-slate-400 uppercase tracking-tight">Jenis Kertas</label>
+                                            <div className="flex gap-2">
                                                 {['HVS A4', 'HVS F4', 'HVS A3'].map(paper => (
                                                     <button
                                                         key={paper}
                                                         onClick={() => setFcPaper(paper)}
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: '12px 8px',
-                                                            borderRadius: '12px',
-                                                            border: fcPaper === paper ? '2px solid #6366f1' : '2px solid transparent',
-                                                            backgroundColor: fcPaper === paper ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-card, #f8fafc)',
-                                                            color: fcPaper === paper ? '#6366f1' : 'var(--text-primary, #374151)',
-                                                            fontWeight: 700,
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.9rem',
-                                                            wordBreak: 'break-word',
-                                                            transition: 'all 0.2s ease',
-                                                            boxShadow: fcPaper === paper ? '0 2px 12px rgba(99, 102, 241, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)'
-                                                        }}
+                                                        className={`flex-1 px-2 py-3 rounded-xl border-none cursor-pointer font-bold text-[0.9rem] flex items-center justify-center gap-2 transition-all duration-200 ${fcPaper === paper ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                                                     >
                                                         {paper}
                                                     </button>
@@ -647,89 +577,51 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                                             </div>
                                         </div>
 
-                                        {/* Color & Side Selection — compact row */}
-                                        <div style={{ display: 'flex', gap: '12px' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ fontWeight: 600, display: 'block', marginBottom: '10px', fontSize: '0.85rem', color: 'var(--text-secondary, #6b7280)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>Warna</label>
-                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                        {/* Color & Side */}
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <div className="flex-1">
+                                                <label className="font-semibold block mb-2.5 text-[0.85rem] text-slate-400 uppercase tracking-tight">Warna</label>
+                                                <div className="flex gap-1.5">
                                                     {[{ val: 'bw', label: 'B/W' }, { val: 'color', label: 'Warna' }].map(c => (
                                                         <button key={c.val} onClick={() => setFcColor(c.val)}
-                                                            style={{
-                                                                flex: 1, padding: '10px 6px', borderRadius: '10px',
-                                                                border: fcColor === c.val ? '2px solid #6366f1' : '2px solid transparent',
-                                                                backgroundColor: fcColor === c.val ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-card, #f8fafc)',
-                                                                color: fcColor === c.val ? '#6366f1' : 'var(--text-primary, #374151)',
-                                                                fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem',
-                                                                transition: 'all 0.2s ease',
-                                                                boxShadow: fcColor === c.val ? '0 2px 12px rgba(99, 102, 241, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)'
-                                                            }}
+                                                            className={`flex-1 px-1.5 py-2.5 rounded-xl border-none cursor-pointer font-bold text-[0.8rem] sm:text-[0.9rem] flex items-center justify-center gap-2 transition-all duration-200 ${fcColor === c.val ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                                                         >{c.label}</button>
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div style={{ flex: 1 }}>
-                                                <label style={{ fontWeight: 600, display: 'block', marginBottom: '10px', fontSize: '0.85rem', color: 'var(--text-secondary, #6b7280)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>Sisi</label>
-                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                            <div className="flex-1">
+                                                <label className="font-semibold block mb-2.5 text-[0.85rem] text-slate-400 uppercase tracking-tight">Sisi</label>
+                                                <div className="flex gap-1.5">
                                                     {[{ val: '1', label: '1 Sisi' }, { val: '2', label: 'Bolak' }].map(s => (
                                                         <button key={s.val} onClick={() => setFcSide(s.val)}
-                                                            style={{
-                                                                flex: 1, padding: '10px 6px', borderRadius: '10px',
-                                                                border: fcSide === s.val ? '2px solid #6366f1' : '2px solid transparent',
-                                                                backgroundColor: fcSide === s.val ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-card, #f8fafc)',
-                                                                color: fcSide === s.val ? '#6366f1' : 'var(--text-primary, #374151)',
-                                                                fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem',
-                                                                transition: 'all 0.2s ease',
-                                                                boxShadow: fcSide === s.val ? '0 2px 12px rgba(99, 102, 241, 0.15)' : '0 1px 3px rgba(0,0,0,0.04)'
-                                                            }}
+                                                            className={`flex-1 px-1.5 py-2.5 rounded-xl border-none cursor-pointer font-bold text-[0.8rem] sm:text-[0.9rem] flex items-center justify-center gap-2 transition-all duration-200 ${fcSide === s.val ? 'bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-100'}`}
                                                         >{s.label}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Quantity Input */}
+                                        {/* Quantity */}
                                         <div>
-                                            <label style={{ fontWeight: 600, display: 'block', marginBottom: '10px', fontSize: '0.85rem', color: 'var(--text-secondary, #6b7280)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>Jumlah Lembar</label>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <button
-                                                    onClick={() => setFcQty(Math.max(0, fcQty - 1))}
-                                                    style={{ width: '48px', height: '48px', borderRadius: '14px', border: 'none', background: 'var(--bg-card, #f1f5f9)', cursor: 'pointer', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary, #374151)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-                                                >
-                                                    −
-                                                </button>
+                                            <label className="font-semibold block mb-2.5 text-[0.85rem] text-slate-400 uppercase tracking-tight">Jumlah Lembar</label>
+                                            <div className="flex items-center gap-1.5 sm:gap-2.5">
+                                                <button onClick={() => setFcQty(Math.max(0, fcQty - 1))} className="w-10 h-10 flex-shrink-0 sm:w-12 sm:h-12 flex items-center justify-center bg-white/5 border-none rounded-lg text-white cursor-pointer text-lg hover:bg-white/10">-</button>
                                                 <input
                                                     type="number"
                                                     value={fcQty}
                                                     onChange={(e) => setFcQty(Math.max(0, parseInt(e.target.value) || 0))}
-                                                    min="0"
-                                                    style={{ flex: 1, padding: '14px', border: '2px solid var(--border, #e2e8f0)', borderRadius: '14px', fontSize: '1.3rem', textAlign: 'center', fontWeight: 700, background: 'var(--bg-card, #fff)', color: 'var(--text-primary, #111827)', transition: 'border-color 0.2s ease', outline: 'none' }}
+                                                    className="flex-1 min-w-0 px-2 sm:px-4 py-2 sm:py-3 bg-white/5 border border-white/10 rounded-xl text-white text-lg sm:text-xl font-bold transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white/8 text-center"
                                                 />
-                                                <button
-                                                    onClick={() => setFcQty(fcQty + 1)}
-                                                    style={{ width: '48px', height: '48px', borderRadius: '14px', border: 'none', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', cursor: 'pointer', fontSize: '1.4rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)' }}
-                                                >
-                                                    +
-                                                </button>
+                                                <button onClick={() => setFcQty(fcQty + 1)} className="w-10 h-10 flex-shrink-0 sm:w-12 sm:h-12 flex items-center justify-center bg-blue-600 border-none rounded-lg text-white cursor-pointer text-lg shadow-[0_4px_12px_rgba(37,99,235,0.2)] hover:brightness-110">+</button>
                                             </div>
                                         </div>
 
-                                        {/* Price Display — glassmorphism card */}
-                                        <div style={{
-                                            padding: '24px 20px',
-                                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04), rgba(139, 92, 246, 0.06))',
-                                            borderRadius: '16px',
-                                            textAlign: 'center',
-                                            border: '1px solid rgba(99, 102, 241, 0.1)',
-                                            position: 'relative',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.06)' }} />
-                                            <div style={{ position: 'absolute', bottom: '-10px', left: '-10px', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.05)' }} />
-
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', marginBottom: '4px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Harga per lembar</div>
-                                            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary, #111827)', position: 'relative' }}>
+                                        {/* Price Card */}
+                                        <div className="p-6 px-5 bg-white/3 rounded-2xl text-center border border-white/5">
+                                            <div className="text-[0.75rem] text-slate-400 mb-1 font-medium uppercase tracking-tight text-slate-400">Harga per lembar</div>
+                                            <div className="text-[1.4rem] font-bold">
                                                 {fcDiscountInfo && (
-                                                    <span style={{ fontSize: '0.85rem', color: '#ef4444', textDecoration: 'line-through', marginRight: '8px', opacity: 0.7 }}>
+                                                    <span className="text-[0.85rem] text-red-500 line-through mr-2 opacity-70">
                                                         {formatRupiah(fcUnitPrice)}
                                                     </span>
                                                 )}
@@ -737,39 +629,18 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                                             </div>
 
                                             {fcDiscountInfo && (
-                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', color: '#059669', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 700, marginTop: '8px' }}>
+                                                <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-[0.7rem] font-bold mt-2">
                                                     <FiTag size={11} /> Diskon {formatRupiah(fcDiscountInfo.discountPerSheet)}/lbr
                                                 </div>
                                             )}
 
-                                            <div style={{ width: '40px', height: '2px', background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.3), transparent)', margin: '14px auto 10px', borderRadius: '1px' }} />
+                                            <div className="w-10 h-px bg-white/10 my-3.5 mx-auto mb-2.5" />
 
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', marginBottom: '4px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
-                                            <div style={{ fontSize: '2rem', fontWeight: 800, background: 'linear-gradient(135deg, #10b981, #059669)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', position: 'relative' }}>{formatRupiah(fcTotal)}</div>
+                                            <div className="text-[0.75rem] text-slate-400 mb-1 font-medium uppercase tracking-tight">Total</div>
+                                            <div className="text-3xl font-extrabold text-emerald-500">{formatRupiah(fcTotal)}</div>
                                         </div>
 
-                                        {/* Add to Cart Button */}
-                                        <button
-                                            onClick={addFotocopyToCart}
-                                            style={{
-                                                width: '100%',
-                                                padding: '16px',
-                                                background: 'linear-gradient(135deg, #10b981, #059669)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '14px',
-                                                fontSize: '1rem',
-                                                fontWeight: 700,
-                                                cursor: 'pointer',
-                                                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
-                                                transition: 'all 0.2s ease',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '8px',
-                                                letterSpacing: '0.02em'
-                                            }}
-                                        >
+                                        <button onClick={addFotocopyToCart} className="w-full p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer flex items-center justify-center gap-2.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
                                             <FiShoppingCart size={18} /> Tambah ke Keranjang
                                         </button>
                                     </div>
@@ -781,61 +652,94 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
                 {/* Cart Area */}
                 {(!isMobile || activeTab === 'cart') && (
-                    <div style={{ flex: 1, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', minWidth: isMobile ? '100%' : '350px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="lg:w-96 xl:w-[420px] 2xl:w-[480px] w-full bg-slate-900 lg:bg-slate-800/80 lg:backdrop-blur-3xl lg:border-l border-white/5 flex flex-col h-full min-h-0 absolute lg:relative inset-0 z-30">
+                        <div className="p-5 border-b border-white/5 flex justify-between items-center bg-slate-900/40">
+                            <div className="flex items-center gap-2.5 font-bold text-[1.1rem]">
                                 {isMobile && (
                                     <button
                                         onClick={() => setActiveTab('products')}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                                        className="bg-transparent border-none flex items-center gap-2 text-slate-400 cursor-pointer p-0 mr-2"
                                     >
-                                        <FiArrowLeft size={24} color="var(--text-primary)" />
+                                        <FiArrowLeft size={20} />
                                     </button>
                                 )}
-                                <FiShoppingCart size={24} color="var(--text-primary)" />
-                                <h2 style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Keranjang</h2>
+                                <FiShoppingCart className="text-blue-400" />
+                                <span>Keranjang</span>
                             </div>
-                            {cart.length > 0 && <button onClick={clearCart} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Bersihkan</button>}
+                            {cart.length > 0 && (
+                                <button onClick={clearCart} className="text-red-500 bg-transparent border-none text-[0.85rem] font-bold cursor-pointer opacity-80 hover:opacity-100 transition-opacity flex items-center gap-1.5">
+                                    <FiTrash2 size={14} /> Kosongkan
+                                </button>
+                            )}
                         </div>
-                        <div style={{ flex: 1, overflowY: 'auto' }}>
+
+                        <div className="flex-1 overflow-y-auto p-3 hide-scrollbar min-height-0">
                             {cart.length === 0 ? (
-                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexDirection: 'column', gap: '8px' }}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16" style={{ color: 'var(--text-muted)' }}><path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .49.598l-1 5a.5.5 0 0 1-.49.402H3.21l.94 4.705A.5.5 0 0 0 4.646 14h7.708a.5.5 0 0 1 0 1H4.646a1.5 1.5 0 0 1-1.48-1.765L2.1 2.528A1.5 1.5 0 0 1 3.5 1H14.5a1.5 1.5 0 0 1 1.48 1.408l-1 5A1.5 1.5 0 0 1 13.5 9H3.414l-.94-4.705A.5.5 0 0 0 2 3.5H.5a.5.5 0 0 1-.5-.5zM3.14 4l.79 3.973h8.61l.79-3.973H3.14zM5 12a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm7 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" /></svg>
-                                    <p>Pilih produk untuk memulai.</p>
+                                <div className="h-full flex flex-col items-center justify-center gap-5 p-10 text-center opacity-60">
+                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-slate-400">
+                                        <FiShoppingCart size={40} />
+                                    </div>
+                                    <p className="text-base font-semibold text-slate-400">Keranjang masih kosong</p>
+                                    <p className="text-[0.85rem] -mt-3 text-slate-500">Pilih produk untuk ditambahkan</p>
                                 </div>
                             ) : (
                                 cart.map(item => (
-                                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ fontWeight: 600 }}>{item.name}</div>
-                                            <div style={{ color: 'var(--text-secondary)' }}>{formatRupiah(item.sellPrice)} x {item.quantity}</div>
+                                    <div key={item.id} className="flex gap-3 p-3 bg-white/2 rounded-xl mb-2 border border-white/3">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[0.9rem] font-semibold mb-1 line-clamp-2 text-slate-100 leading-tight">{item.name}</div>
+                                            <div className="text-[0.85rem] text-emerald-400 font-bold">{formatRupiah(item.sellPrice)}</div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <button onClick={() => updateQuantity(item.id, -1)} style={{ width: 28, height: 28, border: '1px solid var(--border)', borderRadius: '4px', background: 'var(--bg-input)', cursor: 'pointer', color: 'var(--text-primary)' }}>-</button>
-                                            <button onClick={() => updateQuantity(item.id, 1)} style={{ width: 28, height: 28, border: '1px solid var(--border)', borderRadius: '4px', background: 'var(--bg-input)', cursor: 'pointer', color: 'var(--text-primary)' }}>+</button>
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 flex items-center justify-center bg-white/5 border-none rounded-lg text-white cursor-pointer hover:bg-white/10"><FiMinus size={14} /></button>
+                                            <span className="font-bold text-[0.9rem] min-w-[24px] text-center text-blue-400">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 flex items-center justify-center bg-white/5 border-none rounded-lg text-white cursor-pointer hover:bg-white/10"><FiPlus size={14} /></button>
                                         </div>
-                                        <div style={{ width: '90px', textAlign: 'right', fontWeight: 600, marginLeft: '16px' }}>{formatRupiah(item.sellPrice * item.quantity)}</div>
+                                        <div className="min-w-[90px] text-right font-bold text-[0.95rem] text-slate-100 self-center">
+                                            {formatRupiah(item.sellPrice * item.quantity)}
+                                        </div>
                                     </div>
                                 ))
                             )}
                         </div>
+
                         {cart.length > 0 && (
-                            <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}><span>Subtotal</span><span style={{ fontWeight: 600 }}>{formatRupiah(cartTotal)}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', color: 'var(--text-secondary)' }}><span>Pajak & Diskon</span><span>{formatRupiah(0)}</span></div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}><span>Grand Total</span><span>{formatRupiah(cartTotal)}</span></div>
-                                <button onClick={openPaymentModal} style={{ width: '100%', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '16px', fontSize: '1.1rem', fontWeight: 600, marginTop: '16px', cursor: 'pointer' }}>Bayar</button>
+                            <div className="p-5 bg-slate-950/80 border-t border-white/5">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-slate-400 text-[0.9rem]">Subtotal</span>
+                                    <span className="font-semibold text-slate-100">{formatRupiah(cartTotal)}</span>
+                                </div>
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-slate-400 text-[0.9rem]">Pajak (0%)</span>
+                                    <span className="font-semibold text-slate-100">{formatRupiah(0)}</span>
+                                </div>
+                                <div className="flex justify-between mt-3 mb-5 pt-3 border-t border-dashed border-white/10">
+                                    <span className="text-lg font-bold">Total</span>
+                                    <span className="text-2xl font-extrabold text-emerald-500">{formatRupiah(cartTotal)}</span>
+                                </div>
+                                <button onClick={openPaymentModal} className="w-full p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer flex items-center justify-center gap-2.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+                                    Bayar Sekarang
+                                </button>
                             </div>
                         )}
                     </div>
                 )}
 
                 {/* Payment Modal */}
-                <Modal isOpen={isPaymentModalOpen} onClose={closeAndResetModal} title={transactionComplete ? 'Sukses' : 'Proses Pembayaran'} footer={!transactionComplete && (
-                    <button onClick={handleConfirmPayment} disabled={!isPaymentValid} style={{
-                        width: '100%', background: isPaymentValid ? '#10b981' : '#d1d5db', color: 'white', border: 'none', borderRadius: '6px', padding: '16px', fontSize: '1.1rem', fontWeight: 600, cursor: isPaymentValid ? 'pointer' : 'not-allowed'
-                    }}>Konfirmasi Pembayaran</button>
-                )}>
+                <Modal
+                    isOpen={isPaymentModalOpen}
+                    onClose={closeAndResetModal}
+                    title={transactionComplete ? 'Status Transaksi' : 'Total Pembayaran'}
+                    overlayClassName="modal-overlay"
+                    footer={!transactionComplete && (
+                        <button
+                            onClick={handleConfirmPayment}
+                            disabled={!isPaymentValid}
+                            className="pay-btn"
+                        >
+                            Konfirmasi Pembayaran
+                        </button>
+                    )}
+                >
                     {renderPaymentModalContent()}
                 </Modal>
             </div>

@@ -1,6 +1,29 @@
 import { useState, useCallback, useEffect } from 'react';
 import api from '../services/api';
-import { FiCheck, FiX } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiCheck, FiX, FiSave, FiPrinter, FiPlus, FiArrowLeft, FiBox, FiLayers, FiTag, FiDollarSign, FiPercent, FiMapPin, FiTruck, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
+
+const Toast = ({ msg, type, onClose }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+        className={`fixed bottom-8 right-8 z-[9999] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${type === 'error' ? 'bg-rose-500/90 border-rose-400 text-white' :
+                type === 'warn' ? 'bg-amber-500/90 border-amber-400 text-white' :
+                    'bg-emerald-600/90 border-emerald-400 text-white'
+            }`}
+    >
+        <div className="text-xl">
+            {type === 'error' ? <FiAlertCircle /> : type === 'warn' ? <FiAlertCircle /> : <FiCheck />}
+        </div>
+        <div className="font-bold text-sm tracking-wide">{msg}</div>
+        <button onClick={onClose} className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors">
+            <FiX />
+        </button>
+    </motion.div>
+);
+
+const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
 export default function MaterialFormPage({ onNavigate, pageState }) {
     const initial = pageState?.material || null;
@@ -25,7 +48,7 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
 
     const toast = useCallback((msg, type = 'success') => {
         setToastMsg({ msg, type });
-        setTimeout(() => setToastMsg(null), 3000);
+        setTimeout(() => setToastMsg(null), 4000);
     }, []);
 
     useEffect(() => {
@@ -75,6 +98,9 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.nama_bahan.trim()) return toast('Nama bahan wajib diisi', 'warn');
+        if (!form.kategori) return toast('Pilih kategori bahan', 'warn');
+        if (!form.satuan) return toast('Pilih satuan bahan', 'warn');
+
         setSaving(true);
         try {
             const payload = {
@@ -87,328 +113,354 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
             };
             if (initial) {
                 await api.put(`/materials/${initial.id}`, payload);
-                toast(<>Bahan berhasil diperbarui <FiCheck /></>);
+                toast('Data bahan berhasil diperbarui.');
             } else {
                 await api.post('/materials', payload);
-                toast(<>Bahan baru berhasil ditambahkan <FiCheck /></>);
+                toast('Bahan baru berhasil ditambahkan ke inventaris.');
             }
-            setTimeout(() => onNavigate('stok-bahan'), 1000);
+            setTimeout(() => onNavigate('stok-bahan'), 1200);
         } catch (err) {
-            toast(err.response?.data?.message || 'Gagal menyimpan data', 'error');
+            toast(err.response?.data?.message || 'Gagal menyimpan data ke database', 'error');
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            {/* Toast Notification */}
-            {toastMsg && (
-                <div style={{
-                    position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-                    background: toastMsg.type === 'error' ? '#ef4444' : toastMsg.type === 'warn' ? '#f59e0b' : '#22c55e', color: '#fff', padding: '12px 20px',
-                    borderRadius: 12, fontWeight: 600, fontSize: '.85rem',
-                    boxShadow: '0 8px 24px rgba(0,0,0,.18)', maxWidth: 320,
-                    animation: 'fadeIn .25s ease'
-                }}>{toastMsg.msg}</div>
-            )}
+        <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0b0f1a] font-display">
+            <AnimatePresence>
+                {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
+            </AnimatePresence>
 
-            {/* Breadcrumb Header */}
-            <div className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center px-8 shrink-0">
-                <div className="flex items-center gap-2 text-sm">
-                    <button onClick={() => onNavigate('stok-bahan')} className="text-slate-400 hover:text-primary cursor-pointer transition-colors">Stok Bahan</button>
-                    <span className="material-symbols-outlined text-sm text-slate-400">chevron_right</span>
-                    <span className="font-medium text-slate-900 dark:text-white">
-                        {initial ? 'Edit Bahan' : 'Tambah Bahan Baru'}
-                    </span>
+            {/* ── Navigation Header ── */}
+            <div className="px-8 py-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => onNavigate('stok-bahan')}
+                        className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary transition-all active:scale-90"
+                    >
+                        <FiArrowLeft size={18} />
+                    </button>
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:block">Inventaris</span>
+                        <FiChevronRight className="text-slate-300 hidden sm:block" />
+                        <h1 className="text-lg font-black dark:text-white truncate">
+                            {initial ? `Edit: ${initial.nama_bahan}` : 'Pendaftaran Bahan Baru'}
+                        </h1>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('stok-bahan')}
+                        className="px-5 py-2.5 rounded-xl text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={saving}
+                        className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {saving ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear' }}><FiSave /></motion.div> : <FiSave />}
+                        {saving ? 'Menyimpan...' : 'Simpan Data'}
+                    </button>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-                <div className="p-8 max-w-5xl mx-auto">
-                    <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
-                        <div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                                {initial ? 'Edit Data Bahan' : 'Formulir Tambah Bahan Baru'}
-                            </h2>
-                            <p className="text-slate-500 dark:text-slate-400 mt-1">Lengkapi detail identitas, stok, dan harga bahan untuk inventaris.</p>
-                        </div>
-                        <button className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-sm cursor-pointer">
-                            <span className="material-symbols-outlined text-lg">print</span>
-                            Cetak Label Barcode
-                        </button>
-                    </div>
+            <main className="flex-1 overflow-y-auto px-8 py-10 custom-scrollbar">
+                <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Section 1: Identitas Bahan */}
-                        <section className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">badge</span>
-                                <h3 className="font-bold text-slate-900 dark:text-white">Identitas Bahan</h3>
+                    {/* Left Column: Form Sections */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Section 1: Identitas Utama */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                            className="p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 p-8 text-primary/5 dark:text-primary/10">
+                                <FiPlus size={120} />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Bahan *</label>
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                    <FiBox size={18} />
+                                </div>
+                                <div>
+                                    <h2 className="font-black text-slate-800 dark:text-white leading-tight underline decoration-primary/30 decoration-4 underline-offset-4">Identitas Bahan</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Basic Product Information</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 px-1">Nama Deskriptif Bahan</label>
                                     <input
                                         type="text"
-                                        required
                                         value={form.nama_bahan}
                                         onChange={e => set('nama_bahan', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                        placeholder="Contoh: Art Paper 260gr"
+                                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/50 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none font-bold dark:text-white"
+                                        placeholder="Contoh: Art Paper 260gr High Gloss"
                                     />
                                 </div>
 
-                                {/* Barcode generator section */}
-                                <div className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700/50 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Generate Barcode Otomatis</span>
-                                            <div className="relative inline-block w-10 mr-2 align-middle select-none transition-all">
-                                                <input
-                                                    type="checkbox"
-                                                    id="toggle"
-                                                    checked={form.autoBarcode}
-                                                    onChange={() => set('autoBarcode', !form.autoBarcode)}
-                                                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer duration-300 ease-in-out right-4 checked:right-0 checked:border-primary"
-                                                    style={{ border: form.autoBarcode ? '4px solid #137fec' : '4px solid #cbd5e1' }}
-                                                />
-                                                <label
-                                                    htmlFor="toggle"
-                                                    className="toggle-label block overflow-hidden h-6 rounded-full cursor-pointer transition-colors duration-300 ease-in-out"
-                                                    style={{ backgroundColor: form.autoBarcode ? 'rgba(19, 127, 236, 0.2)' : '#e2e8f0' }}
-                                                ></label>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kode SKU / Barcode</label>
-                                            <div className="relative">
-                                                <input
-                                                    type="text"
-                                                    readOnly={form.autoBarcode}
-                                                    value={form.barcode}
-                                                    onChange={e => set('barcode', e.target.value)}
-                                                    className={`w-full rounded-lg border-slate-300 dark:border-slate-700 focus:border-primary focus:ring-primary dark:text-white ${form.autoBarcode ? 'bg-slate-100 dark:bg-slate-800 text-slate-500' : 'bg-white dark:bg-slate-800'}`}
-                                                    placeholder="SKU-2023-001"
-                                                />
-                                                {form.autoBarcode && (
-                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-lg">lock</span>
-                                                )}
-                                            </div>
-                                            <p className="text-[11px] text-slate-500 mt-1">Nonaktifkan switch untuk input manual.</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kategori</label>
+                                        <div className="relative">
+                                            <FiLayers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <select
+                                                value={form.kategori}
+                                                onChange={e => set('kategori', e.target.value)}
+                                                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/50 outline-none font-bold dark:text-white appearance-none"
+                                            >
+                                                <option value="">Pilih Kategori</option>
+                                                <option value="digital">Digital Printing</option>
+                                                <option value="offset">Offset Printing</option>
+                                                <option value="atk">Alat Tulis Kantor (ATK)</option>
+                                                <option value="finishing">Finishing & Jilid</option>
+                                            </select>
                                         </div>
                                     </div>
-
-                                    {/* Barcode Preview - Decorative only as per original HTML */}
-                                    <div className="md:col-span-2 flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Pratinjau Barcode</p>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="w-48 h-12 flex gap-0.5 items-end">
-                                                {Array.from({ length: 23 }).map((_, i) => (
-                                                    <div key={i} className={`h-full ${i % 2 === 0 ? 'bg-slate-800 dark:bg-slate-200' : 'bg-transparent'} ${[0, 3, 6, 9, 11, 14, 18].includes(i) ? 'w-1' : [1, 5, 8, 12].includes(i) ? 'w-0.5' : [2, 10].includes(i) ? 'w-1.5' : 'w-2'}`}></div>
-                                                ))}
-                                            </div>
-                                            <span className="text-xs font-mono font-bold tracking-[0.2em] text-slate-800 dark:text-slate-300">{form.barcode || 'SKU-000000'}</span>
+                                    <div className="space-y-2">
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Satuan Dasar</label>
+                                        <div className="relative">
+                                            <FiTag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                            <select
+                                                value={form.satuan}
+                                                onChange={e => set('satuan', e.target.value)}
+                                                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/50 outline-none font-bold dark:text-white appearance-none"
+                                            >
+                                                <option value="">Pilih Satuan</option>
+                                                <option value="lembar">Lembar</option>
+                                                <option value="roll">Roll / Meter Lari</option>
+                                                <option value="m2">Meter Persegi (m2)</option>
+                                                <option value="pcs">Pcs / Buah</option>
+                                                <option value="box">Box / Dus</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </motion.section>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kategori</label>
-                                    <input
-                                        type="text"
-                                        list="list-kategori"
-                                        value={form.kategori}
-                                        onChange={e => set('kategori', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                        placeholder="Pilih atau ketik kategori baru"
-                                    />
-                                    <datalist id="list-kategori">
-                                        <option value="digital">Digital Printing</option>
-                                        <option value="offset">Offset Printing</option>
-                                        <option value="atk">Alat Tulis Kantor (ATK)</option>
-                                        <option value="finishing">Finishing</option>
-                                    </datalist>
+                        {/* Section 2: Stok & Lokasi */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                            className="p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
+                        >
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/10 flex items-center justify-center text-amber-600">
+                                    <FiMapPin size={18} />
                                 </div>
-
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Satuan</label>
-                                    <input
-                                        type="text"
-                                        list="list-satuan"
-                                        value={form.satuan}
-                                        onChange={e => set('satuan', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                        placeholder="Pilih atau ketik satuan baru"
-                                    />
-                                    <datalist id="list-satuan">
-                                        <option value="lembar">Lembar</option>
-                                        <option value="roll">Roll</option>
-                                        <option value="m2">Meter Persegi (m2)</option>
-                                        <option value="pcs">Pcs / Buah</option>
-                                        <option value="box">Box</option>
-                                    </datalist>
+                                    <h2 className="font-black text-slate-800 dark:text-white leading-tight underline decoration-amber-400/30 decoration-4 underline-offset-4">Stok & Penempatan</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Inventory Levels & Warehouse</p>
                                 </div>
                             </div>
-                        </section>
 
-                        {/* Section 2: Pengaturan Stok */}
-                        <section className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">inventory</span>
-                                <h3 className="font-bold text-slate-900 dark:text-white">Pengaturan Stok & Lokasi</h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stok Awal</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Stok Awal Saat Ini</label>
                                     <input
                                         type="number"
                                         value={form.stok_saat_ini}
                                         onChange={e => set('stok_saat_ini', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
+                                        className="w-full px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-amber-400/50 focus:bg-white dark:focus:bg-slate-800 transition-all outline-none font-bold dark:text-white"
                                         placeholder="0"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Stok Minimum</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Ambang Batas Minimum (Warning)</label>
                                     <input
                                         type="number"
                                         value={form.stok_minimum}
                                         onChange={e => set('stok_minimum', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
+                                        className="w-full px-5 py-4 rounded-2xl bg-rose-50/30 dark:bg-rose-500/[0.03] border-2 border-rose-100/50 dark:border-rose-500/10 focus:border-rose-400/50 outline-none font-bold dark:text-white"
                                         placeholder="5"
                                     />
-                                    <p className="text-[11px] text-slate-500 mt-1">Peringatan otomatis saat stok di bawah angka ini.</p>
+                                    <p className="px-1 text-[9px] font-bold text-rose-400 uppercase italic">* Sistem akan mendeteksi sebagai 'Menipis' jika dibawah angka ini.</p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Lokasi Rak</label>
-                                    <input
-                                        type="text"
-                                        value={form.lokasi_rak}
-                                        onChange={e => set('lokasi_rak', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                        placeholder="Misal: Rak A-12"
-                                    />
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Lokasi Penyimpanan / Rak</label>
+                                    <div className="relative">
+                                        <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                        <input
+                                            type="text"
+                                            value={form.lokasi_rak}
+                                            onChange={e => set('lokasi_rak', e.target.value)}
+                                            className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-amber-400/50 outline-none font-bold dark:text-white"
+                                            placeholder="Contoh: Lantai 2, Rak Kertas B-1"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </section>
+                        </motion.section>
 
-                        {/* Section 3: Informasi Harga */}
-                        <section className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">payments</span>
-                                <h3 className="font-bold text-slate-900 dark:text-white">Informasi Harga & Supplier</h3>
+                        {/* Section 3: Keuangan */}
+                        <motion.section
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                            className="p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
+                        >
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center text-violet-600">
+                                    <FiDollarSign size={18} />
+                                </div>
+                                <div>
+                                    <h2 className="font-black text-slate-800 dark:text-white leading-tight underline decoration-violet-400/30 decoration-4 underline-offset-4">Finansial & Pricing</h2>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Cost, Profit, and Suppliers</p>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Beli / Modal Terakhir (Rp)</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 text-slate-400">Harga Modal (Avg)</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</div>
                                         <input
                                             type="number"
                                             value={form.harga_modal}
                                             onChange={handleHargaModalChange}
-                                            className="w-full pl-10 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border-2 border-transparent focus:border-violet-400/50 font-black dark:text-white focus:bg-white outline-none"
                                             placeholder="0"
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Margin / Keuntungan (%)</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Margin Profit</label>
                                     <div className="relative">
+                                        <FiPercent className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                         <input
                                             type="number"
                                             step="0.01"
                                             value={form.margin_persen}
                                             onChange={handleMarginChange}
-                                            className="w-full pr-10 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                            placeholder="Opsional (cth: 50)"
+                                            className="w-full px-5 py-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-500/[0.05] border-2 border-emerald-100/50 dark:border-emerald-500/10 focus:border-emerald-400/50 font-black dark:text-white outline-none"
+                                            placeholder="50"
                                         />
-                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Jual Retail (Rp)</label>
+                                <div className="space-y-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 text-violet-600 dark:text-violet-400">Harga Jual Retail</label>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">Rp</span>
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-violet-400">Rp</div>
                                         <input
                                             type="number"
                                             value={form.harga_jual}
                                             onChange={handleHargaJualChange}
-                                            className="w-full pl-10 rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-violet-50/50 dark:bg-violet-500/[0.08] border-2 border-violet-100/50 dark:border-violet-500/20 focus:border-violet-400/50 font-black dark:text-white outline-none"
                                             placeholder="0"
                                         />
                                     </div>
                                 </div>
-                                <div className="md:col-span-3">
-                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pilih Pemasok (Supplier)</label>
-                                    <select
-                                        value={form.supplier_id}
-                                        onChange={e => set('supplier_id', e.target.value)}
-                                        className="w-full rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary focus:ring-primary dark:text-white"
-                                    >
-                                        <option value="">Pilih Pemasok</option>
-                                        <option value="1">PT. Kertas Jaya Mandiri</option>
-                                        <option value="2">CV. Grafika Utama</option>
-                                        <option value="3">Supplier Tinta Berkah</option>
-                                        <option value="NEW">+ Tambah Pemasok Baru</option>
-                                    </select>
+                                <div className="md:col-span-3 space-y-2 mt-2">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Partner Supplier / Pemasok</label>
+                                    <div className="relative">
+                                        <FiTruck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
+                                        <select
+                                            value={form.supplier_id}
+                                            onChange={e => set('supplier_id', e.target.value)}
+                                            className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-violet-400/50 outline-none font-bold dark:text-white appearance-none"
+                                        >
+                                            <option value="">Pilih Pemasok Utama</option>
+                                            <option value="1">PT. Kertas Jaya Mandiri</option>
+                                            <option value="2">CV. Grafika Utama</option>
+                                            <option value="3">Supplier Tinta Berkah</option>
+                                            <option value="NEW">+ Tambah Pemasok Baru</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </section>
+                        </motion.section>
+                    </div>
 
-                        {/* Section 4: Foto */}
-                        <section className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <div className="flex items-center gap-2 mb-6 text-primary">
-                                <span className="material-symbols-outlined">image</span>
-                                <h3 className="font-bold text-slate-900 dark:text-white">Foto Produk / Bahan</h3>
-                            </div>
+                    {/* Right Column: Preview & Barcode */}
+                    <div className="space-y-8">
+                        {/* Barcode Widget */}
+                        <motion.section
+                            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+                            className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl shadow-blue-500/20"
+                        >
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-all duration-700" />
 
-                            <div className="flex items-center justify-center w-full">
-                                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-slate-300 dark:border-slate-700 border-dashed rounded-xl cursor-pointer bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <span className="material-symbols-outlined text-slate-400 text-4xl mb-2">cloud_upload</span>
-                                        <p className="mb-2 text-sm text-slate-500"><span className="font-semibold text-slate-700 dark:text-slate-300">Klik untuk unggah</span> atau seret file</p>
-                                        <p className="text-xs text-slate-400">PNG, JPG atau WEBP (Maks. 2MB)</p>
+                            <div className="relative z-10 flex flex-col items-center text-center">
+                                <div className="flex items-center justify-between w-full mb-8">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Auto SKU</span>
+                                    <div
+                                        onClick={() => set('autoBarcode', !form.autoBarcode)}
+                                        className={`w-12 h-6 rounded-full relative cursor-pointer transition-all ${form.autoBarcode ? 'bg-primary' : 'bg-slate-700'}`}
+                                    >
+                                        <motion.div
+                                            animate={{ x: form.autoBarcode ? 26 : 4 }}
+                                            className="w-4 h-4 bg-white rounded-full absolute top-1 shadow-sm"
+                                        />
                                     </div>
-                                    <input type="file" className="hidden" />
-                                </label>
-                            </div>
-                        </section>
+                                </div>
 
-                        {/* Button Actions */}
-                        <div className="flex items-center justify-end gap-4 pb-12 border-t border-slate-200 dark:border-slate-800 pt-8">
-                            <button
-                                type="button"
-                                onClick={() => onNavigate('stok-bahan')}
-                                className="px-6 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="px-8 py-2.5 rounded-lg bg-primary text-white font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-                            >
-                                {saving ? (
-                                    <>
-                                        <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
-                                        Menyimpan...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="material-symbols-outlined text-sm">save</span>
-                                        Simpan Bahan
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                                <div className="bg-white p-6 rounded-2xl w-full mb-6">
+                                    <div className="flex flex-col items-center gap-1">
+                                        <div className="w-full h-12 flex gap-0.5 items-end overflow-hidden px-2">
+                                            {Array.from({ length: 40 }).map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className={`h-full ${i % 3 === 0 ? 'bg-slate-800' : i % 7 === 1 ? 'bg-transparent' : 'bg-slate-600'} ${[0, 5, 12, 18, 25, 32].includes(i) ? 'flex-1' : 'w-[1px]'}`}
+                                                ></div>
+                                            ))}
+                                        </div>
+                                        <span className="text-xs font-mono font-black tracking-[0.3em] text-slate-800 mt-2">{form.barcode || 'SKU-NONE'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full space-y-4">
+                                    <input
+                                        type="text"
+                                        readOnly={form.autoBarcode}
+                                        value={form.barcode}
+                                        onChange={e => set('barcode', e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-center font-black text-sm tracking-widest ${form.autoBarcode ? 'bg-slate-800/50 text-slate-500' : 'bg-slate-800 text-white border border-slate-700'} outline-none transition-all placeholder:text-slate-600`}
+                                        placeholder="INPUT SKU MANUAL"
+                                    />
+                                    <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs transition-colors">
+                                        <FiPrinter /> Cetak Label Barcode
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.section>
+
+                        {/* Value Preview Card */}
+                        <motion.section
+                            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
+                            className="p-8 bg-gradient-to-br from-primary to-blue-700 rounded-[2.5rem] text-white shadow-xl shadow-primary/30"
+                        >
+                            <h3 className="text-xs font-black uppercase tracking-widest opacity-60 mb-6">Kartu Ringkasan</h3>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase opacity-50 mb-1">Estimasi Margin</p>
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-4xl font-black">{form.margin_persen || '0'}%</span>
+                                        <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-md mb-1.5 leading-none">Net</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                                    <div>
+                                        <p className="text-[10px] font-bold uppercase opacity-50 mb-1">Harga Jual</p>
+                                        <p className="text-xl font-black">{fmt(form.harga_jual)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] font-bold uppercase opacity-50 mb-1">Profit/Unit</p>
+                                        <p className="text-xl font-black text-emerald-300">
+                                            +{fmt((parseFloat(form.harga_jual) || 0) - (parseFloat(form.harga_modal) || 0))}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.section>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

@@ -22,7 +22,7 @@ import {
     FiFileText,
     FiPrinter,
     FiImage,
-    FiTool,
+    FiCpu,
     FiChevronLeft,
     FiChevronRight,
     FiTag,
@@ -40,7 +40,7 @@ const CAT_ICONS = {
     c6: <FiFileText size={18} />,
     c7: <FiPrinter size={18} />,
     c8: <FiImage size={18} />,
-    c9: <FiTool size={18} />,
+    c9: <FiCpu size={18} />,
 };
 
 const CAT_ICON_SMALL = {
@@ -52,7 +52,7 @@ const CAT_ICON_SMALL = {
     c6: <FiFileText size={12} />,
     c7: <FiPrinter size={12} />,
     c8: <FiImage size={12} />,
-    c9: <FiTool size={12} />,
+    c9: <FiCpu size={12} />,
 };
 
 export default function InventoryPage() {
@@ -147,10 +147,10 @@ export default function InventoryPage() {
                     <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                    s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
-                                        s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
-                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                                                'bg-slate-50 dark:bg-slate-800 text-slate-400'
+                                s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
+                                    s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
+                                        s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                            'bg-slate-50 dark:bg-slate-800 text-slate-400'
                                 }`}>
                                 {s.icon}
                             </div>
@@ -168,38 +168,37 @@ export default function InventoryPage() {
             {/* Main Content Card */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 {/* Filter Bar */}
-                <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row gap-6 bg-slate-50/30 dark:bg-slate-800/20">
-                    <div className="relative group flex-1 max-w-md">
-                        <div className="absolute inset-y-0 left-0 pl-1 flex items-center pointer-events-none transition-transform group-focus-within:translate-x-1">
-                            <div className="p-2 border border-transparent group-focus-within:text-blue-600 text-slate-400">
-                                <FiSearch size={16} />
-                            </div>
+                <div className="p-4 sm:p-5 border-b border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-3 overflow-x-auto hide-scrollbar">
+                    {/* Search Field */}
+                    <div className="relative shrink-0 group">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                            <FiSearch size={18} />
                         </div>
                         <input
-                            className="block w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl py-3.5 pl-11 pr-4 text-xs font-bold placeholder:text-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                            placeholder="Cari nama atau kode produk..."
+                            type="text"
                             value={search}
                             onChange={e => handleSearch(e.target.value)}
+                            className={`bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-10 pr-4 text-xs font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all outline-none ${search ? 'w-48 sm:w-64' : 'w-[46px] focus:w-48 sm:focus:w-64 cursor-pointer focus:cursor-text placeholder:text-transparent focus:placeholder:text-slate-400'}`}
+                            placeholder="Cari..."
                         />
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+
+                    <button
+                        className={`shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center justify-center ${filterCat === 'all' ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:border-slate-300 hover:text-slate-700'}`}
+                        onClick={() => handleFilter('all')}
+                    >
+                        Semua
+                    </button>
+                    {categories.map(c => (
                         <button
-                            className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterCat === 'all' ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'}`}
-                            onClick={() => handleFilter('all')}
+                            key={c.id}
+                            className={`shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterCat === c.id ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:border-slate-300 hover:text-slate-700'}`}
+                            onClick={() => handleFilter(c.id)}
                         >
-                            Semua
+                            <span className={filterCat === c.id ? 'text-white' : 'text-slate-400'}>{getCatIconSmall(c.id)}</span>
+                            {c.name}
                         </button>
-                        {categories.map(c => (
-                            <button
-                                key={c.id}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${filterCat === c.id ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'}`}
-                                onClick={() => handleFilter(c.id)}
-                            >
-                                {getCatIconSmall(c.id)}
-                                {c.name}
-                            </button>
-                        ))}
-                    </div>
+                    ))}
                 </div>
 
                 {/* Table Area */}

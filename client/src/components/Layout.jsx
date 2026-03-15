@@ -25,6 +25,13 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Global listener for toggling sidebar from child pages
+    useEffect(() => {
+        const handleToggleSidebar = () => setSidebarOpen(prev => !prev);
+        window.addEventListener('toggleSidebar', handleToggleSidebar);
+        return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
+    }, []);
+
     const PAGE_TITLES = {
         dashboard: 'Dasbor Utama',
         pos: 'Transaksi Baru',
@@ -55,33 +62,33 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
     return (
         <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            {!(isFullscreen && activePage === 'pos') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+            {!(activePage === 'pos-v1') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-            <main className={`flex-1 flex flex-col overflow-hidden print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
-                {activePage !== 'pos' && (
+            <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
+                {!(activePage === 'pos' || activePage === 'pos-v1') && (
                     <header className="print:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
                             {/* Mobile Menu Button */}
                             <button
-                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                                 onClick={() => setSidebarOpen(true)}
                             >
                                 <FiMenu size={20} />
                             </button>
-                            <h2 className="text-lg font-bold hidden md:block">{PAGE_TITLES[activePage] || 'Ringkasan Bisnis'}</h2>
-                            <div className="relative group ml-0 md:ml-4">
+                            <h2 className="text-sm sm:text-lg font-bold truncate md:block flex-1 min-w-0">{PAGE_TITLES[activePage] || 'Ringkasan Bisnis'}</h2>
+                            <div className="relative group ml-auto md:ml-4 hidden sm:block flex-shrink-0">
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                                     <span className="material-symbols-outlined text-sm">search</span>
                                 </span>
                                 <input
-                                    className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-48 md:w-64 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
-                                    placeholder="Cari pesanan, klien..."
+                                    className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm w-36 md:w-64 focus:ring-2 focus:ring-primary focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-900 dark:text-white"
+                                    placeholder="Cari pesanan..."
                                     type="text"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                             {/* Theme Toggle */}
                             <ThemeToggle />
 
@@ -143,10 +150,10 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                     </header>
                 )}
 
-                {activePage === 'pos' ? (
+                {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark">
+                    <div className="flex-1 overflow-y-auto block overflow-x-hidden print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark min-w-0">
                         {children}
                     </div>
                 )}

@@ -1,9 +1,27 @@
-import { useState, useEffect, useRef } from 'react';
-import { FiPrinter, FiCpu, FiFileText, FiLayers, FiImage, FiSettings, FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiArrowRight, FiCheckCircle, FiTag, FiDollarSign, FiMenu, FiX } from 'react-icons/fi';
-import './LandingPage.css';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import {
+    FiPrinter, FiCpu, FiFileText, FiLayers, FiImage, FiSettings,
+    FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiArrowRight,
+    FiCheckCircle, FiTag, FiDollarSign, FiMenu, FiX, FiCheck,
+    FiChevronRight, FiChevronLeft, FiInfo, FiGithub, FiMessageSquare, FiSend,
+    FiGlobe
+} from 'react-icons/fi';
+
+// Fallbacks for missing social icons in Fi
+const SocialInstagram = FiImage;
+const SocialTwitter = FiSend;
+const SocialFacebook = FiGlobe;
+const SocialYoutube = FiPrinter;
+
+// Re-assign to the names used in the component
+const FiInstagram = SocialInstagram;
+const FiTwitter = SocialTwitter;
+const FiFacebook = SocialFacebook;
+const FiYoutube = SocialYoutube;
+
+import { motion, AnimatePresence } from 'framer-motion';
 import db from '../db';
 
-// Re-using assets generated
 const HERO_IMAGE = '/hero_main.png';
 const getQrUrl = (data) => `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
 
@@ -13,182 +31,72 @@ export default function LandingPage({ onNavigate }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState('All');
     const containerRef = useRef(null);
+
     const [storeInfo, setStoreInfo] = useState({
-        name: 'FOTOCOPY ABADI JAYA',
+        name: 'ABADI JAYA COPIER',
         address: 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur',
-        phone: '+62 812 3456 7890',
+        phone: '+62 5655620979',
         mapsUrl: 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7'
     });
+
     const [prices, setPrices] = useState({ fotocopy: [], print: [], binding: [] });
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [galleryImages, setGalleryImages] = useState([]);
     const [storeLogo, setStoreLogo] = useState('');
 
     useEffect(() => {
-        // Fetch Settings
         const allSettings = db.getAll('settings');
         const getSetting = (key, defaultVal) => allSettings.find(s => s.key === key)?.value || defaultVal;
 
         setStoreInfo({
-            name: getSetting('store_name', 'FOTOCOPY ABADI JAYA'),
+            name: getSetting('store_name', 'ABADI JAYA COPIER'),
             address: getSetting('store_address', 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur'),
             phone: getSetting('store_phone', '+62 812 3456 7890'),
             mapsUrl: getSetting('store_maps_url', 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7')
         });
 
-        // Fetch Prices
         setPrices({
             fotocopy: db.getAll('fotocopy_prices').slice(0, 4),
             print: db.getAll('print_prices').slice(0, 4),
             binding: db.getAll('binding_prices').slice(0, 4)
         });
 
-        // Fetch Products
-        setFeaturedProducts(db.getAll('products').filter(p => (p.stock || 0) > 0).slice(0, 4));
+        setFeaturedProducts(db.getAll('products').filter(p => (p.stock || 0) > 0).slice(0, 8));
 
-        // Fetch Gallery
         const savedGallery = getSetting('landing_gallery');
-        try {
-            if (savedGallery) setGalleryImages(JSON.parse(savedGallery));
-        } catch (e) { console.error("Gagal load galeri", e); }
+        try { if (savedGallery) setGalleryImages(JSON.parse(savedGallery)); } catch (e) { console.error(e); }
 
-        // Fetch Logo & Favicon
-        const logo = getSetting('landing_logo', '');
-        const fav = getSetting('landing_favicon', '');
-        setStoreLogo(logo);
+        setStoreLogo(getSetting('landing_logo', ''));
 
-        if (fav) {
-            let link = document.querySelector("link[rel~='icon']");
-            if (!link) {
-                link = document.createElement('link');
-                link.rel = 'icon';
-                document.getElementsByTagName('head')[0].appendChild(link);
-            }
-            link.href = fav;
-        }
-
-        const handleScroll = (e) => {
-            setScrolled(e.target.scrollTop > 20);
-        };
-        const container = containerRef.current;
-        if (container) {
-            container.addEventListener('scroll', handleScroll);
-        }
-        return () => {
-            if (container) {
-                container.removeEventListener('scroll', handleScroll);
-            }
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const handleApplyService = (e) => {
-        e.preventDefault();
-        const name = e.target[0].value;
-        const phone = e.target[1].value;
-        const model = e.target[2].value;
-        const serialNo = e.target[3].value;
-        const address = e.target[4].value;
-        const issue = e.target[5].value;
-
-        const message = `Halo ${storeInfo.name}, saya ingin request service mesin:%0A- Nama: ${name}%0A- WhatsApp: ${phone}%0A- Model: ${model}%0A- SN: ${serialNo || '-'}%0A- Alamat: ${address}%0A- Keluhan: ${issue}`;
-        const waUrl = `https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`;
-
-        window.open(waUrl, '_blank');
-        setFormSent(true);
-        setTimeout(() => setFormSent(false), 5000);
-    };
-
-    const handleOrderProduct = (product) => {
-        const price = product.sellingPrice || product.sellPrice || 0;
-        const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${product.name}%0A- Harga: Rp ${price.toLocaleString()}%0A%0AApakah stok masih tersedia?`;
-        const waUrl = `https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`;
-        window.open(waUrl, '_blank');
-    };
-
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
-    };
-
-    const closeMenuAndNavigate = (id) => {
-        setIsMobileMenuOpen(false);
-        const element = document.getElementById(id);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-        }
-    };
-
     const services = [
-        {
-            title: 'ATK & Stationery',
-            desc: 'Kebutuhan alat tulis kantor lengkap dengan kualitas terbaik.',
-            icon: <FiFileText />
-        },
-        {
-            title: 'Fotocopy & Jilid',
-            desc: 'Layanan fotocopy cepat, jilid spiral, lakban, hingga hard cover.',
-            icon: <FiLayers />
-        },
-        {
-            title: 'Digital Printing',
-            desc: 'Cetak kartu nama, brosur, stiker, hingga banner berkualitas tinggi.',
-            icon: <FiImage />
-        },
-        {
-            title: 'Cetak Offset',
-            desc: 'Solusi cetak dalam jumlah besar untuk majalah, undangan, dan form.',
-            icon: <FiCpu />
-        },
-        {
-            title: 'Service Fotocopy',
-            desc: 'Teknisi berpengalaman siap menangani kendala mesin fotocopy Anda.',
-            icon: <FiSettings />
-        },
-        {
-            title: 'Digitalizing',
-            desc: 'Scan dokumen ke berbagai format digital dengan resolusi tinggi.',
-            icon: <FiPrinter />
-        },
-    ];
-
-    const faqData = [
-        {
-            q: 'Berapa lama waktu pengerjaan fotocopy dan jilid?',
-            a: 'Untuk fotocopy satuan bisa ditunggu. Jilid lakban/biasa sekitar 15-30 menit, sedangkan jilid Hardcover/Skripsi membutuhkan waktu 1-2 hari kerja.'
-        },
-        {
-            q: 'Apakah bisa cetak dokumen langsung dari WhatsApp atau Email?',
-            a: 'Sangat bisa! Anda bisa mengirimkan file PDF/Doc ke WhatsApp kami atau email toko, dan kami akan segera mencetaknya untuk Anda.'
-        },
-        {
-            q: 'Apakah melayani panggilan service mesin fotocopy ke rumah/kantor?',
-            a: 'Ya, teknisi kami siap datang ke lokasi Anda khusus untuk wilayah Magetan dan sekitarnya. Silakan isi form request service di landing page ini.'
-        },
-        {
-            q: 'Apakah ada minimal order untuk cetak offset atau banner?',
-            a: 'Untuk banner tidak ada minimal order (hitung per meter). Untuk cetak cetak offset seperti nota/brosur, ada minimal order yang bervariasi tergantung jenis produknya.'
-        }
+        { title: 'ATK & Stationery', desc: 'Kebutuhan alat tulis kantor lengkap dengan kualitas terbaik.', icon: <FiFileText />, color: 'blue' },
+        { title: 'Fotocopy & Jilid', desc: 'Layanan fotocopy cepat, jilid spiral, lakban, hingga hard cover.', icon: <FiLayers />, color: 'indigo' },
+        { title: 'Digital Printing', desc: 'Cetak kartu nama, brosur, stiker, hingga banner berkualitas tinggi.', icon: <FiImage />, color: 'emerald' },
+        { title: 'Cetak Offset', desc: 'Solusi cetak dalam jumlah besar untuk majalah, undangan, dan form.', icon: <FiCpu />, color: 'amber' },
+        { title: 'Service Fotocopy', desc: 'Teknisi berpengalaman siap menangani kendala mesin fotocopy Anda.', icon: <FiSettings />, color: 'rose' },
+        { title: 'Digitalizing', desc: 'Scan dokumen ke berbagai format digital dengan resolusi tinggi.', icon: <FiPrinter />, color: 'cyan' },
     ];
 
     const testimonials = [
-        {
-            name: 'Budi Santoso',
-            role: 'Mahasiswa',
-            text: 'Pelayanan sangat cepat, hasil jilid rapi banget. Harganya juga bersahabat buat kantong mahasiswa.',
-            stars: 5
-        },
-        {
-            name: 'Siti Aminah',
-            role: 'Sekretaris Desa',
-            text: 'Langganan cetak laporan dan ATK di sini. Selalu puas dengan hasilnya, terutama cetak warna yang tajam.',
-            stars: 5
-        },
-        {
-            name: 'Aris Prasetyo',
-            role: 'Pemilik Toko',
-            text: 'Mesin fotocopy saya sering macet, panggil teknisi Abadi Jaya Copier langsung beres di hari yang sama. Mantap!',
-            stars: 5
-        }
+        { name: 'Budi Santoso', role: 'Mahasiswa', text: 'Pelayanan sangat cepat, hasil jilid rapi banget. Harganya juga bersahabat buat kantong mahasiswa.', stars: 5 },
+        { name: 'Siti Aminah', role: 'Sekretaris Desa', text: 'Langganan cetak laporan dan ATK di sini. Selalu puas dengan hasilnya, terutama cetak warna yang tajam.', stars: 5 },
+        { name: 'Aris Prasetyo', role: 'Pemilik Toko', text: 'Mesin fotocopy saya sering macet, panggil teknisi Abadi Jaya Copier langsung beres di hari yang sama. Mantap!', stars: 5 }
     ];
+
+    const handleApplyService = (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const data = Object.fromEntries(fd.entries());
+        const message = `Halo ${storeInfo.name}, saya ingin request service mesin:%0A- Nama: ${data.name}%0A- WhatsApp: ${data.phone}%0A- Model: ${data.model}%0A- SN: ${data.sn || '-'}%0A- Alamat: ${data.address}%0A- Keluhan: ${data.issue}`;
+        window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+        setFormSent(true);
+        setTimeout(() => setFormSent(false), 5000);
+    };
 
     const categories = ['All', 'Kertas', 'Buku', 'Alat Tulis', 'Lainnya'];
     const filteredProducts = activeCategory === 'All'
@@ -196,407 +104,570 @@ export default function LandingPage({ onNavigate }) {
         : featuredProducts.filter(p => (p.category === activeCategory) || (activeCategory === 'Lainnya' && !categories.includes(p.category)));
 
     return (
-        <div className="landing-page-root" ref={containerRef}>
-            {/* Meta tags for SEO */}
-            <div style={{ display: 'none' }}>
-                <h1>{storeInfo.name} - Fotocopy, Percetakan & Service Mesin Magetan</h1>
-                <p>Layanan Fotocopy terdekat di Magetan. Sedia ATK, Jilid, Cetak Digital, dan Service Mesin Fotocopy Profesional di {storeInfo.address}.</p>
-            </div>
+        <div className="bg-white text-slate-900 font-display selection:bg-blue-600 selection:text-white overflow-x-hidden">
+            {/* Header SEO */}
+            <h1 className="sr-only">{storeInfo.name} - Solusi Cetak & Fotocopy Magetan</h1>
+
             {/* Navigation */}
-            <nav className={`lp-nav ${scrolled ? 'scrolled' : ''}`}>
-                <div className="lp-logo">
-                    {storeLogo ? (
-                        <img src={storeLogo} alt="Logo" style={{ height: '32px', marginRight: '8px', objectFit: 'contain' }} />
-                    ) : (
-                        <div className="lp-logo-icon"><FiPrinter /></div>
-                    )}
-                    <span>{storeInfo.name}</span>
-                </div>
-                <div className="lp-nav-links desktop-only">
-                    <a href="#home" className="lp-nav-item">Home</a>
-                    <a href="#services" className="lp-nav-item">Layanan</a>
-                    <a href="#pricelist" className="lp-nav-item">Daftar Harga</a>
-                    <a href="#service-mesin" className="lp-nav-item">Service Mesin</a>
-                    <a href="#location" className="lp-nav-item">Lokasi</a>
-                    <button className="lp-btn-login" onClick={() => onNavigate('login')}>
-                        Portal Kasir
-                    </button>
-                </div>
+            <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-xl py-4 shadow-sm border-b border-slate-100' : 'bg-transparent py-8'}`}>
+                <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                        <div className="size-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                            {storeLogo ? <img src={storeLogo} className="size-full object-contain p-1" alt="Logo" /> : <FiPrinter className="text-xl" />}
+                        </div>
+                        <span className="text-lg font-black tracking-tighter uppercase italic text-slate-900 leading-none">
+                            {storeInfo.name.split(' ')[0]} <span className="text-blue-600">{storeInfo.name.split(' ').slice(1).join(' ')}</span>
+                        </span>
+                    </div>
 
-                <button className="lp-mobile-toggle" onClick={toggleMobileMenu}>
-                    {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-                </button>
+                    <div className="hidden md:flex items-center gap-10">
+                        {['Services', 'Prices', 'Service Machine', 'Location'].map((item) => (
+                            <a
+                                key={item}
+                                href={`#${item.toLowerCase().replace(' ', '-')}`}
+                                className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-blue-600 transition-colors"
+                            >
+                                {item}
+                            </a>
+                        ))}
+                        <button
+                            onClick={() => onNavigate('login')}
+                            className="bg-slate-900 hover:bg-black text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 active:scale-95 transition-all"
+                        >
+                            Portal Kasir
+                        </button>
+                    </div>
 
-                <div className={`lp-mobile-menu ${isMobileMenuOpen ? 'active' : ''}`}>
-                    <a href="#home" className="lp-mobile-nav-item" onClick={() => closeMenuAndNavigate('home')}>Home</a>
-                    <a href="#services" className="lp-mobile-nav-item" onClick={() => closeMenuAndNavigate('services')}>Layanan</a>
-                    <a href="#pricelist" className="lp-mobile-nav-item" onClick={() => closeMenuAndNavigate('pricelist')}>Daftar Harga</a>
-                    <a href="#service-mesin" className="lp-mobile-nav-item" onClick={() => closeMenuAndNavigate('service-mesin')}>Service Mesin</a>
-                    <a href="#location" className="lp-mobile-nav-item" onClick={() => closeMenuAndNavigate('location')}>Lokasi</a>
-                    <button className="lp-btn-login" style={{ marginTop: '20px' }} onClick={() => { setIsMobileMenuOpen(false); onNavigate('login'); }}>
-                        Portal Kasir
+                    <button className="md:hidden size-10 flex items-center justify-center bg-slate-100 rounded-xl" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                        {isMobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
                     </button>
                 </div>
             </nav>
 
+            {/* Mobile Menu Overlay */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, x: '100%' }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: '100%' }}
+                        className="fixed inset-0 z-[60] bg-white p-10 flex flex-col items-center justify-center gap-8"
+                    >
+                        <button className="absolute top-10 right-10 size-12 bg-slate-100 rounded-2xl flex items-center justify-center" onClick={() => setIsMobileMenuOpen(false)}>
+                            <FiX size={24} />
+                        </button>
+                        {['Services', 'Prices', 'Service Machine', 'Location'].map((item) => (
+                            <a
+                                key={item}
+                                href={`#${item.toLowerCase().replace(' ', '-')}`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-2xl font-black uppercase tracking-[0.1em] text-slate-900 hover:text-blue-600 italic"
+                            >
+                                {item}
+                            </a>
+                        ))}
+                        <button
+                            onClick={() => { setIsMobileMenuOpen(false); onNavigate('login'); }}
+                            className="w-full bg-blue-600 text-white py-5 rounded-[2rem] text-sm font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                        >
+                            Portal Kasir
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Hero Section */}
-            <section id="home" className="lp-hero">
-                <div className="lp-hero-content">
-                    <div className="lp-hero-badge">BEST PRINTING PARTNER IN MAGETAN</div>
-                    <h1>Solusi <span>Cetak & Fotocopy</span> Profesional Anda</h1>
-                    <p>
-                        Menyediakan layanan ATK, Fotocopy, Digital Printing hingga Service Mesin Fotocopy
-                        dengan kualitas premium dan pelayanan cepat untuk mendukung bisnis dan pendidikan Anda.
-                    </p>
-                    <div className="lp-hero-ctas">
-                        <a href="#services" className="lp-btn-login" style={{ padding: '14px 32px' }}>Lihat Layanan</a>
-                        <a href="#service-mesin" className="lp-btn-login" style={{ background: 'transparent', border: '2px solid var(--lp-primary)', color: 'var(--lp-primary)', padding: '14px 32px' }}>Request Service</a>
+            <section id="home" className="relative pt-32 pb-20 lg:pt-52 lg:pb-40 overflow-hidden">
+                <div className="absolute top-0 right-0 w-[60%] h-full bg-slate-50/50 -z-10 skew-x-[-15deg] translate-x-1/4"></div>
+                <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-16 items-center">
+                    <div className="lg:col-span-7 space-y-8">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="inline-flex items-center gap-3 px-4 py-2 bg-blue-50 rounded-full border border-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest"
+                        >
+                            <span className="size-2 bg-blue-600 rounded-full animate-pulse"></span>
+                            Best Printing Partner in Magetan
+                        </motion.div>
+                        <motion.h2
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="text-5xl lg:text-7xl font-black text-slate-900 tracking-tighter leading-[0.95] uppercase italic"
+                        >
+                            Solusi <span className="text-blue-600">Cetak &</span> <br />
+                            Fotocopy <span className="text-blue-600">Anda.</span>
+                        </motion.h2>
+                        <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="text-lg text-slate-500 max-w-xl leading-relaxed"
+                        >
+                            Menyediakan layanan ATK, Fotocopy, Digital Printing hingga Service Mesin Fotocopy
+                            dengan kualitas premium dan pelayanan cepat untuk mendukung bisnis dan pendidikan Anda.
+                        </motion.p>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="flex flex-col sm:flex-row gap-4"
+                        >
+                            <a href="#services" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/40 transition-all flex items-center justify-center gap-3 group">
+                                Lihat Layanan <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                            </a>
+                            <a href="#service-machine" className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all text-center">
+                                Request Service
+                            </a>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.5 }}
+                            className="grid grid-cols-3 gap-8 pt-10 border-t border-slate-100"
+                        >
+                            {[
+                                { val: '10+', label: 'Years Exp' },
+                                { val: '5k+', label: 'Clients' },
+                                { val: '24h', label: 'Max Turnaround' },
+                            ].map((s, i) => (
+                                <div key={i}>
+                                    <p className="text-3xl font-black text-slate-900 italic tracking-tighter">{s.val}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{s.label}</p>
+                                </div>
+                            ))}
+                        </motion.div>
                     </div>
-                </div>
-                <div className="lp-hero-image">
-                    <div className="lp-img-wrapper">
-                        {/* Note: In a real app we'd move this to public folder, for now using direct generated path */}
-                        <img src={HERO_IMAGE} alt="Abadi Jaya Printing Shop" />
+
+                    <div className="lg:col-span-5 relative group">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 1, delay: 0.4 }}
+                            className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl shadow-blue-600/10 border-8 border-white group-hover:rotate-1 transition-transform duration-700"
+                        >
+                            <img src={HERO_IMAGE} alt="Abadi Jaya Printing" className="w-full aspect-[4/5] object-cover group-hover:scale-110 transition-transform duration-1000" />
+                        </motion.div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 rounded-full blur-3xl -z-10 group-hover:scale-125 transition-transform duration-1000"></div>
+                        <div className="absolute -bottom-10 -right-10 bg-white p-6 rounded-[2rem] shadow-xl z-20 flex flex-col items-center gap-2 border border-slate-50 max-w-[140px] animate-bounce">
+                            <FiCheckCircle className="text-emerald-500 text-3xl" />
+                            <p className="text-[10px] font-black text-center uppercase tracking-widest leading-none">Garansi Kualitas</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Services Section */}
-            <section id="services" className="lp-section">
-                <div className="lp-section-header">
-                    <h2>Layanan Kami</h2>
-                    <p>Apapun kebutuhan dokumen Anda, kami punya solusinya.</p>
-                </div>
-                <div className="lp-services-grid">
-                    {services.map((s, i) => (
-                        <div key={i} className="lp-service-card">
-                            <div className="lp-service-icon">{s.icon}</div>
-                            <h3>{s.title}</h3>
-                            <p>{s.desc}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Dynamic Price List Section */}
-            <section id="pricelist" className="lp-section" style={{ background: 'var(--lp-bg-alt)' }}>
-                <div className="lp-section-header">
-                    <h2>Daftar Harga Layanan</h2>
-                    <p>Transparansi harga untuk kenyamanan Anda berbelanja.</p>
-                </div>
-
-                <div className="lp-price-grid">
-                    {/* Fotocopy */}
-                    <div className="lp-price-card">
-                        <div className="lp-price-header"><FiFileText /> <h4>Fotocopy</h4></div>
-                        <div className="lp-price-list">
-                            {prices.fotocopy.length > 0 ? prices.fotocopy.map(p => (
-                                <div key={p.id} className="lp-price-item">
-                                    <span>{p.paper} {p.color === 'bw' ? 'B/W' : 'Warna'} {p.side === '2' ? '(B/B)' : ''}</span>
-                                    <span className="price">Rp {parseInt(p.price || 0).toLocaleString()}</span>
-                                </div>
-                            )) : (
-                                <>
-                                    <div className="lp-price-item"><span>HVS A4 B/W</span><span className="price">Rp 300</span></div>
-                                    <div className="lp-price-item"><span>HVS F4 B/W</span><span className="price">Rp 350</span></div>
-                                    <div className="lp-price-item"><span>Warna (Standard)</span><span className="price">Rp 2.000</span></div>
-                                </>
-                            )}
-                        </div>
+            <section id="services" className="py-32 bg-slate-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+                        <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Expert Expertise</h3>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Layanan Unggulan Kami</h2>
+                        <div className="size-16 h-1.5 bg-blue-600 mx-auto rounded-full"></div>
                     </div>
 
-                    {/* Print */}
-                    <div className="lp-price-card">
-                        <div className="lp-price-header"><FiPrinter /> <h4>Print Dokumen</h4></div>
-                        <div className="lp-price-list">
-                            {prices.print.length > 0 ? prices.print.map(p => (
-                                <div key={p.id} className="lp-price-item">
-                                    <span>{p.paper} {p.color === 'bw' ? 'B/W' : 'Warna'}</span>
-                                    <span className="price">Rp {parseInt(p.price || 0).toLocaleString()}</span>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {services.map((s, i) => (
+                            <motion.div
+                                key={i}
+                                whileHover={{ y: -10 }}
+                                className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-600/5 transition-all group"
+                            >
+                                <div className={`size-16 rounded-3xl mb-8 flex items-center justify-center text-2xl transition-all group-hover:scale-110 rotate-3 group-hover:rotate-0 ${s.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+                                    s.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
+                                        s.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                                            s.color === 'amber' ? 'bg-amber-50 text-amber-600' :
+                                                s.color === 'rose' ? 'bg-rose-50 text-rose-600' :
+                                                    'bg-cyan-50 text-cyan-600'
+                                    }`}>
+                                    {s.icon}
                                 </div>
-                            )) : (
-                                <>
-                                    <div className="lp-price-item"><span>HVS A4 Hitam</span><span className="price">Rp 500</span></div>
-                                    <div className="lp-price-item"><span>HVS A4 Warna</span><span className="price">Rp 2.000</span></div>
-                                    <div className="lp-price-item"><span>Kertas Foto</span><span className="price">Rp 5.000</span></div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Jilid */}
-                    <div className="lp-price-card">
-                        <div className="lp-price-header"><FiLayers /> <h4>Penjilidan</h4></div>
-                        <div className="lp-price-list">
-                            {prices.binding.length > 0 ? prices.binding.map(p => (
-                                <div key={p.id} className="lp-price-item">
-                                    <span>{p.name}</span>
-                                    <span className="price">Rp {parseInt(p.price || 0).toLocaleString()}</span>
-                                </div>
-                            )) : (
-                                <>
-                                    <div className="lp-price-item"><span>Jilid Spiral</span><span className="price">Rp 5.000</span></div>
-                                    <div className="lp-price-item"><span>Jilid Lakban</span><span className="price">Rp 3.000</span></div>
-                                    <div className="lp-price-item"><span>Hard Cover</span><span className="price">Rp 25.000</span></div>
-                                </>
-                            )}
-                        </div>
+                                <h4 className="text-xl font-black tracking-tight uppercase italic mb-4">{s.title}</h4>
+                                <p className="text-slate-500 leading-relaxed text-sm">{s.desc}</p>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Featured Products */}
-            {featuredProducts.length > 0 && (
-                <section className="lp-section">
-                    <div className="lp-section-header">
-                        <h2>Produk ATK Populer</h2>
-                        <p>Kualitas ATK terbaik untuk kebutuhan sekolah dan kantor.</p>
-
-                        <div className="lp-category-filters">
-                            {categories.map(cat => (
-                                <button
-                                    key={cat}
-                                    className={`lp-cat-btn ${activeCategory === cat ? 'active' : ''}`}
-                                    onClick={() => setActiveCategory(cat)}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
+            {/* Price List Section */}
+            <section id="prices" className="py-32 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="flex flex-col lg:flex-row justify-between items-end gap-8 mb-20">
+                        <div className="space-y-4 text-center lg:text-left">
+                            <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Transparent Pricing</h3>
+                            <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Daftar Harga Terbuka</h2>
                         </div>
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest italic flex items-center gap-2">
+                            <FiInfo className="text-blue-500" /> Harga sewaktu-waktu dapat berubah mengikuti pasar
+                        </p>
                     </div>
-                    <div className="lp-products-grid">
-                        {filteredProducts.map(p => (
-                            <div key={p.id} className="lp-product-card">
-                                <div className="lp-product-img">
-                                    <FiTag size={40} color="var(--lp-primary)" style={{ opacity: 0.2 }} />
+
+                    <div className="grid lg:grid-cols-3 gap-8">
+                        {[
+                            { name: 'Fotocopy', icon: <FiFileText />, data: prices.fotocopy, defaults: [{ p: 'A4 B/W', v: 300 }, { p: 'F4 B/W', v: 350 }, { p: 'Warna Standard', v: 2000 }] },
+                            { name: 'Print Dokumen', icon: <FiPrinter />, data: prices.print, defaults: [{ p: 'A4 B/W', v: 500 }, { p: 'A4 Warna', v: 2000 }, { p: 'Foto Premium', v: 5000 }] },
+                            { name: 'Penjilidan', icon: <FiLayers />, data: prices.binding, defaults: [{ p: 'Spiral Kawat', v: 5000 }, { p: 'Lakban Rapih', v: 3000 }, { p: 'Custom Cover', v: 25000 }] },
+                        ].map((cat, i) => (
+                            <div key={i} className="bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl relative group overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform"></div>
+                                <div className="flex items-center gap-4 mb-10">
+                                    <div className="size-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-500 text-xl font-bold italic shadow-xl">
+                                        {cat.icon}
+                                    </div>
+                                    <h3 className="text-lg font-black tracking-[0.1em] uppercase italic">{cat.name}</h3>
                                 </div>
-                                <h4>{p.name}</h4>
-                                <div className="lp-product-footer">
-                                    <span className="price">Rp {parseInt(p.sellPrice || 0).toLocaleString()}</span>
-                                    <span className="stock">Stok: {p.stock}</span>
+
+                                <div className="space-y-1">
+                                    {cat.data.length > 0 ? cat.data.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center py-4 border-b border-white/5 group/item cursor-default">
+                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-white transition-colors">{item.paper || item.name} {item.color ? `(${item.color.toUpperCase()})` : ''}</span>
+                                            <span className="text-sm font-black italic tracking-tight text-blue-400">Rp {parseInt(item.price || 0).toLocaleString()}</span>
+                                        </div>
+                                    )) : cat.defaults.map((item, idx) => (
+                                        <div key={idx} className="flex justify-between items-center py-4 border-b border-white/5">
+                                            <span className="text-xs font-bold text-slate-400">{item.p}</span>
+                                            <span className="text-sm font-black italic tracking-tight text-blue-400">Rp {item.v.toLocaleString()}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                                <button className="lp-btn-buy" onClick={() => handleOrderProduct(p)}>
-                                    Pesan via WA
-                                </button>
+                                <div className="mt-10 flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">
+                                    <div className="size-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                                    Verified Rates ID-Mag-0{i + 1}
+                                </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Products Section */}
+            {featuredProducts.length > 0 && (
+                <section className="py-32 bg-white">
+                    <div className="max-w-7xl mx-auto px-6">
+                        <div className="flex flex-col lg:flex-row justify-between items-center gap-8 mb-20 text-center lg:text-left">
+                            <div className="space-y-4">
+                                <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Store Inventory</h3>
+                                <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Hot Items & ATK</h2>
+                            </div>
+                            <div className="flex flex-wrap justify-center gap-2">
+                                {categories.map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setActiveCategory(cat)}
+                                        className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${activeCategory === cat ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/10' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'}`}
+                                    >
+                                        {cat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {filteredProducts.map((p, i) => (
+                                <motion.div
+                                    key={p.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    viewport={{ once: true }}
+                                    className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition-all"
+                                >
+                                    <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center p-12">
+                                        <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest z-10 border border-slate-100">In Stock</div>
+                                        <FiTag className="text-6xl text-slate-200 group-hover:scale-125 transition-transform duration-700 group-hover:rotate-12" />
+                                        {/* In a real scenario use p.imageUrl if exists */}
+                                    </div>
+                                    <div className="p-8 space-y-4">
+                                        <div className="min-h-[40px]">
+                                            <h4 className="text-[11px] font-black uppercase tracking-tight italic text-slate-900 line-clamp-2 leading-tight">{p.name}</h4>
+                                        </div>
+                                        <div className="flex items-center justify-between pb-6 border-b border-slate-50">
+                                            <p className="text-lg font-black italic tracking-tighter">Rp {parseInt(p.sellPrice || 0).toLocaleString()}</p>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Available: {p.stock}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${p.name}%0A- Harga: Rp ${parseInt(p.sellPrice || 0).toLocaleString()}%0A%0AApakah stok masih tersedia?`;
+                                                window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+                                            }}
+                                            className="w-full py-4 bg-slate-50 hover:bg-blue-600 text-slate-900 hover:text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                        >
+                                            Pesan via WhatsApp
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
                 </section>
             )}
 
             {/* Gallery Section */}
-            <section className="lp-section" id="gallery" style={{ background: 'var(--lp-bg-alt)' }}>
-                <div className="lp-section-header">
-                    <h2>Galeri Toko & Hasil Kerja</h2>
-                    <p>Dokumentasi profesionalitas dan kualitas layanan kami</p>
-                </div>
-                <div className="lp-gallery-grid">
-                    {galleryImages.length > 0 ? (
-                        galleryImages.map((img, i) => (
-                            <div key={i} className="lp-gallery-item">
-                                <div className="lp-gallery-img">
-                                    <img src={img} alt={`Karya Abadi Jaya ${i}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                            <div className="lp-gallery-item"><div className="lp-gallery-img" style={{ background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiImage size={40} color="#ccc" /></div></div>
-                        </>
-                    )}
-                </div>
-            </section>
-
-            {/* Testimonials Section */}
-            <section className="lp-section" id="testimonials">
-                <div className="lp-section-header">
-                    <h2>Apa Kata Mereka?</h2>
-                    <p>Kepercayaan pelanggan adalah prioritas utama kami</p>
-                </div>
-                <div className="lp-testimonials-grid">
-                    {testimonials.map((t, i) => (
-                        <div key={i} className="lp-testimonial-card">
-                            <div className="lp-stars">{'★'.repeat(t.stars)}</div>
-                            <p className="lp-t-text">"{t.text}"</p>
-                            <div className="lp-t-author">
-                                <strong>{t.name}</strong>
-                                <span>{t.role}</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* FAQ Section */}
-            <section className="lp-section" id="faq" style={{ background: 'var(--lp-bg-alt)' }}>
-                <div className="lp-section-header">
-                    <h2>Sering Ditanyakan</h2>
-                    <p>Hubungi kami jika pertanyaan Anda belum terjawab</p>
-                </div>
-                <div className="lp-faq-container">
-                    {faqData.map((item, i) => (
-                        <div key={i} className="lp-faq-item">
-                            <div className="lp-faq-q">{item.q}</div>
-                            <div className="lp-faq-a">{item.a}</div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Service Request Section */}
-            <section id="service-mesin" className="lp-section">
-                <div className="lp-form-section">
-                    <div className="lp-form-text">
-                        <h2>Butuh Service Mesin Fotocopy?</h2>
-                        <p style={{ marginTop: '20px', fontSize: '1.1rem', color: 'var(--lp-text-muted)' }}>
-                            Mesin Anda bermasalah? Teknisi kami siap datang ke lokasi Anda.
-                            Isi formulir berikut dan teknisi kami akan segera menghubungi Anda.
-                        </p>
-                        <div style={{ marginTop: '40px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                                <FiCheckCircle color="var(--lp-primary)" /> <span>Teknisi Berpengalaman</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <FiCheckCircle color="var(--lp-primary)" /> <span>Sparepart Original (Opsional)</span>
-                            </div>
-                        </div>
+            <section id="gallery" className="py-32 bg-slate-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+                        <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Portfolio</h3>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Dokumentasi Kerja</h2>
                     </div>
-                    <div className="lp-form-card">
-                        {formSent ? (
-                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                <div style={{ width: '60px', height: '60px', background: '#ecfdf5', color: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '2rem' }}>
-                                    <FiCheckCircle />
-                                </div>
-                                <h3>Permintaan Terkirim!</h3>
-                                <p style={{ color: 'var(--lp-text-muted)', marginTop: '10px' }}>Teknisi kami akan segera menghubungi Anda melalui nomor WhatsApp yang diberikan.</p>
+
+                    <div className="columns-1 sm:columns-2 lg:columns-3 gap-8 space-y-8">
+                        {galleryImages.length > 0 ? galleryImages.map((img, i) => (
+                            <div key={i} className="break-inside-avoid rounded-[2.5rem] overflow-hidden group shadow-sm hover:shadow-2xl transition-all border-4 border-white">
+                                <img src={img} className="w-full group-hover:scale-105 transition-transform duration-1000" alt="Work Gallery" />
                             </div>
-                        ) : (
-                            <form onSubmit={handleApplyService}>
-                                <div className="lp-form-group">
-                                    <label>Nama Lengkap</label>
-                                    <input type="text" className="lp-form-input" placeholder="Masukkan nama Anda" required />
-                                </div>
-                                <div className="lp-form-group">
-                                    <label>No. WhatsApp</label>
-                                    <input type="tel" className="lp-form-input" placeholder="Contoh: 08123456789" required />
-                                </div>
-                                <div className="lp-form-group">
-                                    <label>Model Mesin</label>
-                                    <input type="text" className="lp-form-input" placeholder="Contoh: Canon iR 6000 / Kyocera" required />
-                                </div>
-                                <div className="lp-form-group">
-                                    <label>Serial Number (Opsional)</label>
-                                    <input type="text" className="lp-form-input" placeholder="Masukkan nomor seri mesin Anda" />
-                                </div>
-                                <div className="lp-form-group">
-                                    <label>Alamat Lengkap / Lokasi Unit</label>
-                                    <textarea className="lp-form-input" rows="2" placeholder="Masukkan alamat lengkap lokasi mesin" required></textarea>
-                                </div>
-                                <div className="lp-form-group">
-                                    <label>Keluhan / Masalah</label>
-                                    <textarea className="lp-form-input" rows="4" placeholder="Jelaskan masalah mesin Anda" required></textarea>
-                                </div>
-                                <button type="submit" className="lp-btn-login" style={{ width: '100%', marginTop: '10px' }}>
-                                    Kirim Permintaan Service
-                                </button>
-                            </form>
-                        )}
+                        )) : [1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="break-inside-avoid h-64 bg-slate-200 animate-pulse rounded-[2.5rem] flex items-center justify-center text-slate-400">
+                                <FiImage size={40} className="opacity-20" />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Profile & About */}
-            <section className="lp-section">
-                <div className="lp-section-header">
-                    <h2>Profil Toko</h2>
-                </div>
-                <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                    <p style={{ fontSize: '1.2rem', lineHeight: '1.8' }}>
-                        <strong>{storeInfo.name}</strong> telah melayani kebutuhan cetak dan fotocopy masyarakat Magetan selama lebih dari satu dekade.
-                        Dimulai dari sebuah ruko kecil di Desa Kediren, kini kami telah berkembang menjadi pusat layanan dokumen terintegrasi
-                        yang menyediakan solusi dari hulu ke hilir bagi sekolah, instansi pemerintah, maupun pelaku usaha.
-                    </p>
-                </div>
-            </section>
+            {/* Service Machine Section */}
+            <section id="service-machine" className="py-32">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="bg-slate-900 rounded-[4rem] overflow-hidden flex flex-col lg:flex-row shadow-3xl shadow-blue-500/10 border border-slate-800 relative">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -mr-32 -mt-32 blur-[100px] animate-pulse"></div>
 
-            {/* Location */}
-            <section id="location" className="lp-section" style={{ background: 'var(--lp-bg-alt)' }}>
-                <div className="lp-section-header">
-                    <h2>Kunjungi Toko Kami</h2>
-                    <p>Lokasi strategis dan mudah dijangkau.</p>
-                </div>
-                <div className="lp-location-grid">
-                    <div className="lp-map-box">
-                        {/* Simple iframe map for Kediren, Lembeyan */}
-                        <iframe
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15814.71714856037!2d111.4111306!3d-7.71752!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7960334860b73b%3A0x26550607bd9b19e9!2sKediren%2C%20Lembeyan%2C%20Magetan%20Regency%2C%20East%20Java!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
-                            width="100%"
-                            height="100%"
-                            style={{ border: 0 }}
-                            allowFullScreen=""
-                            loading="lazy">
-                        </iframe>
-                    </div>
-                    <div className="lp-info-box">
-                        <h3 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>Alamat & Kontak</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <FiMapPin size={24} color="var(--lp-primary)" />
-                                <p>{storeInfo.address}</p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <FiPhone size={24} color="var(--lp-primary)" />
-                                <p>{storeInfo.phone}</p>
-                            </div>
-                            <div style={{ display: 'flex', gap: '15px' }}>
-                                <FiClock size={24} color="var(--lp-primary)" />
-                                <p>Senin - Sabtu: 07:00 - 20:00<br />Minggu: 08:00 - 16:00</p>
+                        <div className="lg:w-1/2 p-12 lg:p-20 space-y-8 relative z-10">
+                            <h3 className="text-[11px] font-black text-blue-500 uppercase tracking-[0.4em]">Technical Support</h3>
+                            <h2 className="text-4xl lg:text-6xl font-black text-white tracking-tighter uppercase italic leading-[0.9]">Butuh Service <br /> <span className="text-blue-500 italic font-medium tracking-normal text-5xl">Mesin Fotocopy?</span></h2>
+                            <p className="text-slate-400 leading-relaxed max-w-sm">
+                                Mesin Anda bermasalah? Teknisi kami siap datang ke lokasi Anda.
+                                Isi formulir berikut dan teknisi kami akan segera menghubungi Anda.
+                            </p>
+                            <div className="space-y-4">
+                                {[
+                                    'Teknisi Berpengalaman & Tersertifikasi',
+                                    'Sparepart Original / Grade A Quality',
+                                    'Respon Cepat Khusus Area Magetan'
+                                ].map((txt, i) => (
+                                    <div key={i} className="flex items-center gap-4 text-xs font-bold text-slate-300">
+                                        <div className="size-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
+                                            <FiCheck size={14} />
+                                        </div>
+                                        {txt}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="lp-qr-box" onClick={() => window.open(storeInfo.mapsUrl, '_blank')} style={{ cursor: 'pointer' }}>
-                            <img src={getQrUrl(storeInfo.mapsUrl)} alt="Location QR Code" className="lp-qr-img" />
-                            <p style={{ fontWeight: '700', color: 'var(--lp-primary)' }}>Klik/Scan untuk Navigasi</p>
+                        <div className="lg:w-1/2 p-10 lg:p-16 bg-white/5 backdrop-blur-sm border-l border-slate-800">
+                            {formSent ? (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="h-full flex flex-col items-center justify-center text-center space-y-6"
+                                >
+                                    <div className="size-20 bg-emerald-500 rounded-full flex items-center justify-center text-white text-4xl shadow-2xl shadow-emerald-500/40">
+                                        <FiCheckCircle />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white tracking-tight uppercase italic">Permintaan Terkirim!</h3>
+                                    <p className="text-slate-400 text-sm max-w-xs uppercase font-bold tracking-widest italic leading-relaxed">Teknisi kami akan segera menghubungi Anda melalui nomor WhatsApp yang diberikan.</p>
+                                </motion.div>
+                            ) : (
+                                <form onSubmit={handleApplyService} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Nama Lengkap</label>
+                                        <input name="name" type="text" required placeholder="Sesuai KTP/Nama Toko" className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 px-5 text-white text-xs font-bold focus:ring-4 focus:ring-blue-500/20 transition-all outline-none" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">WhatsApp No.</label>
+                                        <input name="phone" type="tel" required placeholder="0812xxxx" className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 px-5 text-white text-xs font-bold focus:ring-4 focus:ring-blue-500/20 transition-all outline-none" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Model Mesin</label>
+                                        <input name="model" type="text" required placeholder="Canon iR 6000, dll" className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 px-5 text-white text-xs font-bold focus:ring-4 focus:ring-blue-500/20 transition-all outline-none" />
+                                    </div>
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Lokasi Kerja / Alamat Unit</label>
+                                        <textarea name="address" required rows="2" placeholder="Detail alamat untuk penjemputan/kunjungan..." className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 px-5 text-white text-xs font-bold focus:ring-4 focus:ring-blue-500/20 transition-all outline-none resize-none"></textarea>
+                                    </div>
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Keluhan / Problem Diagnosis</label>
+                                        <textarea name="issue" required rows="4" placeholder="Jelaskan secara detail kerusakan yang dialami..." className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 px-5 text-white text-xs font-bold focus:ring-4 focus:ring-blue-500/20 transition-all outline-none resize-none"></textarea>
+                                    </div>
+                                    <button type="submit" className="sm:col-span-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/40 transition-all flex items-center justify-center gap-3 mt-4">
+                                        Kirim Authorize Request
+                                    </button>
+                                </form>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Testimonials */}
+            <section className="py-32 bg-slate-50">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center max-w-2xl mx-auto mb-20 space-y-4">
+                        <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Testimonials</h3>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Kepuasan Pelanggan</h2>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {testimonials.map((t, i) => (
+                            <div key={i} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative group overflow-hidden">
+                                <div className="absolute -top-10 -left-10 text-[120px] font-black text-slate-50 opacity-10 leading-none select-none">"</div>
+                                <div className="flex gap-1 mb-6">
+                                    {[...Array(t.stars)].map((_, idx) => <FiCheckCircle key={idx} className="text-emerald-500" />)}
+                                </div>
+                                <p className="text-slate-600 text-sm leading-relaxed mb-8 relative z-10 italic">"{t.text}"</p>
+                                <div className="flex items-center gap-4">
+                                    <div className="size-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-lg italic tracking-tighter shadow-lg shadow-slate-900/20">
+                                        {t.name.split(' ').map(n => n[0]).join('')}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{t.name}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.role}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Location Section */}
+            <section id="location" className="py-32 border-t border-slate-100">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="grid lg:grid-cols-12 gap-16 items-center">
+                        <div className="lg:col-span-12 xl:col-span-5 space-y-10">
+                            <div className="space-y-4">
+                                <h3 className="text-[11px] font-black text-blue-600 uppercase tracking-[0.4em]">Direction</h3>
+                                <h2 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-[0.9]">Kunjungi Toko <br /> <span className="text-blue-600 italic font-medium tracking-normal text-4xl">Fisik Kami.</span></h2>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div className="flex gap-6">
+                                    <div className="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                        <FiMapPin size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Corporate Office / Workshop</p>
+                                        <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight leading-relaxed">{storeInfo.address}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-6">
+                                    <div className="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                        <FiPhone size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Customer Support Line</p>
+                                        <p className="text-lg font-black text-slate-900 italic tracking-tighter">{storeInfo.phone}</p>
+                                    </div>
+                                </div>
+                                <div className="flex gap-6">
+                                    <div className="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                        <FiClock size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Operational Hours</p>
+                                        <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">Senin - Sabtu: 07:00 - 20:00</p>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Minggu: 08:00 - 16:00 (Limited Support)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                onClick={() => window.open(storeInfo.mapsUrl, '_blank')}
+                                className="p-8 bg-slate-950 rounded-[2.5rem] flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-all group"
+                            >
+                                <div className="flex items-center gap-6">
+                                    <div className="bg-white rounded-2xl p-2 group-hover:rotate-12 transition-transform">
+                                        <img src={getQrUrl(storeInfo.mapsUrl)} className="size-16" alt="Maps QR" />
+                                    </div>
+                                    <div>
+                                        <p className="text-white text-sm font-black italic uppercase tracking-tight">Navigasi Langsung</p>
+                                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Klik/Scan via Google Maps</p>
+                                    </div>
+                                </div>
+                                <FiArrowRight className="text-blue-500 text-2xl group-hover:translate-x-2 transition-transform" />
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-12 xl:col-span-7 h-[500px] xl:h-[600px] rounded-[3.5rem] overflow-hidden shadow-2xl shadow-blue-600/5 border-8 border-slate-50 relative group">
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15814.71714856037!2d111.4111306!3d-7.71752!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7960334860b73b%3A0x26550607bd9b19e9!2sKediren%2C%20Lembeyan%2C%20Magetan%20Regency%2C%20East%20Java!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                                width="100%" height="100%" style={{ border: 0 }} allowFullScreen="" loading="lazy">
+                            </iframe>
+                            <div className="absolute inset-0 bg-blue-600/5 pointer-events-none group-hover:opacity-0 transition-opacity"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="lp-footer">
-                <div className="lp-footer-content">
-                    <div>
-                        <div className="lp-logo" style={{ marginBottom: '20px' }}>
-                            <div className="lp-logo-icon"><FiPrinter /></div>
-                            <span>{storeInfo.name}</span>
+            <footer className="bg-slate-950 text-white pt-24 pb-12 overflow-hidden relative">
+                <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 relative z-10">
+                    <div className="space-y-8 col-span-1 lg:col-span-1">
+                        <div className="flex items-center gap-3">
+                            <div className="size-10 bg-blue-600 rounded-xl flex items-center justify-center text-white italic font-black text-xl">
+                                <FiPrinter />
+                            </div>
+                            <span className="text-xl font-black italic tracking-tighter uppercase">{storeInfo.name}</span>
                         </div>
-                        <p style={{ color: 'var(--lp-text-muted)' }}>Solusi cetak terpercaya di Magetan dengan teknologi terkini dan harga kompetitif.</p>
+                        <p className="text-slate-500 text-sm leading-relaxed max-w-xs italic font-medium">
+                            Solusi cetak terpercaya di Magetan dengan teknologi terkini dan harga kompetitif. Melayani sepenuh hati untuk kualitas dokumen terbaik.
+                        </p>
+                        <div className="flex gap-4">
+                            {[FiInstagram, FiTwitter, FiFacebook].map((Icon, idx) => (
+                                <a key={idx} href="#" className="size-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-600 hover:border-blue-600 transition-all">
+                                    <Icon size={18} />
+                                </a>
+                            ))}
+                        </div>
                     </div>
-                    <div>
-                        <h4 style={{ marginBottom: '20px' }}>Layanan Cepat</h4>
-                        <ul style={{ listStyle: 'none', color: 'var(--lp-text-muted)', lineHeight: '2' }}>
-                            <li>Fotocopy</li>
-                            <li>Digital Printing</li>
-                            <li>Service Mesin</li>
-                            <li>Alat Tulis Kantor</li>
+
+                    <div className="space-y-8 col-span-1 lg:col-span-1">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 italic">Quick Links</h4>
+                        <ul className="space-y-4">
+                            {['Home', 'Services', 'Prices', 'Location'].map(link => (
+                                <li key={link}>
+                                    <a href={`#${link.toLowerCase()}`} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-blue-500 transition-colors flex items-center gap-2 group">
+                                        <span className="size-1 bg-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                                        {link}
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
-                    <div>
-                        <h4 style={{ marginBottom: '20px' }}>Hubungi Kami</h4>
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                            <button className="lp-btn-login" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}`, '_blank')}>WhatsApp</button>
-                            <button className="lp-btn-login" style={{ padding: '8px 16px', fontSize: '0.8rem', background: '#334155' }}>Instagram</button>
+
+                    <div className="space-y-8 col-span-1 lg:col-span-1">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 italic">Core Services</h4>
+                        <ul className="space-y-4">
+                            {['Digital Printing', 'Fotocopy', 'Cetak Offset', 'Service Mesin'].map(item => (
+                                <li key={item} className="text-xs font-black uppercase tracking-widest text-slate-400 italic">
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="space-y-8 col-span-1 lg:col-span-1">
+                        <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500 italic">Instant Support</h4>
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase leading-relaxed tracking-wider">Punya pertanyaan mendesak? Chat dengan kami melalui WhatsApp.</p>
+                            <button
+                                onClick={() => window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}`, '_blank')}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-600/20"
+                            >
+                                Fast Response
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div className="lp-footer-bottom">
-                    &copy; {new Date().getFullYear()} {storeInfo.name}. All rights reserved.
+
+                <div className="max-w-7xl mx-auto px-6 mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-600 italic">
+                    <p>&copy; {new Date().getFullYear()} {storeInfo.name}. All Rights Reserved.</p>
+                    <p>Designed by ❤️ for Supriyanto Abadi Jaya</p>
                 </div>
+
+                {/* Bottom Decorative Swirl */}
+                <div className="absolute bottom-0 right-0 w-[40%] h-[60%] bg-blue-600/5 -z-0 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2"></div>
             </footer>
         </div>
     );

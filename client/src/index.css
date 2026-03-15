@@ -1,9 +1,23 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "tailwind-scrollbar";
 
 @theme {
   --color-background-light: #f6f7f8;
   --color-background-dark: #101922;
   --color-primary: #137fec;
+
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
@@ -133,14 +147,11 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
-  overflow: hidden;
-  height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
 #root {
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
 }
 
 a {
@@ -198,6 +209,19 @@ img {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* ---- Utilities ---- */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari and Opera */
 }
 
 /* ============================================
@@ -341,9 +365,11 @@ img {
 }
 
 .premium-page-wrapper .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-sec);
   font-weight: 500;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .premium-page-wrapper .page-toolbar {
@@ -617,16 +643,23 @@ img {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
 }
 
 .header-title {
   font-size: 1.1rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-search {
   position: relative;
   width: 300px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .header-search input {
@@ -818,6 +851,9 @@ img {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
 }
 
 /* ---- Buttons ---- */
@@ -1679,9 +1715,9 @@ img {
 /* ---- Dashboard ---- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  margin-top: 24px;
 }
 
 .notification-panel {
@@ -2086,6 +2122,25 @@ img {
 
   .menu-toggle {
     display: flex;
+  }
+
+  .top-header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .header-left {
+    gap: 8px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .header-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
   }
 
   .pos-layout {
@@ -2659,6 +2714,17 @@ img {
     font-size: 1rem !important;
   }
 }
+
+/* Desktop Font Scaling Fix */
+@media (min-width: 1280px) {
+
+  [class*="text-\\[9px\\]"],
+  [class*="text-\\[10px\\]"] {
+    font-size: 0.8125rem;
+    /* text-xs, crisp on high-DPI */
+  }
+}
+
 
 /* Mobile 375px specific */
 @media screen and (max-width: 480px) {

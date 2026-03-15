@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink, FiChevronLeft, FiChevronRight, FiActivity, FiZap, FiTarget, FiBox, FiMessageSquare } from 'react-icons/fi';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -41,7 +42,7 @@ export default function DesignerDashboardPage({ onNavigate }) {
         }
     }, []);
 
-    useEffect(() => { fetchTasks(); }, []);
+    useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
     // Timer for active task
     const activeTask = tasks.find(t => t.status === 'dikerjakan');
@@ -104,324 +105,375 @@ export default function DesignerDashboardPage({ onNavigate }) {
     const doneTasks = tasks.filter(t => t.status === 'selesai');
 
     return (
-        <div style={{
-            minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-            color: '#f1f5f9', fontFamily: "'Inter', sans-serif"
-        }}>
-            <style>{CSS}</style>
+        <div className="min-h-screen bg-[#060a13] text-slate-200 font-display selection:bg-blue-500/30 overflow-x-hidden relative">
+            {/* ── Background Effects ── */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.08)_0%,transparent_50%)]" />
+                <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full" />
+                <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-indigo-600/5 blur-[100px] rounded-full" />
+            </div>
 
-            {/* Header */}
-            <header className="dd-header">
-                <div className="dd-header-left">
-                    <div className="dd-avatar">
+            {/* ── Header ── */}
+            <header className="relative z-10 px-8 py-6 flex items-center justify-between border-b border-white/5 backdrop-blur-md bg-[#060a13]/50">
+                <div className="flex items-center gap-5">
+                    <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                        className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-white shadow-lg shadow-blue-500/20"
+                    >
                         {(user?.name || 'D').substring(0, 2).toUpperCase()}
-                    </div>
+                    </motion.div>
                     <div>
-                        <h1 className="dd-name">{user?.name || 'Desainer'}</h1>
-                        <p className="dd-role">Operator Desain</p>
+                        <h1 className="text-xl font-black text-white leading-tight tracking-tight">{user?.name || 'Desainer'}</h1>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 italic">Creative Division</span>
+                            <div className="w-1 h-1 rounded-full bg-slate-700" />
+                            <span className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${activeTask ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${activeTask ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                {activeTask ? 'Engaged' : 'Active / Ready'}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <div className="dd-header-right">
-                    <span className={`dd-status-badge flex items-center gap-1 ${activeTask ? 'dd-status-busy' : 'dd-status-free'}`}>
-                        {activeTask ? <><div className="size-2 rounded-full bg-red-400"></div> Sibuk</> : <><div className="size-2 rounded-full bg-green-400"></div> Tersedia</>}
-                    </span>
-                    <button className="dd-logout-btn" onClick={logout}>
-                        <FiLogOut />
-                        Keluar
+
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={logout}
+                        className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white font-bold text-xs transition-all flex items-center gap-2 border border-white/5"
+                    >
+                        <FiLogOut /> Keluar Sistem
                     </button>
                 </div>
             </header>
 
-            <main className="dd-main">
-                {/* Active Task */}
-                {activeTask ? (
-                    <section className="dd-active-card">
-                        <div className="dd-active-header">
-                            <div className="dd-active-icon">
-                                <FiPenTool size={24} />
-                            </div>
-                            <div>
-                                <h2 className="dd-active-title">Sedang Mengerjakan Desain</h2>
-                                <p className="dd-active-sub">Pesanan #{activeTask.task_id}</p>
-                            </div>
-                        </div>
+            <main className="relative z-10 max-w-6xl mx-auto px-8 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-                        {/* Timer */}
-                        <div className="dd-timer-container">
-                            <div className="dd-timer">
-                                <span className="dd-timer-digit">{pad(h)}</span>
-                                <span className="dd-timer-sep">:</span>
-                                <span className="dd-timer-digit">{pad(m)}</span>
-                                <span className="dd-timer-sep">:</span>
-                                <span className="dd-timer-digit">{pad(s)}</span>
-                            </div>
-                            <p className="dd-timer-label">Durasi Pengerjaan</p>
-                        </div>
+                {/* ── Left Side: Mission Control Center ── */}
+                <div className="lg:col-span-7 space-y-10">
 
-                        {/* Task Info */}
-                        {activeTask.dpTask && (
-                            <div className="dd-task-info">
-                                <div className="dd-info-row">
-                                    <span className="dd-info-label">Pelanggan</span>
-                                    <span className="dd-info-value">{activeTask.dpTask.customerName}</span>
-                                </div>
-                                <div className="dd-info-row">
-                                    <span className="dd-info-label">Pekerjaan</span>
-                                    <span className="dd-info-value">{activeTask.dpTask.title}</span>
-                                </div>
-                                <div className="dd-info-row">
-                                    <span className="dd-info-label">Bahan</span>
-                                    <span className="dd-info-value">{activeTask.dpTask.material_name}</span>
-                                </div>
-                                <div className="dd-info-row">
-                                    <span className="dd-info-label">Ukuran</span>
-                                    <span className="dd-info-value">{activeTask.dpTask.dimensions?.width}m × {activeTask.dpTask.dimensions?.height}m</span>
-                                </div>
-                                {activeTask.dpTask?.pesan_desainer && (
-                                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
-                                        <span className="dd-info-label" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                            <FiFileText /> Catatan dari Admin:
-                                        </span>
-                                        <span className="dd-info-value" style={{ fontStyle: 'italic', fontSize: '0.85rem' }}>"{activeTask.dpTask.pesan_desainer}"</span>
+                    {/* Active Workstation HUD */}
+                    <AnimatePresence mode="wait">
+                        {activeTask ? (
+                            <motion.section
+                                key="active-work"
+                                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                                className="relative rounded-[2.5rem] p-1 border border-blue-500/20 shadow-2xl shadow-blue-500/10 overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-slate-900 to-slate-950" />
+
+                                <div className="relative z-10 p-8">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                                <FiZap size={22} className="animate-pulse" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-black text-white italic tracking-tight uppercase">Live Workstation</h2>
+                                                <p className="text-xs font-bold text-blue-400/60 uppercase tracking-widest">Processing Node #{activeTask.task_id}</p>
+                                            </div>
+                                        </div>
+                                        <div className="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                            Design Execution
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        )}
 
-                        <button className="dd-finish-btn" onClick={() => handleFinishClick(activeTask)}>
-                            <FiCheckCircle size={20} />
-                            Selesai Desain
-                        </button>
-                    </section>
-                ) : (
-                    <section className="dd-empty-active">
-                        <FiPenTool size={64} style={{ color: '#334155', margin: '0 auto' }} />
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#64748b', margin: '12px 0 4px' }}>Tidak Ada Desain Aktif</h2>
-                        <p style={{ fontSize: '.85rem', color: '#475569' }}>Menunggu penugasan dari admin.</p>
-                    </section>
-                )}
+                                    {/* Central Clock HUD */}
+                                    <div className="flex flex-col items-center justify-center py-10 rounded-[2rem] bg-black/40 border border-white/5 shadow-inner mb-8">
+                                        <div className="flex items-center gap-4">
+                                            {[pad(h), pad(m), pad(s)].map((unit, i) => (
+                                                <div key={i} className="flex items-center gap-4">
+                                                    <div className="flex flex-col items-center">
+                                                        <motion.div
+                                                            key={unit}
+                                                            initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                                                            className="text-6xl md:text-8xl font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                                            style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                                                        >
+                                                            {unit}
+                                                        </motion.div>
+                                                    </div>
+                                                    {i < 2 && <span className="text-4xl font-light text-slate-700 mt-[-10px] animate-pulse">:</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="mt-6 text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-4">
+                                            <span className="w-12 h-[1px] bg-slate-800" /> SESSION UPTIME <span className="w-12 h-[1px] bg-slate-800" />
+                                        </p>
+                                    </div>
 
-                {/* Pending Tasks */}
-                {pendingTasks.length > 0 && (
-                    <section className="dd-section">
-                        <h3 className="dd-section-title">
-                            <FiList style={{ color: '#f59e0b' }} />
-                            Tugas Menunggu ({pendingTasks.length})
-                        </h3>
-                        <div className="dd-task-list">
-                            {pendingTasks.map(t => (
-                                <div key={t.id} className="dd-task-card">
-                                    <div className="dd-task-card-info">
-                                        <div>
-                                            <p className="dd-task-card-id">#{t.task_id}</p>
-                                            {t.dpTask && (
-                                                <>
-                                                    <p className="dd-task-card-title">{t.dpTask.title}</p>
-                                                    <p className="dd-task-card-customer">Pelanggan: {t.dpTask.customerName}</p>
-                                                </>
+                                    {/* Task Data HUD */}
+                                    {activeTask.dpTask && (
+                                        <div className="grid grid-cols-2 gap-4 mb-8">
+                                            <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-colors">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Target Client</p>
+                                                <p className="text-sm font-black text-white line-clamp-1">{activeTask.dpTask.customerName}</p>
+                                            </div>
+                                            <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-colors">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Asset Module</p>
+                                                <p className="text-sm font-black text-white line-clamp-1">{activeTask.dpTask.title}</p>
+                                            </div>
+                                            <div className="p-5 rounded-3xl bg-white/[0.03] border border-white/5 group hover:bg-white/[0.05] transition-colors col-span-2">
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Configuration</p>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="text-sm font-black text-white flex items-center gap-2">
+                                                        <FiBox className="text-blue-400" /> {activeTask.dpTask.material_name}
+                                                    </span>
+                                                    <div className="w-1 h-1 rounded-full bg-slate-700" />
+                                                    <span className="text-sm font-black text-white flex items-center gap-2">
+                                                        <FiTarget className="text-indigo-400" /> {activeTask.dpTask.dimensions?.width}m × {activeTask.dpTask.dimensions?.height}m
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {activeTask.dpTask?.pesan_desainer && (
+                                                <div className="col-span-2 p-5 rounded-3xl bg-amber-500/5 border border-amber-500/20">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <FiMessageSquare className="text-amber-400" size={14} />
+                                                        <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">Admin Instructions</span>
+                                                    </div>
+                                                    <p className="text-xs font-medium text-slate-300 italic leading-relaxed">
+                                                        "{activeTask.dpTask.pesan_desainer}"
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
-                                        <span className="dd-badge-assigned flex items-center gap-1"><FiClock /> Ditugaskan</span>
-                                    </div>
-                                    {!activeTask && (
-                                        <button className="dd-start-btn" onClick={() => handleStart(t.id)}>
-                                            <FiPlayCircle size={18} />
-                                            Mulai Desain
-                                        </button>
                                     )}
+
+                                    <button
+                                        onClick={() => handleFinishClick(activeTask)}
+                                        className="w-full py-5 rounded-[1.5rem] bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm tracking-widest uppercase shadow-xl shadow-emerald-500/20 transition-all active:scale-[0.98] flex items-center justify-center gap-3 group"
+                                    >
+                                        <FiCheckCircle size={20} className="group-hover:scale-125 transition-transform" />
+                                        Complete Assignment
+                                    </button>
                                 </div>
+                            </motion.section>
+                        ) : (
+                            <motion.section
+                                key="idle-work"
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="py-24 px-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 border-dashed flex flex-col items-center justify-center text-center group"
+                            >
+                                <div className="w-24 h-24 rounded-full bg-slate-900 flex items-center justify-center text-slate-700 group-hover:scale-110 group-hover:bg-slate-800 transition-all duration-700 mb-6 drop-shadow-[0_0_30px_rgba(37,99,235,0.05)]">
+                                    <FiPenTool size={40} />
+                                </div>
+                                <h2 className="text-xl font-black text-slate-400 uppercase tracking-widest italic">Standby Mode</h2>
+                                <p className="text-slate-600 font-medium text-sm mt-2 max-w-xs">No active design cycles detected. Please standby for incoming terminal telemetry.</p>
+                                <div className="mt-10 flex gap-2">
+                                    {[0, 1, 2].map(i => (
+                                        <motion.div
+                                            key={i} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
+                                            className="w-1.5 h-1.5 rounded-full bg-blue-500/40"
+                                        />
+                                    ))}
+                                </div>
+                            </motion.section>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Pending Queue HUD */}
+                    <section className="space-y-6 px-2">
+                        <div className="flex items-center justify-between">
+                            <h3 className="flex items-center gap-3 text-sm font-black uppercase tracking-[0.3em] text-slate-500">
+                                <div className="p-1.5 rounded-lg bg-slate-800 text-amber-500"><FiList /></div>
+                                Terminal Queue ({pendingTasks.length})
+                            </h3>
+                            <div className="h-[1px] flex-1 mx-6 bg-slate-800/50" />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {pendingTasks.map((t, idx) => (
+                                <motion.div
+                                    key={t.id}
+                                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.1 }}
+                                    className="p-6 rounded-3xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all group relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                        <FiActivity size={60} />
+                                    </div>
+                                    <div className="relative z-10 flex flex-col h-full">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20 uppercase tracking-widest">#{t.task_id}</span>
+                                            <div className="flex items-center gap-1 text-amber-400 text-[9px] font-black uppercase tracking-widest">
+                                                <FiClock /> Pending
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-black text-white group-hover:text-blue-400 transition-colors mb-1 line-clamp-1">{t.dpTask?.title || 'Unknown Asset'}</p>
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">{t.dpTask?.customerName || 'N/A'}</p>
+
+                                        {!activeTask && (
+                                            <button
+                                                onClick={() => handleStart(t.id)}
+                                                className="mt-auto w-full py-3 rounded-xl bg-blue-600/10 hover:bg-blue-600 border border-blue-500/20 text-blue-400 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <FiPlayCircle size={14} /> Initialize Design
+                                            </button>
+                                        )}
+                                    </div>
+                                </motion.div>
                             ))}
+                            {pendingTasks.length === 0 && (loading ? <div className="col-span-2 text-center py-10 opacity-30 italic text-xs">Acessing secured node...</div> : <div className="col-span-2 text-center py-10 opacity-30 italic text-xs tracking-widest uppercase font-black">Waiting for Data Packets</div>)}
                         </div>
                     </section>
-                )}
+                </div>
 
-                {/* Done Tasks */}
-                {doneTasks.length > 0 && (
-                    <section className="dd-section">
-                        <h3 className="dd-section-title">
-                            <FiCheckSquare style={{ color: '#22c55e' }} />
-                            Riwayat Selesai ({doneTasks.length})
-                        </h3>
-                        <div className="dd-task-list">
-                            {doneTasks.slice((donePage - 1) * doneItemsPerPage, donePage * doneItemsPerPage).map(t => (
-                                <div key={t.id} className="dd-task-card dd-task-done">
-                                    <div className="dd-task-card-info">
-                                        <div>
-                                            <p className="dd-task-card-id">#{t.task_id}</p>
-                                            {t.dpTask && <p className="dd-task-card-title">{t.dpTask.title}</p>}
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <span className="dd-badge-done flex items-center gap-1 justify-end"><FiCheckCircle /> Selesai</span>
-                                            {t.started_at && t.finished_at && (
-                                                <p style={{ fontSize: '.7rem', color: '#64748b', marginTop: 4 }}>
-                                                    {Math.round((new Date(t.finished_at) - new Date(t.started_at)) / 60000)} menit
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                {/* ── Right Side: Archive / Intelligence ── */}
+                <div className="lg:col-span-5 space-y-10">
+
+                    {/* Archival History */}
+                    <section className="space-y-6">
+                        <div className="flex items-center gap-3 text-sm font-black uppercase tracking-[0.3em] text-slate-500 mb-6">
+                            <div className="p-1.5 rounded-lg bg-slate-800 text-emerald-500"><FiCheckSquare /></div>
+                            Mission Artifacts
                         </div>
 
-                        {/* Pagination Controls */}
-                        {doneTasks.length > doneItemsPerPage && (
-                            <div className="dd-pagination">
-                                <span className="dd-pagination-info">
-                                    Melihat {Math.min(doneTasks.length, (donePage - 1) * doneItemsPerPage + 1)}-{Math.min(doneTasks.length, donePage * doneItemsPerPage)} dari {doneTasks.length}
-                                </span>
-                                <div className="dd-pagination-btns">
+                        <div className="space-y-3">
+                            <AnimatePresence mode="popLayout">
+                                {doneTasks.slice((donePage - 1) * doneItemsPerPage, donePage * doneItemsPerPage).map((t, idx) => (
+                                    <motion.div
+                                        key={t.id}
+                                        initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
+                                        className="p-5 rounded-[1.75rem] bg-white/[0.02] border border-white/5 hover:border-emerald-500/20 group transition-all"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-500/5 group-hover:bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/10 transition-colors shrink-0">
+                                                    <FiCheckCircle size={16} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-black text-white group-hover:text-emerald-400 transition-colors line-clamp-1">{t.dpTask?.title || `Task #${t.task_id}`}</p>
+                                                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">#{t.task_id} Completed</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                {t.started_at && t.finished_at && (
+                                                    <p className="text-[10px] font-black text-slate-400 bg-slate-800/50 px-2 py-1 rounded-md">
+                                                        {Math.round((new Date(t.finished_at) - new Date(t.started_at)) / 60000)}m
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+
+                            {/* Pagination HUD */}
+                            {doneTasks.length > doneItemsPerPage && (
+                                <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
                                     <button
                                         onClick={() => setDonePage(p => Math.max(1, p - 1))}
                                         disabled={donePage === 1}
-                                        className="dd-page-btn"
+                                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 transition-all text-slate-400"
                                     >
-                                        <FiChevronLeft style={{ fontSize: '0.8rem' }} /> Prev
+                                        <FiChevronLeft />
                                     </button>
-                                    <span className="dd-page-num">{donePage} / {Math.ceil(doneTasks.length / doneItemsPerPage)}</span>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{donePage} / {Math.ceil(doneTasks.length / doneItemsPerPage)}</span>
                                     <button
                                         onClick={() => setDonePage(p => Math.min(Math.ceil(doneTasks.length / doneItemsPerPage), p + 1))}
                                         disabled={donePage === Math.ceil(doneTasks.length / doneItemsPerPage)}
-                                        className="dd-page-btn"
+                                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-20 transition-all text-slate-400"
                                     >
-                                        Next <FiChevronRight style={{ fontSize: '0.8rem' }} />
+                                        <FiChevronRight />
                                     </button>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </section>
-                )}
-            </main>
 
-            {/* Finish Modal */}
-            {showFinishModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all">
-                    <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" style={{ animation: 'fadeIn .2s ease-out' }}>
-                        <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/50">
-                            <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                    <FiUploadCloud size={20} />
+                    {/* Designer Tips / Branding Widget */}
+                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-slate-900 to-indigo-950 border border-indigo-500/10 relative overflow-hidden group shadow-2xl">
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-700" />
+                        <FiPenTool className="text-indigo-500/20 absolute bottom-[-10px] right-[-10px]" size={100} />
+
+                        <div className="relative z-10">
+                            <h4 className="text-xs font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Designer Insights</h4>
+                            <p className="text-xs font-medium text-slate-400 leading-relaxed italic">
+                                "Precision in design is not just about pixels, but the telemetry of visual communication. Every asset is a node in the brand's network."
+                            </p>
+                            <div className="mt-6 flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                    <FiCheckCircle size={14} />
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-bold text-white leading-tight">Selesai Desain</h3>
-                                    <p className="text-xs text-slate-400">Pesanan #{finishingTask?.task_id}</p>
-                                </div>
+                                <span className="text-[10px] font-black text-white uppercase tracking-widest">Optimal Node Sync</span>
                             </div>
-                            <button className="text-slate-500 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors" onClick={() => setShowFinishModal(false)}>
-                                <FiX size={20} />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-5">
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
-                                    <FiLink className="text-slate-400" /> Link File Hasil Desain
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-800 border-slate-700 text-white placeholder-slate-500 rounded-xl p-3 text-sm focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                    placeholder="Contoh: https://drive.google.com/..."
-                                    value={fileDesain}
-                                    onChange={e => setFileDesain(e.target.value)}
-                                />
-                                <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
-                                    <span className="material-symbols-outlined !text-[12px]">info</span>
-                                    Opsional. Link ini akan dilihat oleh Operator Cetak.
-                                </p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
-                                    <FiFileText className="text-slate-400" /> Catatan Tambahan
-                                </label>
-                                <textarea
-                                    className="w-full bg-slate-800 border-slate-700 text-white placeholder-slate-500 rounded-xl p-3 text-sm min-h-[100px] resize-none focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                    placeholder="Tambahkan pesan untuk operator jika ada instruksi khusus..."
-                                    value={catatanDesain}
-                                    onChange={e => setCatatanDesain(e.target.value)}
-                                ></textarea>
-                            </div>
-                        </div>
-                        <div className="p-5 border-t border-slate-800 bg-slate-900/50 flex gap-3">
-                            <button
-                                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
-                                onClick={() => setShowFinishModal(false)}
-                            >
-                                Batal
-                            </button>
-                            <button
-                                className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-white bg-blue-600 hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
-                                onClick={submitFinish}
-                            >
-                                <FiCheckCircle size={18} />
-                                Konfirmasi Selesai
-                            </button>
                         </div>
                     </div>
                 </div>
-            )}
+            </main>
+
+            {/* ── Finish Modal ── */}
+            <AnimatePresence>
+                {showFinishModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/80 backdrop-blur-xl"
+                            onClick={() => setShowFinishModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="relative z-10 w-full max-w-lg bg-[#0d121f] rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden shadow-emerald-500/5"
+                        >
+                            <div className="p-8 pb-4 border-b border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                                        <FiUploadCloud size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-white uppercase italic">Archive Node</h3>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Assignment Commit #{finishingTask?.task_id}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowFinishModal(false)} className="p-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors"><FiX size={20} /></button>
+                            </div>
+
+                            <div className="p-8 space-y-8">
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                                        <FiLink size={14} /> CLOUD DESIGN REPOSITORY
+                                    </label>
+                                    <input
+                                        className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border-2 border-transparent focus:border-emerald-500/50 outline-none text-white font-bold transition-all placeholder:text-slate-700"
+                                        placeholder="INPUT ASSET URL (GDRIVE, DROPBOX, CLOUD...)"
+                                        value={fileDesain}
+                                        onChange={e => setFileDesain(e.target.value)}
+                                    />
+                                    <div className="flex items-center gap-2 mt-2 px-1">
+                                        <FiZap size={10} className="text-emerald-500" />
+                                        <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest italic">Node will be routed to Production Unit</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                                        <FiFileText size={14} /> SESSION NOTES & LOGS
+                                    </label>
+                                    <textarea
+                                        className="w-full px-5 py-4 rounded-2xl bg-white/[0.03] border-2 border-transparent focus:border-emerald-500/50 outline-none text-white font-bold transition-all placeholder:text-slate-700 min-h-[120px] resize-none"
+                                        placeholder="ATTACH OPTIONAL TELEMETRY OR SPECIAL INSTRUCTIONS..."
+                                        value={catatanDesain}
+                                        onChange={e => setCatatanDesain(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="p-8 bg-black/30 border-t border-white/5 flex gap-4">
+                                <button
+                                    onClick={() => setShowFinishModal(false)}
+                                    className="flex-1 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 font-black text-xs uppercase tracking-widest transition-all"
+                                >
+                                    Abort Commit
+                                </button>
+                                <button
+                                    onClick={submitFinish}
+                                    className="flex-[1.5] py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 group"
+                                >
+                                    <FiCheckCircle size={18} className="group-hover:scale-110" /> Finalize Asset
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
-
-const CSS = `
-@keyframes dd-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,.4)} 50%{box-shadow:0 0 0 12px transparent} }
-
-.dd-header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid rgba(255,255,255,.06);}
-.dd-header-left{display:flex;align-items:center;gap:14px;}
-.dd-avatar{width:48px;height:48px;border-radius:14px;background:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;color:#fff;}
-.dd-name{font-size:1.15rem;font-weight:800;margin:0;color:#fff;}
-.dd-role{font-size:.75rem;color:#64748b;margin:2px 0 0;font-weight:500;}
-.dd-header-right{display:flex;align-items:center;gap:12px;}
-.dd-status-badge{padding:5px 14px;border-radius:9999px;font-size:.75rem;font-weight:700;}
-.dd-status-free{background:rgba(22,163,106,.15);color:#4ade80;}
-.dd-status-busy{background:rgba(239,68,68,.15);color:#fca5a5;}
-.dd-logout-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);color:#94a3b8;padding:8px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:.8rem;transition:all .15s;}
-.dd-logout-btn:hover{background:rgba(255,255,255,.15);color:#f1f5f9;}
-
-.dd-main{padding:24px 32px;max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
-
-.dd-active-card{background:linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);border:1px solid rgba(37,99,235,.3);border-radius:20px;padding:28px;animation:dd-pulse 3s infinite;}
-.dd-active-header{display:flex;align-items:center;gap:14px;margin-bottom:24px;}
-.dd-active-icon{width:48px;height:48px;border-radius:14px;background:rgba(37,99,235,.2);display:flex;align-items:center;justify-content:center;color:#60a5fa;}
-.dd-active-title{font-size:1.1rem;font-weight:800;margin:0;color:#fff;}
-.dd-active-sub{font-size:.8rem;color:#64748b;margin:2px 0 0;}
-
-.dd-timer-container{text-align:center;padding:20px 0;margin-bottom:20px;}
-.dd-timer{display:inline-flex;align-items:center;gap:4px;}
-.dd-timer-digit{background:rgba(37,99,235,.2);color:#60a5fa;font-size:2.5rem;font-weight:900;padding:8px 16px;border-radius:12px;font-variant-numeric:tabular-nums;min-width:65px;text-align:center;font-family:'JetBrains Mono',monospace;}
-.dd-timer-sep{color:#64748b;font-size:2rem;font-weight:300;margin:0 2px;}
-.dd-timer-label{color:#64748b;font-size:.75rem;font-weight:600;margin-top:10px;text-transform:uppercase;letter-spacing:.08em;}
-
-.dd-task-info{display:flex;flex-direction:column;gap:8px;padding:16px;background:rgba(255,255,255,.04);border-radius:12px;margin-bottom:20px;}
-.dd-info-row{display:flex;justify-content:space-between;align-items:center;}
-.dd-info-label{color:#64748b;font-size:.8rem;font-weight:500;}
-.dd-info-value{color:#e2e8f0;font-size:.85rem;font-weight:600;}
-
-.dd-finish-btn{width:100%;padding:14px;background:#22c55e;color:#fff;border:none;border-radius:12px;font-weight:700;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;box-shadow:0 4px 14px rgba(34,197,94,.3);}
-.dd-finish-btn:hover{background:#16a34a;transform:translateY(-1px);}
-
-.dd-empty-active{text-align:center;padding:48px;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.1);border-radius:20px;}
-
-.dd-section{display:flex;flex-direction:column;gap:12px;}
-.dd-section-title{display:flex;align-items:center;gap:8px;font-size:1rem;font-weight:700;color:#e2e8f0;margin:0;}
-
-.dd-task-list{display:flex;flex-direction:column;gap:10px;}
-.dd-task-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;transition:all .15s;}
-.dd-task-card:hover{background:rgba(255,255,255,.08);}
-.dd-task-done{opacity:.7;}
-.dd-task-card-info{display:flex;justify-content:space-between;align-items:flex-start;}
-.dd-task-card-id{font-size:.75rem;color:#64748b;font-weight:600;margin:0 0 2px;}
-.dd-task-card-title{font-size:.9rem;font-weight:700;color:#e2e8f0;margin:0 0 2px;}
-.dd-task-card-customer{font-size:.78rem;color:#64748b;margin:0;}
-
-.dd-badge-assigned{padding:4px 10px;background:rgba(245,158,11,.15);color:#fbbf24;font-size:.68rem;font-weight:700;border-radius:6px;display:flex;align-items:center;gap:4px;}
-.dd-badge-done{padding:4px 10px;background:rgba(34,197,94,.15);color:#4ade80;font-size:.68rem;font-weight:700;border-radius:6px;display:flex;align-items:center;gap:4px;}
-
-.dd-start-btn{width:100%;margin-top:12px;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;box-shadow:0 4px 14px rgba(37,99,235,.3);}
-.dd-start-btn:hover{background:#1d4ed8;transform:translateY(-1px);}
-.dd-pagination{margin-top:20px;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.05);}
-.dd-pagination-info{font-size:.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-.dd-pagination-btns{display:flex;align-items:center;gap:12px;}
-.dd-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#e2e8f0;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s;}
-.dd-page-btn:hover:not(:disabled){background:rgba(255,255,255,.1);color:#fff;}
-.dd-page-btn:disabled{opacity:.3;cursor:not-allowed;}
-.dd-page-num{font-size:.75rem;font-weight:800;color:#60a5fa;min-width:40px;text-align:center;}
-`;

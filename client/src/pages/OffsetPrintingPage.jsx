@@ -14,6 +14,7 @@ import {
     FiChevronRight,
     FiFileText,
     FiPlusCircle,
+    FiPaperclip,
     FiTag,
     FiCalendar,
     FiPackage

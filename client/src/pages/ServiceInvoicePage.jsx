@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import db from '../db';
-import { FiTool, FiPrinter, FiArrowLeft, FiPhone, FiMapPin, FiGlobe, FiMail, FiCheckCircle } from 'react-icons/fi';
+import { FiCpu, FiPrinter, FiArrowLeft, FiPhone, FiMapPin, FiGlobe, FiMail, FiCheckCircle } from 'react-icons/fi';
 
 const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -32,7 +32,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
     if (loading) return <div className="p-20 text-center font-bold">Memuat Invoice...</div>;
     if (!service) return (
         <div className="p-20 text-center flex flex-col items-center">
-            <FiTool size={48} className="text-slate-300 mb-4" />
+            <FiCpu size={48} className="text-slate-300 mb-4" />
             <h2 className="text-xl font-bold">Tiket Servis Tidak Ditemukan</h2>
             <button onClick={() => onNavigate('service')} className="mt-4 text-blue-600 font-bold">Kembali ke Daftar Servis</button>
         </div>
