@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle } from 'react-icons/fi';
+import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle, FiXCircle } from 'react-icons/fi';
 const FiLayers = () => (
     <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -63,6 +63,20 @@ export default function SPKListPage({ onNavigate }) {
         setCurrentPage(1);
         fetchSPK();
     }, [fetchSPK]);
+
+    const handleCancelSPK = async (spkId, spkNumber) => {
+        if (!window.confirm(`Apakah Anda yakin ingin membatalkan Master SPK #${spkNumber}? Tindakan ini tidak dapat dikembalikan.`)) {
+            return;
+        }
+
+        try {
+            await api.put(`/spk/${spkId}`, { status: 'Batal' });
+            fetchSPK();
+        } catch (err) {
+            console.error('Gagal membatalkan SPK:', err);
+            alert('Terjadi kesalahan saat membatalkan SPK.');
+        }
+    };
 
     const handleSearch = (e) => {
         if (e) e.preventDefault();
@@ -303,12 +317,23 @@ export default function SPKListPage({ onNavigate }) {
                                                                 <FiDollarSign /> Tagih
                                                             </button>
                                                         ) : (
-                                                            <button
-                                                                onClick={() => onNavigate('print-spk', { spkId: spk.id })}
-                                                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                                                            >
-                                                                <FiPrinter /> Cetak SPK
-                                                            </button>
+                                                            <>
+                                                                {!['Batal', 'Selesai', 'Siap Diambil', 'Diambil'].includes(spk.status) && (
+                                                                    <button
+                                                                        onClick={() => handleCancelSPK(spk.id, spk.spk_number)}
+                                                                        className="flex items-center gap-2 px-3 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-rose-100 dark:border-rose-500/20"
+                                                                        title="Batalkan SPK"
+                                                                    >
+                                                                        <FiXCircle size={14} /> Batal
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    onClick={() => onNavigate('print-spk', { spkId: spk.id })}
+                                                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                                                                >
+                                                                    <FiPrinter size={14} /> Cetak SPK
+                                                                </button>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </td>
