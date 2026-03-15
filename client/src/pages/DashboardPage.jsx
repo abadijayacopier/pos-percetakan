@@ -7,63 +7,97 @@ import {
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
     FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw
 } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    AreaChart as RechartsAreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer
+} from 'recharts';
+
+// Premium Loading Spinner Component
+const LoadingScreen = () => (
+    <motion.div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}
+    >
+        <div className="relative w-32 h-32 mb-8">
+            <div className="absolute inset-0 rounded-full border-t-4 border-b-4 border-primary/20 animate-[spin_3s_linear_infinite]"></div>
+            <div className="absolute inset-2 rounded-full border-r-4 border-l-4 border-amber-500/30 animate-[spin_2s_linear_infinite_reverse]"></div>
+            <div className="absolute inset-4 rounded-full border-t-4 border-blue-500/40 animate-[spin_1.5s_ease-in-out_infinite]"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <FiPackage className="text-4xl text-primary animate-pulse" />
+            </div>
+            {/* Glow effect */}
+            <div className="absolute inset-0 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse"></div>
+        </div>
+        <div className="text-center">
+            <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">Menyiapkan Data</h2>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mt-2">Sistem Monitoring POS Modern</p>
+        </div>
+    </motion.div>
+);
 
 // Custom Area Chart Component using Recharts
 const AreaChart = ({ data }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <div className="relative w-full h-full group">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="var(--color-primary, #3b82f6)" stopOpacity="0" />
-                    </linearGradient>
-                </defs>
-
-                {/* Area Background */}
-                <path d={areaData} fill="url(#chartGradient)" className="transition-all duration-700 ease-in-out" />
-
-                {/* Main Line */}
-                <path
-                    d={pathData}
-                    fill="none"
-                    stroke="var(--color-primary, #3b82f6)"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="transition-all duration-700 ease-in-out drop-shadow-lg"
-                />
-
-                {/* Data Points */}
-                {points.map((p, i) => (
-                    <g key={i} className="group/dot">
-                        <circle
-                            cx={p.x} cy={p.y} r="6"
-                            fill="white"
-                            stroke="var(--color-primary, #3b82f6)"
-                            strokeWidth="3"
-                            className="transition-all duration-300 transform scale-0 group-hover:scale-100 dark:fill-slate-900"
-                        />
-                        {/* Invisible hover area for tooltip */}
-                        <rect
-                            x={p.x - 20} y={0} width="40" height={height}
-                            fill="transparent"
-                            className="cursor-pointer"
-                        />
-                    </g>
-                ))}
-            </svg>
-
-            {/* Legend Labels */}
-            <div className="absolute inset-x-0 -bottom-8 flex justify-between px-2">
-                {data.map((d, i) => (
-                    <span key={i} className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
-                        {d.label}
-                    </span>
-                ))}
-            </div>
+        <div className="w-full h-full text-xs" style={{ minHeight: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+                <RechartsAreaChart
+                    data={data}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                >
+                    <defs>
+                        <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis
+                        dataKey="label"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
+                        dy={10}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
+                        tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}K` : value}
+                        dx={-10}
+                    />
+                    <Tooltip
+                        contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            borderRadius: '16px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                            padding: '12px 16px'
+                        }}
+                        itemStyle={{ color: '#0f172a', fontWeight: '900', fontSize: '14px' }}
+                        labelStyle={{ color: '#64748b', fontWeight: 'bold', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}
+                        formatter={(value) => [`Rp ${value.toLocaleString('id-ID')}`, 'Omset']}
+                    />
+                    <Area
+                        type="monotone"
+                        dataKey="total"
+                        stroke="#3b82f6"
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorTotal)"
+                        activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+                    />
+                </RechartsAreaChart>
+            </ResponsiveContainer>
         </div>
     );
 };
