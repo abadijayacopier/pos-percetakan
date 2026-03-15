@@ -591,7 +591,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                         </div>
 
                                         {/* ESTIMASI KOTAK */}
-                                        <div className="bg-linear-to-br from-primary to-blue-600 rounded-2xl p-6 text-white shadow-lg shadow-primary/30 border border-white/10 relative overflow-hidden group">
+                                        <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-lg shadow-red-500/30 border border-white/10 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
                                                 <FiTag size={64} />
                                             </div>
@@ -618,7 +618,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                             className={`w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all shadow-md flex justify-center items-center gap-2 uppercase
                             ${(!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading)
                                                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                                                    : 'bg-linear-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-primary/25 hover:shadow-lg hover:-translate-y-0.5'}`}
+                                                    : 'bg-linear-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white shadow-red-500/25 hover:shadow-lg hover:-translate-y-0.5'}`}
                                         >
                                             <FiPlusCircle size={18} />
                                             {loading ? 'Memproses...' : 'Buat Pesanan & SPK'}
