@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah, formatDate } from '../utils';
 import Modal from '../components/Modal';
-import { FiUsers, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiStar, FiBriefcase, FiUser, FiTool, FiPhone, FiMapPin, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiUsers, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiStar, FiBriefcase, FiUser, FiCpu, FiPhone, FiMapPin, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 const TYPE_MAP = {
     walkin: { label: 'Walk-in', color: '#6b7280', bg: '#f3f4f6', icon: <FiUser size={12} /> },
     vip: { label: 'VIP', color: '#f59e0b', bg: '#fef3c7', icon: <FiStar size={12} /> },
     corporate: { label: 'Corporate', color: '#3b82f6', bg: '#dbeafe', icon: <FiBriefcase size={12} /> },
-    service: { label: 'Service', color: '#8b5cf6', bg: '#ede9fe', icon: <FiTool size={12} /> },
+    service: { label: 'Service', color: '#8b5cf6', bg: '#ede9fe', icon: <FiCpu size={12} /> },
 };
 
 const emptyForm = { name: '', phone: '', address: '', type: 'walkin', company: '' };
@@ -82,7 +82,7 @@ export default function CustomersPage() {
                     { label: 'Total Pelanggan', value: customers.length, icon: <FiUsers />, color: 'blue', tag: 'Total Database' },
                     { label: 'VIP Pelanggan', value: typeCount('vip'), icon: <FiStar />, color: 'amber', tag: 'Level VIP' },
                     { label: 'Kemitraan Corp', value: typeCount('corporate'), icon: <FiBriefcase />, color: 'purple', tag: 'Corporate' },
-                    { label: 'Antrean Servis', value: typeCount('service'), icon: <FiTool />, color: 'emerald', tag: 'Service Only' },
+                    { label: 'Antrean Servis', value: typeCount('service'), icon: <FiCpu />, color: 'emerald', tag: 'Service Only' },
                 ].map(s => (
                     <div key={s.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">

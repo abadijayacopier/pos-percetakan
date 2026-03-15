@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah } from '../utils';
 import {
-    FiDollarSign, FiPrinter, FiTool, FiShoppingCart, FiAlertCircle,
+    FiDollarSign, FiPrinter, FiCpu, FiShoppingCart, FiAlertCircle,
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
     FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw
@@ -277,7 +277,7 @@ export default function DashboardPage({ onNavigate }) {
                 {[
                     { label: 'Pendapatan Hari Ini', value: formatRupiah(stats.omset), icon: FiDollarSign, color: 'emerald', tag: 'Hari Ini' },
                     { label: 'Antrean Cetak', value: `${stats.pendingPrintCount} Tugas`, icon: FiPrinter, color: 'blue', tag: 'Antrean SPK' },
-                    { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiTool, color: 'amber', tag: 'Servis Berjalan' },
+                    { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiCpu, color: 'amber', tag: 'Servis Berjalan' },
                     { label: 'Stok Menipis', value: `${stats.lowStockCount} Barang`, icon: FiLayers, color: 'rose', tag: 'Penting' },
                 ].map(s => (
                     <motion.div
@@ -358,7 +358,7 @@ export default function DashboardPage({ onNavigate }) {
                         <div className="flex flex-col gap-4">
                             {[
                                 { id: 'pos', title: 'Transaksi Baru', sub: 'Entri kasir cepat', icon: FiShoppingCart, color: 'blue-600' },
-                                { id: 'service', title: 'Unit Servis', sub: 'Input perbaikan baru', icon: FiTool, color: 'emerald-600' },
+                                { id: 'service', title: 'Unit Servis', sub: 'Input perbaikan baru', icon: FiCpu, color: 'emerald-600' },
                                 { id: 'printing', title: 'Produksi Cetak', sub: 'Mulai proses cetak', icon: FiPrinter, color: 'amber-600' },
                             ].map(btn => (
                                 <button

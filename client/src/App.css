@@ -1,3 +1,4 @@
+t
 /* =============================================
    POS Page Styles
    ============================================= */
@@ -168,6 +169,24 @@
   display: flex;
   flex-direction: column;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.02);
+}
+
+@media (min-width: 1024px) {
+  .premium-pos-wrapper .pos-cart {
+    width: 24rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .premium-pos-wrapper .pos-cart {
+    width: 26rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .premium-pos-wrapper .pos-cart {
+    width: 30rem;
+  }
 }
 
 .cart-header {
@@ -450,6 +469,78 @@
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
+}
+
+/* Desktop Ultra-wide Responsive Fixes */
+@media (min-width: 1536px) {
+  .pos-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 2rem;
+  }
+
+  .product-card {
+    min-height: 220px;
+    padding: 1.5rem;
+  }
+
+  [class*="text-\\[9px\\]"],
+  [class*="text-\\[10px\\]"] {
+    font-size: 0.8125rem;
+    /* text-xs */
+  }
+}
+
+/* POS CSS Fixes - Mobile Responsive & Layout Stability */
+@media (max-width: 768px) {
+  .pos-main {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  .pos-catalog,
+  .pos-cart {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .pos-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 1rem !important;
+  }
+
+  .service-tabs {
+    min-width: 100px !important;
+  }
+
+  .fc-price-card,
+  .service-card {
+    border-radius: 1rem !important;
+    padding: 1rem !important;
+  }
+
+  /* Larger touch targets */
+  button,
+  .btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Removed forced 1rem font to allow tailwind classes to behave normally */
+  label {
+    font-size: 0.875rem !important;
+    letter-spacing: normal !important;
+  }
+}
+
+.pos-product-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+* {
+  box-sizing: border-box !important;
 }
 
 /* Mobile Cart Overlay */

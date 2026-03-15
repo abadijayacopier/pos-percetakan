@@ -4,6 +4,18 @@
   --color-background-light: #f6f7f8;
   --color-background-dark: #101922;
   --color-primary: #137fec;
+
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
@@ -2669,6 +2681,14 @@ img {
     font-size: 1rem !important;
   }
 }
+
+/* Desktop Font Scaling Fix */
+@media (min-width: 1280px) {
+  [class*="text-\\[9px\\]"], [class*="text-\\[10px\\]"] {
+    font-size: 0.8125rem; /* text-xs, crisp on high-DPI */
+  }
+}
+
 
 /* Mobile 375px specific */
 @media screen and (max-width: 480px) {

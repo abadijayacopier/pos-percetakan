@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiLink, FiFileText, FiX, FiPaperclip, FiTool, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight } from 'react-icons/fi';
+import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProductionQueuePage({ onNavigate }) {
@@ -150,7 +150,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl -mr-16 -mt-16" />
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3 italic">
-                                <FiTool className="text-blue-500" /> Technician Workload Distribution
+                                <FiCpu className="text-blue-500" /> Technician Workload Distribution
                             </h3>
                             <span className="text-[9px] text-slate-400 font-black italic bg-white/5 px-3 py-1 rounded-full uppercase tracking-widest border border-white/5">Optimized Routing Alpha</span>
                         </div>

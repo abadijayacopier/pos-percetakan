@@ -93,7 +93,7 @@ export default function CashierPaymentPage({ onNavigate }) {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[
                     { label: 'Lunas', value: totalPaid, icon: FiCheckCircle, color: 'emerald' },
                     { label: 'Belum Lunas', value: totalUnpaid, icon: FiClock, color: 'amber' },
@@ -140,8 +140,8 @@ export default function CashierPaymentPage({ onNavigate }) {
                                 key={f.key}
                                 onClick={() => handleFilter(f.key)}
                                 className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${filterStatus === f.key
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
                                 {f.label}
@@ -151,7 +151,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto [&>table]:min-w-[800px] lg:[&>table]:min-w-[1000px]">
                     {paginated.length === 0 ? (
                         <div className="py-32 flex flex-col items-center justify-center text-slate-400 gap-4">
                             <div className="p-8 bg-slate-50 dark:bg-slate-950 rounded-full">
@@ -264,8 +264,8 @@ export default function CashierPaymentPage({ onNavigate }) {
                                         key={p}
                                         onClick={() => setPage(p)}
                                         className={`size-10 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${page === p
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700'
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700'
                                             }`}
                                     >
                                         {p}
@@ -336,7 +336,7 @@ export default function CashierPaymentPage({ onNavigate }) {
 
                         <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Metode Pembayaran</label>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                 {[
                                     { key: 'tunai', label: 'Tunai', icon: FiDollarSign },
                                     { key: 'qris', label: 'QRIS', icon: FiCreditCard },
@@ -346,8 +346,8 @@ export default function CashierPaymentPage({ onNavigate }) {
                                         key={m.key}
                                         onClick={() => setPayMethod(m.key)}
                                         className={`flex flex-col items-center gap-3 p-4 rounded-[1.5rem] border-2 transition-all group ${payMethod === m.key
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20'
-                                                : 'bg-white dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20'
+                                            : 'bg-white dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                                             }`}
                                     >
                                         <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${payMethod === m.key ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800'}`}>

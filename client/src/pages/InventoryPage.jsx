@@ -22,7 +22,7 @@ import {
     FiFileText,
     FiPrinter,
     FiImage,
-    FiTool,
+    FiCpu,
     FiChevronLeft,
     FiChevronRight,
     FiTag,
@@ -40,7 +40,7 @@ const CAT_ICONS = {
     c6: <FiFileText size={18} />,
     c7: <FiPrinter size={18} />,
     c8: <FiImage size={18} />,
-    c9: <FiTool size={18} />,
+    c9: <FiCpu size={18} />,
 };
 
 const CAT_ICON_SMALL = {
@@ -52,7 +52,7 @@ const CAT_ICON_SMALL = {
     c6: <FiFileText size={12} />,
     c7: <FiPrinter size={12} />,
     c8: <FiImage size={12} />,
-    c9: <FiTool size={12} />,
+    c9: <FiCpu size={12} />,
 };
 
 export default function InventoryPage() {

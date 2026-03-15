@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-    FiTool, FiPlus, FiSearch, FiFilter, FiCalendar, FiClock,
+    FiCpu, FiPlus, FiSearch, FiFilter, FiCalendar, FiClock,
     FiCheckCircle, FiAlertCircle, FiChevronRight, FiMoreVertical,
     FiPrinter, FiEdit2, FiTrash2, FiUser, FiInfo, FiActivity,
     FiSettings, FiBox, FiPhone, FiCreditCard, FiShield, FiX, FiSave,
     FiChevronLeft
 } from 'react-icons/fi';
 import db from '../db';
+import { formatRupiah } from '../utils';
 
 const formatDate = (dateStr, pattern = 'dd/MM/yyyy') => {
     if (!dateStr) return '-';
@@ -175,19 +176,19 @@ export default function ServicePage({ onNavigate }) {
     return (
         <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-4">
-                        <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20">
-                            <FiTool className="text-2xl" />
+                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20">
+                            <FiCpu className="text-xl sm:text-2xl" />
                         </div>
-                        Servis Mesin Fotocopy
+                        <span className="truncate">Servis Mesin Fotocopy</span>
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75">Tiket Perbaikan & Pemeliharaan Teknisi</p>
                 </div>
                 <button
                     onClick={() => { setShowForm(true); setSelectedService(null); resetForm(); }}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
+                    className="flex items-center justify-center gap-2 w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
                 >
                     <FiPlus className="text-lg group-hover:rotate-90 transition-transform" />
                     Tiket Baru
@@ -195,7 +196,7 @@ export default function ServicePage({ onNavigate }) {
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
                     { label: 'Total Tiket', value: stats.total, icon: FiActivity, color: 'blue', sub: 'Semua Tiket' },
                     { label: 'Menunggu', value: stats.pending, icon: FiClock, color: 'amber', sub: 'Perlu Konfirmasi' },
@@ -204,9 +205,9 @@ export default function ServicePage({ onNavigate }) {
                 ].map((s, i) => (
                     <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 group hover:shadow-md transition-all">
                         <div className={`p-4 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
-                                    s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
-                                        'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                            s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
+                                s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
+                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
                             }`}>
                             <s.icon className="text-2xl" />
                         </div>
@@ -224,48 +225,49 @@ export default function ServicePage({ onNavigate }) {
             </div>
 
             {/* Main Content: Table & Filters */}
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-6 justify-between bg-slate-50/30 dark:bg-slate-800/20">
-                    <div className="relative flex-1 group max-w-xl">
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden 
+                            flex flex-col w-full min-w-0">
+                <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row gap-4 sm:gap-6 justify-between bg-slate-50/30 dark:bg-slate-800/20">
+                    <div className="relative flex-1 group w-full lg:max-w-xl">
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input
                             type="text"
                             placeholder="Cari Tiket, Pelanggan, atau Unit..."
-                            className="w-full pl-11 pr-4 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-xs font-bold placeholder:text-slate-400 placeholder:font-medium"
+                            className="w-full pl-11 pr-4 py-3 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-xs font-bold placeholder:text-slate-400 placeholder:font-medium"
                             value={searchQuery}
                             onChange={(e) => handleSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 items-center scrollbar-hide">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 border-r border-slate-200 dark:border-slate-800 pr-4">Filter:</div>
+                    <div className="flex gap-2 w-full overflow-x-auto pb-2 lg:pb-0 items-center custom-scrollbar">
+                        <div className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mr-2 border-r border-slate-200 dark:border-slate-800 pr-4 whitespace-nowrap">Filter:</div>
                         {['all', 'approval', 'pengerjaan', 'selesai'].map(status => (
                             <button
                                 key={status}
-                                onClick={() => handleFilter(status)}
-                                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${filterStatus === status
-                                    ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/20'
-                                    : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600'
+                                onClick={() => setActiveTab(status)}
+                                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === status
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                    : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700'
                                     }`}
                             >
-                                {status === 'all' ? 'Semua' : status === 'approval' ? 'Pending' : status}
+                                {status === 'all' ? 'Semua' : status}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
-                            <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
-                                <th className="px-6 py-4">Informasi Tiket</th>
-                                <th className="px-6 py-4">Pelanggan & Unit</th>
-                                <th className="px-6 py-4">Status Logistik</th>
-                                <th className="px-6 py-4">Assign ke</th>
-                                <th className="px-6 py-4 text-right">Estimasi Biaya</th>
-                                <th className="px-6 py-4 text-center">Aksi Operasional</th>
+                            <tr className="border-b border-slate-100 dark:border-slate-800">
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 whitespace-nowrap">ID Tiket</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10">Pelanggan & Unit</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10">Problem Triage</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-center">Status</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-right">Progress/Est.</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-center w-24">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {paginatedServices.map((srv) => (
                                 <tr key={srv.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
                                     <td className="px-6 py-5">
@@ -338,7 +340,7 @@ export default function ServicePage({ onNavigate }) {
                     {filteredServices.length === 0 && (
                         <div className="py-24 flex flex-col items-center justify-center text-center">
                             <div className="size-20 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mb-6 border border-slate-100 dark:border-slate-800">
-                                <FiTool size={32} className="text-slate-200 dark:text-slate-700" />
+                                <FiCpu size={32} className="text-slate-200 dark:text-slate-700" />
                             </div>
                             <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Database tiket kosong / tidak ditemukan</p>
                             <button
@@ -382,31 +384,31 @@ export default function ServicePage({ onNavigate }) {
 
             {/* Service Ticket Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-[3rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 slide-in-from-bottom-12 duration-500 scale-95 hover:scale-100 transition-transform">
-                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-                            <div className="flex items-center gap-6">
-                                <div className={`p-4 rounded-3xl text-white shadow-xl ${selectedService ? 'bg-blue-600 shadow-blue-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
-                                    {selectedService ? <FiEdit2 size={24} /> : <FiPlus size={24} />}
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-[2rem] sm:rounded-[3rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 slide-in-from-bottom-12 duration-500 scale-95 hover:scale-100 transition-transform">
+                        <div className="p-4 sm:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3 sm:gap-6">
+                                <div className={`p-3 sm:p-4 rounded-2xl sm:rounded-3xl text-white shadow-xl ${selectedService ? 'bg-blue-600 shadow-blue-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
+                                    {selectedService ? <FiEdit2 size={20} className="sm:w-6 sm:h-6" /> : <FiPlus size={20} className="sm:w-6 sm:h-6" />}
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic flex items-center gap-3">
-                                        {selectedService ? 'Koreksi Tiket Servis' : 'Registrasi Tiket Servis Baru'}
-                                        {selectedService && <span className="text-sm font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-xl not-italic tracking-normal">{selectedService.serviceNo}</span>}
+                                <div className="min-w-0">
+                                    <h2 className="text-base sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight sm:tracking-tighter uppercase italic flex flex-wrap items-center gap-2 sm:gap-3">
+                                        {selectedService ? 'Koreksi Tiket' : 'Tiket Servis Baru'}
+                                        {selectedService && <span className="text-[10px] sm:text-sm font-black text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 sm:px-3 py-1 rounded-lg sm:rounded-xl not-italic tracking-normal">{selectedService.serviceNo}</span>}
                                     </h2>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 italic opacity-75 underline decoration-blue-500/30 underline-offset-4">Maintenance & Repair Log Authorization</p>
+                                    <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em] sm:tracking-[0.2em] mt-1 sm:mt-2 italic opacity-75 underline decoration-blue-500/30 underline-offset-4 hidden sm:block">Maintenance & Repair Log Authorization</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowForm(false)}
-                                className="group w-14 h-14 flex items-center justify-center rounded-[1.5rem] bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-600 transition-all shadow-sm border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50"
+                                className="group w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl sm:rounded-[1.5rem] bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-600 transition-all shadow-sm border border-transparent hover:border-rose-100 dark:hover:border-rose-900/50 flex-shrink-0"
                             >
-                                <FiX className="text-2xl group-hover:rotate-180 transition-transform duration-500" />
+                                <FiX className="text-xl sm:text-2xl group-hover:rotate-180 transition-transform duration-500" />
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-white dark:bg-transparent">
-                            <form id="serviceForm" onSubmit={handleSaveService} className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-10 custom-scrollbar bg-white dark:bg-transparent">
+                            <form id="serviceForm" onSubmit={handleSaveService} className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10">
                                 {/* Left Column: Client & Unit */}
                                 <div className="lg:col-span-12 xl:col-span-5 space-y-8">
                                     <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-800/50 space-y-6 relative overflow-hidden">
@@ -677,29 +679,31 @@ export default function ServicePage({ onNavigate }) {
                             </form>
                         </div>
 
-                        <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex gap-4 items-center p-4 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 max-w-lg shadow-sm">
-                                <div className="size-12 rounded-2xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-50 dark:border-blue-900/30">
-                                    <FiInfo size={24} />
+                        <div className="p-4 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+                            <div className="flex gap-3 sm:gap-4 items-center p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 max-w-lg shadow-sm w-full md:w-auto">
+                                <div className="size-10 sm:size-12 flex-shrink-0 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-50 dark:border-blue-900/30">
+                                    <FiInfo size={20} className="sm:w-6 sm:h-6" />
                                 </div>
-                                <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wide italic">
-                                    "Pastikan diagnosis awal telah disetujui pelanggan sebelum status diubah ke fase <span className="text-blue-600 font-black not-italic">[PENGERJAAN]</span> untuk menghindari perselisihan biaya operasional."
+                                <p className="text-[9px] sm:text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wide italic">
+                                    "Pastikan diagnosis awal disetujui pelanggan sebelum masuk fase <span className="text-blue-600 font-black not-italic">[PENGERJAAN]</span>."
                                 </p>
                             </div>
 
-                            <div className="flex gap-4 w-full md:w-auto">
+                            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 w-full md:w-auto mt-2 md:mt-0">
                                 <button
+                                    type="button"
                                     onClick={() => setShowForm(false)}
-                                    className="px-10 py-5 bg-white dark:bg-slate-900 text-slate-500 text-[11px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 active:scale-95"
+                                    className="w-full sm:w-auto px-6 sm:px-10 py-4 sm:py-5 bg-white dark:bg-slate-900 text-slate-500 text-[11px] font-black uppercase tracking-widest rounded-2xl sm:rounded-[1.5rem] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 active:scale-95 text-center"
                                 >
-                                    Dismiss
+                                    Dismiss / Batal
                                 </button>
                                 <button
                                     form="serviceForm"
-                                    className="flex-1 md:flex-none px-16 py-5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-[1.5rem] shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 transition-all active:scale-95 flex items-center justify-center gap-3 group"
+                                    type="submit"
+                                    className="w-full sm:w-auto md:flex-none px-8 sm:px-16 py-4 sm:py-5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl sm:rounded-[1.5rem] shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-3 group"
                                 >
-                                    <FiSave className="text-lg group-hover:bounce" />
-                                    Authorize Ticket
+                                    <FiSave className="text-base sm:text-lg group-hover:bounce" />
+                                    Authorize / Simpan
                                 </button>
                             </div>
                         </div>

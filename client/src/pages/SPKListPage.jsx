@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle } from 'react-icons/fi';
+const FiLayers = () => (
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+        <polyline points="2 17 12 22 22 17"></polyline>
+        <polyline points="2 12 12 17 22 12"></polyline>
+    </svg>
+);
 
 const STATUS_FILTERS = [
     { label: 'Semua', value: 'Semua', icon: <FiFileText /> },
@@ -12,14 +19,6 @@ const STATUS_FILTERS = [
     { label: 'Siap Diambil', value: 'Siap Diambil', icon: <FiPackage /> },
     { label: 'Diambil', value: 'Diambil', icon: <FiTruck /> },
 ];
-
-const FiLayers = () => (
-    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 17 12 22 22 17"></polyline>
-        <polyline points="2 12 12 17 22 12"></polyline>
-    </svg>
-);
 
 const STATUS_COLORS = {
     'Menunggu Antrian': { dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800/50', label: 'Antrian' },
@@ -171,8 +170,8 @@ export default function SPKListPage({ onNavigate }) {
                                     key={f.value}
                                     onClick={() => setActiveFilter(f.value)}
                                     className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${activeFilter === f.value
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
-                                            : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                                         }`}
                                 >
                                     {f.icon} {f.label}
@@ -349,8 +348,8 @@ export default function SPKListPage({ onNavigate }) {
                                                 key={p}
                                                 onClick={() => setCurrentPage(p)}
                                                 className={`w-9 h-9 flex items-center justify-center rounded-xl font-black text-xs transition-all ${currentPage === p
-                                                        ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-400 hover:bg-slate-100'
+                                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-400 hover:bg-slate-100'
                                                     }`}
                                             >
                                                 {p}

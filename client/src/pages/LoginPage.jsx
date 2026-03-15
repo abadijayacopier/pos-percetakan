@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiShield, FiShoppingBag, FiTool } from 'react-icons/fi';
+import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiShield, FiShoppingBag, FiCpu } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LoginPage() {
@@ -149,7 +149,7 @@ export default function LoginPage() {
                             {[
                                 { label: 'Admin', icon: FiShield, u: 'admin', p: 'admin123', color: 'text-amber-500' },
                                 { label: 'Cashier', icon: FiShoppingBag, u: 'kasir', p: 'kasir123', color: 'text-emerald-500' },
-                                { label: 'Tech', icon: FiTool, u: 'teknisi', p: 'teknisi123', color: 'text-blue-500' },
+                                { label: 'Tech', icon: FiCpu, u: 'teknisi', p: 'teknisi123', color: 'text-blue-500' },
                             ].map((d, i) => (
                                 <motion.button
                                     key={d.u}
@@ -157,7 +157,7 @@ export default function LoginPage() {
                                     whileHover={{ y: -4, backgroundColor: 'rgba(30, 41, 59, 0.5)' }}
                                     className="flex flex-col items-center gap-3 p-4 bg-slate-900/50 border border-slate-800 rounded-3xl transition-all hover:border-slate-700 group/gate"
                                 >
-                                    <div className={`p-2 rounded-xl bg-slate-800 group-hover/gate:scale-110 transition-transform ${d.color}`}>
+                                    <div className={`p-2 rounded-xl bg-slate-800 transition-transform ${d.color}`}>
                                         <d.icon size={16} />
                                     </div>
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{d.label}</span>

@@ -3,9 +3,22 @@ import {
     FiPrinter, FiCpu, FiFileText, FiLayers, FiImage, FiSettings,
     FiMapPin, FiPhone, FiMail, FiClock, FiUser, FiArrowRight,
     FiCheckCircle, FiTag, FiDollarSign, FiMenu, FiX, FiCheck,
-    FiInstagram, FiTwitter, FiFacebook, FiChevronRight, FiChevronLeft,
-    FiInfo
+    FiChevronRight, FiChevronLeft, FiInfo, FiGithub, FiMessageSquare, FiSend,
+    FiGlobe
 } from 'react-icons/fi';
+
+// Fallbacks for missing social icons in Fi
+const SocialInstagram = FiImage;
+const SocialTwitter = FiSend;
+const SocialFacebook = FiGlobe;
+const SocialYoutube = FiPrinter;
+
+// Re-assign to the names used in the component
+const FiInstagram = SocialInstagram;
+const FiTwitter = SocialTwitter;
+const FiFacebook = SocialFacebook;
+const FiYoutube = SocialYoutube;
+
 import { motion, AnimatePresence } from 'framer-motion';
 import db from '../db';
 
