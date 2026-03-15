@@ -15,7 +15,19 @@ export default function ProductionQueuePage({ onNavigate }) {
         tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
     });
     const [viewDesignModal, setViewDesignModal] = useState(null);
+    const [assignTaskModal, setAssignTaskModal] = useState(null);
     const [activeTab, setActiveTab] = useState('Semua');
+
+    const handleAssignTechnician = (taskId, techId, techName) => {
+        db.update('dp_tasks', taskId, {
+            technician_id: techId,
+            technician_name: techName,
+            updatedAt: new Date().toISOString()
+        });
+        db.logActivity(user?.name, 'Penugasan Operator', `Menugaskan teknisi ${techName} ke pesanan #${taskId}`);
+        loadProductionData();
+        setAssignTaskModal(null);
+    };
 
     const loadProductionData = async () => {
         let assignments = [];
@@ -300,9 +312,19 @@ export default function ProductionQueuePage({ onNavigate }) {
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 transition-colors" title={`Operator: ${task.technician_name || 'Belum Diatur'}`}>
+                                                <button
+                                                    onClick={() => {
+                                                        if (task.type === 'offset') {
+                                                            alert('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK.');
+                                                            return;
+                                                        }
+                                                        setAssignTaskModal(task);
+                                                    }}
+                                                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900 focus:outline-none hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                                    title={`Klik untuk ubah. Operator saat ini: ${task.technician_name || 'Belum Diatur'}`}
+                                                >
                                                     {task.technician_name ? task.technician_name.substring(0, 2).toUpperCase() : '??'}
-                                                </div>
+                                                </button>
                                                 {col.id !== 'selesai' && (
                                                     <button
                                                         onClick={() => {
@@ -404,6 +426,56 @@ export default function ProductionQueuePage({ onNavigate }) {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Assign Technician */}
+            <AnimatePresence>
+                {assignTaskModal && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setAssignTaskModal(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"
+                        >
+                            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                                <div>
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Pilih Operator</h3>
+                                    <p className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Pesanan #{assignTaskModal.id}</p>
+                                </div>
+                                <button className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 rounded-full flex items-center justify-center transition-all" onClick={() => setAssignTaskModal(null)}>
+                                    <FiX size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-3">
+                                {Object.entries(techStats).map(([id, tech]) => (
+                                    <button
+                                        key={id}
+                                        onClick={() => handleAssignTechnician(assignTaskModal.real_id || assignTaskModal.id, id, tech.name)}
+                                        className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl transition-all group"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black text-blue-600 text-xs shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                                                {tech.name.split(' ').map(n => n[0]).join('')}
+                                            </div>
+                                            <div className="text-left text-slate-900 dark:text-white">
+                                                <p className="font-bold text-sm leading-none">{tech.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1.5">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
+                                                        {tech.count} Tugas
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <FiUser className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    </button>
+                                ))}
                             </div>
                         </motion.div>
                     </div>
