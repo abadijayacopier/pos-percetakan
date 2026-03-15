@@ -38,9 +38,17 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
         style.innerHTML = `
             @media print {
                 .no-print { display: none !important; }
-                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; max-width: none !important;}
-                @page { size: A4; margin: 0; }
-                body { background-color: white !important; }
+                .print-container { 
+                    box-shadow: none !important; 
+                    border: none !important; 
+                    width: 210mm !important; 
+                    min-height: 297mm !important;
+                    margin: 0 auto !important; 
+                    padding: 10mm !important; 
+                    max-width: none !important;
+                }
+                @page { size: auto; margin: 0; }
+                body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
         `;
         document.head.appendChild(style);
