@@ -111,47 +111,49 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                 variants={sideVariants}
                 initial="closed"
                 animate={isOpen || (typeof window !== 'undefined' && window.innerWidth > 1024) ? "open" : "closed"}
-                className="fixed lg:relative inset-y-0 left-0 z-[100] w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/50 flex flex-col overflow-hidden"
+                className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] w-[280px] 
+                bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
+                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
-                    <div className="p-8 pb-8">
-                        <div className="flex items-center gap-4 group cursor-default">
+                    <div className="p-4 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                        <div className="flex items-center gap-3 cursor-default">
                             <div className="relative">
                                 <motion.div
-                                    className="bg-blue-600 size-11 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-600/20"
+                                    className="bg-blue-600 size-10 rounded-full flex items-center justify-center text-white"
                                     whileHover={{ scale: 1.05 }}
                                 >
-                                    <FiPrinter size={22} />
+                                    <FiPrinter size={20} />
                                 </motion.div>
-                                <div className="absolute -top-1 -right-1 size-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-950" />
+                                <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
                             </div>
                             <div className="flex flex-col">
-                                <h1 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight leading-none">
+                                <h1 className="text-slate-900 dark:text-white text-lg font-black tracking-tighter leading-none italic uppercase">
                                     Abadi <span className="text-blue-600 dark:text-blue-500">Jaya</span>
                                 </h1>
-                                <span className="text-[10px] font-medium text-slate-500 mt-1 uppercase tracking-wider">Percetakan & POS</span>
+                                <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Navigation Stream */}
-                    <nav className="flex-1 overflow-y-auto px-5 py-2 space-y-6 hide-scrollbar">
+                    <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-700 bg-transparent">
                         {MENU_GROUPS.map((group, gIdx) => {
+                            const userRole = user?.role ? String(user.role).toLowerCase() : '';
                             const filteredItems = group.items.filter(item =>
-                                user && (user.role === 'admin' || item.roles.includes(user.role))
+                                userRole === 'admin' || item.roles?.includes(userRole) || userRole === 'pemilik'
                             );
 
                             if (filteredItems.length === 0) return null;
 
                             return (
-                                <div key={gIdx} className="space-y-2">
-                                    <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-4 flex items-center gap-3">
+                                <div key={gIdx} className="space-y-1">
+                                    <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-3">
                                         {group.title}
-                                        <div className="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800" />
                                     </div>
 
-                                    <div className="space-y-1">
+                                    <div className="space-y-1.5">
                                         {filteredItems.map((item, iIdx) => {
                                             const isActive = activePage === item.id;
                                             const hasChildren = item.subItems && item.subItems.length > 0;
@@ -171,13 +173,13 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                         whileHover={{ x: 4 }}
                                                         whileTap={{ scale: 0.98 }}
                                                         onClick={() => hasChildren ? toggleExpand(item.id) : handleNav(item.id)}
-                                                        className={`flex items-center gap-3.5 px-4 py-3 rounded-xl font-medium text-[13px] tracking-tight transition-all w-full text-left relative overflow-hidden group
+                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-[13px] tracking-wide transition-all w-full text-left relative group outline-none
                                                         ${highlightParent
-                                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-slate-200'
+                                                                ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold shadow-sm ring-1 ring-blue-500/20'
+                                                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
                                                             }`}
                                                     >
-                                                        <span className={`text-xl ${highlightParent ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}>
+                                                        <span className={`text-[18px] transition-colors ${highlightParent ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400'}`}>
                                                             {item.icon}
                                                         </span>
                                                         <span className="flex-1">{item.label}</span>
@@ -198,25 +200,28 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                                 animate={{ height: "auto", opacity: 1 }}
                                                                 exit={{ height: 0, opacity: 0 }}
                                                                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                                                                className="overflow-hidden bg-slate-50 dark:bg-white/5 rounded-xl mt-1 mx-1"
+                                                                className="overflow-hidden bg-transparent mt-1 ml-4 border-l-2 border-slate-100 dark:border-slate-800/80 pl-2"
                                                             >
-                                                                <div className="py-1 px-1 space-y-1">
+                                                                <div className="py-1 space-y-1">
                                                                     {item.subItems
-                                                                        .filter(sub => user && (user.role === 'admin' || sub.roles.includes(user.role)))
+                                                                        .filter(sub => {
+                                                                            const userRole = user?.role ? String(user.role).toLowerCase() : '';
+                                                                            return userRole === 'admin' || sub.roles?.includes(userRole) || userRole === 'pemilik';
+                                                                        })
                                                                         .map((sub) => {
                                                                             const subActive = activePage === sub.id;
                                                                             return (
                                                                                 <button
                                                                                     key={sub.id}
                                                                                     onClick={() => handleNav(sub.id)}
-                                                                                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-[12px] font-medium transition-all w-full text-left
+                                                                                    className={`flex items-center gap-3 px-3 py-2 text-[12px] font-medium tracking-wide transition-all w-full text-left rounded-lg group
                                                                                     ${subActive
-                                                                                            ? 'bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 relative'
-                                                                                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-white/5'
+                                                                                            ? 'text-blue-700 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-900/20 font-semibold'
+                                                                                            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-white/5'
                                                                                         }`}
                                                                                 >
-                                                                                    {subActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-blue-600 rounded-r-md" />}
-                                                                                    <span className={`text-base ml-1 ${subActive ? 'text-blue-600 dark:text-blue-400' : 'opacity-50'}`}>{sub.icon}</span>
+                                                                                    {subActive && <div className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                                                                                    <span className={`text-[16px] transition-colors ${subActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 group-hover:text-blue-500'}`}>{sub.icon}</span>
                                                                                     <span>{sub.label}</span>
                                                                                 </button>
                                                                             );
@@ -235,30 +240,34 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                     </nav>
 
                     {/* Footer / User Info */}
-                    <div className="p-6 border-t border-slate-200 dark:border-slate-800/50">
-                        <div className="space-y-4">
+                    <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                        <div className="space-y-2">
                             <button
                                 onClick={() => handleNav('settings')}
-                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium text-[13px] transition-all w-full text-left
-                                ${activePage === 'settings' ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40'}`}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all w-full text-center border-2
+                                ${activePage === 'settings'
+                                        ? 'bg-white text-blue-600 border-blue-600'
+                                        : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
                             >
-                                <FiSettings size={18} />
-                                <span className="flex-1">Pengaturan</span>
+                                <FiSettings size={14} />
+                                <span>Pengaturan Sistem</span>
                             </button>
 
-                            <div className="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200 dark:border-white/5 flex items-center gap-3 group">
-                                <div className="size-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                                    {user?.username?.substring(0, 2).toUpperCase() || 'OP'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.username || 'Pengguna'}</p>
-                                    <p className="text-[10px] text-slate-500 capitalize">{user?.role || 'Guest'}</p>
+                            <div className="bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center justify-between group">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="size-8 bg-[#f1f5f9] dark:bg-slate-800 rounded-full flex items-center justify-center text-[#334155] dark:text-slate-300 font-black text-[10px] border border-slate-200 dark:border-slate-700">
+                                        {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic">{user?.username || 'ADMIN'}</p>
+                                        <p className="text-[9px] font-bold text-[#64748b] uppercase tracking-widest mt-0.5">{user?.role || 'ADMIN'}</p>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setShowLogoutConfirm(true)}
-                                    className="size-8 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
+                                    className="size-8 flex items-center justify-center text-slate-400 hover:text-blue-600 rounded-full transition-colors"
                                 >
-                                    <FiLogOut size={16} />
+                                    <FiLogOut size={14} />
                                 </button>
                             </div>
                         </div>
