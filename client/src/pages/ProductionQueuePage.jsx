@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiGrid, FiList, FiClock, FiCheckCircle, FiChevronRight, FiUser, FiZap, FiDownload, FiEdit2, FiTrash2, FiPrinter, FiX, FiCheck, FiArrowRight, FiLink, FiPaperclip, FiXCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiGrid, FiList, FiClock, FiCheckCircle, FiChevronRight, FiUser, FiZap, FiDownload, FiEdit2, FiTrash2, FiPrinter, FiX, FiCheck, FiArrowRight, FiLink, FiPaperclip, FiXCircle, FiAlertCircle, FiActivity, FiFileText, FiInfo, FiPlus, FiSearch, FiLayers } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function Toast({ msg, type, onClose }) {
