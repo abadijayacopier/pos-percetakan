@@ -401,8 +401,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-2.5 sticky top-0 z-50 shadow-sm">
                 <div className="flex items-center gap-4">
                     <button onClick={() => {
-                        onNavigate('dashboard');
-                        if (isMobile) window.dispatchEvent(new Event('toggleSidebar'));
+                        window.dispatchEvent(new Event('toggleSidebar'));
                     }} className="lg:hidden flex items-center justify-center p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
                         <span className="material-symbols-outlined text-xl">menu</span>
                     </button>
@@ -768,7 +767,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
             {/* Float trigger for mobile cart inside `<main>` overlap or sticky at bottom if needed, currently placed in header */}
             {isMobile && cart.length > 0 && !isCartOpen && (
-                <button onClick={() => { setIsCartOpen(true); window.dispatchEvent(new Event('toggleSidebar')); }} className="fixed bottom-16 right-6 z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
+                <button onClick={() => { setIsCartOpen(true); }} className="fixed bottom-16 right-6 z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full size-6 flex items-center justify-center border-2 border-white">{cart.length}</span>
                 </button>
