@@ -53,7 +53,7 @@ export default function SPKDetailPage({ onNavigate, pageState }) {
     if (!spk) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-                <span className="material-symbols-outlined text-slate-300 !text-6xl">search_off</span>
+                <span className="material-symbols-outlined text-slate-300 text-6xl!">search_off</span>
                 <p className="text-slate-500 font-medium">SPK tidak ditemukan</p>
                 <button onClick={() => onNavigate('spk-list')} className="text-primary font-bold text-sm cursor-pointer hover:underline">Kembali ke Daftar SPK</button>
             </div>
@@ -113,7 +113,7 @@ export default function SPKDetailPage({ onNavigate, pageState }) {
                             />
                             <label htmlFor="auto-notify" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 cursor-pointer flex items-center gap-1">
                                 Kirim Notifikasi WA
-                                <span className="material-symbols-outlined !text-[14px] text-[#25D366]">chat</span>
+                                <span className="material-symbols-outlined text-[14px]! text-[#25D366]">chat</span>
                             </label>
                         </div>
                     </div>

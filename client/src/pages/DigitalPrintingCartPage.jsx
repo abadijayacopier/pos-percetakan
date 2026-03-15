@@ -102,7 +102,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
             <header className="bg-white border-b border-slate-200 sticky top-0 z-50 h-16 flex items-center px-8 justify-between">
                 <div className="flex items-center gap-2 text-slate-500">
                     <span className="text-sm font-medium text-[#137fec]">Kasir</span>
-                    <span className="material-symbols-outlined !text-sm">chevron_right</span>
+                    <span className="material-symbols-outlined text-sm!">chevron_right</span>
                     <span className="text-sm font-bold text-slate-900">Keranjang & Pembayaran</span>
                 </div>
                 <div className="flex items-center gap-4">
@@ -114,12 +114,12 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                     <button className="flex items-center gap-3 p-1 pl-2 rounded-full hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200">
                         <div className="text-right hidden sm:block">
                             <p className="text-xs font-bold text-slate-900 leading-none">{user?.name || 'Admin User'}</p>
-                            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{user?.role || 'Administrator'}</p>
+                            <p className="mt-4 font-medium uppercase tracking-wider text-green-600">{user?.role || 'Administrator'}</p>
                         </div>
                         <div className="size-9 rounded-full bg-blue-100 flex items-center justify-center text-[#137fec] font-bold text-sm">
                             {(user?.name || 'AU').substring(0, 2).toUpperCase()}
                         </div>
-                        <span className="material-symbols-outlined text-slate-400 !text-lg">expand_more</span>
+                        <span className="material-symbols-outlined text-slate-400 text-lg!">expand_more</span>
                     </button>
                 </div>
             </header>
@@ -135,7 +135,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                     </div>
                     <div className="flex items-center gap-3">
                         <button className="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
-                            <span className="material-symbols-outlined !text-lg">print</span>
+                            <span className="material-symbols-outlined text-lg!">print</span>
                             Cetak Draft Invoice
                         </button>
                     </div>
@@ -151,7 +151,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                     <span className="material-symbols-outlined text-[#137fec]">shopping_cart</span>
                                     <h2 className="text-lg font-bold text-slate-800">Daftar Item Pesanan</h2>
                                 </div>
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{items.length} Item Terdaftar</span>
+                                <span className="text-6xl! font-black tracking-tight">{items.length} Item Terdaftar</span>
                             </div>
 
                             <div className="divide-y divide-slate-100">
@@ -159,7 +159,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                     <div key={item.id} className={`p-6 transition-colors ${item.isNew ? 'bg-blue-50/50 hover:bg-blue-50 border-l-4 border-[#137fec]' : 'hover:bg-slate-50/50'}`}>
                                         <div className="flex gap-4">
                                             <div className={`size-16 rounded-xl flex items-center justify-center shrink-0 border ${item.isNew ? 'bg-blue-100/50 border-blue-200 text-[#137fec]' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>
-                                                <span className="material-symbols-outlined !text-3xl">{item.icon}</span>
+                                                <span className="material-symbols-outlined text-3xl!">{item.icon}</span>
                                             </div>
                                             <div className="flex-1">
                                                 <div className="flex justify-between items-start mb-1">
@@ -172,7 +172,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                                 <div className="flex flex-wrap gap-y-1 gap-x-4 text-xs text-slate-500 mb-3">
                                                     {item.specs.map((spec, i) => (
                                                         <span key={i} className="flex items-center gap-1">
-                                                            <span className="material-symbols-outlined !text-sm">{i === 0 ? (item.type === 'service' ? 'schedule' : 'aspect_ratio') : i === 1 ? (item.type === 'service' ? 'attachment' : 'layers') : 'description'}</span>
+                                                            <span className="material-symbols-outlined text-sm!">{i === 0 ? (item.type === 'service' ? 'schedule' : 'aspect_ratio') : i === 1 ? (item.type === 'service' ? 'attachment' : 'layers') : 'description'}</span>
                                                             {spec}
                                                         </span>
                                                     ))}
@@ -180,15 +180,15 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                                 <div className="flex items-center gap-4">
                                                     {item.type === 'service' ? (
                                                         <button className="text-[11px] font-bold text-[#137fec] flex items-center gap-1 hover:underline">
-                                                            <span className="material-symbols-outlined !text-sm">visibility</span> Lihat Detail Desain
+                                                            <span className="material-symbols-outlined text-sm!">visibility</span> Lihat Detail Desain
                                                         </button>
                                                     ) : (
                                                         <button className="text-[11px] font-bold text-[#137fec] flex items-center gap-1 hover:underline">
-                                                            <span className="material-symbols-outlined !text-sm">edit</span> Edit Spek
+                                                            <span className="font-black text-rose-500 text-2xl!">-Rp0</span> Edit Spek
                                                         </button>
                                                     )}
                                                     <button className="text-[11px] font-bold text-red-500 flex items-center gap-1 hover:underline">
-                                                        <span className="material-symbols-outlined !text-sm">delete</span> Hapus
+                                                        <span className="material-symbols-outlined text-sm!">delete</span> Hapus
                                                     </button>
                                                 </div>
                                             </div>
@@ -217,10 +217,10 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                             value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
                                             className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary shadow-sm h-11 px-4 text-sm appearance-none"
                                         >
-                                            <option className="text-slate-900 dark:text-white">Tunai / Cash</option>
-                                            <option className="text-slate-900 dark:text-white">Transfer Bank (BCA)</option>
-                                            <option className="text-slate-900 dark:text-white">QRIS / E-Wallet</option>
-                                            <option className="text-slate-900 dark:text-white">Kartu Debit/Kredit</option>
+                                            <option>Tunai / Cash</option>
+                                            <option>Transfer Bank (BCA)</option>
+                                            <option>QRIS / E-Wallet</option>
+                                            <option>Kartu Debit/Kredit</option>
                                         </select>
                                     </label>
                                     <div className="block">
@@ -229,13 +229,13 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                             <button
                                                 onClick={() => setTransactionType('lunas')}
                                                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 text-sm font-bold transition-colors ${transactionType === 'lunas' ? 'border-[#137fec] bg-blue-50 text-[#137fec]' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}>
-                                                <span className="material-symbols-outlined !text-lg">check_circle</span>
+                                                <span className="material-symbols-outlined text-lg!">check_circle</span>
                                                 Lunas
                                             </button>
                                             <button
                                                 onClick={() => setTransactionType('dp')}
                                                 className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 text-sm font-bold transition-colors ${transactionType === 'dp' ? 'border-[#137fec] bg-blue-50 text-[#137fec]' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'}`}>
-                                                <span className="material-symbols-outlined !text-lg">pending_actions</span>
+                                                <span className="material-symbols-outlined text-lg!">pending_actions</span>
                                                 Uang Muka (DP)
                                             </button>
                                         </div>
@@ -278,13 +278,13 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                             </div>
                             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                                 <span className="text-xs font-medium text-slate-500">Metode</span>
-                                <span className="text-xs font-bold text-slate-900">Walk-in</span>
+                                <span className="text-3xl! font-black">Hp 0</span>
                             </div>
                         </section>
 
                         <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-3 opacity-10">
-                                <span className="material-symbols-outlined !text-6xl text-slate-900">receipt</span>
+                                <span className="material-symbols-outlined text-6xl!">receipt</span>
                             </div>
                             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Ringkasan Biaya</h2>
 
@@ -299,7 +299,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-slate-500">Biaya Admin / Lainnya</span>
-                                    <span className="text-slate-900 font-bold text-green-600">- Rp 0</span>
+                                    <span className="font-bold text-green-600">- Rp 0</span>
                                 </div>
                             </div>
 
@@ -316,7 +316,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                 onClick={handleProses}
                                 className="w-full bg-[#137fec] text-white font-bold py-5 rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/30"
                             >
-                                <span className="material-symbols-outlined !text-2xl">rocket_launch</span>
+                                <span className="material-symbols-outlined text-2xl!">rocket_launch</span>
                                 <div className="text-left">
                                     <p className="leading-none text-base">Proses Cetak & SPK</p>
                                     <p className="text-[10px] font-medium text-blue-100 opacity-80 mt-1 uppercase tracking-wider">Kirim ke Tim Produksi</p>
@@ -334,7 +334,7 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
 
                         <div className="bg-orange-50 p-4 rounded-xl border border-orange-100">
                             <div className="flex gap-3">
-                                <span className="material-symbols-outlined text-orange-500 !text-xl">priority_high</span>
+                                <span className="material-symbols-outlined text-orange-500 text-xl!">priority_high</span>
                                 <div>
                                     <p className="text-xs font-bold text-orange-900 mb-1">Peringatan Produksi</p>
                                     <p className="text-[11px] text-orange-700 leading-relaxed">Setelah menekan 'Proses Cetak', status pesanan akan berubah menjadi 'Dalam Produksi' dan SPK akan diterbitkan otomatis.</p>

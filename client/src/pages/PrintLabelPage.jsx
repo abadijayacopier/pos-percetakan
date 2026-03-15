@@ -92,7 +92,7 @@ export default function PrintLabelPage({ onNavigate, pageState }) {
                                     {/* Barcode & Footer */}
                                     <div className="mt-2 flex flex-col items-center">
                                         <div className="w-full flex flex-col items-center gap-1">
-                                            <div className="w-full h-10 bg-white flex items-end justify-center gap-[1px]">
+                                            <div className="w-full h-10 bg-white flex items-end justify-center gap-px">
                                                 {/* Simulated Barcode Lines */}
                                                 {[...Array(30)].map((_, i) => (
                                                     <div key={i} className={`bg-black h-full`} style={{ width: `${Math.floor(Math.random() * 3) + 1}px` }}></div>

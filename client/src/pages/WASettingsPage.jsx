@@ -207,9 +207,9 @@ export default function WASettingsPage({ onNavigate }) {
                     </div>
 
                     <div className="xl:col-span-4 space-y-8">
-                        <div className="bg-slate-200 dark:bg-slate-800 rounded-[2.5rem] p-4 border-[8px] border-slate-900 dark:border-slate-950 shadow-2xl relative max-w-sm mx-auto w-full">
+                        <div className="bg-slate-200 dark:bg-slate-800 rounded-[2.5rem] p-4 border-8 border-slate-900 dark:border-slate-950 shadow-2xl relative max-w-sm mx-auto w-full">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 dark:border-slate-950 rounded-b-xl"></div>
-                            <div className="bg-[#e5ddd5] dark:bg-slate-900 h-[580px] rounded-[1.5rem] overflow-hidden flex flex-col">
+                            <div className="bg-[#e5ddd5] dark:bg-slate-900 h-[580px] rounded-3xl overflow-hidden flex flex-col">
                                 <div className="bg-[#075e54] text-white p-3 pt-6 flex items-center gap-3">
                                     <span className="material-symbols-outlined text-xl">arrow_back</span>
                                     <div className="size-8 rounded-full bg-white/20 flex items-center justify-center">
