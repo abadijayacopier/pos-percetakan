@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight } from 'react-icons/fi';
+import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProductionQueuePage({ onNavigate }) {
