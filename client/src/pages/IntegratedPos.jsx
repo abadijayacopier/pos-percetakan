@@ -38,6 +38,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         return () => clearInterval(timer);
     }, []);
 
+    // Fullscreen Event Listener
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            if (onFullscreenChange) {
+                onFullscreenChange(!!document.fullscreenElement);
+            }
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, [onFullscreenChange]);
+
     // Update isMobile on resize
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 1024);

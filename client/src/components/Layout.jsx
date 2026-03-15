@@ -62,7 +62,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
     return (
         <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            {!(activePage === 'pos-v1') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+            {!(activePage === 'pos-v1' || isFullscreen) && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
             <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
                 {!(activePage === 'pos' || activePage === 'pos-v1') && (
@@ -70,13 +70,13 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
                             {/* Mobile Menu Button */}
                             <button
-                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                                className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors shrink-0"
                                 onClick={() => setSidebarOpen(true)}
                             >
                                 <FiMenu size={20} />
                             </button>
                             <h2 className="text-sm sm:text-lg font-bold truncate md:block flex-1 min-w-0">{PAGE_TITLES[activePage] || 'Ringkasan Bisnis'}</h2>
-                            <div className="relative group ml-auto md:ml-4 hidden sm:block flex-shrink-0">
+                            <div className="relative group ml-auto md:ml-4 hidden sm:block shrink-0">
                                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                                     <span className="material-symbols-outlined text-sm">search</span>
                                 </span>
@@ -88,7 +88,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                             {/* Theme Toggle */}
                             <ThemeToggle />
 
@@ -116,7 +116,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
                                 {/* Premium Profile Dropdown */}
                                 {profileOpen && (
-                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
                                         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 md:hidden">
                                             <p className="text-sm font-bold text-slate-900 dark:text-white">{user?.name || 'Admin User'}</p>
                                             <p className="text-xs text-slate-500">{user?.role || 'Administrator'}</p>
