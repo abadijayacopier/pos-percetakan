@@ -43,9 +43,17 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
         style.innerHTML = `
             @media print {
                 .no-print { display: none !important; }
-                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                @page { size: A4; margin: 0; }
-                body { background-color: white !important; }
+                .print-container { 
+                    box-shadow: none !important; 
+                    border: none !important; 
+                    width: 210mm !important; 
+                    min-height: 297mm !important;
+                    margin: 0 auto !important; 
+                    padding: 0 !important; 
+                    max-width: none !important;
+                }
+                @page { size: auto; margin: 0; }
+                body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             }
             .paper-a4 {
                 width: 210mm;
@@ -80,7 +88,7 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
     if (!spk) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-                <span className="material-symbols-outlined text-slate-300 !text-6xl">search_off</span>
+                <span className="material-symbols-outlined text-slate-300 text-6xl!">search_off</span>
                 <p className="text-slate-500 font-medium">SPK tidak ditemukan</p>
                 <button onClick={() => onNavigate('spk-list')} className="text-blue-500 font-bold text-sm cursor-pointer hover:underline">Kembali ke Daftar SPK</button>
             </div>
@@ -220,14 +228,19 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
                     </section>
 
                     {/* Signatures */}
-                    <section className="pt-12 grid grid-cols-2 gap-12">
+                    <section className="pt-12 grid grid-cols-3 gap-12">
                         <div className="flex flex-col items-center">
                             <p className="text-sm font-bold text-slate-500 mb-16 uppercase tracking-widest">Admin Produksi</p>
                             <div className="w-48 border-b-2 border-slate-900"></div>
                             <p className="mt-2 text-sm font-medium text-slate-900">Dibuat Oleh</p>
                         </div>
                         <div className="flex flex-col items-center">
-                            <p className="text-sm font-bold text-slate-500 mb-16 uppercase tracking-widest text-slate-700">Teknisi / Operator</p>
+                            <p className="text-xs font-bold text-slate-500 mb-6">Penanggung Jawab</p>
+                            <div className="h-20 border-b-2 border-dashed border-slate-200 w-32 mx-auto"></div>
+                            <p className="text-xs font-bold text-slate-700 mt-2 uppercase">(.......................)</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <p className="text-sm font-bold uppercase tracking-widest text-slate-700">Teknisi / Operator</p>
                             <div className="w-48 border-b-2 border-slate-900"></div>
                             <p className="mt-2 text-sm font-medium text-slate-900">Diterima & Dikerjakan</p>
                         </div>
