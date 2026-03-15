@@ -27,6 +27,23 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
         setLoading(false);
     }, [serviceId]);
 
+    // Tambahkan style cetak format A4
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media print {
+                .no-print { display: none !important; }
+                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; max-width: none !important;}
+                @page { size: A4; margin: 0; }
+                body { background-color: white !important; }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     const formatCurrency = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
     if (loading) return <div className="p-20 text-center font-bold">Memuat Invoice...</div>;
@@ -69,7 +86,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                 </div>
             </header>
 
-            <main className="max-w-[850px] mx-auto mt-8 px-4">
+            <main className="max-w-[850px] mx-auto mt-8 px-4 print:mt-0 print:px-0">
                 <div className="print-container bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
 
                     {/* Watermark Status */}

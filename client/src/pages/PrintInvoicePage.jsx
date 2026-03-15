@@ -32,6 +32,23 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
         setSettings(sObj);
     }, [spkId]);
 
+    // Tambahkan style cetak format A4
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media print {
+                .no-print { display: none !important; }
+                .print-container { box-shadow: none !important; border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; max-width: none !important;}
+                @page { size: A4; margin: 0; }
+                body { background-color: white !important; }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     const formatCurrency = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
@@ -104,7 +121,7 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
                 </header>
 
                 {/* Invoice Container (A4 Proportions) */}
-                <main className="flex-1 flex justify-center py-4 px-4 sm:px-10">
+                <main className="flex-1 flex justify-center py-4 px-4 sm:px-10 print:py-0 print:px-0">
                     <div className="print-container w-full max-w-[960px] bg-white dark:bg-slate-900 shadow-xl rounded-xl overflow-hidden p-8 sm:p-12 border border-slate-200 dark:border-slate-800">
 
                         {/* Header Invoice */}
