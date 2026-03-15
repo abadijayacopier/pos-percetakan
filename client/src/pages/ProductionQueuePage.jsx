@@ -154,7 +154,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                 {Object.entries(techStats).map(([id, tech]) => (
                     <div key={id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col group hover:shadow-md transition-all">
                         <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex flex-shrink-0 items-center justify-center font-black text-blue-600 text-sm uppercase ring-1 ring-slate-200 dark:ring-slate-700">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex shrink-0 items-center justify-center font-black text-blue-600 text-sm uppercase ring-1 ring-slate-200 dark:ring-slate-700">
                                 {tech.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -209,7 +209,7 @@ export default function ProductionQueuePage({ onNavigate }) {
             </div>
 
             {/* Kanban Board */}
-            <div className="flex gap-6 overflow-x-auto pb-8 hide-scrollbar flex-1 items-start min-h-[500px]">
+            <div className="flex gap-6 overflow-x-auto pb-8 flex-1 items-start min-h-[500px] w-full snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
                 {[
                     { id: 'produksi', label: 'MENUNGGU ANTRIAN', color: 'slate' },
                     { id: 'cetak', label: 'PROSES CETAK', color: 'blue' },
@@ -219,7 +219,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                 ].map(col => (
                     <div
                         key={col.id}
-                        className="flex flex-col gap-4 min-w-[320px] w-[320px] shrink-0"
+                        className="flex flex-col gap-4 min-w-[320px] w-[320px] shrink-0 snap-start"
                         onDragOver={(e) => {
                             e.preventDefault();
                             e.currentTarget.classList.add('opacity-70', 'scale-[1.02]');
