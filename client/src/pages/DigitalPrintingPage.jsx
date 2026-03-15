@@ -591,11 +591,11 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                         </div>
 
                                         {/* ESTIMASI KOTAK */}
-                                        <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-lg shadow-red-500/30 border border-white/10 relative overflow-hidden group">
+                                        <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-slate-400 dark:text-slate-400 shadow-lg shadow-red-500/30 border border-white/20 dark:border-white/20 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
                                                 <FiTag size={64} />
                                             </div>
-                                            <p className="text-[10px] font-bold text-white/80 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
+                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
                                             <p className="text-3xl font-black italic tracking-tight relative z-10 drop-shadow-md">
                                                 Rp {calcOrderData.estimatedTotal.toLocaleString('id-ID')}
                                             </p>
@@ -618,7 +618,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                             className={`w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all shadow-md flex justify-center items-center gap-2 uppercase
                             ${(!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading)
                                                     ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                                                    : 'bg-linear-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white shadow-red-500/25 hover:shadow-lg hover:-translate-y-0.5'}`}
+                                                    : 'bg-linear-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-slate-400 dark:text-slate-400 shadow-violet-500/50 hover:shadow-lg hover:-translate-y-0.5'}`}
                                         >
                                             <FiPlusCircle size={18} />
                                             {loading ? 'Memproses...' : 'Buat Pesanan & SPK'}
@@ -659,240 +659,6 @@ export default function DigitalPrintingPage({ onNavigate }) {
                         </form>
                     </div>
 
-                    {/* Logs Table */}
-                    <div className="mt-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-                            <h3 className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-3 text-slate-900 dark:text-white">
-                                <span className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg"><FiClock /></span>
-                                Riwayat Kerja & Operasional
-                            </h3>
-                            <div className="flex items-center gap-2">
-                                <div className="px-3 py-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    {recentLogs.length} Records
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Order ID</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pelanggan</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Layanan</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tahapan</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pembayaran</th>
-                                        <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                    {recentLogs.slice((logPage - 1) * logItemsPerPage, logPage * logItemsPerPage).map((log, i) => (
-                                        <tr key={i} className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <span className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-tighter">#{log.id}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400">
-                                                        <FiUser size={14} />
-                                                    </div>
-                                                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">{log.customerName}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{log.material_name}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${getTahapanClasses(log.status === 'desain' || log.status === 'menunggu_desain' ? 'amber' : (['selesai', 'Diambil'].includes(log.status) ? 'green' : 'blue'))}`}>
-                                                    {log.status?.replace('_', ' ').toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${log.isPaid || log.status === 'Diambil' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
-                                                    {log.isPaid || log.status === 'Diambil' ? 'Lunas' : 'Pending'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => {
-                                                        if (['desain', 'menunggu_desain', 'ditugaskan', 'dikerjakan'].includes(log.status)) onNavigate('design-finalization', { taskId: log.id });
-                                                        else if (log.status === 'checkout') onNavigate('dp-cart', { taskId: log.id });
-                                                        else onNavigate('production-queue');
-                                                    }}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-600 dark:text-slate-400 shadow-sm"
-                                                >
-                                                    <FiEye /> Detail
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Pagination */}
-                        {recentLogs.length > logItemsPerPage && (
-                            <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    Showing {Math.min(recentLogs.length, (logPage - 1) * logItemsPerPage + 1)}-{Math.min(recentLogs.length, logPage * logItemsPerPage)} of {recentLogs.length}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setLogPage(p => Math.max(1, p - 1))}
-                                        disabled={logPage === 1}
-                                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
-                                    >
-                                        <FiChevronLeft size={18} />
-                                    </button>
-                                    <span className="text-xs font-black px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl min-w-[70px] text-center shadow-sm">
-                                        {logPage} / {Math.ceil(recentLogs.length / logItemsPerPage)}
-                                    </span>
-                                    <button
-                                        onClick={() => setLogPage(p => Math.min(Math.ceil(recentLogs.length / logItemsPerPage), p + 1))}
-                                        disabled={logPage === Math.ceil(recentLogs.length / logItemsPerPage)}
-                                        className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm text-slate-600 dark:text-slate-400"
-                                    >
-                                        <FiChevronRight size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* View Modal */}
-                    <Modal
-                        isOpen={showViewModal}
-                        onClose={() => setShowViewModal(false)}
-                        title="Detail Operasional"
-                        icon={<FiEye className="text-blue-600" />}
-                    >
-                        {selectedTask && (
-                            <div className="space-y-6">
-                                <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Produksi</p>
-                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${getTahapanClasses(selectedTask.status === 'desain' || selectedTask.status === 'menunggu_desain' ? 'amber' : (['selesai', 'Diambil'].includes(selectedTask.status) ? 'green' : 'blue'))}`}>
-                                            {selectedTask.status?.toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Pesanan</p>
-                                        <p className="font-black text-slate-900 dark:text-white">#{selectedTask.id}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Customer</p>
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedTask.customerName}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Judul Pekerjaan</p>
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedTask.title}</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dimensi & Bahan</p>
-                                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{selectedTask.dimensions.width}m x {selectedTask.dimensions.height}m — {selectedTask.material_name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Metode Pembayaran</p>
-                                            <p className={`text-sm font-bold ${selectedTask.isPaid ? 'text-emerald-600' : 'text-rose-600'}`}>{selectedTask.isPaid ? 'Lunas / Dibayar' : 'Tagihan Belum Lunas'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-5 bg-slate-900 rounded-2xl relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 relative z-10">Rincian Estimasi Biaya</p>
-                                    <div className="space-y-2 relative z-10">
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-slate-500 font-medium">Bahan & Cetak:</span>
-                                            <span className="text-white font-bold">{fmt(selectedTask.material_price)}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <span className="text-slate-500 font-medium">Jasa Desain:</span>
-                                            <span className="text-white font-bold">{fmt(selectedTask.design_price)}</span>
-                                        </div>
-                                        <div className="h-px bg-white/10 my-2"></div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-slate-300 font-black uppercase text-[10px] tracking-widest">Grand Total</span>
-                                            <span className="text-xl font-black text-blue-400 italic tracking-tighter">{fmt(selectedTask.material_price + selectedTask.design_price)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </Modal>
-
-                    {/* Edit Modal */}
-                    <Modal
-                        isOpen={showEditModal}
-                        onClose={() => setShowEditModal(false)}
-                        title="Koreksi Data Pesanan"
-                        icon={<FiEdit3 className="text-amber-500" />}
-                        footer={(
-                            <div className="flex gap-3 w-full">
-                                <button className="flex-1 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" onClick={() => setShowEditModal(false)}>Batal</button>
-                                <button className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20" onClick={handleUpdateTask}>Simpan Koreksi</button>
-                            </div>
-                        )}
-                    >
-                        <div className="space-y-5">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pelanggan</label>
-                                <select
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                    value={editForm.customerId}
-                                    onChange={e => setEditForm({ ...editForm, customerId: e.target.value })}
-                                >
-                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bahan Cetak</label>
-                                <select
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                    value={editForm.matId}
-                                    onChange={e => setEditForm({ ...editForm, matId: e.target.value })}
-                                >
-                                    {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lebar (m)</label>
-                                    <input
-                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                        type="number" step="0.1"
-                                        value={editForm.dimensions.width}
-                                        onChange={e => setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, width: e.target.value } })}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tinggi (m)</label>
-                                    <input
-                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                        type="number" step="0.1"
-                                        value={editForm.dimensions.height}
-                                        onChange={e => setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, height: e.target.value } })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </Modal>
-
-                    {/* Assign Modal Wrapper */}
-                    <AssignModal
-                        isOpen={showAssignModal}
-                        onClose={() => setShowAssignModal(false)}
-                        selectedTask={selectedTask}
-                        availableDesigners={availableDesigners}
-                        loadingDesigners={loadingDesigners}
-                        handleAssignDesigner={handleAssignDesigner}
-                    />
                 </div>
             </div>
 
