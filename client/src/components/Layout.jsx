@@ -107,7 +107,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                                     </div>
                                     <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all flex items-center justify-center">
                                         {/* Profile Picture Placeholder */}
-                                        <div className="w-full h-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                        <div className="w-full h-full bg-linear-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold text-sm">
                                             {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AU'}
                                         </div>
                                     </div>
