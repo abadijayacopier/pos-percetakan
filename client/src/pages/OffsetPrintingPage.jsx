@@ -14,7 +14,6 @@ import {
     FiChevronRight,
     FiFileText,
     FiPlusCircle,
-    FiCalculator,
     FiTag,
     FiCalendar,
     FiPackage
@@ -234,7 +233,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-12 -mt-12 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                                     <div className={`size-14 rounded-2xl flex items-center justify-center mb-5 transition-all transform group-hover:scale-110 shadow-sm ${p.is_best_seller ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600'}`}>
-                                        <span className="material-symbols-outlined !text-2xl">
+                                        <span className="material-symbols-outlined text-2xl!">
                                             {p.nama_produk.toLowerCase().includes('nota') ? 'receipt_long' : p.nama_produk.toLowerCase().includes('kalender') ? 'calendar_month' : 'menu_book'}
                                         </span>
                                     </div>
@@ -353,7 +352,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
                         <div className="flex items-center justify-between mb-8 relative z-10">
                             <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                                <span className="p-2 bg-primary/10 text-primary rounded-lg"><FiCalculator /></span>
+                                <span className="p-2 bg-primary/10 text-primary rounded-lg flex items-center justify-center"><span className="material-symbols-outlined text-lg">calculate</span></span>
                                 Estimasi Biaya
                             </h2>
                         </div>
@@ -461,7 +460,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                 onClick={handleBuatPesanan}
                                 className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] mt-4"
                             >
-                                <span className="material-symbols-outlined !text-xl">add_task</span>
+                                <span className="material-symbols-outlined text-xl!">add_task</span>
                                 Terbitkan SPK Baru
                             </button>
                         </form>
