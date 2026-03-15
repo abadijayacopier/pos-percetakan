@@ -415,7 +415,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     </div>
                 </div>
 
-                <nav className="flex flex-1 justify-center gap-4 xl:gap-8 hidden md:flex items-center">
+                <nav className="flex-1 justify-center gap-4 xl:gap-8 hidden md:flex items-center">
                     <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-primary font-bold border-b-2 border-primary py-2 px-2 transition-colors hover:text-primary-dark">
                         <span className="material-symbols-outlined text-xl">home_app_logo</span> Beranda
                     </button>
@@ -433,7 +433,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 </nav>
 
                 {/* Right: Actions & User (Desktop) */}
-                <div className="hidden md:flex items-center gap-6 justify-end flex-shrink-0">
+                <div className="hidden md:flex items-center gap-6 justify-end shrink-0">
                     {/* Action Pills */}
                     <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-full border border-slate-100 dark:border-slate-700">
                         <button onClick={toggleTheme} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Ganti Tema">
@@ -562,7 +562,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         <div key={item.id} onClick={() => addJilidToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center">
                                             <span className="material-symbols-outlined text-primary mb-2 text-3xl">auto_stories</span>
                                             <h3 className="font-bold text-sm">{item.name}</h3>
-                                            <p className="text-xs text-slate-500 mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
+                                            <p className="text-xs mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -574,7 +574,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         <div key={item.id} onClick={() => addPrintToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center">
                                             <span className="material-symbols-outlined text-primary mb-2 text-3xl">print</span>
                                             <h3 className="font-bold text-sm">{item.name}</h3>
-                                            <p className="text-xs text-slate-500 mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
+                                            <p className="text-xs mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -630,7 +630,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 </div>
 
                 {/* Right Sidebar: Cart */}
-                <aside className={`fixed inset-y-0 right-0 z-50 lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-[100%]' : 'translate-x-0'}`}>
+                <aside className={`fixed inset-y-0 right-0 z-50 lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-full' : 'translate-x-0'}`}>
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl leading-none font-bold flex flex-col xl:flex-row xl:items-center gap-1 xl:gap-3">
@@ -774,7 +774,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             )}
 
             {/* Footer / Hotkeys Banner */}
-            <footer className="h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium flex items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-[45] relative">
+            <footer className="h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium flex items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-45 relative">
                 <div className="flex items-center gap-5 min-w-max">
                     <div className="flex items-center gap-1.5 text-primary-light font-bold">
                         <span className="material-symbols-outlined text-[14px]">keyboard</span>

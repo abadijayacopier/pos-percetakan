@@ -239,7 +239,7 @@ export default function DashboardPage({ onNavigate }) {
                     >
                         <FiRefreshCw size={20} />
                     </button>
-                    <div className="h-10 w-[1px] bg-slate-100 dark:bg-slate-800 hidden sm:block mx-2" />
+                    <div className="h-10 w-px bg-slate-100 dark:bg-slate-800 hidden sm:block mx-2" />
                     <div className="text-right hidden sm:block">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status Sistem</p>
                         <p className="text-xs font-bold text-emerald-500 mt-1 flex items-center justify-end gap-1.5 uppercase">
@@ -265,7 +265,7 @@ export default function DashboardPage({ onNavigate }) {
                     <motion.div
                         variants={itemVariants}
                         key={s.label}
-                        className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all"
+                        className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all"
                     >
                         <div className={`absolute -top-4 -right-4 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-125 text-8xl text-${s.color}-500`}>
                             <s.icon />
@@ -333,7 +333,7 @@ export default function DashboardPage({ onNavigate }) {
                     className="space-y-6"
                 >
                     {/* Activity Brief */}
-                    <div className="bg-blue-600/5 dark:bg-blue-600/10 p-8 rounded-[2rem] border border-blue-600/10 flex items-center gap-6 group hover:bg-blue-600/10 transition-colors">
+                    <div className="bg-blue-600/5 dark:bg-blue-600/10 p-8 rounded-4xl border border-blue-600/10 flex items-center gap-6 group hover:bg-blue-600/10 transition-colors">
                         <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0 group-hover:scale-110 transition-transform">
                             <FiActivity size={28} />
                         </div>

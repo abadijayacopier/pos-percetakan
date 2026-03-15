@@ -163,7 +163,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                     className="flex items-center gap-4 bg-slate-950/60 p-4 rounded-[1.8rem] border border-white/5 group hover:border-blue-500/30 transition-all cursor-crosshair flex-1 min-w-[220px]"
                                 >
                                     <div className="relative">
-                                        <div className="size-12 rounded-[1rem] bg-slate-900 border border-white/10 flex items-center justify-center font-black italic text-blue-500 text-sm">
+                                        <div className="size-12 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center font-black italic text-blue-500 text-sm">
                                             {tech.name.split(' ').map(n => n[0]).join('')}
                                         </div>
                                         <div className={`absolute -top-1 -right-1 size-3 rounded-full border-2 border-slate-950 ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
@@ -202,7 +202,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 className="flex flex-col items-center"
                             >
-                                <div className={`size-16 rounded-[2rem] flex items-center justify-center mb-4 ${autoAssign ? 'bg-blue-600/20 text-blue-500' : 'bg-slate-800 text-slate-500'}`}>
+                                <div className={`size-16 rounded-4xl flex items-center justify-center mb-4 ${autoAssign ? 'bg-blue-600/20 text-blue-500' : 'bg-slate-800 text-slate-500'}`}>
                                     <FiZap size={32} className={autoAssign ? 'animate-pulse' : ''} />
                                 </div>
                                 <p className="text-[11px] font-black italic text-white uppercase tracking-[0.2em] mb-1 leading-none">{autoAssign ? 'INTELLIGENT ROUTING' : 'MANUAL OVERRIDE'}</p>
@@ -379,7 +379,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                 {viewDesignModal.pesan_desainer && (
                                     <div className="space-y-3">
                                         <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3 italic"><FiFileText className="text-amber-500" /> Cashier Directive</h4>
-                                        <div className="bg-amber-500/5 border-l-4 border-amber-500 p-6 rounded-[1.5rem] bg-slate-950/50">
+                                        <div className="border-l-4 border-amber-500 p-6 rounded-3xl bg-amber-500/5">
                                             <p className="text-sm font-black italic text-amber-200 tracking-tight leading-relaxed">"{viewDesignModal.pesan_desainer}"</p>
                                         </div>
                                     </div>
@@ -387,7 +387,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
                                 <div className="space-y-4">
                                     <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3 italic"><FiUser className="text-blue-500" /> Designer Protocol Logs</h4>
-                                    <div className="bg-slate-950 p-6 rounded-[2rem] border border-white/5 backdrop-blur-md">
+                                    <div className="bg-slate-950 p-6 rounded-4xl border border-white/5 backdrop-blur-md">
                                         <p className="text-sm font-black italic text-slate-300 leading-relaxed uppercase tracking-tight">
                                             {viewDesignModal.designData.catatan || <span className="text-slate-700">No telemetry log provided by operator.</span>}
                                         </p>
@@ -405,7 +405,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                             href={viewDesignModal.designData.file_hasil_desain.startsWith('http') ? viewDesignModal.designData.file_hasil_desain : `https://${viewDesignModal.designData.file_hasil_desain}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex items-center justify-between w-full p-6 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] transition-all group"
+                                            className="flex items-center justify-between w-full p-6 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-4xl transition-all group"
                                         >
                                             <div className="flex items-center gap-4 overflow-hidden">
                                                 <div className="size-12 rounded-[1.2rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
@@ -419,7 +419,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                             <FiArrowRight size={20} className="text-emerald-500 group-hover:translate-x-2 transition-transform" />
                                         </a>
                                     ) : (
-                                        <div className="flex items-center gap-4 p-6 bg-slate-950 border border-white/5 border-dashed rounded-[2rem]">
+                                        <div className="flex items-center gap-4 p-6 bg-slate-950 border border-white/5 border-dashed rounded-4xl">
                                             <div className="size-12 rounded-[1.2rem] bg-slate-900 flex items-center justify-center text-slate-700">
                                                 <FiPaperclip size={20} />
                                             </div>
