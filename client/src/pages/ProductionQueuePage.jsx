@@ -298,9 +298,9 @@ export default function ProductionQueuePage({ onNavigate }) {
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
                     <select className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 py-3 px-4 outline-none w-full sm:w-auto shadow-sm cursor-pointer appearance-none text-center">
-                        <option>URUTAN: PRIORITAS (NORMAL)</option>
-                        <option>PRIORITAS: EKSPRES SAJA</option>
-                        <option>URUTAN: TENGGAT WAKTU</option>
+                        <option className="text-slate-900 dark:text-white">URUTAN: PRIORITAS (NORMAL)</option>
+                        <option className="text-slate-900 dark:text-white">PRIORITAS: EKSPRES SAJA</option>
+                        <option className="text-slate-900 dark:text-white">URUTAN: TENGGAT WAKTU</option>
                     </select>
                 </div>
             </div>

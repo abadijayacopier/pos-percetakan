@@ -98,11 +98,11 @@ export default function SPKDetailPage({ onNavigate, pageState }) {
                                 onChange={handleStatusChange}
                                 disabled={updatingStatus}
                                 className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-primary focus:border-primary dark:text-white cursor-pointer min-w-[200px]">
-                                <option>Menunggu Antrian</option>
-                                <option>Dalam Proses Cetak</option>
-                                <option>Finishing</option>
-                                <option>Quality Control</option>
-                                <option>Selesai</option>
+                                <option className="text-slate-900 dark:text-white">Menunggu Antrian</option>
+                                <option className="text-slate-900 dark:text-white">Dalam Proses Cetak</option>
+                                <option className="text-slate-900 dark:text-white">Finishing</option>
+                                <option className="text-slate-900 dark:text-white">Quality Control</option>
+                                <option className="text-slate-900 dark:text-white">Selesai</option>
                             </select>
                         </div>
                         <div className="flex items-center gap-2 mt-auto pb-1">

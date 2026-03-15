@@ -124,15 +124,15 @@ export default function PrintLabelPage({ onNavigate, pageState }) {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Ukuran Label</label>
                                         <select className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm h-[40px]">
-                                            <option>Sticker Thermal (100x100mm)</option>
-                                            <option>Sticker Thermal (75x50mm)</option>
+                                            <option className="text-slate-900 dark:text-white">Sticker Thermal (100x100mm)</option>
+                                            <option className="text-slate-900 dark:text-white">Sticker Thermal (75x50mm)</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Printer Tujuan</label>
                                         <select className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm h-[40px]">
-                                            <option>Thermal Printer XP-420B</option>
-                                            <option>Simpan sebagai PDF</option>
+                                            <option className="text-slate-900 dark:text-white">Thermal Printer XP-420B</option>
+                                            <option className="text-slate-900 dark:text-white">Simpan sebagai PDF</option>
                                         </select>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">

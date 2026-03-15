@@ -183,9 +183,9 @@ export default function OrderInputPage() {
                                     value={customerId}
                                     onChange={(e) => setCustomerId(e.target.value)}
                                 >
-                                    <option value="">-- Pilih Pelanggan --</option>
+                                    <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
                                     {customers.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ''}</option>
+                                        <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.phone ? `(${c.phone})` : ''}</option>
                                     ))}
                                 </select>
                             </div>
@@ -250,12 +250,12 @@ export default function OrderInputPage() {
                                     value={material} onChange={e => setMaterial(e.target.value)}
                                     className="form-input w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 focus:ring-primary focus:border-primary"
                                 >
-                                    <option>Art Paper 150gr</option>
-                                    <option>Art Carton 210gr</option>
-                                    <option>Art Carton 260gr</option>
-                                    <option>HVS 80gr</option>
-                                    <option>Vinyl Glossy (Sticker)</option>
-                                    <option>Matte Sticker</option>
+                                    <option className="text-slate-900 dark:text-white">Art Paper 150gr</option>
+                                    <option className="text-slate-900 dark:text-white">Art Carton 210gr</option>
+                                    <option className="text-slate-900 dark:text-white">Art Carton 260gr</option>
+                                    <option className="text-slate-900 dark:text-white">HVS 80gr</option>
+                                    <option className="text-slate-900 dark:text-white">Vinyl Glossy (Sticker)</option>
+                                    <option className="text-slate-900 dark:text-white">Matte Sticker</option>
                                 </select>
                             </div>
 
@@ -266,10 +266,10 @@ export default function OrderInputPage() {
                                         value={ukuran} onChange={e => setUkuran(e.target.value)}
                                         className="form-input flex-1 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 focus:ring-primary focus:border-primary"
                                     >
-                                        <option>A3+</option>
-                                        <option>A4</option>
-                                        <option>A5</option>
-                                        <option>Kustom</option>
+                                        <option className="text-slate-900 dark:text-white">A3+</option>
+                                        <option className="text-slate-900 dark:text-white">A4</option>
+                                        <option className="text-slate-900 dark:text-white">A5</option>
+                                        <option className="text-slate-900 dark:text-white">Kustom</option>
                                     </select>
                                     {ukuran === 'Kustom' && (
                                         <div className="flex items-center gap-1">
@@ -380,10 +380,10 @@ export default function OrderInputPage() {
                                     value={paymentMethod}
                                     onChange={e => setPaymentMethod(e.target.value)}
                                 >
-                                    <option>Tunai / Cash</option>
-                                    <option>Transfer Bank</option>
-                                    <option>E-Wallet (QRIS)</option>
-                                    <option>Piutang (Tempo)</option>
+                                    <option className="text-slate-900 dark:text-white">Tunai / Cash</option>
+                                    <option className="text-slate-900 dark:text-white">Transfer Bank</option>
+                                    <option className="text-slate-900 dark:text-white">E-Wallet (QRIS)</option>
+                                    <option className="text-slate-900 dark:text-white">Piutang (Tempo)</option>
                                 </select>
                             </div>
 

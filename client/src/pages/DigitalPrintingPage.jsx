@@ -512,9 +512,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                             setErrors(prev => { const n = { ...prev }; delete n.customerId; return n; });
                                         }}
                                     >
-                                        <option value="">-- Pilih Pelanggan --</option>
+                                        <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
                                         {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name} ({c.type || 'Personal'})</option>
+                                            <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} ({c.type || 'Personal'})</option>
                                         ))}
                                     </select>
                                 </div>
@@ -539,9 +539,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                     onChange={(e) => setCalcOrderData({ ...calcOrderData, customerId: e.target.value })}
                                                     className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
                                                 >
-                                                    <option value="">Pilih Pelanggan Umum</option>
+                                                    <option value="" className="text-slate-900 dark:text-white">Pilih Pelanggan Umum</option>
                                                     {customers.map(c => (
-                                                        <option key={c.id} value={c.id}>{c.name} {c.company ? `(${c.company})` : ''}</option>
+                                                        <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.company ? `(${c.company})` : ''}</option>
                                                     ))}
                                                 </select>
                                             </div>
@@ -553,9 +553,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                     onChange={(e) => setCalcOrderData({ ...calcOrderData, materialId: e.target.value })}
                                                     className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
                                                 >
-                                                    <option value="">Pilih Bahan Roll/Banner</option>
+                                                    <option value="" className="text-slate-900 dark:text-white">Pilih Bahan Roll/Banner</option>
                                                     {materials.map(m => (
-                                                        <option key={m.id} value={m.id}>
+                                                        <option key={m.id} value={m.id} className="text-slate-900 dark:text-white">
                                                             {m.name} — Rp {(m.sellPrice || 0).toLocaleString('id-ID')}/{m.unit} (Stok: {m.stok})
                                                         </option>
                                                     ))}

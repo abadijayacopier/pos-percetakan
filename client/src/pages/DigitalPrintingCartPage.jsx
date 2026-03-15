@@ -214,14 +214,13 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                     <label className="block">
                                         <span className="text-sm font-bold text-slate-700 block mb-2">Metode Pembayaran</span>
                                         <select
-                                            className="w-full rounded-xl border-slate-200 focus:border-[#137fec] focus:ring-[#137fec] text-sm p-3 border"
-                                            value={paymentMethod}
-                                            onChange={e => setPaymentMethod(e.target.value)}
+                                            value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
+                                            className="w-full border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:ring-primary focus:border-primary shadow-sm h-11 px-4 text-sm appearance-none"
                                         >
-                                            <option>Tunai / Cash</option>
-                                            <option>Transfer Bank (BCA)</option>
-                                            <option>QRIS / E-Wallet</option>
-                                            <option>Kartu Debit/Kredit</option>
+                                            <option className="text-slate-900 dark:text-white">Tunai / Cash</option>
+                                            <option className="text-slate-900 dark:text-white">Transfer Bank (BCA)</option>
+                                            <option className="text-slate-900 dark:text-white">QRIS / E-Wallet</option>
+                                            <option className="text-slate-900 dark:text-white">Kartu Debit/Kredit</option>
                                         </select>
                                     </label>
                                     <div className="block">

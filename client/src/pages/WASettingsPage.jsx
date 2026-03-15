@@ -31,7 +31,7 @@ export default function WASettingsPage({ onNavigate }) {
     const handleSave = async () => {
         setSaving(true);
         setSaveMsg('');
-            try {
+        try {
             await api.put('/wa-config', { api_token: apiKey, phone_number: phoneNumber });
             setSaveMsg(<>Konfigurasi berhasil disimpan! <FiCheck /></>);
             setTimeout(() => setSaveMsg(''), 3000);
@@ -176,8 +176,8 @@ export default function WASettingsPage({ onNavigate }) {
                                     <div className="flex gap-3">
                                         <div className="w-24 shrink-0">
                                             <select className="w-full h-[42px] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 text-sm focus:ring-primary">
-                                                <option>+62</option>
-                                                <option>+1</option>
+                                                <option className="text-slate-900 dark:text-white">+62</option>
+                                                <option className="text-slate-900 dark:text-white">+1</option>
                                             </select>
                                         </div>
                                         <input
