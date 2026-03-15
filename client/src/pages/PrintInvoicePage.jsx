@@ -87,7 +87,7 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
     const isLunas = invoiceData ? invoiceData.sisa_tagihan <= 0 : true;
 
     return (
-        <div className="bg-[#f6f7f8] dark:bg-[#101922] font-[Inter] text-slate-900 dark:text-slate-100 min-h-screen">
+        <div className="bg-background-light dark:bg-background-dark font-[Inter] text-slate-900 dark:text-slate-100 min-h-screen">
             <div className="layout-container flex h-full grow flex-col">
 
                 {/* Top Navigation Bar (No Print) */}
@@ -165,7 +165,7 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
 
                         {/* Detail Pelanggan */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                            <div className="p-4 bg-[#f6f7f8] dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <div className="p-4 bg-background-light dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-sm">person</span>
                                     Tagihan Untuk

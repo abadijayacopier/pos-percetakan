@@ -97,7 +97,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                     )}
 
                     {/* Top Accent Bar */}
-                    <div className="h-4 bg-gradient-to-r from-blue-600 via-blue-400 to-emerald-400"></div>
+                    <div className="h-4 bg-linear-to-r from-blue-600 via-blue-400 to-emerald-400"></div>
 
                     <div className="p-10 md:p-14">
                         {/* Header Section */}
@@ -176,7 +176,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                         </div>
 
                         {/* Items Table */}
-                        <div className="mb-10 rounded-[2rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                        <div className="mb-10 rounded-4xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
                             <table className="w-full">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
