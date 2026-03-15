@@ -59,6 +59,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
 
+    // Mencegah ID invoice terus berubah akibat re-render dari timer
+    const draftInvoiceId = useMemo(() => {
+        return 'Order ID: #INV-' + Date.now().toString().slice(-8);
+    }, [cart.length === 0, transactionComplete]);
+
     // Printer Settings
     const [printerSettings, setPrinterSettings] = useState({
         autoPrint: false,
@@ -637,7 +642,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     Ringkasan
                                 </div>
                                 <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded inline-block whitespace-nowrap">
-                                    {transactionComplete ? transactionComplete.invoiceNo : 'Order ID: #INV-' + Date.now().toString().slice(-8)}
+                                    {transactionComplete ? transactionComplete.invoiceNo : draftInvoiceId}
                                 </span>
                             </h2>
                             <button onClick={removeAll} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Kosongkan Keranjang">
