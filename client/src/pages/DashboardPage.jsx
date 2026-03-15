@@ -5,6 +5,7 @@ import {
     FiDollarSign, FiPrinter, FiTool, FiShoppingCart, FiAlertCircle,
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
+    FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase
 } from 'react-icons/fi';
 import {
     AreaChart as RechartsAreaChart,
