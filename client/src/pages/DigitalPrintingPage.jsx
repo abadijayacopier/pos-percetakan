@@ -90,6 +90,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             setCustomerId(walkIn ? walkIn.id : allCustomers[0].id);
         }
 
+        // 1. Load active designs from local dp_tasks (for 'Sedang Dikerjakan' cards)
         const allTasks = db.getAll('dp_tasks');
         const designs = allTasks.filter(t => ['menunggu_desain', 'desain', 'ditugaskan', 'dikerjakan'].includes(t.status));
         setActiveDesigns(designs);
@@ -99,14 +100,38 @@ export default function DigitalPrintingPage({ onNavigate }) {
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         setRecentLogs(logs);
 
-        let menunggu = 0, cetak = 0, finishing = 0;
-        allTasks.forEach(t => {
-            if (t.status === 'produksi') menunggu++;
-            else if (t.status === 'cetak') cetak++;
-            else if (t.status === 'finishing') finishing++;
-        });
+        // 2. Load live queue stats from backend SPK (for Live Queue Monitor)
+        try {
+            const { data: spkRes } = await api.get('/spk');
+            let menunggu = 0, cetak = 0, finishing = 0;
+            const spkData = spkRes.data || [];
 
-        setStats({ menunggu, cetak, finishing });
+            spkData.forEach(s => {
+                if (s.status === 'Menunggu Antrian') menunggu++;
+                else if (s.status === 'Dalam Proses Cetak') cetak++;
+                else if (['Finishing', 'Quality Control'].includes(s.status)) finishing++;
+            });
+
+            // Fallback to combine with local dp_tasks (if they use productions logic here)
+            // Local fallback logic just added for safety if user prefers mixing
+            allTasks.forEach(t => {
+                if (t.status === 'produksi') menunggu++;
+                else if (t.status === 'cetak') cetak++;
+                else if (t.status === 'finishing') finishing++;
+            });
+
+            setStats({ menunggu, cetak, finishing });
+        } catch (err) {
+            console.error('Gagal mengambil data antrean produksi:', err);
+            // Fallback completely to local DB if backend fails
+            let menunggu = 0, cetak = 0, finishing = 0;
+            allTasks.forEach(t => {
+                if (t.status === 'produksi') menunggu++;
+                else if (t.status === 'cetak') cetak++;
+                else if (t.status === 'finishing') finishing++;
+            });
+            setStats({ menunggu, cetak, finishing });
+        }
     };
 
     useEffect(() => {
