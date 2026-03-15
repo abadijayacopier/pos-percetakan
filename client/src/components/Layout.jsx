@@ -64,7 +64,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
         <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
             {!(activePage === 'pos-v1' || isFullscreen) && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-            <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
+            <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''}`}>
                 {!(activePage === 'pos' || activePage === 'pos-v1') && (
                     <header className="print:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">

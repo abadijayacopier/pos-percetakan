@@ -122,7 +122,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                 animate={isOpen || isDesktop ? "open" : "closed"}
                 className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-100 w-[280px] 
                 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
-                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
+                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
