@@ -101,7 +101,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-md z-40 lg:hidden"
+                        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-md z-[90] lg:hidden"
                         onClick={onClose}
                     />
                 )}
@@ -111,7 +111,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                 variants={sideVariants}
                 initial="closed"
                 animate={isOpen || (typeof window !== 'undefined' && window.innerWidth > 1024) ? "open" : "closed"}
-                className="fixed lg:relative inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/50 flex flex-col overflow-hidden"
+                className="fixed lg:relative inset-y-0 left-0 z-[100] w-72 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800/50 flex flex-col overflow-hidden"
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}

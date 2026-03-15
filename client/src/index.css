@@ -2684,8 +2684,11 @@ img {
 
 /* Desktop Font Scaling Fix */
 @media (min-width: 1280px) {
-  [class*="text-\\[9px\\]"], [class*="text-\\[10px\\]"] {
-    font-size: 0.8125rem; /* text-xs, crisp on high-DPI */
+
+  [class*="text-\\[9px\\]"],
+  [class*="text-\\[10px\\]"] {
+    font-size: 0.8125rem;
+    /* text-xs, crisp on high-DPI */
   }
 }
 

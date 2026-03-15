@@ -69,10 +69,10 @@ export default function ServicePage({ onNavigate }) {
     const filteredServices = useMemo(() => {
         return services.filter(s => {
             const matchesSearch =
-                s.serviceNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                s.machineInfo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (s.serialNo && s.serialNo.toLowerCase().includes(searchQuery.toLowerCase()));
+                (s.serviceNo || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (s.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (s.machineInfo || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (s.serialNo || '').toLowerCase().includes(searchQuery.toLowerCase());
             const matchesStatus = filterStatus === 'all' || s.status === filterStatus;
             return matchesSearch && matchesStatus;
         });
@@ -243,8 +243,8 @@ export default function ServicePage({ onNavigate }) {
                         {['all', 'approval', 'pengerjaan', 'selesai'].map(status => (
                             <button
                                 key={status}
-                                onClick={() => setActiveTab(status)}
-                                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === status
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filterStatus === status
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                                     : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700'
                                     }`}

@@ -232,7 +232,7 @@ export default function DashboardPage({ onNavigate }) {
     };
 
     return (
-        <div className="p-6 sm:p-8 space-y-8 font-display bg-white dark:bg-slate-950 min-h-screen">
+        <div className="p-6 sm:p-8 space-y-8 font-display bg-white dark:bg-slate-950 min-h-screen min-w-0 overflow-x-hidden">
             <AnimatePresence>
                 {loading && <LoadingScreen />}
             </AnimatePresence>
@@ -311,7 +311,7 @@ export default function DashboardPage({ onNavigate }) {
                 {/* Modern Area Chart */}
                 <motion.div
                     variants={itemVariants}
-                    className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col min-h-[450px]"
+                    className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col min-h-[450px] min-w-0"
                 >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                         <div>
@@ -345,42 +345,11 @@ export default function DashboardPage({ onNavigate }) {
                     </div>
                 </motion.div>
 
-                {/* Quick Shortcuts */}
+                {/* Quick Shortcuts & Activity Brief */}
                 <motion.div
                     variants={itemVariants}
                     className="space-y-6"
                 >
-                    <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 translate-x-1/3 -translate-y-1/3 text-9xl text-slate-500 pointer-events-none group-hover:scale-110 transition-transform">
-                            <FiShoppingCart />
-                        </div>
-                        <h3 className="text-[10px] font-black mb-8 text-slate-400 uppercase tracking-[0.25em] ml-1">Panel Navigasi</h3>
-                        <div className="flex flex-col gap-4">
-                            {[
-                                { id: 'pos', title: 'Transaksi Baru', sub: 'Entri kasir cepat', icon: FiShoppingCart, color: 'blue-600' },
-                                { id: 'service', title: 'Unit Servis', sub: 'Input perbaikan baru', icon: FiCpu, color: 'emerald-600' },
-                                { id: 'printing', title: 'Produksi Cetak', sub: 'Mulai proses cetak', icon: FiPrinter, color: 'amber-600' },
-                            ].map(btn => (
-                                <button
-                                    key={btn.id}
-                                    onClick={() => onNavigate(btn.id)}
-                                    className={`flex items-center justify-between w-full p-4 rounded-2xl border border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 transition-all group/btn hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 active:scale-95`}
-                                >
-                                    <div className="flex items-center gap-5">
-                                        <div className={`w-14 h-14 rounded-2xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-${btn.color} flex items-center justify-center shadow-sm group-hover/btn:scale-110 transition-transform`}>
-                                            <btn.icon size={24} />
-                                        </div>
-                                        <div className="text-left">
-                                            <p className={`font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight italic`}>{btn.title}</p>
-                                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 opacity-70">{btn.sub}</p>
-                                        </div>
-                                    </div>
-                                    <FiChevronRight className="group-hover/btn:translate-x-1 transition-transform text-slate-300" />
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* Activity Brief */}
                     <div className="bg-blue-600/5 dark:bg-blue-600/10 p-8 rounded-[2rem] border border-blue-600/10 flex items-center gap-6 group hover:bg-blue-600/10 transition-colors">
                         <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0 group-hover:scale-110 transition-transform">
@@ -404,7 +373,7 @@ export default function DashboardPage({ onNavigate }) {
                 {/* Paginated Transactions Table */}
                 <motion.div
                     variants={itemVariants}
-                    className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col"
+                    className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-w-0"
                 >
                     <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-slate-50/20 dark:bg-slate-800/20">
                         <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 italic">
@@ -506,7 +475,7 @@ export default function DashboardPage({ onNavigate }) {
                 {/* Activity Log */}
                 <motion.div
                     variants={itemVariants}
-                    className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden"
+                    className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-w-0"
                 >
                     <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/20 dark:bg-slate-800/20">
                         <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">Aliran Aktivitas</h3>

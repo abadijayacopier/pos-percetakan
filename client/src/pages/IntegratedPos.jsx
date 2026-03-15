@@ -8,10 +8,12 @@ import Modal from '../components/Modal';
 import { FiCheckCircle, FiPrinter } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const { theme, toggleTheme } = useTheme();
 
     // Basic States
     const [activeServiceTab, setActiveServiceTab] = useState('fotocopy'); // 'fotocopy' | 'jilid' | 'cetak'
@@ -25,9 +27,10 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [printPrices, setPrintPrices] = useState([]);
     const [currentTime, setCurrentTime] = useState(new Date());
 
-    // Customer States (kept for logic, though not currently in the new UI explicitly, might be needed behind scenes)
+    // Customer States
     const [customers, setCustomers] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+    const [manualCustomerName, setManualCustomerName] = useState('');
 
     // Clock Effect
     useEffect(() => {
@@ -42,10 +45,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Service Form States
+    // Fotocopy States
     const [fcPaper, setFcPaper] = useState('HVS A4');
     const [fcColor, setFcColor] = useState('bw');
     const [fcSide, setFcSide] = useState('1');
+    const [fcQty, setFcQty] = useState(0);
 
     // Payment & Modal States
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -123,7 +127,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     const product = products.find(p => p.code === code);
                     if (product) {
                         addToCart(product);
-                        showToast(`Ditambahkan: ${product.name}`, 'success');
+                        showToast(`Ditambahkan otomatis: ${product.name}`, 'success');
                     } else {
                         showToast(`Produk dengan kode ${code} tidak ditemukan`, 'warning');
                     }
@@ -187,12 +191,18 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     // Services Add logic
-    const addFotocopyToCart = (paper, color, side) => {
+    const addFotocopyToCart = (paper, color, side, qty) => {
+        if (qty <= 0) {
+            showToast('Jumlah lembar harus lebih dari 0', 'warning');
+            return;
+        }
         const unitPrice = getFcUnitPrice(paper, color, side);
         const name = `Fotocopy ${paper} (${color === 'bw' ? 'B/W' : 'Warna'}, ${side === '1' ? '1 Sisi' : 'Bolak-balik'})`;
         const existingItem = cart.find(c => c.type === 'fotocopy' && c.name === name);
         if (existingItem) {
-            updateQty(existingItem.id, 1);
+            updateQty(existingItem.id, qty);
+            showToast('Keranjang diperbarui!', 'success');
+            setFcQty(0);
             return;
         }
 
@@ -200,12 +210,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             id: `fc-${Date.now()}-${Math.random()}`,
             name,
             sellPrice: unitPrice,
-            quantity: 1,
+            quantity: qty,
             type: 'fotocopy',
             meta: { paper, color, side, unitPrice }
         };
         setCart(prev => [...prev, newItem]);
-        showToast('Ditambahkan ke keranjang!', 'success')
+        showToast('Ditambahkan ke keranjang!', 'success');
+        setFcQty(0);
     };
 
     const addJilidToCart = (item) => {
@@ -300,12 +311,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : total;
 
+        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+
         const transaction = {
             id: `TRX-${Date.now()}`,
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
-            customerId: null,
-            customerName: 'Umum',
+            customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
+            customerName: customerName,
             items: cart,
             subtotal,
             discount: globalDiscount,
@@ -337,10 +351,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     const saveQueue = () => {
         if (cart.length === 0) return;
+
+        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+
         const queueItem = {
             id: `Q-${Date.now()}`,
-            customerId: null,
-            customerName: 'Umum',
+            customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
+            customerName: customerName,
             title: cart.map(i => i.name).join(', ').substring(0, 50) + (cart.length > 1 ? '...' : ''),
             items: cart,
             status: 'produksi',
@@ -375,43 +393,64 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     return (
         <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 flex min-h-screen w-full flex-col overflow-x-hidden">
             {/* Header */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 sticky top-0 z-50 shadow-sm">
+            <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-2.5 sticky top-0 z-50 shadow-sm">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => onNavigate('dashboard')} className="flex items-center justify-center size-10 bg-primary/10 rounded-lg text-primary hover:bg-primary/20 transition-colors">
-                        <span className="material-symbols-outlined text-2xl">arrow_back</span>
+                    <button onClick={() => {
+                        onNavigate('dashboard');
+                        if (isMobile) window.dispatchEvent(new Event('toggleSidebar'));
+                    }} className="lg:hidden flex items-center justify-center p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined text-xl">menu</span>
                     </button>
-                    <div className="flex items-center justify-center size-10 bg-primary rounded-lg text-white">
-                        <span className="material-symbols-outlined text-2xl">point_of_sale</span>
+                    {!isMobile && (
+                        <div className="flex items-center justify-center size-10 bg-primary rounded-lg text-white font-bold shadow-md shadow-primary/20">
+                            <span className="material-symbols-outlined text-2xl">point_of_sale</span>
+                        </div>
+                    )}
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold leading-none tracking-tight">Kasir <span className="text-primary font-bold">Terpadu</span></h1>
                     </div>
-                    <h1 className="text-xl font-bold leading-tight tracking-tight">Kasir Terpadu</h1>
                 </div>
 
-                <nav className="flex flex-1 justify-center gap-8 xl:gap-12 hidden md:flex">
-                    <a className="flex items-center gap-2 text-primary font-semibold border-b-2 border-primary pb-1" href="#home" onClick={(e) => e.preventDefault()}>
-                        <span className="material-symbols-outlined">home</span> Beranda
-                    </a>
-                    {/* Add more nav links if needed */}
-                </nav>
-
-                <div className="flex items-center gap-4">
-                    <div className="flex gap-2">
-                        <div className="text-right">
-                            <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                {currentTime.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            </div>
-                            <div className="text-xs text-primary font-bold">
-                                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
+                <nav className="flex flex-1 justify-center gap-4 xl:gap-8 hidden md:flex items-center">
+                    <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-primary font-bold border-b-2 border-primary py-2 px-2 transition-colors hover:text-primary-dark">
+                        <span className="material-symbols-outlined text-xl">home_app_logo</span> Beranda
+                    </button>
+                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-1.5 text-slate-500 font-medium">
+                            <span className="material-symbols-outlined text-lg">calendar_today</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        </div>
+                        <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
+                        <div className="flex items-center gap-1.5 text-primary font-bold">
+                            <span className="material-symbols-outlined text-lg">schedule</span>
+                            <span className="text-xs font-bold tracking-widest">{currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
                         </div>
                     </div>
-                    <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
-                    <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold">{user?.name || 'Admin Kasir'}</p>
-                            <p className="text-xs text-slate-500">{user?.role || 'Shift Pagi'}</p>
+                </nav>
+
+                {/* Right: Actions & User (Desktop) */}
+                <div className="hidden md:flex items-center gap-6 justify-end flex-shrink-0">
+                    {/* Action Pills */}
+                    <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-full border border-slate-100 dark:border-slate-700">
+                        <button onClick={toggleTheme} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Ganti Tema">
+                            <span className="material-symbols-outlined text-[18px]">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
+                        </button>
+                        <button onClick={toggleFullScreen} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Layar Penuh (F11)">
+                            <span className="material-symbols-outlined text-[18px]">fullscreen</span>
+                        </button>
+                        <button onClick={openCashDrawer} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Buka Laci Kasir (F8)">
+                            <span className="material-symbols-outlined text-[18px]">point_of_sale</span>
+                        </button>
+                    </div>
+
+                    {/* User Profile */}
+                    <div className="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-slate-700">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold ring-2 ring-white dark:ring-slate-900 shadow-sm">
+                            {user?.name?.charAt(0).toUpperCase() || 'A'}
                         </div>
-                        <div className="bg-primary/10 rounded-full p-0.5 border-2 border-primary overflow-hidden size-10 flex items-center justify-center text-primary font-bold">
-                            {user?.name ? user.name[0] : 'O'}
+                        <div className="hidden lg:block text-sm">
+                            <div className="font-bold text-slate-800 dark:text-white capitalize leading-tight">{user?.name || 'Admin'}</div>
+                            <div className="text-[11px] font-medium text-slate-500 mt-0.5 capitalize">{user?.role || 'Kasir'}</div>
                         </div>
                     </div>
                 </div>
@@ -421,49 +460,94 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 {/* Left Content (Services & Products) */}
                 <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6 relative">
                     {/* Services Tabs */}
-                    <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-1 shadow-sm">
-                        <div className="flex border-b border-slate-100 dark:border-slate-800 overflow-x-auto hide-scrollbar">
-                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`flex-1 min-w-[120px] py-4 px-4 sm:px-6 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>F1</span>
-                                <span className="material-symbols-outlined">content_copy</span> Fotocopy
+                    <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 sm:p-6 shadow-sm flex-1 flex flex-col">
+                        <div className="flex border-b text-sm border-slate-200 dark:border-slate-800 overflow-x-auto hide-scrollbar mb-6">
+                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F1</span>
+                                <span className="material-symbols-outlined text-[20px]">content_copy</span> Fotocopy
                             </button>
-                            <button onClick={() => setActiveServiceTab('jilid')} className={`flex-1 min-w-[120px] py-4 px-4 sm:px-6 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'jilid' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>F2</span>
-                                <span className="material-symbols-outlined">book</span> Jilid
+                            <button onClick={() => setActiveServiceTab('jilid')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'jilid' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F2</span>
+                                <span className="material-symbols-outlined text-[20px]">book</span> Jilid
                             </button>
-                            <button onClick={() => setActiveServiceTab('print')} className={`flex-1 min-w-[120px] py-4 px-4 sm:px-6 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'print' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>F3</span>
-                                <span className="material-symbols-outlined">print</span> Cetak
+                            <button onClick={() => setActiveServiceTab('print')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'print' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F3</span>
+                                <span className="material-symbols-outlined text-[20px]">print</span> PRINT
                             </button>
                         </div>
 
-                        <div className="p-6">
+                        <div className="flex-1 flex flex-col">
                             {activeServiceTab === 'fotocopy' && (
-                                <div>
-                                    <div className="flex flex-wrap gap-3 mb-6">
-                                        {['HVS A4', 'HVS F4', 'HVS A3'].map(p => (
-                                            <button key={p} onClick={() => setFcPaper(p)} className={`px-5 py-2 rounded-full text-sm font-semibold shadow-sm transition-all border ${fcPaper === p ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary'}`}>
-                                                {p.replace('HVS ', '')}
-                                            </button>
-                                        ))}
-                                        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-2 self-center"></div>
-                                        {[{ v: 'color', l: 'Warna' }, { v: 'bw', l: 'Hitam Putih (BW)' }].map(c => (
-                                            <button key={c.v} onClick={() => setFcColor(c.v)} className={`px-5 py-2 rounded-full text-sm font-semibold shadow-sm transition-all border ${fcColor === c.v ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary'}`}>
-                                                {c.l}
-                                            </button>
-                                        ))}
-                                        <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 mx-2 self-center"></div>
-                                        {[{ v: '1', l: 'Satu Sisi' }, { v: '2', l: 'Bolak-balik' }].map(s => (
-                                            <button key={s.v} onClick={() => setFcSide(s.v)} className={`px-5 py-2 rounded-full text-sm font-semibold shadow-sm transition-all border ${fcSide === s.v ? 'bg-primary text-white border-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary'}`}>
-                                                {s.l}
-                                            </button>
-                                        ))}
+                                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                                    {/* Options Left Side */}
+                                    <div className="flex-1 space-y-6">
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Jenis Kertas</h3>
+                                            <div className="flex flex-wrap gap-2 sm:gap-4">
+                                                {['HVS A4', 'HVS F4', 'HVS A3'].map(p => (
+                                                    <button key={p} onClick={() => setFcPaper(p)} className={`flex-1 min-w-[100px] sm:min-w-0 py-3 rounded-xl text-sm font-bold transition-all border-2 ${fcPaper === p ? 'bg-primary/5 text-primary border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-primary/30'} shadow-sm`}>
+                                                        {p}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-4 sm:gap-8 flex-col sm:flex-row">
+                                            <div className="flex-1">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Warna</h3>
+                                                <div className="flex gap-2 sm:gap-4">
+                                                    {[{ v: 'bw', l: 'B/W' }, { v: 'color', l: 'Warna' }].map(c => (
+                                                        <button key={c.v} onClick={() => setFcColor(c.v)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 ${fcColor === c.v ? 'bg-primary/5 text-primary border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-primary/30'} shadow-sm`}>
+                                                            {c.l}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Sisi</h3>
+                                                <div className="flex gap-2 sm:gap-4">
+                                                    {[{ v: '1', l: '1 Sisi' }, { v: '2', l: 'Bolak' }].map(s => (
+                                                        <button key={s.v} onClick={() => setFcSide(s.v)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 ${fcSide === s.v ? 'bg-primary/5 text-primary border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-primary/30'} shadow-sm`}>
+                                                            {s.l}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Jumlah Lembar</h3>
+                                            <div className="flex items-center gap-3 w-full sm:w-2/3">
+                                                <button onClick={() => setFcQty(Math.max(0, fcQty - 1))} className="size-10 sm:size-12 shrink-0 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center justify-center font-bold text-xl transition-colors">
+                                                    <span className="material-symbols-outlined">remove</span>
+                                                </button>
+                                                <input type="number" value={fcQty || ''} onChange={(e) => setFcQty(parseInt(e.target.value) || 0)} className="flex-1 h-10 sm:h-12 text-center text-xl font-bold border-2 border-slate-100 dark:border-slate-700 rounded-xl focus:ring-0 focus:border-primary dark:bg-slate-900 uppercase" placeholder="0" />
+                                                <button onClick={() => setFcQty(fcQty + 1)} className="size-10 sm:size-12 shrink-0 bg-primary hover:bg-primary/90 text-white rounded-xl flex items-center justify-center font-bold text-xl transition-colors shadow-sm shadow-primary/30">
+                                                    <span className="material-symbols-outlined">add</span>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-4 border border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-800/50">
-                                        <button onClick={() => addFotocopyToCart(fcPaper, fcColor, fcSide)} className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-bold shadow-md shadow-primary/20 flex items-center gap-2">
-                                            <span className="material-symbols-outlined">add_shopping_cart</span> Tambah Fotocopy
+
+                                    {/* Pricing Right Side */}
+                                    <div className="lg:w-80 xl:w-96 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-6 sm:p-8 flex flex-col justify-center text-center relative border border-slate-100 dark:border-slate-800 shadow-sm">
+                                        <div className="mb-6">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Satuan</h4>
+                                            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">
+                                                {formatRupiah(getFcUnitPrice(fcPaper, fcColor, fcSide))}
+                                            </div>
+                                        </div>
+                                        <div className="w-full h-px bg-slate-200 dark:bg-slate-700 mb-6"></div>
+                                        <div className="mb-8">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Subtotal Layanan</h4>
+                                            <div className="text-3xl sm:text-4xl font-black text-primary">
+                                                {formatRupiah(getFcUnitPrice(fcPaper, fcColor, fcSide) * fcQty)}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => addFotocopyToCart(fcPaper, fcColor, fcSide, fcQty)} className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-bold text-base shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                                            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+                                            Tambah ke Keranjang
                                         </button>
-                                        <span className="text-sm font-medium text-slate-500">Harga Satuan: <strong className="text-primary text-lg">{formatRupiah(getFcUnitPrice(fcPaper, fcColor, fcSide))}</strong></span>
                                     </div>
                                 </div>
                             )}
@@ -544,19 +628,57 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 {/* Right Sidebar: Cart */}
                 <aside className={`fixed inset-y-0 right-0 z-50 lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-[100%]' : 'translate-x-0'}`}>
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                        <div className="flex items-center justify-between mb-1">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                {isMobile && (
-                                    <button onClick={() => setIsCartOpen(false)} className="lg:hidden text-slate-500 hover:text-slate-800"><span className="material-symbols-outlined mt-1">close</span></button>
-                                )}
-                                Ringkasan
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl leading-none font-bold flex flex-col xl:flex-row xl:items-center gap-1 xl:gap-3">
+                                <div className="flex items-center gap-2">
+                                    {isMobile && (
+                                        <button onClick={() => setIsCartOpen(false)} className="lg:hidden text-slate-500 hover:text-slate-800"><span className="material-symbols-outlined mt-1">close</span></button>
+                                    )}
+                                    Ringkasan
+                                </div>
+                                <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded inline-block whitespace-nowrap">
+                                    {transactionComplete ? transactionComplete.invoiceNo : 'Order ID: #INV-' + Date.now().toString().slice(-8)}
+                                </span>
                             </h2>
                             <button onClick={removeAll} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Kosongkan Keranjang">
                                 <span className="material-symbols-outlined">delete_sweep</span>
                             </button>
                         </div>
-                        <div className="text-xs font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 inline-block px-2 py-0.5 rounded ml-8 lg:ml-0">
-                            Terminal Active
+                        <div className="text-[10px] font-bold tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/20 px-2 py-0.5 rounded ml-8 lg:ml-0 inline-flex items-center gap-1">
+                            <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            TERMINAL ACTIVE
+                        </div>
+                        {/* Customer Dropdown */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Pelanggan</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <span className="material-symbols-outlined text-lg">person</span>
+                                </div>
+                                <select
+                                    value={selectedCustomerId || ''}
+                                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                                    className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-300 appearance-none outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer"
+                                >
+                                    <option value="">Umum / Tanpa Nama</option>
+                                    <option value="manual">+ Input Manual Baru</option>
+                                    {customers.length > 0 && <optgroup label="Daftar Pelanggan" />}
+                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                </select>
+                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
+                                    <span className="material-symbols-outlined text-lg">keyboard_arrow_down</span>
+                                </div>
+                            </div>
+                            {selectedCustomerId === 'manual' && (
+                                <input
+                                    type="text"
+                                    placeholder="Ketik nama pelanggan..."
+                                    value={manualCustomerName}
+                                    onChange={(e) => setManualCustomerName(e.target.value)}
+                                    className="mt-2 w-full px-4 py-2 rounded-xl border-2 border-primary/50 bg-primary/5 text-sm font-semibold outline-none focus:border-primary placeholder:font-normal"
+                                    autoFocus
+                                />
+                            )}
                         </div>
                     </div>
 
@@ -641,28 +763,39 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
             {/* Float trigger for mobile cart inside `<main>` overlap or sticky at bottom if needed, currently placed in header */}
             {isMobile && cart.length > 0 && !isCartOpen && (
-                <button onClick={() => setIsCartOpen(true)} className="fixed bottom-16 right-6 lg:hidden z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
+                <button onClick={() => { setIsCartOpen(true); window.dispatchEvent(new Event('toggleSidebar')); }} className="fixed bottom-16 right-6 z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full size-6 flex items-center justify-center border-2 border-white">{cart.length}</span>
                 </button>
             )}
 
-            {/* Hotkeys Footer */}
-            <div className="bg-slate-800 text-slate-300 py-1.5 px-6 flex items-center gap-6 overflow-x-auto whitespace-nowrap border-t border-slate-700 z-50 hide-scrollbar shadow-[0_-5px_15px_rgba(0,0,0,0.1)]">
-                <span className="text-[10px] font-bold text-primary flex items-center gap-1 shrink-0">
-                    <span className="material-symbols-outlined text-xs">keyboard</span> BANTUAN TOMBOL:
-                </span>
-                <div className="flex gap-4 shrink-0">
-                    <span className="text-[10px] font-medium"><span className="text-white font-bold bg-slate-700 px-1 rounded mr-1">F1</span> Fotocopy</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F2</span> Jilid</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F3</span> Cetak</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F5</span> Cari ATK</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F9</span> Diskon</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F10</span> Bayar</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">F12</span> Antrean</span>
-                    <span className="text-[10px] font-medium"><span class="text-white font-bold bg-slate-700 px-1 rounded mr-1">ESC</span> Batal</span>
+            {/* Footer / Hotkeys Banner */}
+            <footer className="h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium flex items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-[45] relative">
+                <div className="flex items-center gap-5 min-w-max">
+                    <div className="flex items-center gap-1.5 text-primary-light font-bold">
+                        <span className="material-symbols-outlined text-[14px]">keyboard</span>
+                        BANTUAN TOMBOL:
+                    </div>
+                    {['F1', 'Fotocopy', 'F2', 'Jilid', 'F3', 'Cetak', 'F5', 'Cari ATK / Barcode Auto', 'F8', 'Laci Uang', 'F9', 'Diskon', 'F10', 'Bayar', 'F11', 'Layar Penuh', 'F12', 'Simpan List', 'ESC', 'Batal'].map((key, i) => (
+                        <div key={i} className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap">
+                            {i % 2 === 0 ? (
+                                <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-[9px] font-bold text-slate-400 capitalize">
+                                    {key}
+                                </span>
+                            ) : (
+                                <span>{key}</span>
+                            )}
+                        </div>
+                    ))}
                 </div>
-            </div>
+                <div className="flex items-center gap-6 pl-4 font-mono text-[9px] text-slate-500 font-bold whitespace-nowrap min-w-max">
+                    <span>KASIR TERPADU V2.4</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        PRN: EPSON LX-310
+                    </div>
+                </div>
+            </footer>
 
             <footer className="h-8 bg-slate-900 text-slate-400 flex items-center justify-between px-6 text-[10px] uppercase tracking-widest font-bold font-mono">
                 <div className="flex gap-6 shrink-0">

@@ -25,6 +25,13 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Global listener for toggling sidebar from child pages
+    useEffect(() => {
+        const handleToggleSidebar = () => setSidebarOpen(prev => !prev);
+        window.addEventListener('toggleSidebar', handleToggleSidebar);
+        return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
+    }, []);
+
     const PAGE_TITLES = {
         dashboard: 'Dasbor Utama',
         pos: 'Transaksi Baru',
@@ -55,9 +62,9 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
     return (
         <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
-            {!(activePage === 'pos' || activePage === 'pos-v1') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
+            {!(activePage === 'pos-v1') && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
 
-            <main className={`flex-1 flex flex-col overflow-hidden print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
+            <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible ${isFullscreen ? 'ml-0' : ''}`}>
                 {!(activePage === 'pos' || activePage === 'pos-v1') && (
                     <header className="print:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
@@ -146,7 +153,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                 {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark">
+                    <div className="flex-1 overflow-y-auto block overflow-x-hidden print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark min-w-0">
                         {children}
                     </div>
                 )}
