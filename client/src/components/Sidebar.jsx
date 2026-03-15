@@ -63,6 +63,15 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
     const { user, logout } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+    // Add event listener to detect desktop screen size robustly
+    const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth > 1024 : true);
+
+    React.useEffect(() => {
+        const handleResize = () => setIsDesktop(window.innerWidth > 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Track which parent menus are expanded (by item id)
     const [expanded, setExpanded] = useState(() => {
         const printingSubIds = ['digital-printing', 'production-queue', 'cetak-offset', 'stok-bahan', 'spk-list', 'manajemen-desainer'];
@@ -75,7 +84,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
 
     const handleNav = (id) => {
         onNavigate(id);
-        if (window.innerWidth <= 768) onClose();
+        if (window.innerWidth < 1024) onClose();
     };
 
     const sideVariants = {
@@ -110,7 +119,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
             <motion.aside
                 variants={sideVariants}
                 initial="closed"
-                animate={isOpen || (typeof window !== 'undefined' && window.innerWidth > 1024) ? "open" : "closed"}
+                animate={isOpen || isDesktop ? "open" : "closed"}
                 className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] w-[280px] 
                 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
                 flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
@@ -134,6 +143,10 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                 </h1>
                                 <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
                             </div>
+
+                            <button onClick={onClose} className="lg:hidden ml-auto p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                                <span className="material-symbols-outlined text-2xl flex items-center justify-center relative -right-1">close</span>
+                            </button>
                         </div>
                     </div>
 
