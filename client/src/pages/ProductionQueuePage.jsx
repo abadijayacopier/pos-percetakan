@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock } from 'react-icons/fi';
+import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock, FiActivity, FiLayers } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProductionQueuePage({ onNavigate }) {
@@ -100,330 +100,307 @@ export default function ProductionQueuePage({ onNavigate }) {
     };
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-slate-950 text-slate-100 overflow-hidden relative">
-            <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] -z-10 animate-pulse" />
+        <div className="p-4 sm:p-8 flex flex-col min-h-screen bg-slate-50/30 dark:bg-transparent font-display text-slate-900 dark:text-slate-100">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-4">
+                        <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20">
+                            <FiActivity className="text-2xl" />
+                        </div>
+                        Antrean Produksi
+                    </h1>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75 underline decoration-blue-500/30 underline-offset-4">Production & Workload Management</p>
+                </div>
 
-            <header className="h-20 bg-slate-900/50 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 shrink-0 z-10">
-                <div className="flex items-center gap-8">
-                    <div className="flex flex-col">
-                        <h2 className="text-xl font-black italic tracking-tighter uppercase text-white">Production <span className="text-blue-500">Terminal</span></h2>
-                        <p className="text-[10px] font-black italic tracking-[0.3em] text-slate-500 uppercase">Antrean & Monitoring Protocol v4.0</p>
-                    </div>
-
-                    <div className="h-8 w-px bg-white/5 hidden md:block" />
-
-                    <div className="flex items-center gap-4 bg-slate-950/50 px-4 py-2 rounded-2xl border border-white/5">
-                        <span className="text-[10px] font-black italic text-slate-500 uppercase tracking-widest">Protocol Auto-Assign</span>
-                        <div
-                            className="relative inline-block w-12 h-6 align-middle select-none transition duration-500 ease-in cursor-pointer"
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+                    <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${autoAssign ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'}`}></div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Auto Assign</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                {autoAssign ? 'Aktif' : 'Non-aktif'}
+                            </span>
+                        </div>
+                        <button
                             onClick={() => setAutoAssign(!autoAssign)}
+                            className={`ml-4 w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${autoAssign ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
                         >
-                            <div className={`block w-full h-full rounded-full border border-white/10 transition-colors duration-500 ${autoAssign ? 'bg-blue-600' : 'bg-slate-800'}`}></div>
-                            <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-xl transition-all duration-500 ease-out ${autoAssign ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                        </div>
-                        <FiZap className={autoAssign ? 'text-blue-500' : 'text-slate-600'} />
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <div className="hidden lg:flex items-center bg-slate-950/80 px-4 py-2 rounded-2xl border border-white/5 focus-within:border-blue-500/50 transition-all">
-                        <FiSearch className="text-slate-500" />
-                        <input className="bg-transparent border-none focus:ring-0 text-xs font-black italic uppercase tracking-widest w-48 p-0 ml-3 text-white placeholder:text-slate-700" placeholder="Search Master SPK..." type="text" />
-                    </div>
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-2xl text-[10px] font-black italic uppercase tracking-[0.2em] flex items-center gap-2 shadow-2xl shadow-blue-500/20"
-                    >
-                        <FiPlus size={14} /> New Production SPK
-                    </motion.button>
-                </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-10">
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="xl:col-span-3 bg-slate-900/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/5 relative overflow-hidden group"
-                    >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl -mr-16 -mt-16" />
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] flex items-center gap-3 italic">
-                                <FiCpu className="text-blue-500" /> Technician Workload Distribution
-                            </h3>
-                            <span className="text-[9px] text-slate-400 font-black italic bg-white/5 px-3 py-1 rounded-full uppercase tracking-widest border border-white/5">Optimized Routing Alpha</span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-6">
-                            {Object.entries(techStats).map(([id, tech]) => (
-                                <motion.div
-                                    key={id}
-                                    whileHover={{ y: -5 }}
-                                    className="flex items-center gap-4 bg-slate-950/60 p-4 rounded-[1.8rem] border border-white/5 group hover:border-blue-500/30 transition-all cursor-crosshair flex-1 min-w-[220px]"
-                                >
-                                    <div className="relative">
-                                        <div className="size-12 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-center font-black italic text-blue-500 text-sm">
-                                            {tech.name.split(' ').map(n => n[0]).join('')}
-                                        </div>
-                                        <div className={`absolute -top-1 -right-1 size-3 rounded-full border-2 border-slate-950 ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[11px] font-black italic tracking-tight text-white uppercase truncate">{tech.name}</p>
-                                        <div className="flex items-center justify-between mt-1">
-                                            <p className="text-[9px] text-slate-500 font-black italic uppercase tracking-widest">{tech.count} Active Protocols</p>
-                                            <span className={`text-[9px] font-black italic ${tech.status === 'emerald' ? 'text-emerald-500' : tech.status === 'amber' ? 'text-amber-500' : 'text-rose-500'}`}>
-                                                {tech.status === 'emerald' ? 'READY' : tech.status === 'amber' ? 'BUSY' : 'CRITICAL'}
-                                            </span>
-                                        </div>
-                                        <div className="w-full h-1 bg-slate-900 rounded-full mt-2 overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${(tech.count / 10) * 100}%` }}
-                                                className={`h-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={`p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center relative overflow-hidden transition-all duration-700 ${autoAssign ? 'bg-blue-600/10 border border-blue-500/20' : 'bg-slate-900 border border-white/5'}`}
-                    >
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={autoAssign ? 'auto' : 'manual'}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                className="flex flex-col items-center"
-                            >
-                                <div className={`size-16 rounded-4xl flex items-center justify-center mb-4 ${autoAssign ? 'bg-blue-600/20 text-blue-500' : 'bg-slate-800 text-slate-500'}`}>
-                                    <FiZap size={32} className={autoAssign ? 'animate-pulse' : ''} />
-                                </div>
-                                <p className="text-[11px] font-black italic text-white uppercase tracking-[0.2em] mb-1 leading-none">{autoAssign ? 'INTELLIGENT ROUTING' : 'MANUAL OVERRIDE'}</p>
-                                <p className="text-[9px] font-black italic text-slate-500 uppercase tracking-widest max-w-[140px]">
-                                    {autoAssign ? 'AI Distribution active. Task mapped to Andi P.' : 'Manual task allocation protocol engaged.'}
-                                </p>
-                            </motion.div>
-                        </AnimatePresence>
-                    </motion.div>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
-                    <div className="flex items-center gap-4 bg-slate-900/30 p-1.5 rounded-[1.8rem] border border-white/5 backdrop-blur-sm">
-                        {['Semua', 'Digital', 'Offset'].map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-6 py-2.5 text-[10px] font-black italic uppercase tracking-[0.2em] rounded-[1.2rem] transition-all duration-500 ${activeTab === tab ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/20' : 'text-slate-500 hover:text-slate-300'}`}
-                            >
-                                {tab} Source
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <select className="bg-slate-900 text-slate-300 border border-white/10 rounded-2xl text-[9px] font-black italic uppercase tracking-widest focus:ring-blue-500/30 focus:border-blue-500/50 py-2.5 px-6 appearance-none text-center min-w-[180px]">
-                            <option>URGENCY: ALL PROTOCOLS</option>
-                            <option>PRIORITY: EKSPRES ONLY</option>
-                            <option>STATUS: NORMAL</option>
-                        </select>
-                        <button className="flex items-center gap-3 text-[9px] font-black italic text-slate-500 uppercase tracking-[0.2em] bg-slate-900 px-6 py-2.5 border border-white/10 rounded-2xl hover:border-blue-500/30 transition-all">
-                            Ascending Deadline
-                            <FiArrowRight />
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transition-transform ${autoAssign ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                     </div>
-                </div>
 
-                <div className="flex gap-6 overflow-x-auto pb-12 hide-scrollbar min-h-[700px]">
-                    {[
-                        { id: 'produksi', label: 'MENUNGGU', color: 'slate' },
-                        { id: 'cetak', label: 'PROCESS', color: 'blue' },
-                        { id: 'finishing', label: 'FINISHING', color: 'orange' },
-                        { id: 'qc', label: 'VAL_QC', color: 'amber' },
-                        { id: 'selesai', label: 'SYNCED', color: 'emerald' }
-                    ].map(col => (
-                        <div
-                            key={col.id}
-                            className="flex flex-col gap-6 min-w-[320px] w-[320px] shrink-0 transition-all duration-500 p-4 rounded-[3rem] bg-slate-900/20 border border-transparent hover:bg-slate-900/40 hover:border-white/5"
-                            onDragOver={(e) => {
-                                e.preventDefault();
-                                e.currentTarget.classList.add('bg-blue-600/5', 'border-blue-500/20');
-                            }}
-                            onDragLeave={(e) => {
-                                e.currentTarget.classList.remove('bg-blue-600/5', 'border-blue-500/20');
-                            }}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                e.currentTarget.classList.remove('bg-blue-600/5', 'border-blue-500/20');
-                                const taskId = e.dataTransfer.getData('taskId');
-                                if (taskId) moveTask(taskId, col.id);
-                            }}
-                        >
-                            <div className="flex items-center justify-between px-4">
-                                <div className="flex items-center gap-3">
-                                    <div className={`size-3 rounded-full ${col.id === 'produksi' ? 'bg-slate-600' :
-                                        col.id === 'cetak' ? 'bg-blue-500' :
-                                            col.id === 'finishing' ? 'bg-orange-500' :
-                                                col.id === 'qc' ? 'bg-amber-500' : 'bg-emerald-500'
-                                        } shadow-[0_0_15px_rgba(0,0,0,0.5)]`} />
-                                    <h3 className="font-black italic text-[10px] text-white uppercase tracking-[0.4em]">
-                                        {col.label} <span className="text-slate-600">[{getTasksByStatus(col.id).length}]</span>
-                                    </h3>
-                                </div>
-                            </div>
-
-                            <div className="flex-1 flex flex-col gap-4 overflow-y-auto hide-scrollbar">
-                                <AnimatePresence>
-                                    {getTasksByStatus(col.id).map((task, index) => (
-                                        <motion.div
-                                            key={task.id}
-                                            layout
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            draggable
-                                            onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
-                                            className="bg-slate-900/80 p-5 rounded-[2.2rem] border border-white/5 hover:border-blue-500/30 transition-all cursor-grab active:cursor-grabbing group relative shadow-xl shadow-black/20"
-                                        >
-                                            <div className="flex justify-between items-start mb-4">
-                                                <span className="text-[9px] font-black italic bg-slate-950 text-slate-500 px-3 py-1 rounded-full border border-white/5 uppercase tracking-widest">{task.id}</span>
-                                                {task.priority === 'ekspres' && (
-                                                    <div className="flex items-center gap-1 bg-rose-500/10 text-rose-500 text-[9px] font-black italic px-3 py-1 rounded-full uppercase tracking-tighter border border-rose-500/20 animate-pulse">
-                                                        <FiZap size={10} /> PRIORITY_HIGH
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <h4 className="font-black italic text-sm mb-1 text-white leading-tight uppercase tracking-tight">{task.title}</h4>
-                                            <p className="text-[10px] text-slate-500 mb-4 font-black italic uppercase tracking-widest">Client: {task.customerName}</p>
-
-                                            {task.designData && (
-                                                <motion.button
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={() => setViewDesignModal(task)}
-                                                    className="w-full flex items-center justify-center gap-3 py-3 mb-4 bg-slate-950/80 hover:bg-blue-600/10 text-blue-500 text-[9px] font-black italic rounded-2xl transition-all border border-blue-500/20 uppercase tracking-[0.2em]"
-                                                >
-                                                    <FiPaperclip size={14} /> Open Design Registry
-                                                </motion.button>
-                                            )}
-
-                                            <div className="flex items-center justify-between mt-auto pt-4 border-t border-white/5">
-                                                <div className="flex items-center text-slate-600 gap-2">
-                                                    <FiClock size={12} className="text-slate-700" />
-                                                    <span className="text-[9px] font-black italic text-slate-500 uppercase tracking-[0.2em]">DAY_0</span>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    {col.id !== 'selesai' && (
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.1, x: 2 }}
-                                                            whileTap={{ scale: 0.9 }}
-                                                            onClick={() => {
-                                                                const statuses = ['produksi', 'cetak', 'finishing', 'qc', 'selesai'];
-                                                                const nextIdx = statuses.indexOf(col.id) + 1;
-                                                                moveTask(task.id, statuses[nextIdx]);
-                                                            }}
-                                                            className="size-10 rounded-[1.2rem] bg-blue-600/10 text-blue-500 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all border border-blue-500/20"
-                                                        >
-                                                            <FiArrowRight size={18} />
-                                                        </motion.button>
-                                                    )}
-                                                    <div className="size-10 rounded-[1.2rem] bg-slate-950 border border-white/5 flex items-center justify-center text-[10px] font-black italic text-slate-400 group-hover:text-blue-500 transition-colors" title={`OP: ${task.technician_name || 'NULL'}`}>
-                                                        {task.technician_name ? task.technician_name.substring(0, 2).toUpperCase() : '??'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-
-                                <div className="bg-white/3 p-8 rounded-[2.5rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-slate-700 opacity-30 hover:opacity-100 hover:bg-blue-600/5 hover:border-blue-500/20 group transition-all duration-700">
-                                    <FiPlus size={24} className="group-hover:text-blue-500 transition-colors" />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                    <div className="flex items-center bg-white dark:bg-slate-900 px-4 py-2 hover:py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm group transition-all min-w-[240px]">
+                        <FiSearch className="text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <input className="bg-transparent border-none focus:ring-0 text-sm font-semibold w-full ml-3 text-slate-900 dark:text-white placeholder:text-slate-400" placeholder="Cari SPK..." type="text" />
+                    </div>
                 </div>
             </div>
 
+            {/* Technician Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className={`p-6 rounded-3xl border shadow-sm relative overflow-hidden transition-all flex flex-col items-center justify-center text-center 
+                    ${autoAssign ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}
+                >
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-md ${autoAssign ? 'bg-blue-600 text-white shadow-blue-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>
+                        <FiZap size={24} className={autoAssign ? 'animate-pulse' : ''} />
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{autoAssign ? 'INTELLIGENT ROUTING' : 'MANUAL MODE'}</p>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        {autoAssign ? 'Distribusi tugas otomatis' : 'Alokasi ditentukan mandiri'}
+                    </p>
+                </div>
+
+                {Object.entries(techStats).map(([id, tech]) => (
+                    <div key={id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col group hover:shadow-md transition-all">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex flex-shrink-0 items-center justify-center font-black text-blue-600 text-sm uppercase ring-1 ring-slate-200 dark:ring-slate-700">
+                                {tech.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-slate-900 dark:text-white truncate">{tech.name}</h3>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className={`w-2 h-2 rounded-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                        {tech.status === 'emerald' ? 'TERSEDIA' : tech.status === 'amber' ? 'SIBUK' : 'PADAT'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto">
+                            <div className="flex items-end justify-between mb-2">
+                                <span className="text-3xl font-black italic tracking-tighter text-slate-900 dark:text-white leading-none">{tech.count}</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tugas Aktif</span>
+                            </div>
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(100, (tech.count / 10) * 100)}%` }}
+                                    className={`h-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Controls Bar */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 mt-4">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto w-full md:w-auto">
+                    {['Semua', 'Digital', 'Offset'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-6 py-2 text-xs font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                        >
+                            Tipe: {tab}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <select className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-bold focus:border-blue-500 focus:ring-1 focus:ring-blue-500 py-3 px-4 outline-none w-full sm:w-auto shadow-sm cursor-pointer appearance-none text-center">
+                        <option>URUTAN: PRIORITAS (NORMAL)</option>
+                        <option>PRIORITAS: EKSPRES SAJA</option>
+                        <option>URUTAN: TENGGAT WAKTU</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Kanban Board */}
+            <div className="flex gap-6 overflow-x-auto pb-8 hide-scrollbar flex-1 items-start min-h-[500px]">
+                {[
+                    { id: 'produksi', label: 'MENUNGGU ANTRIAN', color: 'slate' },
+                    { id: 'cetak', label: 'PROSES CETAK', color: 'blue' },
+                    { id: 'finishing', label: 'FINISHING', color: 'orange' },
+                    { id: 'qc', label: 'QUALITY CONTROL', color: 'amber' },
+                    { id: 'selesai', label: 'SELESAI', color: 'emerald' }
+                ].map(col => (
+                    <div
+                        key={col.id}
+                        className="flex flex-col gap-4 min-w-[320px] w-[320px] shrink-0"
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.add('opacity-70', 'scale-[1.02]');
+                        }}
+                        onDragLeave={(e) => {
+                            e.currentTarget.classList.remove('opacity-70', 'scale-[1.02]');
+                        }}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.remove('opacity-70', 'scale-[1.02]');
+                            const taskId = e.dataTransfer.getData('taskId');
+                            if (taskId) moveTask(taskId, col.id);
+                        }}
+                    >
+                        {/* Column Header */}
+                        <div className={`p-4 rounded-2xl border bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between
+                            ${col.id === 'produksi' ? 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200' :
+                                col.id === 'cetak' ? 'border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-400' :
+                                    col.id === 'finishing' ? 'border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-400' :
+                                        col.id === 'qc' ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400' :
+                                            'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400'
+                            }`}
+                        >
+                            <h3 className="font-black text-[10px] uppercase tracking-widest flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${col.id === 'produksi' ? 'bg-slate-400' :
+                                    col.id === 'cetak' ? 'bg-blue-500' :
+                                        col.id === 'finishing' ? 'bg-orange-500' :
+                                            col.id === 'qc' ? 'bg-amber-500' : 'bg-emerald-500'
+                                    }`} />
+                                {col.label}
+                            </h3>
+                            <span className="text-xs font-bold py-0.5 px-2 rounded-full bg-white dark:bg-slate-800 shadow-sm">
+                                {getTasksByStatus(col.id).length}
+                            </span>
+                        </div>
+
+                        {/* Cards Container */}
+                        <div className="flex flex-col gap-3 min-h-[150px] p-2 -mx-2 bg-slate-100/50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800/50">
+                            <AnimatePresence>
+                                {getTasksByStatus(col.id).map((task) => (
+                                    <motion.div
+                                        key={task.id}
+                                        layout
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        draggable
+                                        onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
+                                        className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-grab active:cursor-grabbing group"
+                                    >
+                                        <div className="flex justify-between items-start mb-3">
+                                            <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                                {task.id}
+                                            </span>
+                                            {task.priority === 'ekspres' && (
+                                                <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">
+                                                    <FiZap size={10} /> Express
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium flex items-center gap-1.5"><FiUser size={12} /> {task.customerName}</p>
+
+                                        {task.designData && (
+                                            <button
+                                                onClick={() => setViewDesignModal(task)}
+                                                className="w-full flex items-center justify-center gap-2 py-2 mb-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700"
+                                            >
+                                                <FiPaperclip size={14} /> Lihat File Desain
+                                            </button>
+                                        )}
+
+                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center text-slate-400 dark:text-slate-500 gap-1.5">
+                                                <FiClock size={12} />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Hari ini</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 transition-colors" title={`Operator: ${task.technician_name || 'Belum Diatur'}`}>
+                                                    {task.technician_name ? task.technician_name.substring(0, 2).toUpperCase() : '??'}
+                                                </div>
+                                                {col.id !== 'selesai' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const statuses = ['produksi', 'cetak', 'finishing', 'qc', 'selesai'];
+                                                            const nextIdx = statuses.indexOf(col.id) + 1;
+                                                            moveTask(task.id, statuses[nextIdx]);
+                                                        }}
+                                                        className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-all border border-blue-200 dark:border-blue-800/50 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+                                                        title="Selesaikan tahap ini"
+                                                    >
+                                                        <FiArrowRight size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Modal Detail Design */}
             <AnimatePresence>
                 {viewDesignModal && (
-                    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-6" onClick={(e) => e.target === e.currentTarget && setViewDesignModal(null)}>
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setViewDesignModal(null)}>
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-slate-900 rounded-[3rem] w-full max-w-lg shadow-2xl border border-white/10 overflow-hidden relative"
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]"
                         >
-                            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/5 rounded-full blur-3xl -mr-24 -mt-24" />
-
-                            <div className="flex items-center justify-between p-8 border-b border-white/5">
+                            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
                                 <div>
-                                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic mb-1">Design Registry Access</h3>
-                                    <p className="text-2xl font-black italic tracking-tighter text-white uppercase">Terminal Protocol #{viewDesignModal.id}</p>
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Data & File Desain</h3>
+                                    <p className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Pesanan #{viewDesignModal.id}</p>
                                 </div>
-                                <button className="size-12 bg-slate-950 text-slate-400 hover:text-white rounded-[1.2rem] flex items-center justify-center border border-white/5 transition-all" onClick={() => setViewDesignModal(null)}>
-                                    <FiX size={24} />
+                                <button className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 rounded-full flex items-center justify-center transition-all" onClick={() => setViewDesignModal(null)}>
+                                    <FiX size={20} />
                                 </button>
                             </div>
 
-                            <div className="p-8 space-y-8">
+                            <div className="p-6 space-y-6 overflow-y-auto">
                                 {viewDesignModal.pesan_desainer && (
-                                    <div className="space-y-3">
-                                        <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3 italic"><FiFileText className="text-amber-500" /> Cashier Directive</h4>
-                                        <div className="border-l-4 border-amber-500 p-6 rounded-3xl bg-amber-500/5">
-                                            <p className="text-sm font-black italic text-amber-200 tracking-tight leading-relaxed">"{viewDesignModal.pesan_desainer}"</p>
+                                    <div className="space-y-2">
+                                        <h4 className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest flex items-center gap-2">
+                                            <FiFileText /> Pesan dari Kasir
+                                        </h4>
+                                        <div className="border-l-4 border-amber-500 p-4 rounded-xl bg-amber-50 dark:bg-amber-500/5 text-sm text-amber-900 dark:text-amber-200 font-medium">
+                                            "{viewDesignModal.pesan_desainer}"
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="space-y-4">
-                                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3 italic"><FiUser className="text-blue-500" /> Designer Protocol Logs</h4>
-                                    <div className="bg-slate-950 p-6 rounded-4xl border border-white/5 backdrop-blur-md">
-                                        <p className="text-sm font-black italic text-slate-300 leading-relaxed uppercase tracking-tight">
-                                            {viewDesignModal.designData.catatan || <span className="text-slate-700">No telemetry log provided by operator.</span>}
+                                <div className="space-y-2">
+                                    <h4 className="text-[10px] font-black text-blue-600 dark:text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                                        <FiUser /> Catatan Operator Desain
+                                    </h4>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                                        <p className="text-sm text-slate-700 dark:text-slate-300">
+                                            {viewDesignModal.designData.catatan || <span className="italic text-slate-400">Tidak ada catatan khusus dari desainer.</span>}
                                         </p>
-                                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
-                                            <div className="size-8 rounded-lg bg-blue-600/10 flex items-center justify-center text-blue-500 font-black italic text-[9px]">DS</div>
-                                            <p className="text-[9px] font-black italic text-slate-500 uppercase tracking-widest">Operator: {viewDesignModal.designData.designer_name}</p>
+                                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-[10px]">DS</div>
+                                            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Oleh: {viewDesignModal.designData.designer_name}</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-3 italic"><FiLink className="text-emerald-500" /> Digital Asset Link</h4>
+                                <div className="space-y-2 pb-4">
+                                    <h4 className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                                        <FiLink /> Link File Fix / Print-Ready
+                                    </h4>
                                     {viewDesignModal.designData.file_hasil_desain ? (
                                         <a
                                             href={viewDesignModal.designData.file_hasil_desain.startsWith('http') ? viewDesignModal.designData.file_hasil_desain : `https://${viewDesignModal.designData.file_hasil_desain}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex items-center justify-between w-full p-6 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-4xl transition-all group"
+                                            className="flex items-center justify-between w-full p-4 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl transition-all group"
                                         >
                                             <div className="flex items-center gap-4 overflow-hidden">
-                                                <div className="size-12 rounded-[1.2rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                                                    <FiLink size={20} />
+                                                <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                    <FiLink size={18} />
                                                 </div>
                                                 <div className="truncate">
-                                                    <p className="text-[11px] font-black italic text-emerald-500 uppercase tracking-[0.2em] truncate">Download Terminal Asset</p>
-                                                    <p className="text-[9px] text-emerald-500/60 font-black italic tracking-widest truncate">{viewDesignModal.designData.file_hasil_desain}</p>
+                                                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 truncate">Buka File Desain</p>
+                                                    <p className="text-[10px] text-emerald-600/70 font-mono mt-0.5 truncate">{viewDesignModal.designData.file_hasil_desain}</p>
                                                 </div>
                                             </div>
-                                            <FiArrowRight size={20} className="text-emerald-500 group-hover:translate-x-2 transition-transform" />
+                                            <FiArrowRight size={18} className="text-emerald-600 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                         </a>
                                     ) : (
-                                        <div className="flex items-center gap-4 p-6 bg-slate-950 border border-white/5 border-dashed rounded-4xl">
-                                            <div className="size-12 rounded-[1.2rem] bg-slate-900 flex items-center justify-center text-slate-700">
-                                                <FiPaperclip size={20} />
+                                        <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl">
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400">
+                                                <FiPaperclip size={18} />
                                             </div>
-                                            <p className="text-[9px] font-black italic text-slate-600 uppercase tracking-widest">No assets linked to this protocol</p>
+                                            <p className="text-xs font-semibold text-slate-500">Tidak ada lampiran file siap cetak</p>
                                         </div>
                                     )}
                                 </div>
