@@ -3,7 +3,7 @@ import db from '../db';
 import { formatRupiah, formatDate, formatDateTime } from '../utils';
 import {
     FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
-    FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle,
+    FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle, FiActivity,
     FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight
 } from 'react-icons/fi';
 
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                     >
                         <FiChevronLeft size={18} />
                     </button>
-                    <span className="text-xs font-black min-w-[3rem] text-center dark:text-white">
+                    <span className="text-xs font-black min-w-12 text-center dark:text-white">
                         {currentPage} <span className="text-slate-400">/</span> {totalPages}
                     </span>
                     <button
@@ -267,8 +267,8 @@ export default function ReportsPage() {
                             <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                                                'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
+                                        s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                            'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
                                         }`}>
                                         <s.icon className="text-xl" />
                                     </div>
@@ -379,9 +379,9 @@ export default function ReportsPage() {
                             <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                                                s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
-                                                    'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
+                                        s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                            s.color === 'rose' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' :
+                                                'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600'
                                         }`}>
                                         <s.icon className="text-xl" />
                                     </div>
@@ -477,9 +477,9 @@ export default function ReportsPage() {
                             <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className={`p-4 rounded-2xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                            s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                                                s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
-                                                    'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+                                        s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                            s.color === 'indigo' ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' :
+                                                'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
                                         }`}>
                                         <s.icon className="text-xl" />
                                     </div>
@@ -542,7 +542,7 @@ export default function ReportsPage() {
             )}
 
             {/* Legend / Status Footer print-hide */}
-            <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-900 p-6 rounded-[2rem] gap-4 print:hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-900 p-6 rounded-4xl gap-4 print:hidden">
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] italic">Intelligence Reporting Core V4.2 — All metrics are reconciled with live database logs</p>
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
