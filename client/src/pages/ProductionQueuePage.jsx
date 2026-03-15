@@ -435,46 +435,64 @@ export default function ProductionQueuePage({ onNavigate }) {
             {/* Modal Assign Technician */}
             <AnimatePresence>
                 {assignTaskModal && (
-                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setAssignTaskModal(null)}>
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setAssignTaskModal(null)}>
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col"
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white dark:bg-slate-900 rounded-4xl w-full max-w-md shadow-2xl shadow-blue-900/10 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative"
                         >
-                            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                            <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100 dark:border-slate-800/60 shrink-0 relative z-10">
                                 <div>
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Pilih Operator</h3>
-                                    <p className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Pesanan #{assignTaskModal.id}</p>
+                                    <div className="inline-flex items-center gap-2 mb-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                        <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Alokasi Operator</h3>
+                                    </div>
+                                    <p className="text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                                        Pesanan <span className="text-blue-600 dark:text-blue-400 font-mono">#{assignTaskModal.id}</span>
+                                    </p>
                                 </div>
-                                <button className="w-10 h-10 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 rounded-full flex items-center justify-center transition-all" onClick={() => setAssignTaskModal(null)}>
-                                    <FiX size={20} />
+                                <button className="w-10 h-10 bg-slate-100/50 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-500 rounded-full flex items-center justify-center transition-all shadow-sm border border-slate-200/50 dark:border-slate-700/50" onClick={() => setAssignTaskModal(null)}>
+                                    <FiX size={18} />
                                 </button>
                             </div>
 
-                            <div className="p-6 space-y-3">
+                            <div className="p-6 space-y-3 relative z-10 bg-slate-50/50 dark:bg-transparent">
                                 {Object.entries(techStats).map(([id, tech]) => (
-                                    <button
+                                    <motion.button
+                                        whileHover={{ scale: 1.01, x: 2 }}
+                                        whileTap={{ scale: 0.98 }}
                                         key={id}
                                         onClick={() => handleAssignTechnician(assignTaskModal.real_id || assignTaskModal.id, id, tech.name)}
-                                        className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl transition-all group"
+                                        className="w-full flex items-center justify-between p-4 bg-white hover:bg-blue-50/50 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 hover:border-blue-300 dark:hover:border-blue-600 rounded-2xl transition-all group shadow-sm hover:shadow-md"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 flex items-center justify-center font-black text-blue-600 text-xs shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
-                                                {tech.name.split(' ').map(n => n[0]).join('')}
+                                            <div className="relative">
+                                                <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-black text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:bg-white dark:group-hover:bg-slate-800 text-sm shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+                                                    {tech.name.split(' ').map(n => n[0]).join('')}
+                                                </div>
+                                                <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
                                             </div>
-                                            <div className="text-left text-slate-900 dark:text-white">
-                                                <p className="font-bold text-sm leading-none">{tech.name}</p>
+                                            <div className="text-left">
+                                                <p className="font-bold text-[15px] text-slate-900 dark:text-white leading-none mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{tech.name}</p>
                                                 <div className="flex items-center gap-1.5 mt-1.5">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
-                                                        {tech.count} Tugas
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${tech.status === 'emerald' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30' :
+                                                        tech.status === 'amber' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/30' :
+                                                            'bg-rose-50 text-rose-600 dark:bg-rose-900/30'
+                                                        }`}>
+                                                        {tech.status === 'emerald' ? 'TERSEDIA' : tech.status === 'amber' ? 'SIBUK' : 'PADAT'}
+                                                    </span>
+                                                    <span className="text-[11px] font-bold text-slate-500">
+                                                        • {tech.count} Antrean
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <FiUser className="text-slate-400 group-hover:text-blue-500 transition-colors" />
-                                    </button>
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-700 group-hover:bg-blue-500 group-hover:border-blue-500 group-hover:text-white dark:group-hover:bg-blue-600 text-slate-400 transition-all shadow-sm">
+                                            <FiArrowRight />
+                                        </div>
+                                    </motion.button>
                                 ))}
                             </div>
                         </motion.div>
