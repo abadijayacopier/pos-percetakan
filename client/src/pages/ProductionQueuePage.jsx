@@ -1,9 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiLink, FiFileText, FiX, FiPaperclip, FiCpu, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock, FiActivity, FiLayers } from 'react-icons/fi';
+import { FiLink, FiFileText, FiX, FiPaperclip, FiInfo, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock, FiActivity, FiLayers } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+
+function Toast({ msg, type, onClose }) {
+    useEffect(() => { const t = setTimeout(onClose, 5000); return () => clearTimeout(t); }, [onClose]);
+    return (
+        <div className="fixed top-20 right-6 z-9999 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 px-5 py-4 rounded-2xl shadow-2xl shadow-blue-900/10 flex items-start gap-3 w-full max-w-sm animate-in slide-in-from-top-4 fade-in duration-300">
+            <div className="mt-0.5 w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <FiInfo size={16} />
+            </div>
+            <div>
+                <h4 className="font-bold text-sm mb-0.5">Informasi Sistem</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs pr-4">{msg}</p>
+            </div>
+            <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-red-500 transition-colors">
+                <FiX size={16} />
+            </button>
+        </div>
+    );
+}
 
 export default function ProductionQueuePage({ onNavigate }) {
     const { user } = useAuth();
@@ -17,6 +35,9 @@ export default function ProductionQueuePage({ onNavigate }) {
     const [viewDesignModal, setViewDesignModal] = useState(null);
     const [assignTaskModal, setAssignTaskModal] = useState(null);
     const [activeTab, setActiveTab] = useState('Semua');
+    const [toastMsg, setToastMsg] = useState(null);
+
+    const showToast = useCallback((msg, type = 'info') => setToastMsg({ msg, type }), []);
 
     const handleAssignTechnician = (taskId, techId, techName) => {
         db.update('dp_tasks', taskId, {
@@ -113,6 +134,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
     return (
         <div className="p-4 sm:p-8 flex flex-col min-h-screen bg-slate-50/30 dark:bg-transparent font-display text-slate-900 dark:text-slate-100">
+            {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                 <div>
@@ -315,7 +337,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                                 <button
                                                     onClick={() => {
                                                         if (task.type === 'offset') {
-                                                            alert('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK.');
+                                                            showToast('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK di panel admin.');
                                                             return;
                                                         }
                                                         setAssignTaskModal(task);
