@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
-import { FiLink, FiFileText, FiX, FiPaperclip, FiInfo, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock, FiActivity, FiLayers } from 'react-icons/fi';
+import { FiLink, FiFileText, FiX, FiPaperclip, FiInfo, FiPlus, FiSearch, FiZap, FiUser, FiArrowRight, FiClock, FiActivity, FiLayers, FiXCircle, FiPrinter } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function Toast({ msg, type, onClose }) {
@@ -34,10 +34,73 @@ export default function ProductionQueuePage({ onNavigate }) {
     });
     const [viewDesignModal, setViewDesignModal] = useState(null);
     const [assignTaskModal, setAssignTaskModal] = useState(null);
+    const [cancelTaskModal, setCancelTaskModal] = useState(null);
+    const [cancelFee, setCancelFee] = useState(0);
     const [activeTab, setActiveTab] = useState('Semua');
     const [toastMsg, setToastMsg] = useState(null);
 
     const showToast = useCallback((msg, type = 'info') => setToastMsg({ msg, type }), []);
+
+    const printCancelInvoice = (task, fee) => {
+        const w = window.open('', '_blank', 'width=800,height=600');
+        w.document.write("<html><head><title>INVOICE PEMBATALAN - " + task.id + "</title>");
+        w.document.write("<style>");
+        w.document.write("body { font-family: monospace; padding: 20px; color: #000; }");
+        w.document.write("* { margin: 0; padding: 0; box-sizing: border-box; }");
+        w.document.write("h2 { text-align: center; margin-bottom: 5px; font-size: 1.5em; }");
+        w.document.write("p.subtitle { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 15px; margin-bottom: 15px; }");
+        w.document.write(".row { display: flex; justify-content: space-between; margin-bottom: 5px; }");
+        w.document.write(".total { border-top: 2px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 1.2em; }");
+        w.document.write(".footer { text-align: center; margin-top: 30px; font-size: 0.9em; }");
+        w.document.write("</style></head><body>");
+        w.document.write("<h2>ABADI JAYA COPIER & OFFSET</h2>");
+        w.document.write("<p class='subtitle'>NOTA PEMBATALAN PESANAN</p>");
+        w.document.write("<div class='row'><span>No. Antrean:</span> <span>" + task.id + "</span></div>");
+        w.document.write("<div class='row'><span>Pelanggan:</span> <span>" + task.customerName + "</span></div>");
+        w.document.write("<div class='row'><span>Status Terakhir:</span> <span>" + task.status.toUpperCase() + "</span></div>");
+        w.document.write("<div class='row'><span>Waktu Batal:</span> <span>" + new Date().toLocaleString('id-ID') + "</span></div><br/>");
+        w.document.write("<div class='row' style='margin-bottom: 15px;'><span>Pesanan:</span> <span>" + task.title + "</span></div>");
+
+        if (fee > 0) {
+            w.document.write("<div class='row total'><span>BIAYA PEMBATALAN:</span><span>Rp " + fee.toLocaleString('id-ID') + "</span></div>");
+        } else {
+            w.document.write("<div class='row total'><span>BIAYA PEMBATALAN:</span><span>Rp 0 (GRATIS)</span></div>");
+        }
+
+        w.document.write("<div class='footer'><p>Mohon maaf atas ketidaknyamanannya.</p>");
+        if (fee > 0) {
+            w.document.write("<p>Biaya pembatalan dikenakan sesuai kebijakan material/desain yang telah berjalan.</p>");
+        }
+        w.document.write("</div></body></html>");
+        w.document.close();
+        w.focus();
+        setTimeout(() => { w.print(); w.close(); }, 500);
+    };
+
+    const handleCancelTask = async () => {
+        if (!cancelTaskModal) return;
+
+        if (cancelTaskModal.type === 'offset') {
+            showToast('Pembatalan untuk Master SPK harus dilakukan melalui menu Daftar SPK di panel Admin.', 'error');
+            setCancelTaskModal(null);
+            return;
+        }
+
+        const idToUpdate = cancelTaskModal.real_id || cancelTaskModal.id;
+        db.update('dp_tasks', idToUpdate, {
+            status: 'batal',
+            denda_batal: cancelFee,
+            updatedAt: new Date().toISOString()
+        });
+
+        db.logActivity(user?.name, 'Pembatalan Pesanan', "Pesanan #" + cancelTaskModal.id + " dibatalkan dengan denda Rp " + cancelFee);
+
+        printCancelInvoice(cancelTaskModal, cancelFee);
+
+        loadProductionData();
+        setCancelTaskModal(null);
+        setCancelFee(0);
+    };
 
     const handleAssignTechnician = (taskId, techId, techName) => {
         db.update('dp_tasks', taskId, {
@@ -305,14 +368,22 @@ export default function ProductionQueuePage({ onNavigate }) {
                                         className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-grab active:cursor-grabbing group"
                                     >
                                         <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                                                {task.id}
-                                            </span>
-                                            {task.priority === 'ekspres' && (
-                                                <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">
-                                                    <FiZap size={10} /> Express
-                                                </div>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                                    {task.id}
+                                                </span>
+                                                {task.priority === 'ekspres' && (
+                                                    <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">
+                                                        <FiZap size={10} /> Express
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => { setCancelTaskModal(task); setCancelFee(0); }}
+                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-all"
+                                                title="Batalkan Pesanan">
+                                                <FiXCircle size={14} />
+                                            </button>
                                         </div>
 
                                         <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
@@ -516,6 +587,67 @@ export default function ProductionQueuePage({ onNavigate }) {
                                         </div>
                                     </motion.button>
                                 ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal Cancel Task */}
+            <AnimatePresence>
+                {cancelTaskModal && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-2000 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setCancelTaskModal(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl shadow-red-900/10 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative"
+                        >
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-red-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                            <div className="flex items-start justify-between p-6 pb-2 border-slate-100 dark:border-slate-800/60 shrink-0 relative z-10">
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                                        <FiXCircle size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-widest leading-none mt-1">Batalkan Pesanan?</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">No. #{cancelTaskModal.id}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 pt-2 space-y-4 relative z-10 bg-transparent">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">Beban Biaya Pembatalan (Denda)</p>
+                                    <p className="text-[10px] text-slate-500 mt-1 mb-3">Pesanan yang sudah mulai <span className="font-bold text-slate-700 dark:text-slate-300">diproses / cetak</span> mungkin dikenakan biaya material.</p>
+
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-500">Rp</span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={cancelFee || ''}
+                                            onChange={(e) => setCancelFee(parseInt(e.target.value) || 0)}
+                                            placeholder="0"
+                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-12 pr-4 font-black font-mono text-slate-900 dark:text-white focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-6">
+                                    <button
+                                        onClick={() => setCancelTaskModal(null)}
+                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm"
+                                    >
+                                        Kembali
+                                    </button>
+                                    <button
+                                        onClick={handleCancelTask}
+                                        className="flex-[1.5] py-3 bg-red-600 hover:bg-red-500 text-white font-black rounded-xl shadow-lg shadow-red-500/20 transition-colors flex items-center justify-center gap-2 text-sm"
+                                    >
+                                        <FiPrinter size={16} /> Batal & Cetak
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     </div>
