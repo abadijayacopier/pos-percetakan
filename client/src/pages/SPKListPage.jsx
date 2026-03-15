@@ -36,6 +36,7 @@ export default function SPKListPage({ onNavigate }) {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Semua');
     const [search, setSearch] = useState('');
+    const [cancelModal, setCancelModal] = useState(null);
 
     // Pagination States
     const [currentPage, setCurrentPage] = useState(1);
@@ -64,14 +65,16 @@ export default function SPKListPage({ onNavigate }) {
         fetchSPK();
     }, [fetchSPK]);
 
-    const handleCancelSPK = async (spkId, spkNumber) => {
-        if (!window.confirm(`Apakah Anda yakin ingin membatalkan Master SPK #${spkNumber}? Tindakan ini tidak dapat dikembalikan.`)) {
-            return;
-        }
+    const handleCancelSPK = (spkId, spkNumber) => {
+        setCancelModal({ id: spkId, spk_number: spkNumber });
+    };
 
+    const confirmCancelSPK = async () => {
+        if (!cancelModal) return;
         try {
-            await api.put(`/spk/${spkId}`, { status: 'Batal' });
+            await api.put(`/spk/${cancelModal.id}`, { status: 'Batal' });
             fetchSPK();
+            setCancelModal(null);
         } catch (err) {
             console.error('Gagal membatalkan SPK:', err);
             alert('Terjadi kesalahan saat membatalkan SPK.');
@@ -250,7 +253,7 @@ export default function SPKListPage({ onNavigate }) {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.04 }}
-                                                className={`hover:bg-slate-50/80 dark:hover:bg-blue-500/[0.02] transition-all group ${ready ? 'bg-emerald-50/30 dark:bg-emerald-500/[0.02]' : ''}`}
+                                                className={`hover:bg-slate-50/80 dark:hover:bg-blue-500/2 transition-all group ${ready ? 'bg-emerald-50/30 dark:bg-emerald-500/2' : ''}`}
                                             >
                                                 <td className="px-6 py-5">
                                                     <div className="flex flex-col">
@@ -395,6 +398,54 @@ export default function SPKListPage({ onNavigate }) {
                     )}
                 </motion.div>
             </div>
+
+            {/* Cancel Modal */}
+            <AnimatePresence>
+                {cancelModal && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-2000 flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.target === e.currentTarget && setCancelModal(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm shadow-2xl shadow-rose-900/10 border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative"
+                        >
+                            <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                            <div className="flex items-start justify-between p-6 pb-2 border-slate-100 dark:border-slate-800/60 shrink-0 relative z-10">
+                                <div className="flex gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                        <FiAlertCircle size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest leading-none mt-1">Batalkan SPK?</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Master SPK #{cancelModal.spk_number}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-6 pt-2 space-y-4 relative z-10 bg-transparent">
+                                <div className="bg-rose-50 dark:bg-rose-500/10 p-4 rounded-2xl border border-rose-200 dark:border-rose-500/20 text-center">
+                                    <p className="text-xs text-rose-900 dark:text-rose-200 font-medium leading-relaxed">
+                                        Apakah Anda yakin ingin membatalkan SPK ini? Tindakan ini <b>tidak dapat dibatalkan</b>.
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3 mt-6">
+                                    <button
+                                        onClick={() => setCancelModal(null)}
+                                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm shadow-sm"
+                                    >
+                                        Kembali
+                                    </button>
+                                    <button
+                                        onClick={confirmCancelSPK}
+                                        className="flex-[1.5] py-3 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 transition-colors text-sm flex items-center justify-center gap-2"
+                                    >
+                                        <FiXCircle size={16} /> Iya, Batalkan
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
