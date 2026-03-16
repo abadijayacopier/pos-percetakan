@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -358,9 +359,24 @@ export default function App() {
     }
   };
 
+  const renderAnimatedPage = () => (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activePage}
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -15 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="h-full w-full flex flex-col"
+      >
+        {renderPage()}
+      </motion.div>
+    </AnimatePresence>
+  );
+
   return (
     <Layout activePage={activePage} onNavigate={handleNavigate} isFullscreen={isFullscreen}>
-      {renderPage()}
+      {renderAnimatedPage()}
     </Layout>
   );
 }
