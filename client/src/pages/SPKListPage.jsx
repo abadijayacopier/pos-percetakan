@@ -35,6 +35,7 @@ export default function SPKListPage({ onNavigate }) {
     const [summary, setSummary] = useState({ total: 0, byStatus: {} });
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Semua');
+    const [activeKategori, setActiveKategori] = useState('Semua');
     const [search, setSearch] = useState('');
     const [cancelModal, setCancelModal] = useState(null);
 
@@ -47,6 +48,7 @@ export default function SPKListPage({ onNavigate }) {
         try {
             const params = new URLSearchParams();
             if (activeFilter !== 'Semua') params.set('status', activeFilter);
+            if (activeKategori !== 'Semua') params.set('kategori', activeKategori);
             if (search) params.set('search', search);
 
             const res = await api.get(`/spk?${params.toString()}`);
@@ -58,7 +60,7 @@ export default function SPKListPage({ onNavigate }) {
         } finally {
             setLoading(false);
         }
-    }, [activeFilter, search]);
+    }, [activeFilter, activeKategori, search]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -196,15 +198,26 @@ export default function SPKListPage({ onNavigate }) {
                             ))}
                         </div>
 
-                        <form onSubmit={handleSearch} className="relative w-full xl:max-w-md group">
-                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                            <input
-                                className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/50 shadow-sm dark:text-white transition-all outline-none text-sm font-medium"
-                                placeholder="Cari nomor SPK, nama pelanggan, atau produk..."
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                            />
-                        </form>
+                        <div className="flex w-full xl:max-w-md gap-3">
+                            <select
+                                value={activeKategori}
+                                onChange={(e) => setActiveKategori(e.target.value)}
+                                className="px-4 py-4 rounded-2xl bg-white dark:bg-slate-800 border-none shadow-sm dark:text-white transition-all outline-none text-sm font-medium focus:ring-2 focus:ring-primary/50"
+                            >
+                                <option value="Semua">Semua Kategori</option>
+                                <option value="Digital Printing">Digital Printing</option>
+                                <option value="Cetak Offset">Cetak Offset</option>
+                            </select>
+                            <form onSubmit={handleSearch} className="relative flex-1 group">
+                                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                <input
+                                    className="w-full pl-11 pr-4 py-4 rounded-2xl bg-white dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/50 shadow-sm dark:text-white transition-all outline-none text-sm font-medium"
+                                    placeholder="Cari SPK, pelanggan..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
+                            </form>
+                        </div>
                     </div>
 
                     {/* Table Container */}

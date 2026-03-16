@@ -3,6 +3,7 @@ import db from '../db';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle, FiZap, FiClipboard, FiUser, FiClock, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
 import { generateInvoice } from '../utils';
 
@@ -59,6 +60,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editForm, setEditForm] = useState({ dimensions: { width: '', height: '' }, matId: '', customerId: '' });
 
+    // Cancellation State
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [cancelTaskId, setCancelTaskId] = useState(null);
+
     // Designer Assignment State
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [availableDesigners, setAvailableDesigners] = useState([]);
@@ -92,11 +97,14 @@ export default function DigitalPrintingPage({ onNavigate }) {
 
         // 1. Load active designs from local dp_tasks (for 'Sedang Dikerjakan' cards)
         const allTasks = db.getAll('dp_tasks');
-        const designs = allTasks.filter(t => ['menunggu_desain', 'desain', 'ditugaskan', 'dikerjakan'].includes(t.status));
+        const designs = allTasks.filter(t =>
+            ['menunggu_desain', 'desain', 'ditugaskan', 'dikerjakan'].includes(t.status) &&
+            t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET'))
+        );
         setActiveDesigns(designs);
 
         const logs = [...allTasks]
-            .filter(t => t.type === 'digital' || !t.type)
+            .filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')))
             .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         setRecentLogs(logs);
 
@@ -323,12 +331,19 @@ export default function DigitalPrintingPage({ onNavigate }) {
 
 
     const handleCancelTask = (taskId) => {
-        if (window.confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) {
-            const task = db.getById('dp_tasks', taskId);
-            db.update('dp_tasks', taskId, { status: 'batal' });
-            db.logActivity(user?.name, 'Batalkan Pesanan', `Membatalkan pesanan ${task?.title}`);
-            loadData();
-        }
+        setCancelTaskId(taskId);
+        setShowCancelModal(true);
+    };
+
+    const confirmCancelTask = () => {
+        if (!cancelTaskId) return;
+        const task = db.getById('dp_tasks', cancelTaskId);
+        db.update('dp_tasks', cancelTaskId, { status: 'batal' });
+        db.logActivity(user?.name, 'Batalkan Pesanan', `Membatalkan pesanan ${task?.title}`);
+
+        setShowCancelModal(false);
+        setCancelTaskId(null);
+        loadData();
     };
 
     const openEdit = (task) => {
@@ -923,6 +938,16 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 handleAssignDesigner={handleAssignDesigner}
             />
 
+            <ConfirmationModal
+                isOpen={showCancelModal}
+                title="Batalkan Pesanan"
+                message="Apakah Anda yakin ingin membatalkan pesanan ini? Status pesanan akan diubah menjadi 'batal'."
+                confirmText="Ya, Batalkan"
+                cancelText="Tutup"
+                onConfirm={confirmCancelTask}
+                onCancel={() => { setShowCancelModal(false); setCancelTaskId(null); }}
+                type="danger"
+            />
         </div>
     );
 };

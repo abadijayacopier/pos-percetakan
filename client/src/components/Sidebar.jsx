@@ -59,7 +59,7 @@ const MENU_GROUPS = [
     },
 ];
 
-export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
+export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCollapsed, toggleCollapse }) {
     const { user, logout } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -120,15 +120,15 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                 variants={sideVariants}
                 initial="closed"
                 animate={isOpen || isDesktop ? "open" : "closed"}
-                className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-100 w-[280px] 
+                className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-100 ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
                 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
-                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
+                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden transition-all duration-300 ease-in-out`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
-                    <div className="p-4 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                        <div className="flex items-center gap-3 cursor-default">
-                            <div className="relative">
+                    <div className={`p-4 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
+                        <div className={`flex items-center gap-3 cursor-default w-full ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
+                            <div className="relative shrink-0">
                                 <motion.div
                                     className="bg-blue-600 size-10 rounded-full flex items-center justify-center text-white"
                                     whileHover={{ scale: 1.05 }}
@@ -137,17 +137,31 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                 </motion.div>
                                 <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
                             </div>
-                            <div className="flex flex-col">
-                                <h1 className="text-slate-900 dark:text-white text-lg font-black tracking-tighter leading-none italic uppercase">
-                                    Abadi <span className="text-blue-600 dark:text-blue-500">Jaya</span>
-                                </h1>
-                                <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
-                            </div>
+                            {!(isCollapsed && isDesktop) && (
+                                <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300">
+                                    <h1 className="text-slate-900 dark:text-white text-lg font-black tracking-tighter leading-none italic uppercase">
+                                        Abadi <span className="text-blue-600 dark:text-blue-500">Jaya</span>
+                                    </h1>
+                                    <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
+                                </div>
+                            )}
 
                             <button onClick={onClose} className="lg:hidden ml-auto p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                                 <span className="material-symbols-outlined text-2xl flex items-center justify-center relative -right-1">close</span>
                             </button>
                         </div>
+
+                        {isDesktop && (
+                            <button
+                                onClick={toggleCollapse}
+                                className={`mt-4 mx-auto w-full flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${isCollapsed ? '' : 'justify-end'}`}
+                                title={isCollapsed ? "Perbesar Menu" : "Perkecil Menu"}
+                            >
+                                <span className="material-symbols-outlined text-xl">
+                                    {isCollapsed ? 'menu_open' : 'menu'}
+                                </span>
+                            </button>
+                        )}
                     </div>
 
                     {/* Navigation Stream */}
@@ -162,11 +176,15 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
 
                             return (
                                 <div key={gIdx} className="space-y-1">
-                                    <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-3">
-                                        {group.title}
-                                    </div>
+                                    {!(isCollapsed && isDesktop) ? (
+                                        <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2 mb-3">
+                                            {group.title}
+                                        </div>
+                                    ) : (
+                                        <div className="h-4 border-b border-slate-100 dark:border-slate-800/60 w-1/2 mx-auto mb-3" aria-hidden="true" />
+                                    )}
 
-                                    <div className="space-y-1.5">
+                                    <div className={`space-y-1.5 ${isCollapsed && isDesktop ? 'flex flex-col items-center' : ''}`}>
                                         {filteredItems.map((item, iIdx) => {
                                             const isActive = activePage === item.id;
                                             const hasChildren = item.subItems && item.subItems.length > 0;
@@ -183,31 +201,37 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
                                                     animate="visible"
                                                 >
                                                     <motion.button
-                                                        whileHover={{ x: 4 }}
+                                                        whileHover={{ x: isCollapsed && isDesktop ? 0 : 4, scale: isCollapsed && isDesktop ? 1.05 : 1 }}
                                                         whileTap={{ scale: 0.98 }}
-                                                        onClick={() => hasChildren ? toggleExpand(item.id) : handleNav(item.id)}
-                                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-[13px] tracking-wide transition-all w-full text-left relative group outline-none
+                                                        onClick={() => hasChildren && !(isCollapsed && isDesktop) ? toggleExpand(item.id) : handleNav(item.id)}
+                                                        title={isCollapsed && isDesktop ? item.label : undefined}
+                                                        className={`flex items-center gap-3 py-2.5 rounded-xl font-semibold text-[13px] tracking-wide transition-all outline-none relative group
+                                                        ${isCollapsed && isDesktop ? 'justify-center w-12 px-0' : 'w-full px-3 text-left'}
                                                         ${highlightParent
                                                                 ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 font-bold shadow-sm ring-1 ring-blue-500/20'
                                                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
                                                             }`}
                                                     >
-                                                        <span className={`text-[18px] transition-colors ${highlightParent ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400'}`}>
+                                                        <span className={`text-[18px] transition-colors shrink-0 ${highlightParent ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-500 dark:group-hover:text-blue-400'}`}>
                                                             {item.icon}
                                                         </span>
-                                                        <span className="flex-1">{item.label}</span>
-                                                        {hasChildren && (
-                                                            <motion.div
-                                                                animate={{ rotate: isExpanded ? 180 : 0 }}
-                                                                className={`transition-opacity ${highlightParent ? 'opacity-100 text-white' : 'opacity-50 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
-                                                            >
-                                                                <FiChevronDown size={14} />
-                                                            </motion.div>
+                                                        {!(isCollapsed && isDesktop) && (
+                                                            <>
+                                                                <span className="flex-1 whitespace-nowrap overflow-hidden text-clip">{item.label}</span>
+                                                                {hasChildren && (
+                                                                    <motion.div
+                                                                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                                                                        className={`transition-opacity shrink-0 ${highlightParent ? 'opacity-100 text-white' : 'opacity-50 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}
+                                                                    >
+                                                                        <FiChevronDown size={14} />
+                                                                    </motion.div>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </motion.button>
 
                                                     <AnimatePresence>
-                                                        {hasChildren && isExpanded && (
+                                                        {hasChildren && isExpanded && !(isCollapsed && isDesktop) && (
                                                             <motion.div
                                                                 initial={{ height: 0, opacity: 0 }}
                                                                 animate={{ height: "auto", opacity: 1 }}
@@ -254,34 +278,43 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose }) {
 
                     {/* Footer / User Info */}
                     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                        <div className="space-y-2">
+                        <div className={`space-y-2 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
                             <button
                                 onClick={() => handleNav('settings')}
-                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all w-full text-center border-2
+                                title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
+                                className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
                                 ${activePage === 'settings'
                                         ? 'bg-white text-blue-600 border-blue-600'
                                         : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
                             >
-                                <FiSettings size={14} />
-                                <span>Pengaturan Sistem</span>
+                                <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
+                                {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
                             </button>
 
-                            <div className="bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center justify-between group">
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <div className="size-8 bg-[#f1f5f9] dark:bg-slate-800 rounded-full flex items-center justify-center text-[#334155] dark:text-slate-300 font-black text-[10px] border border-slate-200 dark:border-slate-700">
+                            <div className={`bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center group
+                                ${isCollapsed && isDesktop ? 'justify-center p-1 border-none bg-transparent dark:bg-transparent px-1' : 'justify-between'}`}>
+                                <div className={`flex items-center gap-3 min-w-0 ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
+                                    <div className={`size-8 bg-[#f1f5f9] dark:bg-slate-800 rounded-full flex items-center justify-center text-[#334155] dark:text-slate-300 font-black text-[10px] border border-slate-200 dark:border-slate-700 shrink-0
+                                        ${isCollapsed && isDesktop && 'ring-2 ring-transparent hover:ring-blue-500 transition-all cursor-pointer'}`}
+                                        title={isCollapsed && isDesktop ? user?.username || 'ADMIN' : undefined}>
                                         {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic">{user?.username || 'ADMIN'}</p>
-                                        <p className="text-[9px] font-bold text-[#64748b] uppercase tracking-widest mt-0.5">{user?.role || 'ADMIN'}</p>
-                                    </div>
+                                    {!(isCollapsed && isDesktop) && (
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                            <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic">{user?.username || 'ADMIN'}</p>
+                                            <p className="text-[9px] font-bold text-[#64748b] uppercase tracking-widest mt-0.5 truncate">{user?.role || 'ADMIN'}</p>
+                                        </div>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={() => setShowLogoutConfirm(true)}
-                                    className="size-8 flex items-center justify-center text-slate-400 hover:text-blue-600 rounded-full transition-colors"
-                                >
-                                    <FiLogOut size={14} />
-                                </button>
+                                {!(isCollapsed && isDesktop) && (
+                                    <button
+                                        onClick={() => setShowLogoutConfirm(true)}
+                                        className="size-8 flex items-center justify-center text-slate-400 hover:text-blue-600 rounded-full transition-colors shrink-0"
+                                    >
+                                        <FiLogOut size={14} />
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

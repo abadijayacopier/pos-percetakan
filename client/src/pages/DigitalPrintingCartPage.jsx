@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import db from '../db';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
@@ -56,44 +57,38 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
     const currentPaid = amountPaid !== '' ? Number(amountPaid) : totalTagihan;
     const kembalian = Math.max(0, currentPaid - totalTagihan);
 
-    const handleProses = () => {
-        if (!taskId) return;
+    const handleProses = async () => {
+        if (!taskId || !task) return;
 
-        // Auto-Assign Technician Logic
-        const technicians = [
-            { id: 'tech1', name: 'Andi' },
-            { id: 'tech2', name: 'Siti' },
-            { id: 'tech3', name: 'Bambang' }
-        ];
+        try {
+            // Mapping temporary task data to Real SPK Payload
+            const payload = {
+                customer_id: task.customerId,
+                customer_name: task.customerName,
+                product_name: task.material_name || task.title || 'Digital Print',
+                product_qty: 1,
+                product_unit: 'Pcs',
+                kategori: 'Digital Printing',
+                specs_material: `Dimensi: ${task.dimensions?.width}x${task.dimensions?.height}m. Bahan: ${task.material_name}`,
+                specs_notes: task.pesan_desainer || 'Tanpa catatan',
+                biaya_cetak: subtotal,
+                biaya_material: 0,
+                biaya_finishing: 0,
+                biaya_desain: task.design_price || 0,
+                biaya_lainnya: 0,
+                dp_amount: currentPaid,
+                priority: 'Normal',
+            };
 
-        // Count active tasks per technician
-        const allTasks = db.getAll('dp_tasks');
-        const counts = {};
-        technicians.forEach(t => counts[t.id] = 0);
-        allTasks.forEach(t => {
-            if (t.status === 'produksi' && t.technician_id) {
-                counts[t.technician_id] = (counts[t.technician_id] || 0) + 1;
-            }
-        });
+            await api.post('/spk', payload);
 
-        // Find technician with least tasks
-        const sortedTechs = [...technicians].sort((a, b) => counts[a.id] - counts[b.id]);
-        const chosenTech = sortedTechs[0];
+            alert(`Pesanan berhasil diproses! Mengalihkan kembali ke halaman Digital Printing...`);
+            onNavigate('digital-printing');
 
-        // Update Task
-        db.update('dp_tasks', taskId, {
-            status: 'produksi',
-            technician_id: chosenTech.id,
-            technician_name: chosenTech.name,
-            payment_status: transactionType === 'lunas' ? 'Lunas' : 'DP',
-            amount_paid: currentPaid,
-            updatedAt: new Date().toISOString()
-        });
-
-        db.logActivity(user?.name, 'Proses SPK', `Pesanan #${taskId} dikirim ke produksi (Teknisi: ${chosenTech.name})`);
-
-        alert(`Pesanan diproses! Teknisi ditugaskan: ${chosenTech.name}. Mengalihkan ke Antrean Produksi...`);
-        onNavigate('production-queue');
+        } catch (error) {
+            console.error('Gagal memproses SPK:', error);
+            alert('Gagal memproses pesanan: ' + (error.response?.data?.message || error.message));
+        }
     };
 
     return (

@@ -26,6 +26,10 @@ router.get('/', verifyToken, async (req, res) => {
             sql += ' AND s.priority = ?';
             params.push(priority);
         }
+        if (req.query.kategori) {
+            sql += ' AND s.kategori = ?';
+            params.push(req.query.kategori);
+        }
         if (search) {
             sql += ' AND (s.spk_number LIKE ? OR s.customer_name LIKE ? OR s.product_name LIKE ?)';
             const q = `%${search}%`;
@@ -35,11 +39,21 @@ router.get('/', verifyToken, async (req, res) => {
         sql += ' ORDER BY s.created_at DESC';
         const [rows] = await pool.query(sql, params);
 
-        // Hitung ringkasan jumlah per status
-        const [summary] = await pool.query(`
-            SELECT status, COUNT(*) as count FROM spk GROUP BY status
-        `);
-        const total = await pool.query('SELECT COUNT(*) as total FROM spk');
+        // Hitung ringkasan jumlah per status (dengan kondisi yang sama)
+        let countSql = `SELECT status, COUNT(*) as count FROM spk WHERE 1=1`;
+        let totalSql = `SELECT COUNT(*) as total FROM spk WHERE 1=1`;
+        let countParams = [];
+
+        if (req.query.kategori) {
+            countSql += ' AND kategori = ?';
+            totalSql += ' AND kategori = ?';
+            countParams.push(req.query.kategori);
+        }
+
+        countSql += ' GROUP BY status';
+
+        const [summary] = await pool.query(countSql, countParams);
+        const [total] = await pool.query(totalSql, countParams);
 
         res.json({
             data: rows,
@@ -113,7 +127,7 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
         await conn.beginTransaction();
         const {
             customer_id, customer_name, customer_phone, customer_company,
-            product_name, product_qty, product_unit,
+            product_name, product_qty, product_unit, kategori,
             specs_material, specs_finishing, specs_notes,
             biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
             dp_amount, priority, assigned_to, deadline
@@ -139,14 +153,14 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
         await conn.query(`
             INSERT INTO spk (
                 id, spk_number, customer_id, customer_name, customer_phone, customer_company,
-                product_name, product_qty, product_unit, specs_material, specs_finishing, specs_notes,
+                product_name, product_qty, product_unit, kategori, specs_material, specs_finishing, specs_notes,
                 biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
                 total_biaya, dp_amount, sisa_tagihan,
                 priority, assigned_to, created_by, deadline
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             id, spk_number, customer_id || null, customer_name, customer_phone || null, customer_company || null,
-            product_name, product_qty || 1, product_unit || 'pcs',
+            product_name, product_qty || 1, product_unit || 'pcs', kategori || 'Cetak Offset',
             specs_material || null, specs_finishing || null, specs_notes || null,
             biaya_cetak || 0, biaya_material || 0, biaya_finishing || 0, biaya_desain || 0, biaya_lainnya || 0,
             total_biaya, dp_amount || 0, sisa_tagihan,

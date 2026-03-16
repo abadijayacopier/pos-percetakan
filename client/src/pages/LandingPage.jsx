@@ -151,7 +151,7 @@ export default function LandingPage({ onNavigate }) {
                         initial={{ opacity: 0, x: '100%' }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: '100%' }}
-                        className="fixed inset-0 z-[60] bg-white p-10 flex flex-col items-center justify-center gap-8"
+                        className="fixed inset-0 z-60 bg-white p-10 flex flex-col items-center justify-center gap-8"
                     >
                         <button className="absolute top-10 right-10 size-12 bg-slate-100 rounded-2xl flex items-center justify-center" onClick={() => setIsMobileMenuOpen(false)}>
                             <FiX size={24} />
@@ -161,14 +161,14 @@ export default function LandingPage({ onNavigate }) {
                                 key={item}
                                 href={`#${item.toLowerCase().replace(' ', '-')}`}
                                 onClick={() => setIsMobileMenuOpen(false)}
-                                className="text-2xl font-black uppercase tracking-[0.1em] text-slate-900 hover:text-blue-600 italic"
+                                className="text-2xl font-black uppercase tracking-widest text-slate-900 hover:text-blue-600 italic"
                             >
                                 {item}
                             </a>
                         ))}
                         <button
                             onClick={() => { setIsMobileMenuOpen(false); onNavigate('login'); }}
-                            className="w-full bg-blue-600 text-white py-5 rounded-[2rem] text-sm font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                            className="w-full bg-blue-600 text-white py-5 rounded-4xl text-sm font-black uppercase tracking-widest shadow-xl shadow-blue-500/20"
                         >
                             Portal Kasir
                         </button>
@@ -213,10 +213,10 @@ export default function LandingPage({ onNavigate }) {
                             transition={{ delay: 0.3 }}
                             className="flex flex-col sm:flex-row gap-4"
                         >
-                            <a href="#services" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/40 transition-all flex items-center justify-center gap-3 group">
+                            <a href="#services" className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-5 rounded-4xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl shadow-blue-500/40 transition-all flex items-center justify-center gap-3 group">
                                 Lihat Layanan <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
                             </a>
-                            <a href="#service-machine" className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all text-center">
+                            <a href="#service-machine" className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 px-10 py-5 rounded-4xl text-[11px] font-black uppercase tracking-[0.2em] transition-all text-center">
                                 Request Service
                             </a>
                         </motion.div>
@@ -245,12 +245,12 @@ export default function LandingPage({ onNavigate }) {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ duration: 1, delay: 0.4 }}
-                            className="relative z-10 rounded-[3rem] overflow-hidden shadow-2xl shadow-blue-600/10 border-8 border-white group-hover:rotate-1 transition-transform duration-700"
+                            className="relative z-10 rounded-4xl overflow-hidden shadow-2xl shadow-blue-600/10 border-8 border-white group-hover:rotate-1 transition-transform duration-700"
                         >
-                            <img src={HERO_IMAGE} alt="Abadi Jaya Printing" className="w-full aspect-[4/5] object-cover group-hover:scale-110 transition-transform duration-1000" />
+                            <img src={HERO_IMAGE} alt="Abadi Jaya Printing" className="w-full aspect-4/5 object-cover group-hover:scale-110 transition-transform duration-1000" />
                         </motion.div>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 rounded-full blur-3xl -z-10 group-hover:scale-125 transition-transform duration-1000"></div>
-                        <div className="absolute -bottom-10 -right-10 bg-white p-6 rounded-[2rem] shadow-xl z-20 flex flex-col items-center gap-2 border border-slate-50 max-w-[140px] animate-bounce">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 rounded-full blur-3xl z-0 group-hover:scale-125 transition-transform duration-1000"></div>
+                        <div className="absolute -bottom-10 -right-10 bg-white p-6 rounded-4xl shadow-xl z-20 flex flex-col items-center gap-2 border border-slate-50 max-w-[140px] animate-bounce">
                             <FiCheckCircle className="text-emerald-500 text-3xl" />
                             <p className="text-[10px] font-black text-center uppercase tracking-widest leading-none">Garansi Kualitas</p>
                         </div>
@@ -272,7 +272,7 @@ export default function LandingPage({ onNavigate }) {
                             <motion.div
                                 key={i}
                                 whileHover={{ y: -10 }}
-                                className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-600/5 transition-all group"
+                                className="bg-white p-10 rounded-4xl border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-blue-600/5 transition-all group"
                             >
                                 <div className={`size-16 rounded-3xl mb-8 flex items-center justify-center text-2xl transition-all group-hover:scale-110 rotate-3 group-hover:rotate-0 ${s.color === 'blue' ? 'bg-blue-50 text-blue-600' :
                                     s.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
@@ -310,13 +310,13 @@ export default function LandingPage({ onNavigate }) {
                             { name: 'Print Dokumen', icon: <FiPrinter />, data: prices.print, defaults: [{ p: 'A4 B/W', v: 500 }, { p: 'A4 Warna', v: 2000 }, { p: 'Foto Premium', v: 5000 }] },
                             { name: 'Penjilidan', icon: <FiLayers />, data: prices.binding, defaults: [{ p: 'Spiral Kawat', v: 5000 }, { p: 'Lakban Rapih', v: 3000 }, { p: 'Custom Cover', v: 25000 }] },
                         ].map((cat, i) => (
-                            <div key={i} className="bg-slate-950 rounded-[3rem] p-10 text-white shadow-2xl relative group overflow-hidden">
+                            <div key={i} className="bg-slate-950 rounded-4xl p-10 text-white shadow-2xl relative group overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform"></div>
                                 <div className="flex items-center gap-4 mb-10">
                                     <div className="size-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-500 text-xl font-bold italic shadow-xl">
                                         {cat.icon}
                                     </div>
-                                    <h3 className="text-lg font-black tracking-[0.1em] uppercase italic">{cat.name}</h3>
+                                    <h3 className="text-lg font-black tracking-widest uppercase italic">{cat.name}</h3>
                                 </div>
 
                                 <div className="space-y-1">
@@ -372,7 +372,7 @@ export default function LandingPage({ onNavigate }) {
                                     whileInView={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.1 }}
                                     viewport={{ once: true }}
-                                    className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition-all"
+                                    className="bg-white rounded-4xl border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition-all"
                                 >
                                     <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center p-12">
                                         <div className="absolute top-4 left-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest z-10 border border-slate-100">In Stock</div>
@@ -392,7 +392,7 @@ export default function LandingPage({ onNavigate }) {
                                                 const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${p.name}%0A- Harga: Rp ${parseInt(p.sellPrice || 0).toLocaleString()}%0A%0AApakah stok masih tersedia?`;
                                                 window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
                                             }}
-                                            className="w-full py-4 bg-slate-50 hover:bg-blue-600 text-slate-900 hover:text-white rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-slate-50 hover:bg-blue-600 text-slate-900 hover:text-white rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
                                         >
                                             Pesan via WhatsApp
                                         </button>
@@ -414,11 +414,11 @@ export default function LandingPage({ onNavigate }) {
 
                     <div className="columns-1 sm:columns-2 lg:columns-3 gap-8 space-y-8">
                         {galleryImages.length > 0 ? galleryImages.map((img, i) => (
-                            <div key={i} className="break-inside-avoid rounded-[2.5rem] overflow-hidden group shadow-sm hover:shadow-2xl transition-all border-4 border-white">
+                            <div key={i} className="break-inside-avoid rounded-4xl overflow-hidden group shadow-sm hover:shadow-2xl transition-all border-4 border-white">
                                 <img src={img} className="w-full group-hover:scale-105 transition-transform duration-1000" alt="Work Gallery" />
                             </div>
                         )) : [1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="break-inside-avoid h-64 bg-slate-200 animate-pulse rounded-[2.5rem] flex items-center justify-center text-slate-400">
+                            <div key={i} className="break-inside-avoid h-64 bg-slate-200 animate-pulse rounded-4xl flex items-center justify-center text-slate-400">
                                 <FiImage size={40} className="opacity-20" />
                             </div>
                         ))}
@@ -429,7 +429,7 @@ export default function LandingPage({ onNavigate }) {
             {/* Service Machine Section */}
             <section id="service-machine" className="py-32">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="bg-slate-900 rounded-[4rem] overflow-hidden flex flex-col lg:flex-row shadow-3xl shadow-blue-500/10 border border-slate-800 relative">
+                    <div className="bg-slate-900 rounded-4xl overflow-hidden flex flex-col lg:flex-row shadow-3xl shadow-blue-500/10 border border-slate-800 relative">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -mr-32 -mt-32 blur-[100px] animate-pulse"></div>
 
                         <div className="lg:w-1/2 p-12 lg:p-20 space-y-8 relative z-10">
@@ -510,7 +510,7 @@ export default function LandingPage({ onNavigate }) {
 
                     <div className="grid md:grid-cols-3 gap-8">
                         {testimonials.map((t, i) => (
-                            <div key={i} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative group overflow-hidden">
+                            <div key={i} className="bg-white p-10 rounded-4xl border border-slate-100 shadow-sm relative group overflow-hidden">
                                 <div className="absolute -top-10 -left-10 text-[120px] font-black text-slate-50 opacity-10 leading-none select-none">"</div>
                                 <div className="flex gap-1 mb-6">
                                     {[...Array(t.stars)].map((_, idx) => <FiCheckCircle key={idx} className="text-emerald-500" />)}
@@ -574,7 +574,7 @@ export default function LandingPage({ onNavigate }) {
 
                             <div
                                 onClick={() => window.open(storeInfo.mapsUrl, '_blank')}
-                                className="p-8 bg-slate-950 rounded-[2.5rem] flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-all group"
+                                className="p-8 bg-slate-950 rounded-4xl flex items-center justify-between cursor-pointer hover:scale-[1.02] transition-all group"
                             >
                                 <div className="flex items-center gap-6">
                                     <div className="bg-white rounded-2xl p-2 group-hover:rotate-12 transition-transform">
@@ -589,7 +589,7 @@ export default function LandingPage({ onNavigate }) {
                             </div>
                         </div>
 
-                        <div className="lg:col-span-12 xl:col-span-7 h-[500px] xl:h-[600px] rounded-[3.5rem] overflow-hidden shadow-2xl shadow-blue-600/5 border-8 border-slate-50 relative group">
+                        <div className="lg:col-span-12 xl:col-span-7 h-[500px] xl:h-[600px] rounded-4xl overflow-hidden shadow-2xl shadow-blue-600/5 border-8 border-slate-50 relative group">
                             <iframe
                                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15814.71714856037!2d111.4111306!3d-7.71752!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7960334860b73b%3A0x26550607bd9b19e9!2sKediren%2C%20Lembeyan%2C%20Magetan%20Regency%2C%20East%20Java!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
                                 width="100%" height="100%" style={{ border: 0 }} allowFullScreen="" loading="lazy">
@@ -667,7 +667,7 @@ export default function LandingPage({ onNavigate }) {
                 </div>
 
                 {/* Bottom Decorative Swirl */}
-                <div className="absolute bottom-0 right-0 w-[40%] h-[60%] bg-blue-600/5 -z-0 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-0 w-[40%] h-[60%] bg-blue-600/5 z-0 blur-[120px] rounded-full translate-x-1/2 translate-y-1/2"></div>
             </footer>
         </div>
     );

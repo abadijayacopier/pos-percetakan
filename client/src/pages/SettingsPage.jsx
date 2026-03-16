@@ -141,27 +141,69 @@ export default function SettingsPage() {
         db.logActivity(user?.name || 'Admin', 'Simpan Pengaturan', 'Pengaturan umum dan harga layanan diperbarui');
     };
 
-    const handleLogoUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            setStoreLogo(ev.target.result);
-        };
-        reader.readAsDataURL(file);
+    const resizeImage = (file, maxWidth, maxHeight, quality = 0.7) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/webp', quality));
+                };
+            };
+        });
     };
 
-    const handleGalleryUpload = (e) => {
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Ukuran gambar maksimal 5 MB!', 'error');
+            return;
+        }
+        const compressed = await resizeImage(file, 400, 400, 0.8);
+        setStoreLogo(compressed);
+    };
+
+    const handleGalleryUpload = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setGalleryImages(prev => [...prev, ev.target.result]);
-            };
-            reader.readAsDataURL(file);
-        });
+        let hasError = false;
+        for (const file of files) {
+            if (file.size > 5 * 1024 * 1024) {
+                hasError = true;
+                continue;
+            }
+            const compressed = await resizeImage(file, 800, 800, 0.6);
+            setGalleryImages(prev => [...prev, compressed]);
+        }
+
+        if (hasError) {
+            showToast('Beberapa gambar tidak diproses karena max 5 MB!', 'error');
+        } else {
+            showToast(`${files.length} Gambar berhasil ditambahkan ke Galeri!`, 'success');
+        }
     };
 
     const removeGalleryImage = (index) => {
@@ -344,12 +386,16 @@ export default function SettingsPage() {
                                                 <span className="text-xs text-slate-500">Upload Logo</span>
                                             </div>
                                         )}
-                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={async (e) => {
                                             const file = e.target.files[0];
                                             if (!file) return;
-                                            const reader = new FileReader();
-                                            reader.onload = (ev) => setLandingLogo(ev.target.result);
-                                            reader.readAsDataURL(file);
+                                            if (file.size > 5 * 1024 * 1024) {
+                                                showToast('Ukuran logo maksimal 5 MB!', 'error');
+                                                return;
+                                            }
+                                            const compressed = await resizeImage(file, 400, 400, 0.8);
+                                            showToast('Logo Landing Page diganti!', 'success');
+                                            setLandingLogo(compressed);
                                         }} />
                                     </div>
                                 </div>
@@ -364,12 +410,16 @@ export default function SettingsPage() {
                                                 <span className="text-xs text-slate-500">Upload Icon</span>
                                             </div>
                                         )}
-                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={async (e) => {
                                             const file = e.target.files[0];
                                             if (!file) return;
-                                            const reader = new FileReader();
-                                            reader.onload = (ev) => setLandingFavicon(ev.target.result);
-                                            reader.readAsDataURL(file);
+                                            if (file.size > 5 * 1024 * 1024) {
+                                                showToast('Ukuran icon maksimal 5 MB!', 'error');
+                                                return;
+                                            }
+                                            const compressed = await resizeImage(file, 128, 128, 0.8);
+                                            showToast('Favicon diganti!', 'success');
+                                            setLandingFavicon(compressed);
                                         }} />
                                     </div>
                                 </div>
@@ -1105,10 +1155,9 @@ export default function SettingsPage() {
                             </div>
                             <div className="p-8 flex justify-center bg-slate-100/50 dark:bg-slate-950/50">
                                 <div className="bg-white dark:bg-white text-slate-800 w-full max-w-[280px] min-h-[400px] shadow-2xl p-6 relative">
-                                    {/* Paper Texture Effect */}
-                                    <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px]"></div>
-
-                                    <div className="relative">
+                                    <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-slate-100 dark:from-slate-900 to-transparent pointer-events-none z-10" />
+                                    <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-size-[16px_16px] opacity-30 pointer-events-none" />
+                                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar -mx-2 px-2 relative z-20">
                                         <div className="flex justify-center mb-4">
                                             {storeLogo ? (
                                                 <img src={storeLogo} alt="Logo" className="h-10 object-contain" />
@@ -1177,8 +1226,8 @@ export default function SettingsPage() {
                     <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                                    <FiActivity size={20} />
+                                <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                    <span className="material-symbols-outlined text-slate-400">person</span>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-slate-800 dark:text-white">Log Aktivitas Sistem</h3>
@@ -1298,7 +1347,7 @@ export default function SettingsPage() {
                     <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30 p-8">
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                             <div className="flex items-center gap-4 text-center md:text-left">
-                                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 flex-shrink-0 mx-auto md:mx-0">
+                                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0 mx-auto md:mx-0">
                                     <FiAlertCircle size={24} />
                                 </div>
                                 <div>
