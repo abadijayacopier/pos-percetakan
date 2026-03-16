@@ -18,53 +18,56 @@ export default function AssignmentSettingsPage({ onNavigate }) {
     ];
 
     return (
-        <div className="flex-1 flex flex-col min-w-0 bg-[#f8fafc] dark:bg-slate-900 min-h-screen text-slate-900 dark:text-slate-100 font-[Inter]">
+        <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-930 min-h-screen text-slate-800 dark:text-slate-100 font-display transition-colors pb-10">
             {/* Header */}
-            <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-6 sticky top-0 z-10">
-                <div className="flex items-center justify-between gap-4">
+            <header className="px-6 py-6 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xl">
+                        <span className="material-symbols-outlined">tune</span>
+                    </div>
                     <div>
-                        <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Pengaturan Penugasan & Beban Kerja</h2>
-                        <p className="text-slate-500 text-sm mt-1">Kelola algoritma distribusi tugas dan kapasitas teknisi cetak secara efisien.</p>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Pengaturan Penugasan & Beban Kerja</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Kelola algoritma distribusi tugas dan kapasitas teknisi cetak secara efisien.</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => onNavigate('production-queue')}
-                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            Batal
-                        </button>
-                        <button className="px-4 py-2 bg-[#137fec] text-white rounded-lg text-sm font-semibold hover:bg-blue-600 shadow-sm transition-colors flex items-center gap-2">
-                            <span className="material-symbols-outlined text-sm">save</span>
-                            Simpan Perubahan
-                        </button>
-                    </div>
+                </div>
+                <div className="flex items-center gap-3 mt-4 sm:mt-0">
+                    <button
+                        onClick={() => onNavigate('production-queue')}
+                        className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        Batal
+                    </button>
+                    <button className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-200 dark:shadow-none transition-all flex items-center gap-2 group">
+                        <span className="material-symbols-outlined text-sm group-hover:scale-110 transition-transform">save</span>
+                        Simpan Perubahan
+                    </button>
                 </div>
             </header>
 
-            <main className="p-8 max-w-6xl mx-auto space-y-8 w-full">
+            <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 space-y-8">
                 {/* Section 1: Kapasitas & Batas Beban Kerja */}
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#137fec]">speed</span>
-                            Kapasitas & Batas Beban Kerja
-                        </h3>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 flex flex-col md:flex-row gap-8 items-center">
-                        <div className="flex-1 space-y-2">
-                            <h4 className="font-bold text-slate-900 dark:text-white">Batas Maksimal Tugas (Work-in-Progress)</h4>
-                            <p className="text-slate-500 text-sm">Tentukan jumlah maksimal SPK (Surat Perintah Kerja) yang dapat ditangani satu teknisi secara bersamaan untuk menjaga kualitas cetakan.</p>
+                <section className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+                            <span className="material-symbols-outlined">speed</span>
                         </div>
-                        <div className="w-full md:w-64 space-y-3">
+                        <h3 className="font-bold text-slate-800 dark:text-white text-lg">Kapasitas & Batas Beban Kerja</h3>
+                    </div>
+                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 flex flex-col md:flex-row gap-8 items-center">
+                        <div className="flex-1 space-y-3">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-lg">Batas Maksimal Tugas (Work-in-Progress)</h4>
+                            <p className="text-slate-500 text-sm leading-relaxed">Tentukan jumlah maksimal SPK (Surat Perintah Kerja) yang dapat ditangani satu teknisi secara bersamaan untuk menjaga kualitas cetakan dan mengurangi stres pekerjaan.</p>
+                        </div>
+                        <div className="w-full md:w-80 space-y-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
                             <div className="flex items-center justify-between text-sm font-medium">
-                                <span>Limit: <span className="text-[#137fec] font-bold">{limit} Tugas</span></span>
-                                <span className="text-slate-400 italic font-normal text-xs">Rekomendasi</span>
+                                <span className="text-slate-600 dark:text-slate-300">Batas Limit: <span className="text-blue-600 dark:text-blue-400 font-bold text-lg ml-2">{limit} Tugas</span></span>
+                                <span className="bg-orange-100 text-orange-600 dark:bg-orange-900/30 text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider">Rekomendasi</span>
                             </div>
-                            <div className="relative w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer">
-                                <div className="absolute top-0 left-0 h-full bg-[#137fec] rounded-full" style={{ width: `${(limit / 10) * 100}%` }}></div>
-                                <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 size-4 bg-white border-2 border-[#137fec] rounded-full shadow-md" style={{ left: `${(limit / 10) * 100}%` }}></div>
+                            <div className="relative w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full cursor-pointer overflow-hidden shadow-inner">
+                                <div className="absolute top-0 left-0 h-full bg-blue-600 rounded-full transition-all" style={{ width: `${(limit / 10) * 100}%` }}></div>
+                                <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 size-5 bg-white border-4 border-blue-600 rounded-full shadow-md z-10 transition-all" style={{ left: `${(limit / 10) * 100}%` }}></div>
                             </div>
-                            <div className="flex justify-between text-[10px] text-slate-400">
+                            <div className="flex justify-between text-xs font-bold text-slate-400">
                                 <span>1</span>
                                 <span>5</span>
                                 <span>10</span>
@@ -74,73 +77,74 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                 </section>
 
                 {/* Section 2: Daftar Teknisi & Keahlian */}
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#137fec]">groups</span>
-                            Daftar Teknisi & Keahlian
-                        </h3>
-                        <button className="text-[#137fec] text-sm font-semibold hover:underline flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">add</span>
-                            Tambah Teknisi
+                <section className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                <span className="material-symbols-outlined">groups</span>
+                            </div>
+                            <h3 className="font-bold text-slate-800 dark:text-white text-lg">Daftar Teknisi & Keahlian</h3>
+                        </div>
+                        <button className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">add</span> Tambah Teknisi
                         </button>
                     </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[700px]">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Teknisi</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Keahlian Utama</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Prioritas Otomatis</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status Beban</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Aksi</th>
+                                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                                        <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Teknisi</th>
+                                        <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Keahlian Utama</th>
+                                        <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Prioritas Otomatis</th>
+                                        <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Status Beban</th>
+                                        <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                                     {technicians.map((t, idx) => (
-                                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`size-9 rounded-lg flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-blue-100 text-blue-600' : idx === 1 ? 'bg-purple-100 text-purple-600' : 'bg-amber-100 text-amber-600'}`}>
+                                        <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : idx === 1 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
                                                         {t.initials}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-bold">{t.name}</p>
-                                                        <p className="text-[10px] text-slate-500">ID: {t.id}</p>
+                                                        <p className="text-sm font-bold text-slate-700 dark:text-white">{t.name}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5">ID: {t.id}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-wrap gap-1">
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-wrap gap-2">
                                                     {t.skills.map((s, i) => (
-                                                        <span key={i} className={`px-2 py-0.5 text-[10px] font-bold rounded ${i === 0 ? 'bg-blue-50 text-[#137fec]' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
+                                                        <span key={i} className={`px-3 py-1 text-[11px] font-bold rounded-lg uppercase tracking-wider ${i === 0 ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}>
                                                             {s}
                                                         </span>
                                                     ))}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-5">
                                                 <div className="flex justify-center">
                                                     <label className="relative inline-flex items-center cursor-pointer">
                                                         <input type="checkbox" className="sr-only peer" checked={t.auto} readOnly />
-                                                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#137fec]"></div>
+                                                        <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
                                                     </label>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="w-full max-w-[100px]">
-                                                    <div className="flex justify-between text-[10px] mb-1">
-                                                        <span>{t.current} / {t.max}</span>
-                                                        <span className={t.statusColor === 'green' ? 'text-green-600' : t.statusColor === 'red' ? 'text-red-500 font-bold' : 'text-slate-400'}>{t.status}</span>
+                                            <td className="px-6 py-5">
+                                                <div className="w-full max-w-[140px]">
+                                                    <div className="flex justify-between text-xs font-bold mb-2">
+                                                        <span className="text-slate-600 dark:text-slate-300">{t.current} / {t.max}</span>
+                                                        <span className={t.statusColor === 'green' ? 'text-green-600 dark:text-green-400' : t.statusColor === 'red' ? 'text-red-500 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}>{t.status}</span>
                                                     </div>
-                                                    <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
-                                                        <div className={`h-full rounded-full ${t.statusColor === 'green' ? 'bg-green-500' : t.statusColor === 'red' ? 'bg-red-500' : 'bg-blue-400'}`} style={{ width: `${(t.current / t.max) * 100}%` }}></div>
+                                                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                        <div className={`h-full rounded-full transition-all ${t.statusColor === 'green' ? 'bg-green-500' : t.statusColor === 'red' ? 'bg-red-500' : 'bg-blue-400'}`} style={{ width: `${(t.current / t.max) * 100}%` }}></div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button className="text-slate-400 hover:text-[#137fec] transition-colors">
+                                            <td className="px-6 py-5 text-right">
+                                                <button className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all">
                                                     <span className="material-symbols-outlined text-xl">edit_note</span>
                                                 </button>
                                             </td>
@@ -153,40 +157,44 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                 </section>
 
                 {/* Section 3: Log Riwayat Penugasan */}
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[#137fec]">history_edu</span>
-                            Log Riwayat Penugasan Otomatis
-                        </h3>
-                        <button className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold rounded-lg uppercase tracking-wider flex items-center gap-1">
+                <section className="space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600">
+                                <span className="material-symbols-outlined">history_edu</span>
+                            </div>
+                            <h3 className="font-bold text-slate-800 dark:text-white text-lg">Log Riwayat Penugasan Otomatis</h3>
+                        </div>
+                        <button className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-sm">download</span> Unduh Audit Log
                         </button>
                     </div>
-                    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800">
+                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 shadow-sm overflow-hidden">
                         {logs.map((log) => (
-                            <div key={log.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-                                <div className={`size-10 rounded-full flex items-center justify-center shrink-0 ${log.type === 'auto' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                        log.type === 'manual' ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-500' :
-                                            'bg-red-50 dark:bg-red-900/20 text-red-600'
+                            <div key={log.id} className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${log.type === 'auto' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50' :
+                                    log.type === 'manual' ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 border border-slate-200 dark:border-slate-700' :
+                                        'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800/50'
                                     }`}>
-                                    <span className="material-symbols-outlined text-xl">
+                                    <span className="material-symbols-outlined text-2xl">
                                         {log.type === 'auto' ? 'auto_fix_high' : log.type === 'manual' ? 'person' : 'priority_high'}
                                     </span>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-medium leading-relaxed">
-                                        <span className="font-bold">{log.title}</span> {log.action}{' '}
-                                        {log.target && <span className={log.type === 'error' ? 'text-red-600 font-bold' : 'text-[#137fec] font-bold'}>{log.target}</span>}
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                                        <span className="font-bold text-slate-900 dark:text-white">{log.title}</span> {log.action}{' '}
+                                        {log.target && <span className={log.type === 'error' ? 'text-red-600' : 'text-blue-600'}>{log.target}</span>}
                                         {log.desc && <span> {log.desc}</span>}
-                                        {log.name && <span className="font-bold"> {log.name}</span>}
+                                        {log.name && <span className="font-bold text-slate-900 dark:text-white"> {log.name}</span>}
                                         {log.extra && <span> {log.extra}</span>}
                                     </p>
-                                    <p className="text-xs text-slate-400 mt-1">{log.time}</p>
+                                    <p className="text-xs text-slate-500 gap-1.5 flex items-center mt-2 font-medium">
+                                        <span className="material-symbols-outlined text-[14px]">schedule</span> {log.time}
+                                    </p>
                                 </div>
-                                <span className={`px-2 py-1 text-[10px] font-bold rounded mt-2 sm:mt-0 ${log.badgeColor === 'green' ? 'bg-green-100 text-green-700' :
-                                        log.badgeColor === 'blue' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-red-100 text-red-700'
+                                <span className={`px-4 py-1.5 text-xs font-bold rounded-lg uppercase tracking-wider mt-4 sm:mt-0 ${log.badgeColor === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                    log.badgeColor === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                                     }`}>
                                     {log.badge}
                                 </span>
@@ -196,21 +204,21 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                 </section>
 
                 {/* Advanced Algorithm Toggle Card */}
-                <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-6">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div className="flex gap-4">
-                            <div className="size-12 rounded-xl bg-[#137fec] text-white flex items-center justify-center shrink-0 shadow-sm">
-                                <span className="material-symbols-outlined text-2xl">insights</span>
+                <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/50 rounded-4xl p-8 shadow-sm">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="flex gap-5">
+                            <div className="w-16 h-16 rounded-2xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-200 dark:shadow-none">
+                                <span className="material-symbols-outlined text-3xl">insights</span>
                             </div>
-                            <div>
-                                <h4 className="font-bold text-slate-900 dark:text-white mb-1">Smart Load Balancing</h4>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">Aktifkan AI untuk mendistribusikan tugas berdasarkan tingkat kesulitan SPK dan estimasi waktu penyelesaian teknisi.</p>
+                            <div className="pt-2">
+                                <h4 className="font-bold text-xl text-blue-900 dark:text-blue-100 mb-2 tracking-tight">AI Smart Load Balancing</h4>
+                                <p className="text-sm text-blue-800/80 dark:text-blue-300/80 max-w-xl leading-relaxed">Aktifkan kecerdasan buatan untuk mendistribusikan tugas secara merata berdasarkan tingkat kerumitan SPK, tenggat waktu, dan kecepatan historis masing-masing teknisi.</p>
                             </div>
                         </div>
-                        <div className="shrink-0">
+                        <div className="shrink-0 md:pt-4">
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" checked readOnly />
-                                <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#137fec]"></div>
+                                <div className="w-16 h-8 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
                     </div>

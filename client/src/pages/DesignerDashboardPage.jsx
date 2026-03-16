@@ -137,7 +137,7 @@ export default function DesignerDashboardPage() {
                             <motion.section
                                 key="active-work"
                                 initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
-                                className="bg-white dark:bg-slate-800/80 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/40 dark:shadow-none overflow-hidden"
+                                className="bg-white dark:bg-slate-800/80 rounded-4xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/40 dark:shadow-none overflow-hidden"
                             >
                                 <div className="p-6 md:p-8">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 border-b border-slate-100 dark:border-slate-700/50 pb-6">
@@ -218,7 +218,7 @@ export default function DesignerDashboardPage() {
                             <motion.section
                                 key="idle-work"
                                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="py-24 px-8 rounded-[2rem] bg-white dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center shadow-sm"
+                                className="py-24 px-8 rounded-4xl bg-white dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center shadow-sm"
                             >
                                 <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 mb-6 drop-shadow-sm">
                                     <FiPenTool size={40} />
@@ -244,7 +244,7 @@ export default function DesignerDashboardPage() {
                                 <motion.div
                                     key={t.id}
                                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                                    className="p-6 rounded-[1.5rem] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col h-full"
+                                    className="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col h-full"
                                 >
                                     <div className="flex justify-between items-start mb-5">
                                         <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/40">Tugas #{t.task_id}</span>
@@ -266,7 +266,7 @@ export default function DesignerDashboardPage() {
                                 </motion.div>
                             ))}
                             {pendingTasks.length === 0 && (
-                                <div className="col-span-1 md:col-span-2 text-center py-12 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 border-dashed text-slate-500 dark:text-slate-400 text-sm font-medium">
+                                <div className="col-span-1 md:col-span-2 text-center py-12 rounded-3xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700/50 border-dashed text-slate-500 dark:text-slate-400 text-sm font-medium">
                                     {loading ? 'Memuat daftar pesanan desain...' : '🎉 Tidak ada antrean desain baru untuk saat ini.'}
                                 </div>
                             )}
@@ -276,7 +276,7 @@ export default function DesignerDashboardPage() {
 
                 {/* Kanan: Riwayat Selesai & Motivasi */}
                 <aside className="lg:col-span-4 space-y-8">
-                    <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[450px]">
+                    <div className="bg-white dark:bg-slate-800 rounded-4xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col min-h-[450px]">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"><FiCheckSquare size={18} /></div>
@@ -343,7 +343,7 @@ export default function DesignerDashboardPage() {
                     </div>
 
                     {/* Designer Insight Box (Lighter Theme) */}
-                    <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border border-blue-100 dark:border-slate-700 shadow-inner relative overflow-hidden">
+                    <div className="p-8 rounded-4xl bg-linear-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border border-blue-100 dark:border-slate-700 shadow-inner relative overflow-hidden">
                         <FiTarget className="text-blue-500/10 dark:text-blue-500/5 absolute -top-4 -right-4" size={120} />
                         <div className="relative z-10">
                             <h4 className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-400 mb-3">
@@ -368,7 +368,7 @@ export default function DesignerDashboardPage() {
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]"
+                            className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-4xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]"
                         >
                             <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
                                 <div className="flex items-center gap-4">
