@@ -311,10 +311,10 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                 onClick={handleProses}
                                 className="w-full bg-[#137fec] text-white font-bold py-5 rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/30"
                             >
-                                <span className="material-symbols-outlined text-2xl!">rocket_launch</span>
+                                <span className="material-symbols-outlined text-2xl!">payments</span>
                                 <div className="text-left">
-                                    <p className="leading-none text-base">Proses Cetak & SPK</p>
-                                    <p className="text-[10px] font-medium text-blue-100 opacity-80 mt-1 uppercase tracking-wider">Kirim ke Tim Produksi</p>
+                                    <p className="leading-none text-base">Bayar Keranjang</p>
+                                    <p className="text-[10px] font-medium text-blue-100 opacity-80 mt-1 uppercase tracking-wider">Selesaikan Pembayaran & SPK</p>
                                 </div>
                             </button>
                             <button className="w-full bg-white text-slate-600 border border-slate-200 font-bold py-4 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-3">

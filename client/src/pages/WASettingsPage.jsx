@@ -43,7 +43,7 @@ export default function WASettingsPage({ onNavigate }) {
     };
 
     return (
-        <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-930 min-h-screen text-slate-800 dark:text-slate-100 font-display transition-colors pb-10">
+        <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 font-display transition-colors pb-10">
             {/* Header */}
             <header className="px-6 py-6 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div className="flex items-center gap-4">

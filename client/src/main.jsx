@@ -15,6 +15,12 @@ if (!document.documentElement.getAttribute('data-theme')) {
   document.documentElement.setAttribute('data-theme', localStorage.getItem('pos_theme') || 'dark');
 }
 
+// Also add 'dark' class for Tailwind class-based dark mode
+const savedTheme = localStorage.getItem('pos_theme') || 'dark';
+if (savedTheme === 'dark') {
+  document.documentElement.classList.add('dark');
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>

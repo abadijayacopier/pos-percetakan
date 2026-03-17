@@ -373,21 +373,21 @@ export default function LandingPage({ onNavigate }) {
                                     whileHover={{ y: -10, scale: 1.02 }}
                                     transition={{ duration: 0.4, delay: i * 0.1, type: "spring", stiffness: 200, damping: 20 }}
                                     viewport={{ once: true, margin: "-50px" }}
-                                    className="bg-white rounded-4xl border border-slate-100 overflow-hidden group shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 cursor-pointer flex flex-col"
+                                    className="bg-gradient-to-b from-white to-slate-50 rounded-4xl border-2 border-slate-100 overflow-hidden group shadow-xl shadow-slate-200/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-200 transition-all duration-500 cursor-pointer flex flex-col"
                                 >
-                                    <div className="aspect-square bg-slate-50 relative overflow-hidden flex items-center justify-center p-12">
-                                        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-black text-blue-600 uppercase tracking-widest z-10 border border-slate-100 shadow-sm">In Stock</div>
+                                    <div className="aspect-square bg-gradient-to-br from-slate-50 to-white relative overflow-hidden flex items-center justify-center p-12">
+                                        <div className="absolute top-4 left-4 bg-blue-600 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-black text-white uppercase tracking-widest z-10 border border-blue-500 shadow-lg shadow-blue-500/30">In Stock</div>
                                         <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                         <FiTag className="text-6xl text-slate-300 group-hover:text-blue-500 group-hover:scale-125 transition-all duration-700 group-hover:rotate-12 relative z-10 drop-shadow-sm group-hover:drop-shadow-md" />
                                         {/* In a real scenario use p.imageUrl if exists */}
                                     </div>
-                                    <div className="p-8 space-y-5 flex-1 flex flex-col">
+                                    <div className="p-8 space-y-5 flex-1 flex flex-col bg-white">
                                         <div className="min-h-[40px]">
                                             <h4 className="text-[11px] font-black uppercase tracking-tight italic text-slate-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">{p.name}</h4>
                                         </div>
-                                        <div className="flex items-center justify-between pb-6 border-b border-slate-100/80">
+                                        <div className="flex items-center justify-between pb-6 border-b border-slate-200/80">
                                             <p className="text-lg font-black italic tracking-tighter text-slate-900 group-hover:text-blue-600 transition-colors">Rp {parseInt(p.sellPrice || 0).toLocaleString()}</p>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">Qty: {p.stock}</span>
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">Qty: {p.stock}</span>
                                         </div>
                                         <div className="pt-2 mt-auto">
                                             <button
@@ -395,7 +395,7 @@ export default function LandingPage({ onNavigate }) {
                                                     const message = `Halo ${storeInfo.name}, saya ingin memesan produk:%0A- Nama: ${p.name}%0A- Harga: Rp ${parseInt(p.sellPrice || 0).toLocaleString()}%0A%0AApakah stok masih tersedia?`;
                                                     window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
                                                 }}
-                                                className="w-full py-4 bg-slate-50 hover:bg-blue-600 text-slate-900 hover:text-white rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 group/btn shadow-sm hover:shadow-xl hover:shadow-blue-600/30"
+                                                className="w-full py-4 bg-slate-100 hover:bg-blue-600 text-slate-700 hover:text-white rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 group/btn shadow-md hover:shadow-xl hover:shadow-blue-600/30 border border-slate-200 hover:border-blue-500"
                                             >
                                                 <FiSend className="text-sm group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5 transition-transform" />
                                                 Pesan via WhatsApp

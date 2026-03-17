@@ -30,7 +30,13 @@ export const ThemeProvider = ({ children }) => {
         if (themeMode !== 'system') return;
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         const handler = () => {
-            document.documentElement.setAttribute('data-theme', getSystemTheme());
+            const systemTheme = getSystemTheme();
+            document.documentElement.setAttribute('data-theme', systemTheme);
+            if (systemTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         };
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);

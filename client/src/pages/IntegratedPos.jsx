@@ -13,7 +13,7 @@ import { useTheme } from '../contexts/ThemeContext';
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
     const { user } = useAuth();
     const { showToast } = useToast();
-    const { theme, toggleTheme } = useTheme();
+    const { themeMode: theme, setTheme: toggleTheme } = useTheme();
 
     // Basic States
     const [activeServiceTab, setActiveServiceTab] = useState('fotocopy'); // 'fotocopy' | 'jilid' | 'cetak'
@@ -758,9 +758,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     <span className="material-symbols-outlined text-lg">save</span> Simpan Antrean
                                 </button>
                             </div>
-                            <button onClick={openPayment} className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-3 transition-transform active:scale-95">
+                            <button onClick={openPayment} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3 transition-transform active:scale-95">
                                 <span className="bg-white/20 px-1.5 rounded text-xs leading-none">F10</span>
-                                <span>Bayar Sekarang</span>
+                                <span>Bayar Keranjang</span>
                                 <span className="material-symbols-outlined">chevron_right</span>
                             </button>
                         </div>

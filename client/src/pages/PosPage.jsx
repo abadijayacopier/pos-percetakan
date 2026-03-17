@@ -716,8 +716,8 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                                     <span className="text-lg font-bold">Total</span>
                                     <span className="text-2xl font-extrabold text-emerald-500">{formatRupiah(cartTotal)}</span>
                                 </div>
-                                <button onClick={openPaymentModal} className="w-full p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-xl text-lg font-bold cursor-pointer flex items-center justify-center gap-2.5 shadow-[0_4px_12px_rgba(16,185,129,0.3)] hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
-                                    Bayar Sekarang
+                                <button onClick={openPaymentModal} className="w-full p-4 bg-primary text-white border-none rounded-xl text-lg font-bold cursor-pointer flex items-center justify-center gap-2.5 shadow-lg shadow-primary/30 hover:bg-primary/90 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
+                                    Bayar Keranjang
                                 </button>
                             </div>
                         )}
