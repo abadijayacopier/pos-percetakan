@@ -6,7 +6,8 @@ import {
     FiUser, FiBox, FiUsers, FiCreditCard, FiActivity,
     FiLogOut, FiChevronDown, FiCommand, FiCpu, FiHash, FiTerminal,
     FiSmartphone,
-    FiDollarSign
+    FiDollarSign,
+    FiTrendingUp
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import db from '../db';
 import { formatRupiah, formatDate, formatDateTime } from '../utils';
+import { ProfitLossContent } from '../components/ProfitLossContent';
 import {
     FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
     FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle, FiActivity,
@@ -196,18 +197,20 @@ export default function ReportsPage() {
                         Print Page
                     </button>
                     <button
-                        onClick={activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}
+                        onClick={activeTab === 'profit-loss' ? () => window.print() : activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}
                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
                     >
                         <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
-                        Export CSV
+                        {activeTab === 'profit-loss' ? 'Cetak' : 'Export CSV'}
                     </button>
                 </div>
             </div>
 
             {/* Print Only Header */}
             <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-8">
-                <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Laporan {activeTab === 'sales' ? 'Penjualan' : activeTab === 'products' ? 'Stok Produk' : 'Analisis Pelanggan'}</h1>
+                <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                    Laporan {activeTab === 'sales' ? 'Penjualan' : activeTab === 'products' ? 'Stok Produk' : activeTab === 'profit-loss' ? 'Laba Rugi' : 'Analisis Pelanggan'}
+                </h1>
                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
                     Periode: {formatDate(dateFrom)} - {formatDate(dateTo)} | Dicetak: {formatDateTime(new Date())}
                 </p>
@@ -220,6 +223,7 @@ export default function ReportsPage() {
                         { id: 'sales', label: 'Penjualan', icon: FiShoppingCart },
                         { id: 'products', label: 'Produk', icon: FiBox },
                         { id: 'customers', label: 'Pelanggan', icon: FiUsers },
+                        { id: 'profit-loss', label: 'Laba Rugi', icon: FiTrendingUp },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -539,6 +543,11 @@ export default function ReportsPage() {
                         <Pagination tab="customers" total={allCustomers.length} />
                     </div>
                 </div>
+            )}
+
+            {/* ============ PROFIT LOSS REPORT ============ */}
+            {activeTab === 'profit-loss' && (
+                <ProfitLossContent dateFrom={dateFrom} dateTo={dateTo} />
             )}
 
             {/* Legend / Status Footer print-hide */}

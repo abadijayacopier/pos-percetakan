@@ -21,6 +21,7 @@ const FiYoutube = SocialYoutube;
 
 import { motion, AnimatePresence } from 'framer-motion';
 import db from '../db';
+import api from '../services/api';
 
 const HERO_IMAGE = '/hero_main.png';
 const getQrUrl = (data) => `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
@@ -60,6 +61,17 @@ export default function LandingPage({ onNavigate }) {
             print: db.getAll('print_prices').slice(0, 4),
             binding: db.getAll('binding_prices').slice(0, 4)
         });
+
+        // Sync fotocopy prices with API master
+        api.get('/transactions/fotocopy-prices')
+            .then(res => {
+                if (res.data && res.data.length > 0) {
+                    setPrices(prev => ({ ...prev, fotocopy: res.data.slice(0, 4) }));
+                }
+            })
+            .catch(err => {
+                console.error('Failed to fetch fotocopy prices for landing:', err);
+            });
 
         setFeaturedProducts(db.getAll('products').filter(p => (p.stock || 0) > 0).slice(0, 8));
 
@@ -322,7 +334,9 @@ export default function LandingPage({ onNavigate }) {
                                 <div className="space-y-1">
                                     {cat.data.length > 0 ? cat.data.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center py-4 border-b border-white/5 group/item cursor-default">
-                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-white transition-colors">{item.paper || item.name} {item.color ? `(${item.color.toUpperCase()})` : ''}</span>
+                                            <span className="text-xs font-bold text-slate-400 group-hover/item:text-white transition-colors">
+                                                {item.paper || item.name} {item.color ? `(${item.color.toUpperCase()}${item.side ? ` - ${item.side === '1' ? '1 Sisi' : 'Bolak/Balik'}` : ''})` : ''}
+                                            </span>
                                             <span className="text-sm font-black italic tracking-tight text-blue-400">Rp {parseInt(item.price || 0).toLocaleString()}</span>
                                         </div>
                                     )) : cat.defaults.map((item, idx) => (

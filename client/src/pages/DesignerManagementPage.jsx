@@ -117,17 +117,19 @@ export default function DesignerManagementPage({ onNavigate }) {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                        <span className="p-2 bg-primary/10 rounded-lg text-primary"><FiUsers /></span>
+                    <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-4">
+                        <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-xl shadow-indigo-500/20">
+                            <FiUsers className="text-2xl" />
+                        </div>
                         Manajemen Operator
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Status real-time dan pengaturan akun tim desain.</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75 underline decoration-indigo-500/30 underline-offset-4">Real-time Designer Team Management</p>
                 </div>
                 <button
-                    className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 text-[10px] uppercase tracking-widest"
                     onClick={() => { setEditItem(null); setForm({ name: '', username: '', password: '', is_active: true }); setShowForm(true); }}
                 >
-                    <FiUserPlus size={18} />
+                    <FiUserPlus size={16} />
                     <span>Tambah Operator</span>
                 </button>
             </div>
@@ -135,19 +137,20 @@ export default function DesignerManagementPage({ onNavigate }) {
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Tim', value: designers.length, icon: <FiUsers />, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                    { label: 'Aktif', value: aktifCount, icon: <FiCheckCircle />, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                    { label: 'Sibuk', value: sibukCount, icon: <FiActivity />, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
-                    { label: 'Tersedia', value: kosongCount, icon: <FiCheck />, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+                    { label: 'Total Tim', value: designers.length, icon: FiUsers, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                    { label: 'Aktif', value: aktifCount, icon: FiCheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                    { label: 'Sibuk', value: sibukCount, icon: FiActivity, color: 'text-rose-600', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+                    { label: 'Tersedia', value: kosongCount, icon: FiCheck, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
                 ].map(s => (
-                    <div key={s.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4">
-                        <div className={`w-12 h-12 flex items-center justify-center rounded-xl text-xl ${s.bg} ${s.color}`}>
-                            {s.icon}
+                    <div key={s.label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm group">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className={`p-3 rounded-2xl ${s.bg}`}>
+                                {s.icon && <s.icon className={`text-xl ${s.color}`} />}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{s.label}</span>
                         </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{s.label}</p>
-                            <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 opacity-75">{s.label}</p>
+                        <p className={`text-2xl font-black text-slate-900 dark:text-white italic tracking-tighter`}>{s.value}</p>
                     </div>
                 ))}
             </div>
@@ -155,20 +158,20 @@ export default function DesignerManagementPage({ onNavigate }) {
             {/* Main Table */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <FiUsers className="text-primary" /> Daftar Operator Desain
+                    <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                        <FiUsers className="text-indigo-600" /> Daftar Operator Desain
                     </h2>
                 </div>
 
                 {loading ? (
                     <div className="py-20 text-center text-slate-400">
                         <FiLoader className="mx-auto mb-3 animate-spin text-3xl" />
-                        <p className="text-sm font-medium">Memuat data tim...</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest">Memuat data tim...</p>
                     </div>
                 ) : designers.length === 0 ? (
                     <div className="py-20 text-center text-slate-400">
                         <FiUserMinus className="mx-auto mb-3 text-4xl opacity-20" />
-                        <p className="text-sm font-medium">Belum ada operator desainer.</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest">Belum ada operator desainer</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -245,7 +248,7 @@ export default function DesignerManagementPage({ onNavigate }) {
             {/* Monitoring Penugasan Aktif */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                         <FiMonitor className="text-amber-500" /> Antrean Aktif
                     </h2>
                     <span className="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-900/20 text-[10px] font-black rounded-lg">
@@ -256,7 +259,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                 {recentAssignments.length === 0 ? (
                     <div className="py-12 text-center text-slate-400">
                         <FiCheckCircle className="mx-auto mb-2 text-3xl opacity-20" />
-                        <p className="text-sm font-medium italic">Tidak ada antrean desain.</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest italic">Tidak ada antrean desain</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">

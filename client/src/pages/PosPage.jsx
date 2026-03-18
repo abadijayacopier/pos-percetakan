@@ -475,7 +475,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                 </div>
             </div>
 
-            <div className="flex flex-1 p-4 gap-4 overflow-hidden lg:flex-row flex-col lg:p-4 p-3">
+            <div className="flex flex-1 gap-4 overflow-hidden lg:flex-row flex-col p-3 lg:p-4">
                 {/* Product/Service Area */}
                 {(!isMobile || activeTab !== 'cart') && (
                     <div className="flex-[2] bg-slate-800/50 backdrop-blur-md border border-white/5 rounded-2xl p-5 flex flex-col min-w-0">
@@ -618,7 +618,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
                                         {/* Price Card */}
                                         <div className="p-6 px-5 bg-white/3 rounded-2xl text-center border border-white/5">
-                                            <div className="text-[0.75rem] text-slate-400 mb-1 font-medium uppercase tracking-tight text-slate-400">Harga per lembar</div>
+                                            <div className="text-[0.75rem] text-slate-400 mb-1 font-medium uppercase tracking-tight">Harga per lembar</div>
                                             <div className="text-[1.4rem] font-bold">
                                                 {fcDiscountInfo && (
                                                     <span className="text-[0.85rem] text-red-500 line-through mr-2 opacity-70">
