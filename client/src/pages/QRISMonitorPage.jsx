@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import api from '../services/api';
 import { formatRupiah, formatDateTime } from '../utils';
 import {
     FiWifi,
@@ -16,46 +16,66 @@ import {
 } from 'react-icons/fi';
 
 export default function QRISMonitorPage() {
-    const [transactions, setTransactions] = useState(() => db.getAll('transactions'));
+    const [transactions, setTransactions] = useState([]);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [page, setPage] = useState(1);
     const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const PER_PAGE = 10;
 
-    // Simulate live refresh every 15s
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setTransactions(db.getAll('transactions'));
+    const fetchLiveTransactions = useCallback(async () => {
+        try {
+            setIsRefreshing(true);
+            const { data } = await api.get('/transactions');
+            setTransactions(data);
             setLastRefresh(new Date());
-        }, 15000);
-        return () => clearInterval(interval);
+        } catch (error) {
+            console.error('Failed to fetch transactions', error);
+        } finally {
+            setIsRefreshing(false);
+        }
     }, []);
 
+    // Simulate live refresh from Backend every 10s
+    useEffect(() => {
+        fetchLiveTransactions(); // Initial fetch
+        const interval = setInterval(() => {
+            fetchLiveTransactions();
+        }, 10000);
+        return () => clearInterval(interval);
+    }, [fetchLiveTransactions]);
+
     const qrisTransactions = useMemo(() => {
-        return transactions.filter(t => (t.paymentType || '').toLowerCase().includes('qris'));
+        // Filter out those with payment_type matching 'qris', 'gopay', 'dana', 'bank', etc.
+        return transactions.filter(t => (t.paymentType || t.payment_type || '').toLowerCase().includes('qris'));
     }, [transactions]);
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return qrisTransactions.filter(t => {
-            const matchSearch = !q || (t.invoiceNo || '').toLowerCase().includes(q) || (t.customerName || '').toLowerCase().includes(q);
-            if (filterStatus === 'success') return matchSearch && t.paidAmount >= t.total;
-            if (filterStatus === 'pending') return matchSearch && (!t.paidAmount || t.paidAmount < t.total);
+            const invoice = (t.invoiceNo || t.invoice_no || '').toLowerCase();
+            const customer = (t.customerName || t.customer_name || '').toLowerCase();
+            const matchSearch = !q || invoice.includes(q) || customer.includes(q);
+
+            // Paid threshold is either 'paid' or payment matches backend rules
+            const isSuccess = t.status === 'paid' || t.paid >= t.total;
+
+            if (filterStatus === 'success') return matchSearch && isSuccess;
+            if (filterStatus === 'pending') return matchSearch && !isSuccess;
             return matchSearch;
-        }).sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+        }).sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
     }, [qrisTransactions, search, filterStatus]);
 
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
     const totalAmount = qrisTransactions.reduce((s, t) => s + (t.total || 0), 0);
-    const successCount = qrisTransactions.filter(t => t.paidAmount >= t.total).length;
-    const pendingCount = qrisTransactions.filter(t => !t.paidAmount || t.paidAmount < t.total).length;
+    const successCount = qrisTransactions.filter(t => t.status === 'paid' || t.paid >= t.total).length;
+    const pendingCount = qrisTransactions.filter(t => t.status !== 'paid' && t.paid < t.total).length;
 
     const handleRefresh = () => {
-        setTransactions(db.getAll('transactions'));
-        setLastRefresh(new Date());
+        fetchLiveTransactions();
     };
 
     const handleSearch = (v) => { setSearch(v); setPage(1); };
@@ -80,9 +100,10 @@ export default function QRISMonitorPage() {
                     </div>
                     <button
                         onClick={handleRefresh}
-                        className="p-3 bg-white dark:bg-slate-900 text-slate-400 hover:text-blue-600 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all shadow-sm group"
+                        disabled={isRefreshing}
+                        className="p-3 bg-white dark:bg-slate-900 text-slate-400 hover:text-blue-600 rounded-2xl border border-slate-200 dark:border-slate-800 transition-all shadow-sm group disabled:opacity-50"
                     >
-                        <FiRefreshCw className="group-hover:rotate-180 transition-transform duration-500" />
+                        <FiRefreshCw className={`transition-transform duration-500 ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}`} />
                     </button>
                 </div>
             </div>
@@ -97,8 +118,8 @@ export default function QRISMonitorPage() {
                     <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                    s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
-                                        'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
+                                s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' :
+                                    'bg-amber-50 dark:bg-amber-900/20 text-amber-600'
                                 }`}>
                                 {s.icon}
                             </div>
@@ -167,8 +188,8 @@ export default function QRISMonitorPage() {
                             </thead>
                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                                 {paginated.map(t => {
-                                    const isSuccess = t.paidAmount >= t.total;
-                                    const time = new Date(t.date || t.createdAt);
+                                    const isSuccess = t.status === 'paid' || t.paid >= t.total;
+                                    const time = new Date(t.date || t.created_at);
                                     return (
                                         <tr key={t.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                                             <td className="px-6 py-4">
@@ -179,11 +200,11 @@ export default function QRISMonitorPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-[11px] font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                                                    {t.invoiceNo}
+                                                    {t.invoiceNo || t.invoice_no}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.customerName || 'Pelanggan Umum'}</p>
+                                                <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.customerName || t.customer_name || 'Pelanggan Umum'}</p>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <p className="text-xs font-black text-blue-600 italic tracking-tighter">
@@ -197,12 +218,12 @@ export default function QRISMonitorPage() {
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800/30">
-                                                        <FiClock size={12} /> Menunggu
+                                                        <FiClock size={12} /> Menunggu ({t.status})
                                                     </span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.userName || '-'}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.userName || t.user_name || '-'}</span>
                                             </td>
                                         </tr>
                                     );

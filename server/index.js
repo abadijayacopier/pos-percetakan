@@ -4,7 +4,7 @@ require('dotenv').config();
 const { testConnection } = require('./config/database');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
@@ -38,6 +38,7 @@ app.use('/api/pricing', pricingRouter);
 app.use('/api/designers', require('./routes/designers'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/purchases', require('./routes/purchases'));
+app.use('/api/qris', require('./routes/qris'));
 
 const startServer = async () => {
     // Test koneksi database saat start

@@ -63,6 +63,15 @@ export default function SettingsPage() {
     const [paperSize, setPaperSize] = useState(getSetting('paper_size') || 'A4');
     const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
 
+    // Payment & QRIS States
+    const [midtransKey, setMidtransKey] = useState(getSetting('midtrans_key') || '');
+    const [midtransIsProduction, setMidtransIsProduction] = useState(getSetting('midtrans_is_production') === 'true');
+    const [danaNumber, setDanaNumber] = useState(getSetting('dana_number') || '');
+    const [danaName, setDanaName] = useState(getSetting('dana_name') || '');
+    const [bankName, setBankName] = useState(getSetting('bank_name') || '');
+    const [bankAccount, setBankAccount] = useState(getSetting('bank_account') || '');
+    const [bankAccountName, setBankAccountName] = useState(getSetting('bank_account_name') || '');
+
     // UI/Form States
     const [userFormOpen, setUserFormOpen] = useState(false);
     const [editUser, setEditUser] = useState(null);
@@ -136,6 +145,13 @@ export default function SettingsPage() {
         set('landing_logo', landingLogo);
         set('landing_favicon', landingFavicon);
         set('fc_discounts', JSON.stringify(fcDiscounts));
+        set('midtrans_key', midtransKey);
+        set('midtrans_is_production', midtransIsProduction ? 'true' : 'false');
+        set('dana_number', danaNumber);
+        set('dana_name', danaName);
+        set('bank_name', bankName);
+        set('bank_account', bankAccount);
+        set('bank_account_name', bankAccountName);
         db.setAll('print_prices', printPrices);
         db.setAll('binding_prices', bindPrices);
         showToast('Pengaturan berhasil disimpan!', 'success');
@@ -270,6 +286,7 @@ export default function SettingsPage() {
         { id: 'users', icon: <FiUsers />, text: 'Users' },
         { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
         { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
+        { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS' },
         { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
     ];
 
@@ -1340,6 +1357,101 @@ export default function SettingsPage() {
                                             })}
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Payment & QRIS */}
+                        {activeTab === 'payment' && (
+                            <div className="space-y-6 pb-12">
+                                {/* Midtrans Server */}
+                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shadow-sm">
+                                            <FiCpu size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Midtrans Payment Gateway</h3>
+                                            <p className="text-sm text-slate-500">Konfigurasi API Key untuk QRIS Dinamis & Virtual Account</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                                        <div className="space-y-2 col-span-1 md:col-span-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Server Key / API Key</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="SB-Mid-server-..." value={midtransKey} onChange={e => setMidtransKey(e.target.value)} />
+                                            <p className="text-xs text-slate-400">Pastikan API Key sudah sesuai dengan akses environment Anda.</p>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 col-span-1 md:col-span-2">
+                                            <div className={`w-12 h-6 flex items-center bg-slate-200 dark:bg-slate-700 rounded-full p-1 cursor-pointer transition-colors ${midtransIsProduction ? 'bg-blue-500' : ''}`} onClick={() => setMidtransIsProduction(!midtransIsProduction)}>
+                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${midtransIsProduction ? 'translate-x-6' : ''}`} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-sm text-slate-800 dark:text-white">Production Mode</h4>
+                                                <p className="text-xs text-slate-500">Aktifkan hanya jika Anda sudah Go-Live (bukan Sandbox).</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Manual E-Wallet */}
+                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shadow-sm">
+                                            <FiDollarSign size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">DANA / E-Wallet Manual</h3>
+                                            <p className="text-sm text-slate-500">Informasi pembayaran manual melalui DANA</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor DANA</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="081234..." value={danaNumber} onChange={e => setDanaNumber(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={danaName} onChange={e => setDanaName(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Manual Bank Transfer */}
+                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                    <div className="flex items-center gap-4 mb-6 relative z-10">
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shadow-sm">
+                                            <FiBriefcase size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Transfer Bank Manual</h3>
+                                            <p className="text-sm text-slate-500">Informasi rekening bank operasional</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nama Bank</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="BCA / MANDIRI" value={bankName} onChange={e => setBankName(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor Rekening</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="12345678" value={bankAccount} onChange={e => setBankAccount(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
+                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={bankAccountName} onChange={e => setBankAccountName(e.target.value)} />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="pb-8">
+                                    <button
+                                        className="flex items-center justify-center w-full gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                                        onClick={saveSettings}
+                                    >
+                                        <FiSave /> Simpan Pengaturan Pembayaran
+                                    </button>
                                 </div>
                             </div>
                         )}

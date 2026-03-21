@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: `http://${window.location.hostname}:5000/api`,
+    baseURL: `http://${window.location.hostname}:5001/api`,
 });
 
 // Otomatis menempelkan token JWT di setiap request HTTP
@@ -40,7 +40,7 @@ api.interceptors.response.use(
             responseUrl.includes('/auth/');
 
         // Skip jika endpoint publik (tidak butuh auth)
-        const isPublicEndpoint = 
+        const isPublicEndpoint =
             configUrl.includes('fotocopy-prices') ||
             configUrl.includes('public') ||
             configUrl.includes('landing');

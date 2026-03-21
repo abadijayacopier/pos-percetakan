@@ -28,6 +28,12 @@ Kini pemilik toko bisa mengunggah foto interior toko atau hasil kerja (percetaka
 - **Testimonials**: Menampilkan feedback asli dari pelanggan.
 - **FAQ Section**: Daftar pertanyaan yang sering diajukan untuk membantu pelanggan mendapatkan informasi cepat.
 
+### 7. Pengaturan Pembayaran & Otomasi QRIS (Terbaru)
+- **Konfigurasi Tersentral**: Informasi rekening Bank, nomor E-Wallet (DANA), dan *API Key Midtrans* kini dapat disetel secara mandiri via antarmuka UI `SettingsPage`.
+- **Dinamis Midtrans API**: Terhubung penuh ke Midtrans untuk menggenerate QRIS secara instan dari server Node.js.
+- **Live Settlement Webhook**: Mengakomodir **Notification Webhooks** dari Midtrans yang secara *real-time* dapat mengubah status piutang Invoice di dalam sistem menjadi "Lunas" secara tanpa sentuhan operator.
+- **Live QRIS Dashboard**: Halaman monitoring pembayaran digital (*QRISMonitorPage.jsx*) kini ter-sinkronisasi dengan live *polling API*. Tidak perlu me-refresh halaman, pembayaran sukses langsung mencorong hijau!
+
 ## Cara Instalasi & Menjalankan
 
 ### Frontend
