@@ -746,6 +746,40 @@ img {
   padding: 20px 24px;
 }
 
+/* ---- Recharts Resets ---- */
+.recharts-default-tooltip {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-lg) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.recharts-tooltip-item {
+  color: var(--text-primary) !important;
+}
+
+/* ============================================
+   GLOBAL PRINT OVERRIDES FOR DARK MODE
+   ============================================ */
+@media print {
+  :root, html, body {
+    /* Prevent Chrome/Edge from synthetically inverting colors during print in dark mode */
+    color-scheme: light !important;
+    background-color: white !important;
+  }
+  
+  /* Force Tailwind dark mode variables to fallback to light mode during print */
+  .dark {
+    --bg-primary: #f6f7f8 !important;
+    --bg-secondary: #ffffff !important;
+    --text-primary: #0f172a !important;
+    --text-secondary: #64748b !important;
+    --border: rgba(0, 0, 0, 0.08) !important;
+    --bg-card: rgba(255, 255, 255, 0.7) !important;
+  }
+}
+
 /* ---- Cards ---- */
 .card {
   background: var(--bg-card);

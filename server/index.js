@@ -36,6 +36,8 @@ app.use('/api/spk', require('./routes/spk'));
 app.use('/api/wa-config', require('./routes/wa-config'));
 app.use('/api/pricing', pricingRouter);
 app.use('/api/designers', require('./routes/designers'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/purchases', require('./routes/purchases'));
 
 const startServer = async () => {
     // Test koneksi database saat start

@@ -3,14 +3,16 @@ import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiCheck, FiX, FiSave, FiPrinter, FiPlus, FiArrowLeft, FiBox, FiLayers, FiTag, FiDollarSign, FiPercent, FiMapPin, FiTruck, FiChevronRight, FiAlertCircle } from 'react-icons/fi';
 
+import Modal from '../components/Modal';
+
 const Toast = ({ msg, type, onClose }) => (
     <motion.div
         initial={{ opacity: 0, y: 50, scale: 0.9 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
         className={`fixed bottom-8 right-8 z-[9999] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${type === 'error' ? 'bg-rose-500/90 border-rose-400 text-white' :
-                type === 'warn' ? 'bg-amber-500/90 border-amber-400 text-white' :
-                    'bg-emerald-600/90 border-emerald-400 text-white'
+            type === 'warn' ? 'bg-amber-500/90 border-amber-400 text-white' :
+                'bg-emerald-600/90 border-emerald-400 text-white'
             }`}
     >
         <div className="text-xl">
@@ -43,6 +45,9 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
     });
     const [saving, setSaving] = useState(false);
     const [toastMsg, setToastMsg] = useState(null);
+    const [kategoriOptions, setKategoriOptions] = useState(["digital", "offset", "atk", "finishing"]);
+    const [satuanOptions, setSatuanOptions] = useState(["lembar", "roll", "m2", "pcs", "box"]);
+    const [promptModal, setPromptModal] = useState({ isOpen: false, type: '', title: '', value: '' });
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -52,6 +57,13 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
     }, []);
 
     useEffect(() => {
+        api.get('/settings/master')
+            .then(res => {
+                if (res.data?.kategori_bahan) setKategoriOptions(res.data.kategori_bahan);
+                if (res.data?.satuan_unit) setSatuanOptions(res.data.satuan_unit);
+            })
+            .catch(err => console.error("Failed to load master data", err));
+
         if (form.harga_modal && form.harga_jual) {
             const hpp = parseFloat(form.harga_modal);
             const hj = parseFloat(form.harga_jual);
@@ -212,14 +224,22 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                             <FiLayers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                             <select
                                                 value={form.kategori}
-                                                onChange={e => set('kategori', e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'NEW') {
+                                                        setPromptModal({ isOpen: true, type: 'kategori', title: 'Tambah Kategori Baru', value: '' });
+                                                        set('kategori', '');
+                                                    } else {
+                                                        set('kategori', val);
+                                                    }
+                                                }}
                                                 className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/50 outline-none font-bold dark:text-white appearance-none"
                                             >
                                                 <option value="">Pilih Kategori</option>
-                                                <option value="digital">Digital Printing</option>
-                                                <option value="offset">Offset Printing</option>
-                                                <option value="atk">Alat Tulis Kantor (ATK)</option>
-                                                <option value="finishing">Finishing & Jilid</option>
+                                                {kategoriOptions.map(opt => (
+                                                    <option key={opt} value={opt}>{opt.toUpperCase()}</option>
+                                                ))}
+                                                <option value="NEW" className="font-bold text-primary">+ Tambah Baru</option>
                                             </select>
                                         </div>
                                     </div>
@@ -229,15 +249,22 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                             <FiTag className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                             <select
                                                 value={form.satuan}
-                                                onChange={e => set('satuan', e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'NEW') {
+                                                        setPromptModal({ isOpen: true, type: 'satuan', title: 'Tambah Satuan Baru', value: '' });
+                                                        set('satuan', '');
+                                                    } else {
+                                                        set('satuan', val);
+                                                    }
+                                                }}
                                                 className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-primary/50 outline-none font-bold dark:text-white appearance-none"
                                             >
                                                 <option value="">Pilih Satuan</option>
-                                                <option value="lembar">Lembar</option>
-                                                <option value="roll">Roll / Meter Lari</option>
-                                                <option value="m2">Meter Persegi (m2)</option>
-                                                <option value="pcs">Pcs / Buah</option>
-                                                <option value="box">Box / Dus</option>
+                                                {satuanOptions.map(opt => (
+                                                    <option key={opt} value={opt}>{opt.toUpperCase()}</option>
+                                                ))}
+                                                <option value="NEW" className="font-bold text-primary">+ Tambah Baru</option>
                                             </select>
                                         </div>
                                     </div>
@@ -315,7 +342,7 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="space-y-2">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 text-slate-400">Harga Modal (Avg)</label>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Harga Modal (Avg)</label>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">Rp</div>
                                         <input
@@ -342,7 +369,7 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 text-violet-600 dark:text-violet-400">Harga Jual Retail</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest px-1 text-violet-600 dark:text-violet-400">Harga Jual Retail</label>
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-violet-400">Rp</div>
                                         <input
@@ -461,6 +488,70 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                     </div>
                 </div>
             </main>
+
+            {/* Prompt Modal */}
+            <Modal
+                isOpen={promptModal.isOpen}
+                onClose={() => setPromptModal({ ...promptModal, isOpen: false })}
+                title={promptModal.title}
+                footer={
+                    <div className="flex justify-end gap-3 w-full border-t border-slate-100 dark:border-slate-800/60 pt-4 mt-2">
+                        <button className="px-5 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-105 active:scale-95" onClick={() => setPromptModal({ ...promptModal, isOpen: false })}>Batal</button>
+                        <button id="save-prompt-btn" className="px-6 py-3 rounded-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" onClick={async () => {
+                            const clean = promptModal.value.trim();
+                            if (clean) {
+                                try {
+                                    if (promptModal.type === 'kategori') {
+                                        await api.post('/settings/master', { type: 'kategori_bahan', value: clean });
+                                        if (!kategoriOptions.includes(clean)) setKategoriOptions([...kategoriOptions, clean]);
+                                        set('kategori', clean);
+                                        toast('Kategori berhasil ditambahkan!');
+                                    } else if (promptModal.type === 'satuan') {
+                                        await api.post('/settings/master', { type: 'satuan_unit', value: clean });
+                                        if (!satuanOptions.includes(clean)) setSatuanOptions([...satuanOptions, clean]);
+                                        set('satuan', clean);
+                                        toast('Satuan berhasil ditambahkan!');
+                                    }
+                                } catch (err) {
+                                    toast(`Gagal menambahkan ${promptModal.type}`, 'error');
+                                }
+                            }
+                            setPromptModal({ ...promptModal, isOpen: false });
+                        }}>
+                            <FiCheck size={18} /> Simpan Data
+                        </button>
+                    </div>
+                }
+            >
+                <div className="p-5 bg-slate-50/50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/60 mb-2 mt-2">
+                    <div className="w-16 h-16 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white dark:ring-slate-800 relative z-10">
+                        {promptModal.type === 'satuan' ? <FiTag size={28} /> : <FiLayers size={28} />}
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex justify-center mb-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama {promptModal.type === 'satuan' ? 'Satuan' : 'Kategori'}</label>
+                        </div>
+                        <div className="relative group flex items-center">
+                            <div className="absolute left-4 text-slate-300 dark:text-slate-600 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                {promptModal.type === 'satuan' ? <FiTag size={18} /> : <FiLayers size={18} />}
+                            </div>
+                            <input
+                                type="text"
+                                className="w-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 font-bold dark:text-white transition-all text-center sm:text-left shadow-sm"
+                                placeholder={`Ketik ${promptModal.type === 'satuan' ? 'satuan' : 'kategori'} baru...`}
+                                value={promptModal.value}
+                                onChange={e => setPromptModal({ ...promptModal, value: e.target.value })}
+                                onKeyDown={e => { if (e.key === 'Enter') { document.getElementById('save-prompt-btn')?.click(); } }}
+                                autoFocus
+                            />
+                        </div>
+                        <p className="text-[11px] font-semibold text-slate-400 text-center mt-3 pt-2 flex items-center justify-center gap-1.5 opacity-80">
+                            <FiAlertCircle size={12} /> Tekan <kbd className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-600 dark:text-slate-300">Enter</kbd> untuk menyimpan
+                        </p>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

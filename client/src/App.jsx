@@ -38,6 +38,8 @@ import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
 import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
 import LandingPage from './pages/LandingPage';
+import PurchasingPage from './pages/PurchasingPage';
+import SuppliersPage from './pages/SuppliersPage';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -332,6 +334,8 @@ export default function App() {
       case 'tambah-bahan': return <MaterialFormPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'service': return <ServicePage onNavigate={handleNavigate} />;
       case 'inventory': return <InventoryPage onNavigate={handleNavigate} />;
+      case 'pembelian': return <PurchasingPage onNavigate={handleNavigate} />;
+      case 'suppliers': return <SuppliersPage onNavigate={handleNavigate} />;
       case 'customers': return <CustomersPage onNavigate={handleNavigate} />;
       case 'finance': return <FinancePage onNavigate={handleNavigate} />;
       case 'reports': return <ReportsPage onNavigate={handleNavigate} />;

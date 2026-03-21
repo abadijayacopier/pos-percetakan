@@ -26,6 +26,8 @@ import {
     FiChevronLeft,
     FiChevronRight,
     FiTag,
+    FiCheck,
+    FiAlertCircle,
     FiInfo
 } from 'react-icons/fi';
 
@@ -57,7 +59,12 @@ const CAT_ICON_SMALL = {
 
 export default function InventoryPage() {
     const [products, setProducts] = useState(() => db.getAll('products'));
-    const categories = useMemo(() => db.getAll('categories'), []);
+    const [categories, setCategories] = useState(() => db.getAll('categories'));
+    const [unitOptions, setUnitOptions] = useState(() => {
+        const saved = db.getAll('units');
+        return saved.length > 0 ? saved.map(u => u.name) : ['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'];
+    });
+    const [promptModal, setPromptModal] = useState({ isOpen: false, type: '', title: '', value: '' });
     const [search, setSearch] = useState('');
     const [filterCat, setFilterCat] = useState('all');
     const [showModal, setShowModal] = useState(false);
@@ -265,7 +272,7 @@ export default function InventoryPage() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0 transition-transform">
+                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">
                                                     <button
                                                         onClick={() => openEdit(p)}
                                                         className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
@@ -368,9 +375,18 @@ export default function InventoryPage() {
                             <select
                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                                 value={form.unit}
-                                onChange={e => set('unit', e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'NEW') {
+                                        setPromptModal({ isOpen: true, type: 'unit', title: 'Tambah Satuan Unit Baru', value: '' });
+                                        set('unit', '');
+                                    } else {
+                                        set('unit', val);
+                                    }
+                                }}
                             >
-                                {['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'].map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
+                                {unitOptions.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
+                                <option value="NEW" className="font-bold text-blue-600">+ Tambah Baru</option>
                             </select>
                         </div>
 
@@ -379,10 +395,19 @@ export default function InventoryPage() {
                             <select
                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-xs font-black focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                                 value={form.categoryId}
-                                onChange={e => set('categoryId', e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'NEW') {
+                                        setPromptModal({ isOpen: true, type: 'categoryId', title: 'Tambah Kategori Baru', value: '' });
+                                        set('categoryId', '');
+                                    } else {
+                                        set('categoryId', val);
+                                    }
+                                }}
                             >
-                                <option value="">-- ILIH KATEGORI --</option>
+                                <option value="">-- PILIH KATEGORI --</option>
                                 {categories.map(c => <option key={c.id} value={c.id}>{c.name.toUpperCase()}</option>)}
+                                <option value="NEW" className="font-bold text-blue-600">+ Tambah Baru</option>
                             </select>
                         </div>
 
@@ -453,6 +478,66 @@ export default function InventoryPage() {
                     <p className="text-xs font-bold text-rose-700 dark:text-rose-400 leading-relaxed text-center italic">
                         "Apakah Anda yakin ingin menghapus produk <span className="uppercase not-italic font-black text-rose-800 dark:text-rose-300">[{confirmDelete?.name}]</span>? Data yang dihapus tidak dapat dipulihkan kembali."
                     </p>
+                </div>
+            </Modal>
+
+            {/* Prompt Modal */}
+            <Modal
+                isOpen={promptModal.isOpen}
+                onClose={() => setPromptModal({ ...promptModal, isOpen: false })}
+                title={promptModal.title}
+                footer={
+                    <div className="flex justify-end gap-3 w-full border-t border-slate-100 dark:border-slate-800/60 pt-4 mt-2">
+                        <button className="px-5 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-105 active:scale-95" onClick={() => setPromptModal({ ...promptModal, isOpen: false })}>Batal</button>
+                        <button id="save-prompt-btn-inv" className="px-6 py-3 rounded-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" onClick={() => {
+                            const clean = promptModal.value.trim();
+                            if (clean) {
+                                if (promptModal.type === 'unit') {
+                                    db.insert('units', { name: clean });
+                                    if (!unitOptions.includes(clean)) setUnitOptions([...unitOptions, clean]);
+                                    set('unit', clean);
+                                } else if (promptModal.type === 'categoryId') {
+                                    const newId = 'c' + Date.now();
+                                    const newRecord = { id: newId, name: clean };
+                                    db.insert('categories', newRecord);
+                                    setCategories([...categories, newRecord]);
+                                    set('categoryId', newId);
+                                }
+                            }
+                            setPromptModal({ ...promptModal, isOpen: false });
+                        }}>
+                            <FiCheck size={18} /> Simpan Data
+                        </button>
+                    </div>
+                }
+            >
+                <div className="p-5 bg-slate-50/50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/60 mb-2 mt-2">
+                    <div className="w-16 h-16 rounded-full bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white dark:ring-slate-800 relative z-10">
+                        {promptModal.type === 'unit' ? <FiTag size={28} /> : <FiLayers size={28} />}
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="flex justify-center mb-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama {promptModal.type === 'unit' ? 'Satuan' : 'Kategori'}</label>
+                        </div>
+                        <div className="relative group flex items-center">
+                            <div className="absolute left-4 text-slate-300 dark:text-slate-600 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                                {promptModal.type === 'unit' ? <FiTag size={18} /> : <FiLayers size={18} />}
+                            </div>
+                            <input
+                                type="text"
+                                className="w-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 font-bold dark:text-white transition-all text-center sm:text-left shadow-sm"
+                                placeholder={`Ketik ${promptModal.type === 'unit' ? 'satuan' : 'kategori'} baru...`}
+                                value={promptModal.value}
+                                onChange={e => setPromptModal({ ...promptModal, value: e.target.value })}
+                                onKeyDown={e => { if (e.key === 'Enter') { document.getElementById('save-prompt-btn-inv')?.click(); } }}
+                                autoFocus
+                            />
+                        </div>
+                        <p className="text-[11px] font-semibold text-slate-400 text-center mt-3 pt-2 flex items-center justify-center gap-1.5 opacity-80">
+                            <FiAlertCircle size={12} /> Tekan <kbd className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-600 dark:text-slate-300">Enter</kbd> untuk menyimpan
+                        </p>
+                    </div>
                 </div>
             </Modal>
         </div>

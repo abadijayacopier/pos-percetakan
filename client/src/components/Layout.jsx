@@ -73,7 +73,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
     };
 
     return (
-        <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+        <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark print:bg-white font-display text-slate-900 dark:text-slate-100 print:text-black">
             {!(activePage === 'pos-v1' || isFullscreen) && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={sidebarCollapsed} toggleCollapse={toggleSidebarCollapse} />}
 
             <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
@@ -128,7 +128,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
                                 {/* Premium Profile Dropdown */}
                                 {profileOpen && (
-                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-100 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                                         <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 md:hidden">
                                             <p className="text-sm font-bold text-slate-900 dark:text-white">{user?.name || 'Admin User'}</p>
                                             <p className="text-xs text-slate-500">{user?.role || 'Administrator'}</p>
@@ -165,7 +165,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                 {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto block overflow-x-hidden print:overflow-visible w-full h-full bg-background-light dark:bg-background-dark min-w-0">
+                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full h-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0">
                         {children}
                     </div>
                 )}

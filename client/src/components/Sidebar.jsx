@@ -7,7 +7,9 @@ import {
     FiLogOut, FiChevronDown, FiCommand, FiCpu, FiHash, FiTerminal,
     FiSmartphone,
     FiDollarSign,
-    FiTrendingUp
+    FiTrendingUp,
+    FiPackage,
+    FiTruck
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
@@ -46,6 +48,8 @@ const MENU_GROUPS = [
         title: 'Data Master',
         items: [
             { id: 'inventory', label: 'Inventaris', icon: <FiBox />, roles: ['admin', 'kasir'] },
+            { id: 'pembelian', label: 'Barang Masuk', icon: <FiPackage />, roles: ['admin', 'kasir', 'operator'] },
+            { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'kasir', 'operator'] },
             { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir'] },
         ]
     },
@@ -89,8 +93,8 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
     };
 
     const sideVariants = {
-        open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
-        closed: { x: '-100%', transition: { type: 'spring', stiffness: 300, damping: 30 } }
+        open: { x: 0, transition: { type: 'spring', stiffness: 500, damping: 35 } },
+        closed: { x: '-100%', transition: { type: 'spring', stiffness: 450, damping: 40 } }
     };
 
     const fadeInUp = {
@@ -98,7 +102,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
         visible: (i) => ({
             opacity: 1,
             y: 0,
-            transition: { delay: i * 0.05, duration: 0.4, ease: 'easeOut' }
+            transition: { delay: i * 0.015, duration: 0.2, ease: 'easeOut' }
         })
     };
 
@@ -111,7 +115,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-md z-90 lg:hidden"
+                        className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/40 backdrop-blur-md z-[90] lg:hidden"
                         onClick={onClose}
                     />
                 )}
@@ -121,9 +125,9 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                 variants={sideVariants}
                 initial="closed"
                 animate={isOpen || isDesktop ? "open" : "closed"}
-                className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-100 ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
+                className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
                 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
-                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden transition-all duration-300 ease-in-out`}
+                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
