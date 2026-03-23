@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import api from '../services/api';
-import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,60 +16,40 @@ export default function SettingsPage() {
     // Core states
     const [activeTab, setActiveTab] = useState('general');
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-    // Settings memo and helper
-    const settings = useMemo(() => {
-        const all = db.getAll('settings');
-        const map = {};
-        all.forEach(s => { map[s.key] = s; });
-        return map;
-    }, []);
-
-    const getSetting = (key) => settings[key]?.value || '';
+    const [loading, setLoading] = useState(true);
 
     // Data States
     const [fotocopyPrices, setFotocopyPrices] = useState([]);
-    const [users, setUsers] = useState(() => db.getAll('users'));
-    const [printPrices, setPrintPrices] = useState(db.getAll('print_prices') || []);
-    const [bindPrices, setBindPrices] = useState(db.getAll('binding_prices') || []);
+    const [users, setUsers] = useState([]);
+    const [printPrices, setPrintPrices] = useState([]);
+    const [bindPrices, setBindPrices] = useState([]);
     const [systemPrinters, setSystemPrinters] = useState([]);
-    const [galleryImages, setGalleryImages] = useState(() => {
-        const saved = getSetting('landing_gallery');
-        try { return saved ? JSON.parse(saved) : []; } catch { return []; }
-    });
+    const [galleryImages, setGalleryImages] = useState([]);
 
-    const defaultFcDiscounts = [
-        { id: '1', minQty: 100, discountPerSheet: 50 },
-        { id: '2', minQty: 500, discountPerSheet: 75 },
-        { id: '3', minQty: 1000, discountPerSheet: 100 }
-    ];
-    const [fcDiscounts, setFcDiscounts] = useState(() => {
-        const saved = getSetting('fc_discounts');
-        return saved ? JSON.parse(saved) : defaultFcDiscounts;
-    });
+    const [fcDiscounts, setFcDiscounts] = useState([]);
 
     // Branding & Terminal States
-    const [storeName, setStoreName] = useState(getSetting('store_name') || 'FOTOCOPY ABADI JAYA');
-    const [storeAddress, setStoreAddress] = useState(getSetting('store_address') || '');
-    const [storePhone, setStorePhone] = useState(getSetting('store_phone') || '');
-    const [storeMapsUrl, setStoreMapsUrl] = useState(getSetting('store_maps_url') || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
-    const [storeLogo, setStoreLogo] = useState(getSetting('store_logo') || '');
-    const [landingLogo, setLandingLogo] = useState(getSetting('landing_logo') || '');
-    const [landingFavicon, setLandingFavicon] = useState(getSetting('landing_favicon') || '');
-    const [receiptFooter, setReceiptFooter] = useState(getSetting('receipt_footer') || '');
-    const [printerSize, setPrinterSize] = useState(getSetting('printer_size') || '80mm');
-    const [printerName, setPrinterName] = useState(getSetting('printer_name') || '');
-    const [paperSize, setPaperSize] = useState(getSetting('paper_size') || 'A4');
-    const [autoPrint, setAutoPrint] = useState(getSetting('auto_print') === 'true');
+    const [storeName, setStoreName] = useState('');
+    const [storeAddress, setStoreAddress] = useState('');
+    const [storePhone, setStorePhone] = useState('');
+    const [storeMapsUrl, setStoreMapsUrl] = useState('');
+    const [storeLogo, setStoreLogo] = useState('');
+    const [landingLogo, setLandingLogo] = useState('');
+    const [landingFavicon, setLandingFavicon] = useState('');
+    const [receiptFooter, setReceiptFooter] = useState('');
+    const [printerSize, setPrinterSize] = useState('80mm');
+    const [printerName, setPrinterName] = useState('');
+    const [paperSize, setPaperSize] = useState('A4');
+    const [autoPrint, setAutoPrint] = useState(true);
 
     // Payment & QRIS States
-    const [midtransKey, setMidtransKey] = useState(getSetting('midtrans_key') || '');
-    const [midtransIsProduction, setMidtransIsProduction] = useState(getSetting('midtrans_is_production') === 'true');
-    const [danaNumber, setDanaNumber] = useState(getSetting('dana_number') || '');
-    const [danaName, setDanaName] = useState(getSetting('dana_name') || '');
-    const [bankName, setBankName] = useState(getSetting('bank_name') || '');
-    const [bankAccount, setBankAccount] = useState(getSetting('bank_account') || '');
-    const [bankAccountName, setBankAccountName] = useState(getSetting('bank_account_name') || '');
+    const [midtransKey, setMidtransKey] = useState('');
+    const [midtransIsProduction, setMidtransIsProduction] = useState(false);
+    const [danaNumber, setDanaNumber] = useState('');
+    const [danaName, setDanaName] = useState('');
+    const [bankName, setBankName] = useState('');
+    const [bankAccount, setBankAccount] = useState('');
+    const [bankAccountName, setBankAccountName] = useState('');
 
     // UI/Form States
     const [userFormOpen, setUserFormOpen] = useState(false);
@@ -85,7 +64,7 @@ export default function SettingsPage() {
 
     const [logPage, setLogPage] = useState(1);
     const [logPageSize] = useState(15);
-    const allLogs = useMemo(() => db.getAll('activity_log').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)), []);
+    const [allLogs, setAllLogs] = useState([]);
     const activityLog = useMemo(() => {
         const start = (logPage - 1) * logPageSize;
         return allLogs.slice(start, start + logPageSize);
@@ -99,19 +78,81 @@ export default function SettingsPage() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const loadSettings = async () => {
+        try {
+            setLoading(true);
+            const [settingsRes, usersRes, logsRes, fcRes, printRes] = await Promise.all([
+                api.get('/settings').catch(() => ({ data: [] })),
+                api.get('/users').catch(() => ({ data: [] })),
+                api.get('/settings/logs').catch(() => ({ data: [] })),
+                api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
+                api.get('/print/printers').catch(() => ({ data: [] }))
+            ]);
+
+            const sMap = {};
+            settingsRes.data.forEach(s => { sMap[s.key] = s.value; });
+
+            setFotocopyPrices(fcRes.data || []);
+            setSystemPrinters(printRes.data || []);
+            setUsers(usersRes.data || []);
+            setAllLogs(logsRes.data || []);
+
+            try { setGalleryImages(sMap.landing_gallery ? JSON.parse(sMap.landing_gallery) : []); } catch { setGalleryImages([]); }
+            try {
+                const defFc = [{ id: '1', minQty: 100, discountPerSheet: 50 }, { id: '2', minQty: 500, discountPerSheet: 75 }];
+                setFcDiscounts(sMap.fc_discounts ? JSON.parse(sMap.fc_discounts) : defFc);
+            } catch { setFcDiscounts([]); }
+            try { setPrintPrices(sMap.print_prices ? JSON.parse(sMap.print_prices) : []); } catch { setPrintPrices([]); }
+            try { setBindPrices(sMap.binding_prices ? JSON.parse(sMap.binding_prices) : []); } catch { setBindPrices([]); }
+
+            setStoreName(sMap.store_name || 'FOTOCOPY ABADI JAYA');
+            setStoreAddress(sMap.store_address || 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan');
+            setStorePhone(sMap.store_phone || '085655620979');
+            setStoreMapsUrl(sMap.store_maps_url || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
+            setStoreLogo(sMap.store_logo || '');
+            setLandingLogo(sMap.landing_logo || '');
+            setLandingFavicon(sMap.landing_favicon || '');
+            setReceiptFooter(sMap.receipt_footer || '');
+
+            setPrinterSize(sMap.printer_size || '80mm');
+            setPrinterName(sMap.printer_name || '');
+            setPaperSize(sMap.paper_size || 'A4');
+            setAutoPrint(sMap.auto_print === 'true' || sMap.auto_print === true);
+
+            setMidtransKey(sMap.midtrans_key || '');
+            setMidtransIsProduction(sMap.midtrans_is_production === 'true' || sMap.midtrans_is_production === true);
+            setDanaNumber(sMap.dana_number || '085655620979');
+            setDanaName(sMap.dana_name || 'SUPRIYANTO');
+            setBankName(sMap.bank_name || 'BANK BCA');
+            setBankAccount(sMap.bank_account || '');
+            setBankAccountName(sMap.bank_account_name || 'SUPRIYANTO');
+
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal memuat data dari server', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data)).catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
-        api.get('/print/printers').then(res => setSystemPrinters(res.data)).catch(() => { });
+        loadSettings();
     }, []);
 
     // Functions
-    const refreshUsers = () => setUsers(db.getAll('users'));
+    const refreshUsers = async () => {
+        try {
+            const res = await api.get('/users');
+            setUsers(res.data);
+        } catch { }
+    };
 
     const updateFotocopyPrice = async (id, newPrice) => {
         try {
             await api.put(`/transactions/fotocopy-prices/${id}`, { price: parseInt(newPrice) });
             showToast('Harga berhasil diupdate!', 'success');
-            api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data));
+            const res = await api.get('/transactions/fotocopy-prices');
+            setFotocopyPrices(res.data);
         } catch { showToast('Gagal update harga', 'error'); }
     };
 
@@ -121,41 +162,45 @@ export default function SettingsPage() {
                 await api.put(`/transactions/fotocopy-prices/${p.id}`, { price: parseInt(p.price), paper: p.paper, color: p.color, side: p.side });
             }
             showToast('Semua harga fotocopy berhasil disimpan!', 'success');
-            api.get('/transactions/fotocopy-prices').then(res => setFotocopyPrices(res.data));
+            const res = await api.get('/transactions/fotocopy-prices');
+            setFotocopyPrices(res.data);
         } catch { showToast('Gagal menyimpan harga fotocopy', 'error'); }
     };
 
-    const saveSettings = () => {
-        const set = (key, value) => {
-            const existing = db.getAll('settings').find(s => s.key === key);
-            if (existing) db.update('settings', existing.id, { value });
-            else db.insert('settings', { key, value });
-        };
-        set('store_name', storeName);
-        set('store_address', storeAddress);
-        set('store_phone', storePhone);
-        set('store_maps_url', storeMapsUrl);
-        set('store_logo', storeLogo);
-        set('receipt_footer', receiptFooter);
-        set('printer_size', printerSize);
-        set('printer_name', printerName);
-        set('paper_size', paperSize);
-        set('auto_print', autoPrint ? 'true' : 'false');
-        set('landing_gallery', JSON.stringify(galleryImages));
-        set('landing_logo', landingLogo);
-        set('landing_favicon', landingFavicon);
-        set('fc_discounts', JSON.stringify(fcDiscounts));
-        set('midtrans_key', midtransKey);
-        set('midtrans_is_production', midtransIsProduction ? 'true' : 'false');
-        set('dana_number', danaNumber);
-        set('dana_name', danaName);
-        set('bank_name', bankName);
-        set('bank_account', bankAccount);
-        set('bank_account_name', bankAccountName);
-        db.setAll('print_prices', printPrices);
-        db.setAll('binding_prices', bindPrices);
-        showToast('Pengaturan berhasil disimpan!', 'success');
-        db.logActivity(user?.name || 'Admin', 'Simpan Pengaturan', 'Pengaturan umum dan harga layanan diperbarui');
+    const saveSettings = async () => {
+        try {
+            const payload = [
+                { key: 'store_name', value: storeName },
+                { key: 'store_address', value: storeAddress },
+                { key: 'store_phone', value: storePhone },
+                { key: 'store_maps_url', value: storeMapsUrl },
+                { key: 'store_logo', value: storeLogo },
+                { key: 'landing_logo', value: landingLogo },
+                { key: 'landing_favicon', value: landingFavicon },
+                { key: 'receipt_footer', value: receiptFooter },
+                { key: 'printer_size', value: printerSize },
+                { key: 'printer_name', value: printerName },
+                { key: 'paper_size', value: paperSize },
+                { key: 'auto_print', value: autoPrint ? 'true' : 'false' },
+                { key: 'landing_gallery', value: JSON.stringify(galleryImages) },
+                { key: 'fc_discounts', value: JSON.stringify(fcDiscounts) },
+                { key: 'midtrans_key', value: midtransKey },
+                { key: 'midtrans_is_production', value: midtransIsProduction ? 'true' : 'false' },
+                { key: 'dana_number', value: danaNumber },
+                { key: 'dana_name', value: danaName },
+                { key: 'bank_name', value: bankName },
+                { key: 'bank_account', value: bankAccount },
+                { key: 'bank_account_name', value: bankAccountName },
+                { key: 'print_prices', value: JSON.stringify(printPrices) },
+                { key: 'binding_prices', value: JSON.stringify(bindPrices) }
+            ];
+            await api.post('/settings', payload);
+            showToast('Pengaturan berhasil disimpan!', 'success');
+            loadSettings();
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal menyimpan pengaturan', 'error');
+        }
     };
 
     const resizeImage = (file, maxWidth, maxHeight, quality = 0.7) => {
@@ -227,55 +272,37 @@ export default function SettingsPage() {
         setGalleryImages(prev => prev.filter((_, i) => i !== index));
     };
 
-    const handleSaveUser = () => {
+    const handleSaveUser = async () => {
         if (!userForm.name || !userForm.username || (!editUser && !userForm.password)) {
             showToast('Lengkapi data user!', 'warning'); return;
         }
-        if (editUser) {
-            const updates = { ...userForm };
-            if (!updates.password) delete updates.password;
-            db.update('users', editUser.id, updates);
-        } else {
-            db.insert('users', userForm);
+        try {
+            if (editUser) {
+                const updates = { ...userForm };
+                if (!updates.password) delete updates.password;
+                await api.put(`/users/${editUser.id}`, updates);
+            } else {
+                await api.post('/users', userForm);
+            }
+            refreshUsers();
+            setUserFormOpen(false);
+            showToast(editUser ? 'User diupdate!' : 'User baru ditambahkan!', 'success');
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Gagal menyimpan user', 'error');
         }
-        refreshUsers();
-        setUserFormOpen(false);
-        showToast(editUser ? 'User diupdate!' : 'User baru ditambahkan!', 'success');
-        db.logActivity(user?.name || 'Admin', editUser ? 'Update User' : 'Tambah User', `User: ${userForm.name} (${userForm.role})`);
     };
 
     const handleBackup = () => {
-        const data = db.exportAll();
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `backup-pos-${new Date().toISOString().split('T')[0]}.json`;
-        a.click(); URL.revokeObjectURL(url);
-        showToast('Backup berhasil didownload!', 'success');
-        db.logActivity(user?.name || 'Admin', 'Backup Data', 'Data di-export ke file JSON');
+        showToast('Fitur backup manual via endpoint dinonaktifkan di mode MySQL', 'warning');
     };
 
     const handleRestore = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                db.importAll(ev.target.result);
-                showToast('Data berhasil di-restore! Refresh halaman.', 'success');
-                db.logActivity(user?.name || 'Admin', 'Restore Data', 'Data di-restore dari backup');
-                setTimeout(() => window.location.reload(), 1500);
-            } catch { showToast('File tidak valid!', 'error'); }
-        };
-        reader.readAsText(file);
+        showToast('Fitur restore manual via endpoint dinonaktifkan', 'warning');
     };
 
     const resetData = () => {
-        if (confirm('<FiAlertCircle /> PERINGATAN: Semua data akan dihapus dan di-reset ke data awal. Lanjutkan?')) {
-            const tables = ['users', 'categories', 'products', 'customers', 'suppliers', 'transactions', 'transaction_details', 'print_orders', 'service_orders', 'cash_flow', 'stock_movements', 'activity_log', 'settings', 'fotocopy_prices'];
-            tables.forEach(t => db.clear(t));
-            showToast('Data di-reset! Refresh halaman.', 'success');
-            setTimeout(() => window.location.reload(), 1500);
+        if (confirm('PERINGATAN: Fitur reset manual via endpoint dinonaktifkan di mode MySQL. Hubungi administrator database.')) {
+            showToast('Proses dibatalkan', 'info');
         }
     };
 

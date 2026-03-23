@@ -4,7 +4,10 @@ import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import ConfirmationModal from './ConfirmationModal';
-import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch } from 'react-icons/fi';
+import BottomNav from './BottomNav';
+import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch, FiDatabase } from 'react-icons/fi';
+import api from '../services/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout({ activePage, onNavigate, children, isFullscreen }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +20,10 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
     const [profileOpen, setProfileOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const profileRef = useRef(null);
+    const notifRef = useRef(null);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [dbStatus, setDbStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
 
     const toggleSidebarCollapse = () => {
         setSidebarCollapsed(prev => {
@@ -26,15 +33,53 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
         });
     };
 
-    // Close profile dropdown when clicking outside
+    // Close dropdowns when clicking outside
     useEffect(() => {
         function handleClickOutside(event) {
-            if (profileRef.current && !profileRef.current.contains(event.target)) {
-                setProfileOpen(false);
-            }
+            if (profileRef.current && !profileRef.current.contains(event.target)) setProfileOpen(false);
+            if (notifRef.current && !notifRef.current.contains(event.target)) setNotifOpen(false);
         }
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch Notifications (Low Stock Alerts)
+    useEffect(() => {
+        let isMounted = true;
+        const fetchNotifs = async () => {
+            try {
+                const [prodRes, matRes] = await Promise.all([
+                    api.get('/products'),
+                    api.get('/materials')
+                ]);
+                if (!isMounted) return;
+
+                const prods = prodRes.data || [];
+                const mats = matRes.data || [];
+                const alerts = [];
+
+                prods.forEach(p => {
+                    if (p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0) {
+                        alerts.push({ id: `p-${p.id}`, title: 'Stok ATK Menipis', message: `${p.name} tersisa ${p.stock} ${p.unit}`, type: 'warning' });
+                    }
+                });
+                mats.forEach(m => {
+                    if (m.stok_saat_ini <= (m.stok_minimum || 0) && (m.stok_minimum || 0) > 0) {
+                        alerts.push({ id: `m-${m.id}`, title: 'Bahan Cetak Hampir Habis', message: `${m.nama_bahan} tersisa ${m.stok_saat_ini} ${m.satuan}`, type: 'danger' });
+                    }
+                });
+
+                setNotifications(alerts);
+            } catch (e) {
+                console.error("Failed to fetch notifications");
+            }
+        };
+        fetchNotifs();
+        const interval = setInterval(fetchNotifs, 60000); // refresh every 1 min
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, []);
 
     // Global listener for toggling sidebar from child pages
@@ -42,6 +87,25 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
         const handleToggleSidebar = () => setSidebarOpen(prev => !prev);
         window.addEventListener('toggleSidebar', handleToggleSidebar);
         return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
+    }, []);
+
+    // Real-time Database Status polling
+    useEffect(() => {
+        let isMounted = true;
+        const checkDb = async () => {
+            try {
+                const res = await api.get('/health/db-status');
+                if (isMounted) setDbStatus(res.data.connected ? 'connected' : 'disconnected');
+            } catch (err) {
+                if (isMounted) setDbStatus('disconnected');
+            }
+        };
+        checkDb();
+        const interval = setInterval(checkDb, 5000); // verify every 5s
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, []);
 
     const PAGE_TITLES = {
@@ -101,13 +165,65 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                            <div className="items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hidden lg:flex shrink-0">
+                                <FiDatabase className={`text-sm ${dbStatus === 'connected' ? 'text-green-500' : dbStatus === 'disconnected' ? 'text-red-500 animate-pulse' : 'text-yellow-500 animate-spin'}`} />
+                                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                                    {dbStatus === 'connected' ? 'DB Connected' : dbStatus === 'disconnected' ? 'DB Error' : 'Checking DB...'}
+                                </span>
+                            </div>
+
                             {/* Theme Toggle */}
                             <ThemeToggle />
 
-                            <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative">
-                                <span className="material-symbols-outlined">notifications</span>
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-                            </button>
+                            <div className="relative" ref={notifRef}>
+                                <button
+                                    className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative"
+                                    onClick={() => setNotifOpen(!notifOpen)}
+                                >
+                                    <span className="material-symbols-outlined">notifications</span>
+                                    {notifications.length > 0 && (
+                                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
+                                    )}
+                                </button>
+
+                                <AnimatePresence>
+                                    {notifOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden z-[100]"
+                                        >
+                                            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                                                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                    <FiBell className="text-blue-500" /> Notifikasi
+                                                </h3>
+                                                {notifications.length > 0 && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-widest">{notifications.length} Baru</span>
+                                                )}
+                                            </div>
+                                            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                                {notifications.length === 0 ? (
+                                                    <div className="p-8 text-center text-slate-400">
+                                                        <span className="material-symbols-outlined text-4xl opacity-20 mb-2">notifications_paused</span>
+                                                        <p className="text-xs font-bold uppercase tracking-widest">Aman Terkendali</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                                        {notifications.map(n => (
+                                                            <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                                                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${n.type === 'danger' ? 'text-rose-500' : 'text-amber-500'}`}>{n.title}</p>
+                                                                <p className="text-xs text-slate-600 dark:text-slate-300 font-bold group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{n.message}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
                             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
 
@@ -165,7 +281,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                 {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full h-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0">
+                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full h-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0 pb-20 md:pb-0">
                         {children}
                     </div>
                 )}
@@ -182,6 +298,9 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                 cancelText="Batal"
                 type="danger"
             />
+            {!(isFullscreen || activePage === 'pos' || activePage === 'pos-v1') && (
+                <BottomNav activePage={activePage} onNavigate={onNavigate} />
+            )}
         </div>
     );
 }

@@ -3,6 +3,70 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
+// GET Semua Settings
+router.get('/', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT `key`, `value` FROM settings');
+        res.json(rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memuat pengaturan' });
+    }
+});
+
+// GET Public Settings (Hanya untuk Landing Page)
+router.get('/public', async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices')");
+        res.json(rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memuat fitur publik' });
+    }
+});
+
+// POST Simpan Multiple Settings
+router.post('/', verifyToken, async (req, res) => {
+    try {
+        const settings = req.body; // expects array [{key, value}]
+        if (!Array.isArray(settings)) return res.status(400).json({ message: 'Format data salah' });
+
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
+            for (const s of settings) {
+                const [existing] = await connection.query('SELECT `key` FROM settings WHERE `key` = ?', [s.key]);
+                if (existing.length > 0) {
+                    await connection.query('UPDATE settings SET `value` = ? WHERE `key` = ?', [s.value, s.key]);
+                } else {
+                    await connection.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', [s.key, s.value]);
+                }
+            }
+            await connection.commit();
+            res.json({ message: 'Pengaturan berhasil disimpan' });
+        } catch (dbErr) {
+            await connection.rollback();
+            throw dbErr;
+        } finally {
+            connection.release();
+        }
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal menyimpan pengaturan' });
+    }
+});
+
+// GET Activity Logs
+router.get('/logs', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 200');
+        res.json(rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memuat log' });
+    }
+});
+
 // GET Master Data for frontend (Kategori & Satuan)
 router.get('/master', verifyToken, async (req, res) => {
     try {

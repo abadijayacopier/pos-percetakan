@@ -1,7 +1,10 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect } from 'react';
+import api from '../services/api';
 import { formatRupiah, formatDate, formatDateTime } from '../utils';
+import html2pdf from 'html2pdf.js';
+import Swal from 'sweetalert2';
 import { ProfitLossContent } from '../components/ProfitLossContent';
+import PrintReportLayout from '../components/PrintReportLayout';
 import {
     FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
     FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle, FiActivity,
@@ -20,10 +23,45 @@ export default function ReportsPage() {
     const [pages, setPages] = useState({ sales: 1, products: 1, customers: 1 });
     const PER_PAGE = 10;
 
-    const allTransactions = useMemo(() => db.getAll('transactions'), []);
-    const allProducts = useMemo(() => db.getAll('products'), []);
-    const allCustomers = useMemo(() => db.getAll('customers'), []);
-    const allCashFlow = useMemo(() => db.getAll('cash_flow'), []);
+    const [allTransactions, setAllTransactions] = useState([]);
+    const [allProducts, setAllProducts] = useState([]);
+    const [allCustomers, setAllCustomers] = useState([]);
+    const [allCashFlow, setAllCashFlow] = useState([]);
+    const [storeInfo, setStoreInfo] = useState({ name: 'ABADI JAYA', tagline: 'Percetakan & Fotocopy', footer: 'SISTEM MONITORING & INVENTORI TERPADU | DOKUMEN DIGENERATE SECARA OTOMATIS' });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                const [trxRes, prdRes, cstRes, cfRes, setRes] = await Promise.all([
+                    api.get('/transactions'),
+                    api.get('/products'),
+                    api.get('/customers').catch(() => ({ data: [] })),
+                    api.get('/finance'),
+                    api.get('/settings').catch(() => ({ data: [] }))
+                ]);
+                setAllTransactions(Array.isArray(trxRes.data) ? trxRes.data : []);
+                setAllProducts(Array.isArray(prdRes.data) ? prdRes.data : []);
+                setAllCustomers(Array.isArray(cstRes.data) ? cstRes.data : []);
+                setAllCashFlow(Array.isArray(cfRes.data) ? cfRes.data : []);
+
+                const info = {};
+                if (Array.isArray(setRes.data)) {
+                    setRes.data.forEach(s => { info[s.key] = s.value; });
+                }
+                setStoreInfo({
+                    name: info.store_name || 'ABADI JAYA',
+                    tagline: info.store_tagline || 'Percetakan & Fotocopy',
+                    footer: info.receipt_footer || 'SISTEM MONITORING & INVENTORI TERPADU | DOKUMEN DIGENERATE SECARA OTOMATIS'
+                });
+            } catch (err) {
+                console.error('Failed to load reports data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, []);
 
     // Filter transactions by date range
     const transactions = useMemo(() => {
@@ -142,6 +180,55 @@ export default function ReportsPage() {
         exportCSV(data, 'laporan_pelanggan', ['Nama', 'Telepon', 'Alamat', 'Tipe', 'Total Transaksi', 'Total Belanja']);
     };
 
+    const handleExportPDF = () => {
+        Swal.fire({
+            title: 'Mengekspor Laporan...',
+            text: 'Tunggu sejenak, sedang memproses PDF',
+            allowOutsideClick: false,
+            didOpen: async () => {
+                Swal.showLoading();
+                const element = document.getElementById('print-report-content');
+                if (element) {
+                    const wasHidden = element.classList.contains('hidden');
+                    if (wasHidden) {
+                        element.classList.remove('hidden');
+                        element.classList.add('block');
+                    }
+                    const opt = {
+                        margin: 15,
+                        filename: `Laporan_${activeTab}_${Date.now()}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+                    try {
+                        await html2pdf().set(opt).from(element).save();
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Laporan PDF telah diunduh.',
+                            confirmButtonColor: '#3b82f6'
+                        });
+                    } catch (e) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: 'Gagal memproses PDF',
+                            confirmButtonColor: '#ef4444'
+                        });
+                    } finally {
+                        if (wasHidden) {
+                            element.classList.add('hidden');
+                            element.classList.remove('block');
+                        }
+                    }
+                } else {
+                    Swal.fire({ icon: 'warning', text: 'Data tidak tersedia' });
+                }
+            }
+        });
+    };
+
     const renderPagination = (tab, total) => {
         const totalPages = Math.ceil(total / PER_PAGE);
         const currentPage = pages[tab];
@@ -175,7 +262,7 @@ export default function ReportsPage() {
     };
 
     return (
-        <div className="p-4 sm:p-8 space-y-8 print:space-y-0 print:p-0 font-display bg-slate-50/30 dark:bg-transparent min-h-screen print:min-h-0 print:h-auto print:block">
+        <div className="p-4 sm:p-8 space-y-8 print:space-y-0 print:p-0 font-display bg-slate-50/30 dark:bg-transparent print:bg-white dark:print:bg-white print:text-black dark:print:text-black min-h-screen print:min-h-0 print:h-auto print:block">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 print:hidden">
                 <div>
@@ -189,13 +276,22 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <button
-                        onClick={handlePrint}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 hover:border-blue-500 hover:text-blue-600 shadow-sm transition-all"
-                    >
-                        <FiPrinter className="text-lg" />
-                        Print Page
-                    </button>
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <button
+                            onClick={() => window.print()}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-slate-900 rounded-2xl font-bold transition-all shadow-xl shadow-slate-900/20 active:scale-95 text-sm"
+                        >
+                            <FiPrinter size={16} />
+                            Cetak
+                        </button>
+                        <button
+                            onClick={handleExportPDF}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-bold transition-all shadow-xl shadow-rose-900/20 active:scale-95 text-sm"
+                        >
+                            <FiDownload size={16} />
+                            Ekspor PDF
+                        </button>
+                    </div>
                     <button
                         onClick={activeTab === 'profit-loss' ? () => window.print() : activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}
                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
@@ -373,84 +469,40 @@ export default function ReportsPage() {
                     </div>
 
                     {/* --- PRINT ONLY SALES REPORT (A4 FORMAT) --- */}
-                    <div className="hidden print:block w-full text-black font-sans leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <style>
-                            {`
-                            @media print {
-                                @page { size: A4 portrait; margin: 20mm; }
-                                body { background-color: white !important; -webkit-print-color-adjust: exact; color: black; }
-                                table { page-break-inside: auto; border-collapse: collapse; }
-                                tr { page-break-inside: avoid; page-break-after: auto; }
-                                thead { display: table-header-group; }
-                            }
-                            `}
-                        </style>
-                        <header className="flex justify-between items-end border-b-2 border-black pb-4 mb-8">
-                            <div className="w-1/2">
-                                <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-1">Abadi Jaya Percetakan & POS</h1>
-                                <p className="text-gray-600 text-sm">Sistem Monitoring & Inventori Terpadu</p>
-                                <p className="text-gray-600 text-sm">Laporan Generate Secara Otomatis</p>
-                            </div>
-                            <div className="w-1/2 text-right">
-                                <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-800 mb-2">Laporan Penjualan</h2>
-                                <div className="text-xs text-gray-600 space-y-1">
-                                    <p><span className="font-semibold text-gray-800">Tanggal Cetak:</span> {formatDateTime(new Date())}</p>
-                                    <p><span className="font-semibold text-gray-800">Periode:</span> {dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}</p>
-                                    <p><span className="font-semibold text-gray-800">Dicetak Oleh:</span> Admin / Kasir</p>
-                                </div>
-                            </div>
-                        </header>
-
-                        {/* SUMMARY CARDS / HIGHLIGHTS */}
-                        <section className="grid grid-cols-3 gap-6 mb-8">
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Transaksi</h3>
-                                <p className="text-xl font-black text-gray-900">{totalTrx}</p>
-                            </div>
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Pendapatan (Gross)</h3>
-                                <p className="text-xl font-black text-emerald-700">{formatRupiah(totalRevenue)}</p>
-                            </div>
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Metode Utama</h3>
-                                <p className="text-xl font-black text-blue-700">{paymentBreakdown.length > 0 ? paymentBreakdown.reduce((prev, current) => (prev.amount > current.amount) ? prev : current).method.toUpperCase() : '-'}</p>
-                            </div>
-                        </section>
-
+                    <PrintReportLayout
+                        title="Laporan Penjualan"
+                        period={dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}
+                        printedBy="Admin / Kasir"
+                        storeInfo={storeInfo}
+                    >
                         {/* DATA TABLE */}
-                        <section className="mb-8">
-                            <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-black pl-2 uppercase">Rincian Transaksi</h3>
-                            <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
-                                <thead className="bg-gray-100 border-b-2 border-gray-400">
+                        <section className="mb-10">
+                            <h3 className="font-bold text-gray-800 mb-4 border-l-4 border-black pl-3 uppercase tracking-widest text-sm">Rincian Transaksi</h3>
+                            <table className="print-table">
+                                <thead>
                                     <tr>
-                                        <th className="py-3 px-4 font-bold text-gray-800 w-1/6">ID TRX</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800 w-1/6">Waktu</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800">Pelanggan</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800 text-center w-1/6">Tipe</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800 text-right w-1/5">Nilai (Rp)</th>
+                                        <th className="w-1/6">ID TRX</th>
+                                        <th className="w-1/6">Waktu</th>
+                                        <th>Pelanggan</th>
+                                        <th className="text-center w-1/6">Tipe</th>
+                                        <th className="text-right w-1/5">Nilai (Rp)</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody>
                                     {transactions.map((t, idx) => (
-                                        <tr key={t.id || idx} className={idx % 2 === 1 ? 'bg-gray-50' : ''}>
-                                            <td className="py-3 px-4 font-mono text-gray-600 text-xs">{t.invoiceNo}</td>
-                                            <td className="py-3 px-4 text-gray-600 text-xs">{new Date(t.date || t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
-                                            <td className="py-3 px-4 font-semibold text-gray-800 text-xs">{t.customerName || 'Umum'}</td>
-                                            <td className="py-3 px-4 text-center">
-                                                <span className={`px-2 py-1 text-[10px] rounded-full font-bold
-                                                    ${t.type === 'penjualan' ? 'bg-emerald-100 text-emerald-800' :
-                                                        t.type === 'printing' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-amber-100 text-amber-800'}
-                                                `}>
-                                                    {t.type}
-                                                </span>
+                                        <tr key={t.id || idx}>
+                                            <td className="font-mono text-gray-500 font-semibold">{t.invoiceNo}</td>
+                                            <td className="text-gray-800 font-medium">{new Date(t.date || t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td className="font-bold text-gray-900 text-sm uppercase">{t.customerName || 'Umum'}</td>
+                                            <td className="text-center">
+                                                <span className="font-bold uppercase tracking-wider text-[10px] text-gray-600">{t.type}</span>
                                             </td>
-                                            <td className="py-3 px-4 text-right font-bold text-gray-900 text-xs">{formatRupiah(t.total)}</td>
+                                            <td className="text-right font-black text-gray-900 text-sm">{formatRupiah(t.total)}</td>
                                         </tr>
                                     ))}
                                     {transactions.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="py-6 text-center italic text-gray-500">Tidak ada transaksi pada periode ini.</td>
+                                            <td colSpan="5" className="py-8 text-center italic text-gray-500">Tidak ada transaksi pada periode ini.</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -459,56 +511,40 @@ export default function ReportsPage() {
 
                         {/* BOTTOM RECAP */}
                         <section className="flex break-inside-avoid">
-                            <div className="w-1/2 pr-4">
-                                <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-gray-400 pl-2 uppercase">Metode Pembayaran</h3>
-                                <table className="w-full text-sm">
+                            <div className="w-1/2 pr-8">
+                                <h3 className="font-bold text-gray-800 mb-4 border-l-4 border-gray-400 pl-3 uppercase tracking-widest text-sm">Metode Pembayaran</h3>
+                                <table className="print-table w-full">
                                     <tbody>
                                         {paymentBreakdown.map((pb, idx) => (
-                                            <tr key={idx} className="border-b border-gray-200">
-                                                <td className="py-2 text-gray-600 capitalize">{pb.method}</td>
-                                                <td className="py-2 text-right font-medium">{formatRupiah(pb.amount)}</td>
+                                            <tr key={idx}>
+                                                <td className="text-gray-700 font-bold uppercase tracking-wider text-[10px]">{pb.method}</td>
+                                                <td className="text-right font-black text-gray-900">{formatRupiah(pb.amount)}</td>
                                             </tr>
                                         ))}
                                         {paymentBreakdown.length === 0 && (
-                                            <tr><td className="py-2 text-gray-500 italic">Belum ada data pembayaran</td></tr>
+                                            <tr><td colSpan="2" className="py-4 text-gray-500 italic text-center">Belum ada data pembayaran</td></tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="w-1/2 pl-4 border-l-2 border-gray-200">
-                                <h3 className="font-bold text-gray-800 mb-3 uppercase text-right">Rekapitulasi</h3>
-                                <div className="flex justify-between py-1 text-sm">
-                                    <span className="text-gray-600">Subtotal Penjualan</span>
-                                    <span className="font-medium">{formatRupiah(totalRevenue + (transactions.reduce((s, t) => s + (t.discount || 0), 0)))}</span>
+                            <div className="w-1/2 pl-8 border-l-2 border-gray-300">
+                                <h3 className="font-bold text-gray-800 mb-5 uppercase text-right tracking-widest text-sm">Rekapitulasi</h3>
+                                <div className="flex justify-between py-1.5">
+                                    <span className="text-gray-600 font-bold uppercase tracking-widest text-[10px]">Subtotal Penjualan</span>
+                                    <span className="font-semibold text-gray-800 text-sm">{formatRupiah(totalRevenue + (transactions.reduce((s, t) => s + (t.discount || 0), 0)))}</span>
                                 </div>
-                                <div className="flex justify-between py-1 text-sm text-red-600">
-                                    <span>Diskon Diberikan</span>
-                                    <span className="font-medium">- {formatRupiah(transactions.reduce((s, t) => s + (t.discount || 0), 0))}</span>
+                                <div className="flex justify-between py-1.5">
+                                    <span className="text-red-600 font-bold uppercase tracking-widest text-[10px]">Diskon Diberikan</span>
+                                    <span className="font-semibold text-red-600 text-sm">- {formatRupiah(transactions.reduce((s, t) => s + (t.discount || 0), 0))}</span>
                                 </div>
-                                <div className="flex justify-between py-2 mt-2 border-t-2 border-black">
-                                    <span className="font-black text-gray-900 text-lg uppercase">Net Sales</span>
-                                    <span className="font-black text-gray-900 text-xl" style={{ borderBottom: '3px double #000' }}>{formatRupiah(totalRevenue)}</span>
+                                <div className="flex justify-between py-4 mt-4 border-t-4 border-black">
+                                    <span className="font-black text-gray-900 text-lg uppercase tracking-widest">Net Sales</span>
+                                    <span className="font-black text-gray-900 text-2xl">{formatRupiah(totalRevenue)}</span>
                                 </div>
                             </div>
                         </section>
-
-                        {/* SIGNATURES */}
-                        <section className="mt-16 flex justify-between px-10 text-center text-sm break-inside-avoid">
-                            <div className="w-48">
-                                <p className="mb-20 text-gray-600">Dibuat Oleh,</p>
-                                <div className="border-t border-black font-bold text-gray-900 pt-2">Admin Kasir</div>
-                            </div>
-                            <div className="w-48">
-                                <p className="mb-20 text-gray-600">Mengetahui & Menyetujui,</p>
-                                <div className="border-t border-black font-bold text-gray-900 pt-2">Pemilik / Manager</div>
-                            </div>
-                        </section>
-
-                        <footer className="mt-12 text-center text-xs text-gray-400 italic font-mono pt-4 border-t border-gray-200 break-inside-avoid">
-                            Generated by Abadi Jaya POS System - {formatDateTime(new Date())} - Confidential
-                        </footer>
-                    </div>
+                    </PrintReportLayout>
                 </>
             )}
 
@@ -611,98 +647,44 @@ export default function ReportsPage() {
                     </div>
 
                     {/* --- PRINT ONLY PRODUCT REPORT (A4 FORMAT) --- */}
-                    <div className="hidden print:block w-full text-black font-sans leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        <style>
-                            {`
-                        @media print {
-                          @page { size: A4 portrait; margin: 20mm; }
-                          body { background-color: white !important; -webkit-print-color-adjust: exact; color: black; }
-                          table { page-break-inside: auto; border-collapse: collapse; }
-                          tr { page-break-inside: avoid; page-break-after: auto; }
-                          thead { display: table-header-group; }
-                        }
-                        `}
-                        </style>
-                        <header className="flex justify-between items-end border-b-2 border-black pb-4 mb-8">
-                            <div className="w-1/2">
-                                <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-1">Abadi Jaya Percetakan & POS</h1>
-                                <p className="text-gray-600 text-sm">Sistem Monitoring & Inventori Terpadu</p>
-                                <p className="text-gray-600 text-sm">Laporan Generate Secara Otomatis</p>
-                            </div>
-                            <div className="w-1/2 text-right">
-                                <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-800 mb-2">Laporan Stok Produk</h2>
-                                <div className="text-xs text-gray-600 space-y-1">
-                                    <p><span className="font-semibold text-gray-800">Tanggal Cetak:</span> {formatDateTime(new Date())}</p>
-                                    <p><span className="font-semibold text-gray-800">Dicetak Oleh:</span> Admin Gudang</p>
-                                </div>
-                            </div>
-                        </header>
-
-                        {/* SUMMARY CARDS / HIGHLIGHTS */}
-                        <section className="grid grid-cols-3 gap-6 mb-8">
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Jenis Produk (SKU)</h3>
-                                <p className="text-xl font-black text-gray-900">{allProducts.length}</p>
-                            </div>
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Nilai Inventori</h3>
-                                <p className="text-xl font-black text-blue-700">{formatRupiah(totalStockValue)}</p>
-                            </div>
-                            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                <h3 className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">Stok Menipis / Habis</h3>
-                                <p className="text-xl font-black text-red-700">{lowStockProducts.length}</p>
-                            </div>
-                        </section>
-
+                    <PrintReportLayout
+                        title="Laporan Stok Produk"
+                        printedBy="Admin Gudang"
+                        storeInfo={storeInfo}
+                    >
                         {/* DATA TABLE */}
-                        <section className="mb-8">
-                            <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-black pl-2 uppercase">Rincian Stok Saat Ini</h3>
-                            <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
-                                <thead className="bg-gray-100 border-b-2 border-gray-400">
+                        <section className="mb-10">
+                            <h3 className="font-bold text-gray-800 mb-4 border-l-4 border-black pl-3 uppercase tracking-widest text-sm">Daftar Inventori Master</h3>
+                            <table className="print-table">
+                                <thead>
                                     <tr>
-                                        <th className="py-3 px-4 font-bold text-gray-800 w-1/6">Kode / SKU</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800">Nama Produk</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800 text-center w-1/6">Stok</th>
-                                        <th className="py-3 px-4 font-bold text-gray-800 text-right w-1/5">Nilai Transisi (Rp)</th>
+                                        <th className="w-1/6">Kode / SKU</th>
+                                        <th>Nama Produk</th>
+                                        <th className="text-center w-1/6">Sisa Stok</th>
+                                        <th className="text-right w-1/5">Nilai (Rp)</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody>
                                     {allProducts.map((p, idx) => (
-                                        <tr key={p.id || idx} className={idx % 2 === 1 ? 'bg-gray-50' : ''}>
-                                            <td className="py-3 px-4 font-mono text-gray-600 text-xs">{p.code}</td>
-                                            <td className="py-3 px-4 font-semibold text-gray-800 text-xs">{p.name}</td>
-                                            <td className="py-3 px-4 text-center">
-                                                <span className={`font-bold ${p.stock <= (p.minStock || 0) ? 'text-red-600' : 'text-gray-900'}`}>{p.stock}</span>
-                                                <span className="text-[10px] uppercase text-gray-500 ml-1">{p.unit}</span>
+                                        <tr key={p.id || idx}>
+                                            <td className="font-mono text-gray-500 font-semibold">{p.code}</td>
+                                            <td className="text-gray-900 font-bold text-sm uppercase">{p.name}</td>
+                                            <td className="text-center">
+                                                <span className={`font-black text-sm ${p.stock <= (p.minStock || 0) ? 'text-rose-600' : 'text-gray-900'}`}>{p.stock}</span>
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-1">{p.unit}</span>
                                             </td>
-                                            <td className="py-3 px-4 text-right font-bold text-gray-900 text-xs">{formatRupiah((p.sellPrice || 0) * (p.stock || 0))}</td>
+                                            <td className="text-right font-black text-gray-900 text-sm">{formatRupiah((p.sellPrice || 0) * (p.stock || 0))}</td>
                                         </tr>
                                     ))}
                                     {allProducts.length === 0 && (
                                         <tr>
-                                            <td colSpan="4" className="py-6 text-center italic text-gray-500">Tidak ada data produk.</td>
+                                            <td colSpan="4" className="py-8 text-center italic text-gray-500">Tidak ada data produk.</td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         </section>
-
-                        {/* SIGNATURES */}
-                        <section className="mt-16 flex justify-between px-10 text-center text-sm break-inside-avoid">
-                            <div className="w-48">
-                                <p className="mb-20 text-gray-600">Disiapkan Oleh,</p>
-                                <div className="border-t border-black font-bold text-gray-900 pt-2">Admin Gudang</div>
-                            </div>
-                            <div className="w-48">
-                                <p className="mb-20 text-gray-600">Mengetahui & Menyetujui,</p>
-                                <div className="border-t border-black font-bold text-gray-900 pt-2">Pemilik / Manager</div>
-                            </div>
-                        </section>
-
-                        <footer className="mt-12 text-center text-xs text-gray-400 italic font-mono pt-4 border-t border-gray-200 break-inside-avoid">
-                            Generated by Abadi Jaya POS System - {formatDateTime(new Date())} - Confidential
-                        </footer>
-                    </div>
+                    </PrintReportLayout>
                 </>
             )
             }
@@ -786,106 +768,48 @@ export default function ReportsPage() {
                         </div>
 
                         {/* --- PRINT ONLY CUSTOMER REPORT (A4 FORMAT) --- */}
-                        <div className="hidden print:block w-full text-black font-sans leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                            <style>
-                                {`
-                        @media print {
-                          @page { size: A4 portrait; margin: 20mm; }
-                          body { background-color: white !important; -webkit-print-color-adjust: exact; color: black; }
-                          table { page-break-inside: auto; border-collapse: collapse; }
-                          tr { page-break-inside: avoid; page-break-after: auto; }
-                          thead { display: table-header-group; }
-                        }
-                        `}
-                            </style>
-                            <header className="flex justify-between items-end border-b-2 border-black pb-4 mb-8">
-                                <div className="w-1/2">
-                                    <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-1">Abadi Jaya Percetakan & POS</h1>
-                                    <p className="text-gray-600 text-sm">Sistem Monitoring & Inventori Terpadu</p>
-                                    <p className="text-gray-600 text-sm">Laporan Generate Secara Otomatis</p>
-                                </div>
-                                <div className="w-1/2 text-right">
-                                    <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-800 mb-2">Laporan Pelanggan</h2>
-                                    <div className="text-xs text-gray-600 space-y-1">
-                                        <p><span className="font-semibold text-gray-800">Tanggal Cetak:</span> {formatDateTime(new Date())}</p>
-                                        <p><span className="font-semibold text-gray-800">Dicetak Oleh:</span> Admin Marketer</p>
-                                    </div>
-                                </div>
-                            </header>
-
-                            {/* SUMMARY CARDS / HIGHLIGHTS */}
-                            <section className="grid grid-cols-3 gap-6 mb-8">
-                                <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Pelanggan Aktif</h3>
-                                    <p className="text-xl font-black text-gray-900">{allCustomers.length}</p>
-                                </div>
-                                <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Akumulasi Belanja</h3>
-                                    <p className="text-xl font-black text-emerald-700">{formatRupiah(allCustomers.reduce((s, c) => s + (c.totalSpend || 0), 0))}</p>
-                                </div>
-                                <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Akun Instansi / B2B</h3>
-                                    <p className="text-xl font-black text-amber-600">{allCustomers.filter(c => c.type === 'corporate').length}</p>
-                                </div>
-                            </section>
-
+                        <PrintReportLayout
+                            title="Laporan Pelanggan"
+                            printedBy="Admin Marketer"
+                            storeInfo={storeInfo}
+                        >
                             {/* DATA TABLE */}
-                            <section className="mb-8">
-                                <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-black pl-2 uppercase">Daftar Klien Eksekutif</h3>
-                                <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
-                                    <thead className="bg-gray-100 border-b-2 border-gray-400">
+                            <section className="mb-10">
+                                <h3 className="font-bold text-gray-800 mb-4 border-l-4 border-black pl-3 uppercase tracking-widest text-sm">Daftar Klien Eksekutif</h3>
+                                <table className="print-table">
+                                    <thead>
                                         <tr>
-                                            <th className="py-3 px-4 font-bold text-gray-800">Nama Partner / Klien</th>
-                                            <th className="py-3 px-4 font-bold text-gray-800 w-1/6">Kontak</th>
-                                            <th className="py-3 px-4 font-bold text-gray-800 text-center w-1/6">Tipe</th>
-                                            <th className="py-3 px-4 font-bold text-gray-800 text-center w-1/6">Pesanan</th>
-                                            <th className="py-3 px-4 font-bold text-gray-800 text-right w-1/5">Nilai Belanja (Rp)</th>
+                                            <th>Nama Partner / Klien</th>
+                                            <th className="w-1/6">Kontak</th>
+                                            <th className="text-center w-1/6">Tipe</th>
+                                            <th className="text-center w-1/6">Pesanan</th>
+                                            <th className="text-right w-1/5">Nilai Belanja (Rp)</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
+                                    <tbody>
                                         {allCustomers.map((c, idx) => (
-                                            <tr key={c.id || idx} className={idx % 2 === 1 ? 'bg-gray-50' : ''}>
-                                                <td className="py-3 px-4">
-                                                    <p className="font-semibold text-gray-800 text-xs">{c.name}</p>
-                                                    <p className="text-[10px] text-gray-500 font-mono">{c.company}</p>
+                                            <tr key={c.id || idx}>
+                                                <td>
+                                                    <p className="font-black text-gray-900 text-sm uppercase">{c.name}</p>
+                                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">{c.company || 'Private Client'}</p>
                                                 </td>
-                                                <td className="py-3 px-4 text-gray-600 text-xs font-mono">{c.phone || '-'}</td>
-                                                <td className="py-3 px-4 text-center">
-                                                    <span className={`px-2 py-1 text-[10px] rounded-full font-bold
-                                                ${c.type === 'corporate' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}
-                                            `}>
-                                                        {c.type}
-                                                    </span>
+                                                <td className="text-gray-600 font-mono font-semibold">{c.phone || '-'}</td>
+                                                <td className="text-center">
+                                                    <span className="font-bold text-[10px] text-gray-600 uppercase tracking-wider">{c.type}</span>
                                                 </td>
-                                                <td className="py-3 px-4 text-center font-bold text-gray-900 text-xs">{c.totalTrx || 0}</td>
-                                                <td className="py-3 px-4 text-right font-bold text-gray-900 text-xs">{formatRupiah(c.totalSpend || 0)}</td>
+                                                <td className="text-center font-black text-gray-900">{c.totalTrx || 0}</td>
+                                                <td className="text-right font-black text-emerald-700 text-sm">{formatRupiah(c.totalSpend || 0)}</td>
                                             </tr>
                                         ))}
                                         {allCustomers.length === 0 && (
                                             <tr>
-                                                <td colSpan="5" className="py-6 text-center italic text-gray-500">Tidak ada data pelanggan.</td>
+                                                <td colSpan="5" className="py-8 text-center italic text-gray-500">Tidak ada data pelanggan.</td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
                             </section>
-
-                            {/* SIGNATURES */}
-                            <section className="mt-16 flex justify-between px-10 text-center text-sm break-inside-avoid">
-                                <div className="w-48">
-                                    <p className="mb-20 text-gray-600">Disiapkan Oleh,</p>
-                                    <div className="border-t border-black font-bold text-gray-900 pt-2">Admin Bisnis</div>
-                                </div>
-                                <div className="w-48">
-                                    <p className="mb-20 text-gray-600">Mengetahui & Menyetujui,</p>
-                                    <div className="border-t border-black font-bold text-gray-900 pt-2">Pemilik / Manager</div>
-                                </div>
-                            </section>
-
-                            <footer className="mt-12 text-center text-xs text-gray-400 italic font-mono pt-4 border-t border-gray-200 break-inside-avoid">
-                                Generated by Abadi Jaya POS System - {formatDateTime(new Date())} - Confidential
-                            </footer>
-                        </div >
+                        </PrintReportLayout>
                     </>
                 )
             }
@@ -893,7 +817,7 @@ export default function ReportsPage() {
             {/* ============ PROFIT LOSS REPORT ============ */}
             {
                 activeTab === 'profit-loss' && (
-                    <ProfitLossContent dateFrom={dateFrom} dateTo={dateTo} />
+                    <ProfitLossContent dateFrom={dateFrom} dateTo={dateTo} storeInfo={storeInfo} />
                 )
             }
 

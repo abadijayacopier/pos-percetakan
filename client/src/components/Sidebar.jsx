@@ -9,7 +9,8 @@ import {
     FiDollarSign,
     FiTrendingUp,
     FiPackage,
-    FiTruck
+    FiTruck,
+    FiChevronLeft
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
@@ -47,7 +48,7 @@ const MENU_GROUPS = [
     {
         title: 'Data Master',
         items: [
-            { id: 'inventory', label: 'Inventaris', icon: <FiBox />, roles: ['admin', 'kasir'] },
+            { id: 'inventory', label: 'Barang ATK', icon: <FiBox />, roles: ['admin', 'kasir'] },
             { id: 'pembelian', label: 'Barang Masuk', icon: <FiPackage />, roles: ['admin', 'kasir', 'operator'] },
             { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'kasir', 'operator'] },
             { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir'] },
@@ -127,7 +128,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                 animate={isOpen || isDesktop ? "open" : "closed"}
                 className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
                 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
-                flex flex-col overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
+                flex flex-col overflow-visible shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
@@ -159,12 +160,10 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                         {isDesktop && (
                             <button
                                 onClick={toggleCollapse}
-                                className={`mt-4 mx-auto w-full flex items-center justify-center p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all ${isCollapsed ? '' : 'justify-end'}`}
+                                className="absolute -right-3.5 top-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full p-1 text-slate-400 hover:text-blue-600 hover:scale-110 hover:shadow-md shadow-sm z-50 transition-all"
                                 title={isCollapsed ? "Perbesar Menu" : "Perkecil Menu"}
                             >
-                                <span className="material-symbols-outlined text-xl">
-                                    {isCollapsed ? 'menu_open' : 'menu'}
-                                </span>
+                                <FiChevronLeft size={16} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
                             </button>
                         )}
                     </div>
@@ -208,7 +207,18 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                                     <motion.button
                                                         whileHover={{ x: isCollapsed && isDesktop ? 0 : 4, scale: isCollapsed && isDesktop ? 1.05 : 1 }}
                                                         whileTap={{ scale: 0.98 }}
-                                                        onClick={() => hasChildren && !(isCollapsed && isDesktop) ? toggleExpand(item.id) : handleNav(item.id)}
+                                                        onClick={() => {
+                                                            if (hasChildren) {
+                                                                if (isCollapsed && isDesktop) {
+                                                                    toggleCollapse(); // Expand global sidebar
+                                                                    setExpanded(prev => ({ ...prev, [item.id]: true })); // Buka spesifik accordion
+                                                                } else {
+                                                                    toggleExpand(item.id);
+                                                                }
+                                                            } else {
+                                                                handleNav(item.id);
+                                                            }
+                                                        }}
                                                         title={isCollapsed && isDesktop ? item.label : undefined}
                                                         className={`flex items-center gap-3 py-2.5 rounded-xl font-semibold text-[13px] tracking-wide transition-all outline-none relative group
                                                         ${isCollapsed && isDesktop ? 'justify-center w-12 px-0' : 'w-full px-3 text-left'}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import db from '../db';
+
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
@@ -88,57 +88,47 @@ export default function DigitalPrintingPage({ onNavigate }) {
             setMaterials([]);
         }
 
-        const allCustomers = db.getAll('customers');
-        setCustomers(allCustomers);
-        if (allCustomers.length > 0 && !customerId) {
-            const walkIn = allCustomers.find(c => c.name.toLowerCase().includes('umum') || c.name.toLowerCase().includes('walk-in'));
-            setCustomerId(walkIn ? walkIn.id : allCustomers[0].id);
-        }
-
-        // 1. Load active designs from local dp_tasks (for 'Sedang Dikerjakan' cards)
-        const allTasks = db.getAll('dp_tasks');
-        const designs = allTasks.filter(t =>
-            ['menunggu_desain', 'desain', 'ditugaskan', 'dikerjakan'].includes(t.status) &&
-            t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET'))
-        );
-        setActiveDesigns(designs);
-
-        const logs = [...allTasks]
-            .filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')))
-            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        setRecentLogs(logs);
-
-        // 2. Load live queue stats from backend SPK (for Live Queue Monitor)
         try {
-            const { data: spkRes } = await api.get('/spk');
+            const { data: allCustomers } = await api.get('/customers');
+            setCustomers(allCustomers);
+            if (allCustomers.length > 0 && !customerId) {
+                const walkIn = allCustomers.find(c => c.name.toLowerCase().includes('umum') || c.name.toLowerCase().includes('walk-in'));
+                setCustomerId(walkIn ? walkIn.id : allCustomers[0].id);
+            }
+        } catch (e) { console.error(e); }
+
+        try {
+            // Load active designs from API
+            const { data: allTasks } = await api.get('/dp_tasks');
+            const designs = allTasks.filter(t =>
+                ['menunggu_desain', 'desain', 'ditugaskan', 'dikerjakan'].includes(t.status) &&
+                t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET'))
+            );
+            setActiveDesigns(designs);
+            const logs = [...allTasks].filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')));
+            setRecentLogs(logs);
+
+            // Queue Stats Fallback
             let menunggu = 0, cetak = 0, finishing = 0;
-            const spkData = spkRes.data || [];
-
-            spkData.forEach(s => {
-                if (s.status === 'Menunggu Antrian') menunggu++;
-                else if (s.status === 'Dalam Proses Cetak') cetak++;
-                else if (['Finishing', 'Quality Control'].includes(s.status)) finishing++;
-            });
-
-            // Fallback to combine with local dp_tasks (if they use productions logic here)
-            // Local fallback logic just added for safety if user prefers mixing
             allTasks.forEach(t => {
                 if (t.status === 'produksi') menunggu++;
                 else if (t.status === 'cetak') cetak++;
                 else if (t.status === 'finishing') finishing++;
             });
+
+            try {
+                const { data: spkRes } = await api.get('/spk');
+                const spkData = spkRes.data || [];
+                spkData.forEach(s => {
+                    if (s.status === 'Menunggu Antrian') menunggu++;
+                    else if (s.status === 'Dalam Proses Cetak') cetak++;
+                    else if (['Finishing', 'Quality Control'].includes(s.status)) finishing++;
+                });
+            } catch (e) { }
 
             setStats({ menunggu, cetak, finishing });
         } catch (err) {
-            console.error('Gagal mengambil data antrean produksi:', err);
-            // Fallback completely to local DB if backend fails
-            let menunggu = 0, cetak = 0, finishing = 0;
-            allTasks.forEach(t => {
-                if (t.status === 'produksi') menunggu++;
-                else if (t.status === 'cetak') cetak++;
-                else if (t.status === 'finishing') finishing++;
-            });
-            setStats({ menunggu, cetak, finishing });
+            console.error(err);
         }
     };
 
@@ -167,11 +157,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 task_id: selectedTask.id,
                 designer_id: designerId
             });
-            db.update('dp_tasks', selectedTask.id, {
-                status: 'ditugaskan',
-                updatedAt: new Date().toISOString()
-            });
-            db.logActivity(user?.name, 'Tugaskan Desainer', `Pesanan ${selectedTask.id} ditugaskan ke operator desain`);
+            await api.put(`/dp_tasks/${selectedTask.id}`, { status: 'ditugaskan' });
             setShowAssignModal(false);
             setSelectedTask(null);
             loadData();
@@ -227,42 +213,40 @@ export default function DigitalPrintingPage({ onNavigate }) {
         };
 
         const newTransaction = {
-            id: newTask.id + '_TRX',
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
-            userId: user?.id || 'admin',
-            userName: user?.name || 'Admin',
-            customerName: selectedCust?.name || 'Pelanggan Umum',
             customerId: customerId,
+            customerName: selectedCust?.name || 'Pelanggan Umum',
             items: [{
                 id: newTask.id,
                 name: newTask.title,
                 qty: 1,
                 price: totalEstimasi,
                 subtotal: totalEstimasi,
-                type: 'digital_printing'
+                source: 'digital'
             }],
             subtotal: totalEstimasi,
             discount: 0,
-            tax: 0,
             total: totalEstimasi,
-            paymentType: '',
             paid: 0,
-            change: 0,
+            changeAmount: 0,
+            paymentType: 'none',
             status: 'unpaid',
-            type: 'digital_printing',
-            dp_task_id: newTask.id
+            type: 'digital_printing'
         };
 
-        db.insert('dp_tasks', newTask);
-        db.insert('transactions', newTransaction);
-        db.logActivity(user?.name, 'Buat Pesanan Baru', `Menambah pesanan cetak ${newTask.title}`);
-
-        setPanjang('');
-        setLebar('');
-        setPesanDesainer('');
-        setErrors({});
-        loadData();
+        api.post('/dp_tasks', newTask).then(() => {
+            return api.post('/transactions', newTransaction);
+        }).then(() => {
+            setPanjang('');
+            setLebar('');
+            setPesanDesainer('');
+            setErrors({});
+            loadData();
+        }).catch(err => {
+            console.error('Err:', err);
+            alert('Gagal buat pesanan');
+        });
     };
 
     const handleCreateOrderFromCalc = () => {
@@ -291,42 +275,38 @@ export default function DigitalPrintingPage({ onNavigate }) {
         };
 
         const newTransaction = {
-            id: newTask.id + '_TRX',
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
-            userId: user?.id || 'admin',
-            userName: user?.name || 'Admin',
-            customerName: selectedCust?.name || 'Pelanggan Umum',
             customerId: newTask.customerId,
+            customerName: selectedCust?.name || 'Pelanggan Umum',
             items: [{
                 id: newTask.id,
                 name: newTask.title,
                 qty: 1,
                 price: calcOrderData.estimatedTotal,
                 subtotal: calcOrderData.estimatedTotal,
-                type: 'digital_printing'
+                source: 'digital'
             }],
             subtotal: calcOrderData.estimatedTotal,
             discount: 0,
-            tax: 0,
             total: calcOrderData.estimatedTotal,
-            paymentType: '',
             paid: 0,
-            change: 0,
+            changeAmount: 0,
+            paymentType: 'none',
             status: 'unpaid',
-            type: 'digital_printing',
-            dp_task_id: newTask.id
+            type: 'digital_printing'
         };
 
-        setTimeout(() => {
-            db.insert('dp_tasks', newTask);
-            db.insert('transactions', newTransaction);
-            db.logActivity(user?.name, 'Buat Pesanan SPK', `Menambah pesanan cetak ${newTask.title}`);
-
+        api.post('/dp_tasks', newTask).then(() => {
+            return api.post('/transactions', newTransaction);
+        }).then(() => {
             setCalcOrderData({ customerId: '', materialId: '', width: '', height: '', notes: '', estimatedTotal: 0 });
             setLoading(false);
             loadData();
-        }, 500);
+        }).catch(err => {
+            setLoading(false);
+            alert('Gagal memproses kalkulasi orders');
+        });
     };
 
 
@@ -335,15 +315,16 @@ export default function DigitalPrintingPage({ onNavigate }) {
         setShowCancelModal(true);
     };
 
-    const confirmCancelTask = () => {
+    const confirmCancelTask = async () => {
         if (!cancelTaskId) return;
-        const task = db.getById('dp_tasks', cancelTaskId);
-        db.update('dp_tasks', cancelTaskId, { status: 'batal' });
-        db.logActivity(user?.name, 'Batalkan Pesanan', `Membatalkan pesanan ${task?.title}`);
-
-        setShowCancelModal(false);
-        setCancelTaskId(null);
-        loadData();
+        try {
+            await api.patch(`/dp_tasks/${cancelTaskId}/status`, { status: 'batal' });
+            setShowCancelModal(false);
+            setCancelTaskId(null);
+            loadData();
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const openEdit = (task) => {
@@ -356,25 +337,27 @@ export default function DigitalPrintingPage({ onNavigate }) {
         setShowEditModal(true);
     };
 
-    const handleUpdateTask = () => {
+    const handleUpdateTask = async () => {
         const mat = materials.find(m => m.id === editForm.matId);
         const cust = customers.find(c => c.id === editForm.customerId);
         const luasValue = (parseFloat(editForm.dimensions.height) || 0) * (parseFloat(editForm.dimensions.width) || 0);
         const price = luasValue * (mat?.sellPrice || 0);
 
-        db.update('dp_tasks', selectedTask.id, {
-            dimensions: { width: editForm.dimensions.width, height: editForm.dimensions.height },
-            material_id: editForm.matId,
-            material_name: mat?.name,
-            customerId: editForm.customerId,
-            customerName: cust?.name,
-            material_price: price,
-            title: `${mat?.name} (${editForm.dimensions.width}x${editForm.dimensions.height}m)`
-        });
-
-        db.logActivity(user?.name, 'Update Pesanan', `Memperbarui detail pesanan ${selectedTask.id}`);
-        setShowEditModal(false);
-        loadData();
+        try {
+            await api.put(`/dp_tasks/${selectedTask.id}`, {
+                dimensions: { width: editForm.dimensions.width, height: editForm.dimensions.height },
+                material_id: editForm.matId,
+                material_name: mat?.name,
+                customerId: editForm.customerId,
+                customerName: cust?.name,
+                material_price: price,
+                title: `${mat?.name} (${editForm.dimensions.width}x${editForm.dimensions.height}m)`
+            });
+            setShowEditModal(false);
+            loadData();
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     return (

@@ -18,9 +18,30 @@ router.get('/', verifyToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data produk' });
+        res.status(500).json({ message: 'Gagal memuat produk' });
     }
 });
+
+// 1b. GET Produk (Publik tanpa auth untuk Landing Page)
+router.get('/public', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+      SELECT p.id, p.code, p.name, p.category_id as categoryId, 
+             p.sell_price as sellPrice, 
+             p.stock, p.unit, p.emoji,
+             c.name as category_name, c.emoji as category_emoji 
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.stock > 0
+      ORDER BY p.name ASC
+    `);
+        res.json(rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal memuat katalog produk' });
+    }
+});
+
 
 // 2. GET Kategori Produk
 router.get('/categories', verifyToken, async (req, res) => {
@@ -63,12 +84,14 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             return res.status(400).json({ message: 'Kode produk ini sudah dipakai!' });
         }
 
+        const validCategoryId = (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && String(categoryId).trim() !== '') ? categoryId : null;
+
         const newId = 'p' + Date.now();
         await pool.query(`
       INSERT INTO products 
       (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newId, code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji || '📦']);
+    `, [newId, code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji || '📦']);
 
         res.status(201).json({ message: 'Produk berhasil ditambahkan!', id: newId });
     } catch (error) {
@@ -89,12 +112,14 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), async (req, res
             return res.status(400).json({ message: 'Kode produk sudah dipakai oleh produk lain!' });
         }
 
+        const validCategoryId = (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && String(categoryId).trim() !== '') ? categoryId : null;
+
         const [result] = await pool.query(`
       UPDATE products 
       SET code = ?, name = ?, category_id = ?, buy_price = ?, sell_price = ?, 
           stock = ?, min_stock = ?, unit = ?, emoji = ?
       WHERE id = ?
-    `, [code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji, id]);
+    `, [code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji, id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Produk tidak ditemukan' });

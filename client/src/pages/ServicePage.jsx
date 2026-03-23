@@ -6,7 +6,7 @@ import {
     FiSettings, FiBox, FiPhone, FiCreditCard, FiShield, FiX, FiSave,
     FiChevronLeft
 } from 'react-icons/fi';
-import db from '../db';
+import api from '../services/api';
 import { formatRupiah } from '../utils';
 
 const formatDate = (dateStr, pattern = 'dd/MM/yyyy') => {
@@ -50,13 +50,19 @@ export default function ServicePage({ onNavigate }) {
         loadData();
     }, []);
 
-    const loadData = () => {
-        const srv = db.getAll('service_orders');
-        const cust = db.getAll('customers');
-        const users = db.getAll('users');
-        setServices(srv.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-        setCustomers(cust);
-        setTechnicians(users.filter(u => u.role === 'teknisi'));
+    const loadData = async () => {
+        try {
+            const [srvRes, custRes, usersRes] = await Promise.all([
+                api.get('/service').catch(() => ({ data: [] })),
+                api.get('/customers').catch(() => ({ data: [] })),
+                api.get('/users').catch(() => ({ data: [] }))
+            ]);
+            setServices((srvRes.data || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+            setCustomers(custRes.data || []);
+            setTechnicians((usersRes.data || []).filter(u => u.role === 'teknisi'));
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     const stats = useMemo(() => ({
@@ -87,7 +93,7 @@ export default function ServicePage({ onNavigate }) {
     const handleSearch = (v) => { setSearchQuery(v); setPage(1); };
     const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
-    const handleSaveService = (e) => {
+    const handleSaveService = async (e) => {
         e.preventDefault();
         const totalSpareparts = formData.spareparts.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
         const totalCost = (Number(formData.laborCost) || 0) + totalSpareparts;
@@ -96,26 +102,36 @@ export default function ServicePage({ onNavigate }) {
 
         const newRecord = {
             ...formData,
-            id: selectedService?.id || `so_${Date.now()}`,
             serviceNo: selectedService?.serviceNo || `SRV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${(services.length + 1).toString().padStart(4, '0')}`,
             customerName: customers.find(c => c.id === formData.customerId)?.name || formData.customerName,
-            technicianName: technician?.name || '',
+            conditionPhysic: formData.condition, // map to backend field
             totalCost,
             status: formData.status || selectedService?.status || 'approval',
-            entryDate: selectedService?.entryDate || new Date().toISOString(),
-            createdAt: selectedService?.createdAt || new Date().toISOString(),
         };
 
-        if (selectedService) {
-            db.update('service_orders', selectedService.id, newRecord);
-        } else {
-            db.insert('service_orders', newRecord);
-        }
+        try {
+            let targetId = selectedService?.id;
 
-        setShowForm(false);
-        setSelectedService(null);
-        resetForm();
-        loadData();
+            if (selectedService) {
+                // If it's just a status change without diagnosis/spareparts, PATCH status
+                // But full form uses PUT to update everything
+                await api.put(`/service/${targetId}`, newRecord);
+            } else {
+                const res = await api.post('/service', newRecord);
+                targetId = res.data.id;
+
+                // If we have spareparts/diagnosis right at creation, we immediately update it
+                if (newRecord.spareparts?.length > 0 || newRecord.laborCost > 0 || newRecord.diagnosis) {
+                    await api.put(`/service/${targetId}`, newRecord);
+                }
+            }
+            setShowForm(false);
+            setSelectedService(null);
+            resetForm();
+            loadData();
+        } catch (error) {
+            alert('Gagal menyimpan tiket: ' + (error.response?.data?.message || 'Terjadi kesalahan sistem'));
+        }
     };
 
     const resetForm = () => {
@@ -303,7 +319,7 @@ export default function ServicePage({ onNavigate }) {
                                             {formatRupiah(srv.totalCost)}
                                         </div>
                                         {srv.dpAmount > 0 && (
-                                            <div className="text-[9px] text-emerald-600 font-black uppercase tracking-widest mt-0.5 mt-1 relative inline-flex items-center gap-1">
+                                            <div className="text-[9px] text-emerald-600 font-black uppercase tracking-widest mt-1 relative inline-flex items-center gap-1">
                                                 <div className="size-1 bg-emerald-500 rounded-full animate-pulse"></div>
                                                 DP: {formatRupiah(srv.dpAmount)}
                                             </div>
@@ -312,7 +328,23 @@ export default function ServicePage({ onNavigate }) {
                                     <td className="px-6 py-5">
                                         <div className="flex items-center justify-center gap-1.5">
                                             {[
-                                                { icon: <FiEdit2 />, label: 'Edit', color: 'blue', onClick: () => { setSelectedService(srv); setFormData({ ...srv }); setShowForm(true); } },
+                                                {
+                                                    icon: <FiEdit2 />, label: 'Edit', color: 'blue', onClick: () => {
+                                                        setSelectedService(srv);
+                                                        api.get(`/service/${srv.id}`).then(res => {
+                                                            const detail = res.data;
+                                                            setFormData({
+                                                                ...detail,
+                                                                condition: detail.conditionPhysic || detail.condition || '',
+                                                                spareparts: detail.spareparts || [],
+                                                                laborCost: detail.laborCost || 0
+                                                            });
+                                                            setShowForm(true);
+                                                        }).catch(() => {
+                                                            alert('Gagal memuat detail tiket');
+                                                        });
+                                                    }
+                                                },
                                                 { icon: <FiPrinter />, label: 'Invoice', color: 'emerald', onClick: () => onNavigate('print-service-invoice', { serviceId: srv.id }) },
                                                 { icon: <FiShield />, label: 'Warranty', color: 'blue', onClick: () => onNavigate('print-warranty-sticker', { serviceId: srv.id }) },
                                                 { icon: <FiTrash2 />, label: 'Hapus', color: 'rose', onClick: () => { } /* Add delete confirmation if needed */ },
@@ -668,7 +700,7 @@ export default function ServicePage({ onNavigate }) {
                                             <p className="text-5xl font-black text-white italic tracking-tighter flex items-center justify-center md:justify-end gap-2 drop-shadow-2xl">
                                                 <span className="text-2xl not-italic text-blue-500 -mt-2">Rp</span>
                                                 {((Number(formData.laborCost) || 0) + formData.spareparts.reduce((s, i) => s + (Number(i.subtotal) || 0), 0)).toLocaleString('id-ID')}
-                                                <span className="text-[12px] not-italic text-slate-500 italic uppercase tracking-[0.05em] align-baseline">,-</span>
+                                                <span className="text-[12px] not-italic text-slate-500 uppercase tracking-[0.05em] align-baseline">,-</span>
                                             </p>
                                             <div className="flex items-center justify-center md:justify-end gap-2 mt-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                                                 <FiActivity className="text-blue-500 animate-pulse" /> Final settlement based on actual usage

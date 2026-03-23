@@ -1,8 +1,12 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { customerSchema } from '../validations/customerSchema';
+import api from '../services/api';
 import { formatRupiah, formatDate } from '../utils';
 import Modal from '../components/Modal';
 import { FiUsers, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiStar, FiBriefcase, FiUser, FiCpu, FiPhone, FiMapPin, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 const TYPE_MAP = {
     walkin: { label: 'Walk-in', color: '#6b7280', bg: '#f3f4f6', icon: <FiUser size={12} /> },
@@ -14,18 +18,33 @@ const TYPE_MAP = {
 const emptyForm = { name: '', phone: '', address: '', type: 'walkin', company: '' };
 
 export default function CustomersPage() {
-    const [customers, setCustomers] = useState(() => db.getAll('customers'));
+    const [customers, setCustomers] = useState([]);
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('all');
     const [showModal, setShowModal] = useState(false);
     const [editItem, setEditItem] = useState(null);
-    const [form, setForm] = useState(emptyForm);
     const [confirmDelete, setConfirmDelete] = useState(null);
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
 
-    const reload = () => setCustomers(db.getAll('customers'));
-    const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const { register, handleSubmit, reset, formState: { errors, isValid } } = useForm({
+        resolver: zodResolver(customerSchema),
+        defaultValues: emptyForm,
+        mode: 'onChange'
+    });
+
+    const reload = async () => {
+        try {
+            const res = await api.get('/customers');
+            setCustomers(res.data || []);
+        } catch (e) {
+            console.error('Failed to load customers', e);
+        }
+    };
+
+    useEffect(() => {
+        reload();
+    }, []);
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
@@ -44,21 +63,71 @@ export default function CustomersPage() {
 
     const typeCount = (t) => customers.filter(c => c.type === t).length;
 
-    const openAdd = () => { setEditItem(null); setForm(emptyForm); setShowModal(true); };
-    const openEdit = (c) => { setEditItem(c); setForm({ name: c.name, phone: c.phone || '', address: c.address || '', type: c.type || 'walkin', company: c.company || '' }); setShowModal(true); };
-
-    const handleSave = () => {
-        if (!form.name.trim()) return;
-        if (editItem) {
-            db.update('customers', editItem.id, form);
-        } else {
-            db.insert('customers', { ...form, totalTrx: 0, totalSpend: 0 });
-        }
-        setShowModal(false);
-        reload();
+    const openAdd = () => { setEditItem(null); reset(emptyForm); setShowModal(true); };
+    const openEdit = (c) => {
+        setEditItem(c);
+        reset({ name: c.name, phone: c.phone || '', address: c.address || '', type: c.type || 'walkin', company: c.company || '' });
+        setShowModal(true);
     };
 
-    const handleDelete = (id) => { db.delete('customers', id); setConfirmDelete(null); reload(); };
+    const handleCancel = () => {
+        Swal.fire({
+            title: 'Batalkan Pengisian?',
+            text: 'Data yang sudah Anda ketik akan hilang.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Lanjut Isi'
+        }).then((result) => {
+            if (result.isConfirmed) setShowModal(false);
+        });
+    };
+
+    const onSubmitForm = async (data) => {
+        try {
+            if (editItem) {
+                await api.put(`/customers/${editItem.id}`, data);
+            } else {
+                await api.post('/customers', { ...data, totalTrx: 0, totalSpend: 0 });
+            }
+            setShowModal(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: `Data pelanggan telah ${editItem ? 'diperbarui' : 'ditambahkan'}.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+            reload();
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Gagal Menyimpan', text: e.response?.data?.message || e.message, confirmButtonColor: '#ef4444' });
+        }
+    };
+
+    const handleDelete = async (c) => {
+        const result = await Swal.fire({
+            title: 'Hapus Pelanggan?',
+            html: `Anda yakin ingin menghapus <b>${c.name}</b>?<br/>Seluruh riwayat transaksi pelanggan ini juga akan terhapus secara permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/customers/${c.id}`);
+                Swal.fire({ icon: 'success', title: 'Terhapus!', text: 'Pelanggan berhasil dihapus.', timer: 1500, showConfirmButton: false });
+                reload();
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus pelanggan.' });
+            }
+        }
+    };
 
     return (
         <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
@@ -224,7 +293,7 @@ export default function CustomersPage() {
                                                     <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all" onClick={() => openEdit(c)} title="Edit Profil">
                                                         <FiEdit size={16} />
                                                     </button>
-                                                    <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all" onClick={() => setConfirmDelete(c)} title="Hapus Data">
+                                                    <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all" onClick={() => handleDelete(c)} title="Hapus Data">
                                                         <FiTrash2 size={16} />
                                                     </button>
                                                 </div>
@@ -286,7 +355,7 @@ export default function CustomersPage() {
             </div>
 
             {/* Add/Edit Modal */}
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={
+            <Modal isOpen={showModal} onClose={handleCancel} title={
                 <div className="flex items-center gap-3 text-slate-800 dark:text-white uppercase tracking-tight font-black">
                     <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl">
                         {editItem ? <FiEdit /> : <FiPlus />}
@@ -294,79 +363,87 @@ export default function CustomersPage() {
                     {editItem ? 'Edit Profil Pelanggan' : 'Member Baru'}
                 </div>
             }>
-                <div className="space-y-6 py-4">
+                <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 py-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap *</label>
                         <div className="relative">
-                            <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Masukkan nama pelanggan..." value={form.name} onChange={e => set('name', e.target.value)} />
+                            <FiUser className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.name ? 'text-rose-500' : 'text-slate-400'}`} />
+                            <input
+                                className={`w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border ${errors.name ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500'} rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 transition-all dark:text-white`}
+                                placeholder="Masukkan nama pelanggan..."
+                                {...register('name')}
+                            />
                         </div>
+                        {errors.name && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.name.message}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">No. WhatsApp / HP</label>
                             <div className="relative">
-                                <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="08..." value={form.phone} onChange={e => set('phone', e.target.value)} />
+                                <FiPhone className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.phone ? 'text-rose-500' : 'text-slate-400'}`} />
+                                <input
+                                    className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border ${errors.phone ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500'} rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 transition-all dark:text-white`}
+                                    placeholder="08..."
+                                    {...register('phone')}
+                                />
                             </div>
+                            {errors.phone && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.phone.message}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Pelanggan</label>
-                            <select className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white appearance-none cursor-pointer" value={form.type} onChange={e => set('type', e.target.value)}>
+                            <select
+                                className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white appearance-none cursor-pointer"
+                                {...register('type')}
+                            >
                                 {Object.entries(TYPE_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                             </select>
+                            {errors.type && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.type.message}</p>}
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alamat Domisili</label>
                         <div className="relative">
-                            <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Jl. Raya Utama..." value={form.address} onChange={e => set('address', e.target.value)} />
+                            <FiMapPin className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.address ? 'text-rose-500' : 'text-slate-400'}`} />
+                            <input
+                                className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border ${errors.address ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500'} rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 transition-all dark:text-white`}
+                                placeholder="Jl. Raya Utama..."
+                                {...register('address')}
+                            />
                         </div>
+                        {errors.address && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.address.message}</p>}
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Perusahaan / Instansi (Opsional)</label>
                         <div className="relative">
-                            <FiBriefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Instansi pemerintah/swasta..." value={form.company} onChange={e => set('company', e.target.value)} />
+                            <FiBriefcase className={`absolute left-4 top-1/2 -translate-y-1/2 ${errors.company ? 'text-rose-500' : 'text-slate-400'}`} />
+                            <input
+                                className={`w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border ${errors.company ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500'} rounded-2xl text-sm font-bold shadow-sm outline-none focus:ring-2 transition-all dark:text-white`}
+                                placeholder="Instansi pemerintah/swasta..."
+                                {...register('company')}
+                            />
                         </div>
+                        {errors.company && <p className="text-rose-500 text-[10px] font-bold ml-1">{errors.company.message}</p>}
                     </div>
 
                     <div className="pt-6 flex gap-3">
-                        <button className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-2xl transition-all uppercase tracking-[0.15em] text-[10px]" onClick={() => setShowModal(false)}>
+                        <button type="button" className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-2xl transition-all uppercase tracking-[0.15em] text-[10px]" onClick={handleCancel}>
                             Batal
                         </button>
-                        <button className="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-3 uppercase tracking-[0.15em] text-[10px] group" onClick={handleSave}>
+                        <button
+                            type="submit"
+                            disabled={!isValid}
+                            className="flex-[2] py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-2xl transition-all shadow-lg shadow-blue-100 dark:shadow-none flex items-center justify-center gap-3 uppercase tracking-[0.15em] text-[10px] group"
+                        >
                             <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Data
                         </button>
                     </div>
-                </div>
+                </form>
             </Modal>
 
-            {/* Delete Confirmation */}
-            <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title={<div className="flex items-center gap-2 text-rose-600"><FiTrash2 /> Hapus Data</div>}>
-                <div className="p-4 text-center">
-                    <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <FiTrash2 size={40} />
-                    </div>
-                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">Konfirmasi Hapus</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
-                        Yakin ingin menghapus pelanggan <span className="font-black text-slate-900 dark:text-white uppercase">"{confirmDelete?.name}"</span>?<br />
-                        Seluruh riwayat kaitan data ini akan dihapus permanen.
-                    </p>
-                    <div className="flex gap-4">
-                        <button className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black rounded-2xl transition-all uppercase tracking-widest text-[10px]" onClick={() => setConfirmDelete(null)}>
-                            Batal
-                        </button>
-                        <button className="flex-1 py-4 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-rose-100 dark:shadow-none uppercase tracking-widest text-[10px]" onClick={() => handleDelete(confirmDelete.id)}>
-                            Ya, Hapus
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+
         </div>
     );
 }

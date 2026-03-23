@@ -6,6 +6,7 @@ import {
     FiAlertCircle, FiArrowRight, FiArrowLeft, FiEdit3,
     FiSettings, FiGrid, FiList, FiFilter, FiDownload, FiTruck, FiActivity
 } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
@@ -39,21 +40,44 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+    const handleCancel = () => {
+        const isDirty = form.nama_bahan.trim() !== '' || String(form.harga_modal) !== '' || String(form.harga_jual) !== '';
+        if (isDirty) {
+            Swal.fire({
+                title: 'Batalkan Pengisian?',
+                text: 'Data yang sudah Anda ketik akan hilang.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Lanjut Isi'
+            }).then((result) => {
+                if (result.isConfirmed) onClose();
+            });
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.nama_bahan.trim()) return toast('Nama bahan wajib diisi', 'warn');
+        if (!form.nama_bahan.trim()) {
+            Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Nama bahan wajib diisi', confirmButtonColor: '#3b82f6' });
+            return;
+        }
         setSaving(true);
         try {
             if (initial) {
                 await api.put(`/materials/${initial.id}`, form);
-                toast(<>Bahan berhasil diperbarui <FiCheck /></>);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Bahan cetak berhasil diperbarui.', timer: 1500, showConfirmButton: false });
             } else {
                 await api.post('/materials', form);
-                toast(<>Bahan baru berhasil ditambahkan <FiCheck /></>);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Bahan baru berhasil ditambahkan.', timer: 1500, showConfirmButton: false });
             }
             onSaved();
         } catch (err) {
-            toast(err.response?.data?.message || 'Gagal menyimpan', 'error');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menyimpan', confirmButtonColor: '#ef4444' });
         } finally {
             setSaving(false);
         }
@@ -63,7 +87,7 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={handleCancel}
             />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -79,7 +103,7 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
                         </h3>
                         <p className="text-sm text-slate-500 mt-1">Lengkapi informasi detail stok dan harga bahan.</p>
                     </div>
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-slate-400" onClick={onClose}>
+                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors dark:text-slate-400" onClick={handleCancel}>
                         <FiX size={20} />
                     </button>
                 </div>
@@ -169,7 +193,7 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
                 </form>
 
                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 justify-end items-center">
-                    <button type="button" className="px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-bold hover:shadow-lg transition-all" onClick={onClose}>
+                    <button type="button" className="px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-bold hover:shadow-lg transition-all" onClick={handleCancel}>
                         Batal
                     </button>
                     <button
@@ -192,16 +216,38 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
     const [form, setForm] = useState({ tipe: 'masuk', jumlah: '', catatan: '' });
     const [saving, setSaving] = useState(false);
 
+    const handleCancel = () => {
+        if (form.jumlah) {
+            Swal.fire({
+                title: 'Batalkan Mutasi?',
+                text: 'Perubahan stok tidak akan disimpan.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Lanjut'
+            }).then((result) => {
+                if (result.isConfirmed) onClose();
+            });
+        } else {
+            onClose();
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.jumlah || parseFloat(form.jumlah) <= 0) return toast('Jumlah harus > 0', 'warn');
+        if (!form.jumlah || parseFloat(form.jumlah) <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Jumlah harus > 0', confirmButtonColor: '#3b82f6' });
+            return;
+        }
         setSaving(true);
         try {
             await api.post(`/materials/${bahan.id}/stok`, { ...form, jumlah: parseFloat(form.jumlah) });
-            toast(<>Stok berhasil disesuaikan <FiCheck /></>);
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Stok berhasil disesuaikan.', timer: 1500, showConfirmButton: false });
             onSaved();
         } catch (err) {
-            toast(err.response?.data?.message || 'Gagal menyesuaikan stok', 'error');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menyesuaikan stok', confirmButtonColor: '#ef4444' });
         } finally {
             setSaving(false);
         }
@@ -220,7 +266,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
             <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={handleCancel}
             />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -233,7 +279,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                         <FiActivity className="text-primary" />
                         Sesuaikan Stok
                     </h3>
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full dark:text-slate-400" onClick={onClose}>
+                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full dark:text-slate-400" onClick={handleCancel}>
                         <FiX size={20} />
                     </button>
                 </div>
@@ -309,7 +355,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                     </AnimatePresence>
 
                     <div className="flex gap-3 mt-4">
-                        <button type="button" className="flex-1 py-4 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold" onClick={onClose}>
+                        <button type="button" className="flex-1 py-4 px-6 rounded-2xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold" onClick={handleCancel}>
                             Batal
                         </button>
                         <button
@@ -485,8 +531,8 @@ export default function MaterialsPage({ onNavigate }) {
                                     key={f.id}
                                     onClick={() => setFilter(f.id)}
                                     className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${filter === f.id
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
-                                            : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                        ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                                        : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
                                         }`}
                                 >
                                     {f.icon} {f.label}
@@ -649,8 +695,8 @@ export default function MaterialsPage({ onNavigate }) {
                                                 <button
                                                     key={p}
                                                     className={`w-9 h-9 flex items-center justify-center rounded-xl font-black text-xs transition-all ${currentPage === p
-                                                            ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-110'
-                                                            : 'bg-white dark:bg-slate-800 text-slate-400'
+                                                        ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-110'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-400'
                                                         }`}
                                                     onClick={() => setCurrentPage(p)}
                                                 >

@@ -46,11 +46,15 @@ api.interceptors.response.use(
             configUrl.includes('landing');
 
         if (status === 401 && !isAuthEndpoint && !isPublicEndpoint) {
-            // Token expired / tidak valid — hanya logout jika BUKAN dari proses login
-            console.warn('[api] Token expired, melakukan logout otomatis. URL:', configUrl);
-            localStorage.removeItem('pos_session');
-            alert('Sesi login sudah habis. Silakan login kembali.');
-            window.location.href = '/';
+            const sessionStr = localStorage.getItem('pos_session');
+            if (sessionStr) {
+                // Token expired / tidak valid — hanya logout jika BUKAN dari proses login
+                console.warn('[api] Token expired, melakukan logout otomatis. URL:', configUrl);
+                alert('Sesi login sudah habis. Silakan login kembali.');
+                localStorage.removeItem('token');
+                localStorage.removeItem('pos_session');
+                window.location.href = '/';
+            }
         }
 
         // 403 = Role tidak cukup → JANGAN logout, komponen tangani sendiri

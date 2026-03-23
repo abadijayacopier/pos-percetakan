@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import db from '../db';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,32 +14,38 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
 
     useEffect(() => {
         if (taskId) {
-            const t = db.getById('dp_tasks', taskId);
-            if (t) {
-                setTask(t);
-                // Map task data to items
-                const newItems = [
-                    {
-                        id: 'mat-' + t.id,
-                        type: 'product',
-                        name: t.material_name || 'Bahan Cetak',
-                        price: t.material_price || 0,
-                        specs: [`${t.dimensions?.width} x ${t.dimensions?.height} Meter`, '1 Pcs'],
-                        icon: 'branding_watermark'
+            const fetchTask = async () => {
+                try {
+                    const { data } = await api.get('/dp_tasks');
+                    const t = data.find(d => d.id === taskId);
+                    if (t) {
+                        setTask(t);
+                        // Map task data to items
+                        const newItems = [
+                            {
+                                id: 'mat-' + t.id,
+                                type: 'product',
+                                name: t.material_name || 'Bahan Cetak',
+                                price: t.material_price || 0,
+                                specs: [`${t.dimensions?.width} x ${t.dimensions?.height} Meter`, '1 Pcs'],
+                                icon: 'branding_watermark'
+                            }
+                        ];
+                        if (t.design_price > 0) {
+                            newItems.push({
+                                id: 'design-' + t.id,
+                                type: 'service',
+                                name: 'Jasa Desain Grafis',
+                                price: t.design_price,
+                                specs: ['Dikerjakan oleh: Sistem'],
+                                icon: 'draw'
+                            });
+                        }
+                        setItems(newItems);
                     }
-                ];
-                if (t.design_price > 0) {
-                    newItems.push({
-                        id: 'design-' + t.id,
-                        type: 'service',
-                        name: 'Jasa Desain Grafis',
-                        price: t.design_price,
-                        specs: ['Dikerjakan oleh: Sistem'],
-                        icon: 'draw'
-                    });
-                }
-                setItems(newItems);
-            }
+                } catch (e) { console.error(e); }
+            };
+            fetchTask();
         }
     }, [taskId]);
 

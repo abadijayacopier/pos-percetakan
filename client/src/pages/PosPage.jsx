@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import db from '../db';
-import seedData from '../seed';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
@@ -88,38 +86,50 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
         printerName: '',
         autoPrint: false
     });
+    const [fcDiscounts, setFcDiscounts] = useState([]);
 
-    // Load initial data
     useEffect(() => {
-        seedData();
-        const allProducts = db.getAll('products');
-        setProducts(allProducts);
-        setFilteredProducts(allProducts);
+        const loadInitialData = async () => {
+            try {
+                // Fetch products and prices in parallel
+                const [productsRes, fcRes, settingsRes] = await Promise.all([
+                    api.get('/products'),
+                    api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
+                    api.get('/settings').catch(() => ({ data: [] }))
+                ]);
 
-        // Fetch prices from API
-        api.get('/transactions/fotocopy-prices')
-            .then(res => setFotocopyPrices(res.data))
-            .catch(err => {
-                console.error('Failed to fetch fotocopy prices:', err);
-                const localPrices = db.getAll('fotocopy_prices');
-                setFotocopyPrices(localPrices);
-            });
+                const fetchedProducts = productsRes.data;
+                setProducts(fetchedProducts);
+                setFilteredProducts(fetchedProducts);
+                setFotocopyPrices(fcRes.data);
 
-        // Load print settings
-        const settings = db.getAll('settings').reduce((acc, s) => {
-            acc[s.key] = s.value;
-            return acc;
-        }, {});
+                // Load Settings
+                const allSettings = settingsRes.data || [];
+                const sMap = {};
+                allSettings.forEach(s => { sMap[s.key] = s.value; });
 
-        setPrintSettings({
-            storeName: settings.store_name || 'FOTOCOPY ABADI JAYA',
-            storeAddress: settings.store_address || '',
-            storePhone: settings.store_phone || '',
-            receiptFooter: settings.receipt_footer || '',
-            printerSize: settings.printer_size || '80mm',
-            printerName: settings.printer_name || '',
-            autoPrint: settings.auto_print === 'true'
-        });
+                setPrintSettings({
+                    storeName: sMap.store_name || 'FOTOCOPY ABADI JAYA',
+                    storeAddress: sMap.store_address || '',
+                    storePhone: sMap.store_phone || '',
+                    receiptFooter: sMap.receipt_footer || '',
+                    printerSize: sMap.printer_size || '80mm',
+                    printerName: sMap.printer_name || '',
+                    autoPrint: sMap.auto_print === 'true'
+                });
+
+                if (sMap.fc_discounts) {
+                    try {
+                        setFcDiscounts(JSON.parse(sMap.fc_discounts));
+                    } catch (e) { }
+                }
+
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+            }
+        };
+
+        loadInitialData();
     }, []);
 
     // Filter products based on search
@@ -232,53 +242,59 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
         }
     };
 
-    const handleConfirmPayment = () => {
-        // 1. Construct transaction object
+    const handleConfirmPayment = async () => {
+        const change = paymentMethod === 'tunai' ? parseFloat(amountPaid) - cartTotal : 0;
+
         const transaction = {
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
-            userId: 'u2', // Hardcoded for now
-            userName: 'Kasir 1', // Hardcoded for now
-            items: cart,
+            customerId: null,
+            customerName: 'Umum',
+            type: cart.some(c => c.type === 'fotocopy') ? 'fotocopy' : 'sale',
             subtotal: cartTotal,
             discount: cart.reduce((acc, item) => acc + (item.discount || 0), 0),
-            tax: 0, // Placeholder
             total: cartTotal,
             paymentType: paymentMethod,
             paid: paymentMethod === 'tunai' ? parseFloat(amountPaid) : cartTotal,
-            change: paymentMethod === 'tunai' ? parseFloat(amountPaid) - cartTotal : 0,
+            changeAmount: change,
             status: 'paid',
+            items: cart.map(item => {
+                const itemPrice = item.sellPrice || item.price || 0;
+                return {
+                    id: item.type === 'atk' ? item.id : null,
+                    name: item.name,
+                    qty: item.quantity,
+                    price: itemPrice,
+                    subtotal: itemPrice * item.quantity,
+                    discount: item.discount || 0,
+                    source: item.type === 'atk' ? 'atk' : 'fc'
+                };
+            })
         };
 
-        // 2. Save transaction to DB
-        db.insert('transactions', transaction);
+        try {
+            const res = await api.post('/transactions', transaction);
+            transaction.id = res.data.id;
 
-        // 3. Update stock for each product (only for physical items)
-        cart.forEach(item => {
-            const product = products.find(p => p.id === item.id);
-            if (product && product.type !== 'service' && product.type !== 'fotocopy') {
-                db.update('products', item.id, { stock: Math.max(0, product.stock - item.quantity) });
+            // Update local product state to reflect new stock
+            const updatedProducts = products.map(p => {
+                const cartItem = cart.find(ci => ci.id === p.id);
+                return (cartItem && p.type !== 'service' && p.type !== 'fotocopy')
+                    ? { ...p, stock: Math.max(0, p.stock - cartItem.quantity) }
+                    : p;
+            });
+            setProducts(updatedProducts);
+
+            setTransactionComplete(transaction);
+
+            if (printSettings.autoPrint) {
+                handlePrintReceipt(transaction);
             }
-        });
 
-        // 4. Update local product state to reflect new stock
-        const updatedProducts = products.map(p => {
-            const cartItem = cart.find(ci => ci.id === p.id);
-            return (cartItem && p.type !== 'service' && p.type !== 'fotocopy')
-                ? { ...p, stock: Math.max(0, p.stock - cartItem.quantity) }
-                : p;
-        });
-        setProducts(updatedProducts);
-
-        // 5. Show success screen
-        setTransactionComplete(transaction);
-
-        // 6. Auto print if enabled
-        if (printSettings.autoPrint) {
-            handlePrintReceipt(transaction);
+            clearCart();
+        } catch (error) {
+            alert('Gagal memproses transaksi: ' + (error.response?.data?.message || error.message));
         }
-
-        clearCart();
     };
 
     const closeAndResetModal = () => {
@@ -303,17 +319,13 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
     // Fotocopy price calculation
     const fcDiscountInfo = useMemo(() => {
-        const settings = db.getAll('settings');
-        const diskonStr = settings.find(s => s.key === 'fc_discounts')?.value;
-        const diskonRules = diskonStr ? JSON.parse(diskonStr) : [];
-
         // Find applicable discount: rule with max minQty <= fcQty
-        const applicableRule = diskonRules
+        const applicableRule = fcDiscounts
             .filter(r => parseInt(fcQty) >= parseInt(r.minQty))
             .sort((a, b) => parseInt(b.minQty) - parseInt(a.minQty))[0];
 
         return applicableRule || null;
-    }, [fcQty]);
+    }, [fcQty, fcDiscounts]);
 
     const fcUnitPrice = useMemo(() => {
         const priceObj = fotocopyPrices.find(p =>

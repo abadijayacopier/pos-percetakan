@@ -20,7 +20,19 @@ const FiFacebook = SocialFacebook;
 const FiYoutube = SocialYoutube;
 
 import { motion, AnimatePresence } from 'framer-motion';
-import db from '../db';
+const DEFAULT_PRINT_PRICES = [
+    { paper: 'HVS A4', color: 'bw', price: 500, name: 'Print HVS A4 B/W' },
+    { paper: 'HVS A4', color: 'color', price: 1000, name: 'Print HVS A4 Warna' },
+    { paper: 'HVS F4', color: 'bw', price: 600, name: 'Print HVS F4 B/W' },
+    { paper: 'HVS F4', color: 'color', price: 1200, name: 'Print HVS F4 Warna' }
+];
+
+const DEFAULT_BINDING_PRICES = [
+    { name: 'Jilid Lakban (Biasa)', price: 3000 },
+    { name: 'Jilid Mika', price: 5000 },
+    { name: 'Jilid Spiral Kawat', price: 15000 },
+    { name: 'Jilid Spiral Plastik', price: 10000 }
+];
 import api from '../services/api';
 
 const HERO_IMAGE = '/hero_main.png';
@@ -46,39 +58,62 @@ export default function LandingPage({ onNavigate }) {
     const [storeLogo, setStoreLogo] = useState('');
 
     useEffect(() => {
-        const allSettings = db.getAll('settings');
-        const getSetting = (key, defaultVal) => allSettings.find(s => s.key === key)?.value || defaultVal;
+        const fetchLandingData = async () => {
+            try {
+                const [settingsRes, fotoRes, projRes] = await Promise.all([
+                    api.get('/settings/public').catch(() => ({ data: [] })),
+                    api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
+                    api.get('/products/public').catch(() => ({ data: [] }))
+                ]);
 
-        setStoreInfo({
-            name: getSetting('store_name', 'ABADI JAYA COPIER'),
-            address: getSetting('store_address', 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur'),
-            phone: getSetting('store_phone', '+62 812 3456 7890'),
-            mapsUrl: getSetting('store_maps_url', 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7')
-        });
+                const allSettings = Array.isArray(settingsRes.data) ? settingsRes.data : [];
+                const getSetting = (key, defaultVal) => allSettings.find(s => s.key === key)?.value || defaultVal;
 
-        setPrices({
-            fotocopy: db.getAll('fotocopy_prices').slice(0, 4),
-            print: db.getAll('print_prices').slice(0, 4),
-            binding: db.getAll('binding_prices').slice(0, 4)
-        });
+                setStoreInfo({
+                    name: getSetting('store_name', 'ABADI JAYA COPIER'),
+                    address: getSetting('store_address', 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur'),
+                    phone: getSetting('store_phone', '+62 812 3456 7890'),
+                    mapsUrl: getSetting('store_maps_url', 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7')
+                });
 
-        // Sync fotocopy prices with API master
-        api.get('/transactions/fotocopy-prices')
-            .then(res => {
-                if (res.data && res.data.length > 0) {
-                    setPrices(prev => ({ ...prev, fotocopy: res.data.slice(0, 4) }));
+                if (fotoRes.data && fotoRes.data.length > 0) {
+                    setPrices(prev => ({ ...prev, fotocopy: fotoRes.data.slice(0, 4) }));
                 }
-            })
-            .catch(err => {
-                console.error('Failed to fetch fotocopy prices for landing:', err);
-            });
 
-        setFeaturedProducts(db.getAll('products').filter(p => (p.stock || 0) > 0).slice(0, 8));
+                let printP = DEFAULT_PRINT_PRICES;
+                let bindP = DEFAULT_BINDING_PRICES;
 
-        const savedGallery = getSetting('landing_gallery');
-        try { if (savedGallery) setGalleryImages(JSON.parse(savedGallery)); } catch (e) { console.error(e); }
+                try {
+                    const savedPrint = getSetting('print_prices');
+                    if (savedPrint) printP = JSON.parse(savedPrint);
+                } catch (e) { console.error("Parse print_prices failed", e); }
 
-        setStoreLogo(getSetting('landing_logo', ''));
+                try {
+                    const savedBind = getSetting('binding_prices');
+                    if (savedBind) bindP = JSON.parse(savedBind);
+                } catch (e) { console.error("Parse binding_prices failed", e); }
+
+                setPrices(prev => ({
+                    ...prev,
+                    print: printP,
+                    binding: bindP
+                }));
+
+                if (projRes.data && projRes.data.length > 0) {
+                    setFeaturedProducts(projRes.data.filter(p => (p.stock || 0) > 0).slice(0, 8));
+                }
+
+                const savedGallery = getSetting('landing_gallery');
+                try { if (savedGallery) setGalleryImages(JSON.parse(savedGallery)); } catch (e) { console.error(e); }
+
+                setStoreLogo(getSetting('landing_logo', ''));
+
+            } catch (err) {
+                console.error("Failed fetching landing data:", err);
+            }
+        };
+
+        fetchLandingData();
 
         const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
@@ -335,7 +370,7 @@ export default function LandingPage({ onNavigate }) {
                                     {cat.data.length > 0 ? cat.data.map((item, idx) => (
                                         <div key={idx} className="flex justify-between items-center py-4 border-b border-white/5 group/item cursor-default">
                                             <span className="text-xs font-bold text-slate-400 group-hover/item:text-white transition-colors">
-                                                {item.paper || item.name} {item.color ? `(${item.color.toUpperCase()}${item.side ? ` - ${item.side === '1' ? '1 Sisi' : 'Bolak/Balik'}` : ''})` : ''}
+                                                {item.paper_size || item.paper || item.name} {(item.color_type || item.color) ? `(${String(item.color_type || item.color).toUpperCase()}${item.side_type || item.side ? ` - ${item.side_type || (item.side === '1' ? '1 Sisi' : 'Bolak/Balik')}` : ''})` : ''}
                                             </span>
                                             <span className="text-sm font-black italic tracking-tight text-blue-400">Rp {parseInt(item.price || 0).toLocaleString()}</span>
                                         </div>

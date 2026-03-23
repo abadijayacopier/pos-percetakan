@@ -70,14 +70,14 @@ const createTables = async () => {
         customer_name VARCHAR(100) DEFAULT 'Umum',
         user_id VARCHAR(50),
         user_name VARCHAR(100),
-        type ENUM('sale', 'fotocopy') DEFAULT 'sale',
+        type VARCHAR(50) DEFAULT 'sale',
         subtotal INT NOT NULL,
         discount INT DEFAULT 0,
         total INT NOT NULL,
         paid INT DEFAULT 0,
         change_amount INT DEFAULT 0,
-        payment_type ENUM('tunai', 'transfer', 'qris', 'hutang') NOT NULL,
-        status ENUM('paid', 'unpaid') NOT NULL,
+        payment_type VARCHAR(50) DEFAULT 'tunai',
+        status VARCHAR(50) DEFAULT 'unpaid',
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       )

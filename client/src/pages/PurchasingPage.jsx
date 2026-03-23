@@ -6,7 +6,6 @@ import {
     FiAlertCircle, FiCheck, FiX
 } from 'react-icons/fi';
 import api from '../services/api';
-import db from '../db';
 import { formatRupiah } from '../utils';
 
 function Toast({ msg, type, onClose }) {
@@ -53,17 +52,18 @@ export default function PurchasingPage({ onNavigate }) {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Load Local Products
-                const localProducts = db.getAll('products');
-                setProducts(localProducts);
-
-                // Load Backend Materials & Suppliers
-                const [matRes, supRes] = await Promise.all([
+                // Load Backend Products, Materials & Suppliers
+                const [prodRes, matRes, supRes] = await Promise.all([
+                    api.get('/products'),
                     api.get('/materials'),
                     api.get('/suppliers').catch(() => ({ data: [] }))
                 ]);
+                setProducts(prodRes.data || []);
                 setMaterials(matRes.data || []);
-                setSuppliers(supRes.data || []);
+
+                // Fix: /suppliers endpoint wraps the array in a "data" property
+                const suppliersData = supRes.data?.data || supRes.data;
+                setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
             } catch (error) {
                 console.error(error);
                 showToast('Gagal memuat data master', 'error');
@@ -99,7 +99,7 @@ export default function PurchasingPage({ onNavigate }) {
     const handleAddItem = (option) => {
         const exists = items.find(i => i.id === option.id && i.type === option.type);
         if (exists) {
-            setItems(items.map(i => i.id === exists.id ? { ...i, qty: Number(i.qty) + 1, subtotal: (Number(i.qty) + 1) * i.cost } : i));
+            setItems(items.map(i => i.id === exists.id && i.type === exists.type ? { ...i, qty: Number(i.qty) + 1, subtotal: (Number(i.qty) + 1) * i.cost } : i));
         } else {
             setItems([...items, { ...option, qty: 1, cost: 0, subtotal: 0 }]);
         }
@@ -138,18 +138,6 @@ export default function PurchasingPage({ onNavigate }) {
             };
 
             await api.post('/purchases', payload);
-
-            // Sync local DB (products)
-            const updatedProds = items.filter(i => i.type === 'product');
-            updatedProds.forEach(upd => {
-                const prod = db.getById('products', upd.id);
-                if (prod) {
-                    db.update('products', upd.id, {
-                        stock: Number(prod.stock) + Number(upd.qty),
-                        buy_price: upd.cost > 0 ? upd.cost : prod.buy_price
-                    });
-                }
-            });
 
             setShowSuccess(true);
             setItems([]);

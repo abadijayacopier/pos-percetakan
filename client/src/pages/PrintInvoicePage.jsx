@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import db from '../db';
+
 import { FiGlobe, FiPhone, FiMapPin, FiMail } from 'react-icons/fi';
 
 export default function PrintInvoicePage({ onNavigate, pageState }) {
@@ -26,10 +26,19 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
         };
         fetchDetail();
 
-        const allSettings = db.getAll('settings');
-        const sObj = {};
-        allSettings.forEach(s => sObj[s.key] = s.value);
-        setSettings(sObj);
+        const fetchSettings = async () => {
+            try {
+                const res = await api.get('/settings');
+                const sObj = {};
+                if (Array.isArray(res.data)) {
+                    res.data.forEach(s => sObj[s.key] = s.value);
+                }
+                setSettings(sObj);
+            } catch (err) {
+                console.error('Gagal fetch settings:', err);
+            }
+        };
+        fetchSettings();
     }, [spkId]);
 
     // Tambahkan style cetak format A4

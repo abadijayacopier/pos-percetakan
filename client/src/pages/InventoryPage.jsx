@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect } from 'react';
+import api from '../services/api';
 import { formatRupiah } from '../utils';
 import Modal from '../components/Modal';
 import {
@@ -30,6 +30,7 @@ import {
     FiAlertCircle,
     FiInfo
 } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 const emptyForm = { code: '', name: '', categoryId: '', buyPrice: '', sellPrice: '', stock: '', minStock: '', unit: 'pcs', emoji: '📦', image: '' };
 
@@ -58,11 +59,12 @@ const CAT_ICON_SMALL = {
 };
 
 export default function InventoryPage() {
-    const [products, setProducts] = useState(() => db.getAll('products'));
-    const [categories, setCategories] = useState(() => db.getAll('categories'));
+    const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [unitOptions, setUnitOptions] = useState(() => {
-        const saved = db.getAll('units');
-        return saved.length > 0 ? saved.map(u => u.name) : ['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'];
+        const saved = localStorage.getItem('custom_units');
+        const parsed = saved ? JSON.parse(saved) : [];
+        return parsed.length > 0 ? parsed : ['pcs', 'box', 'rim', 'roll', 'lembar', 'kg', 'liter', 'set'];
     });
     const [promptModal, setPromptModal] = useState({ isOpen: false, type: '', title: '', value: '' });
     const [search, setSearch] = useState('');
@@ -74,7 +76,23 @@ export default function InventoryPage() {
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
 
-    const reload = () => setProducts(db.getAll('products'));
+    const reload = async () => {
+        try {
+            const [prodRes, catRes] = await Promise.all([
+                api.get('/products'),
+                api.get('/products/categories')
+            ]);
+            setProducts(prodRes.data || []);
+            setCategories(catRes.data || []);
+        } catch (e) {
+            console.error('Failed to load inventory', e);
+        }
+    };
+
+    useEffect(() => {
+        reload();
+    }, []);
+
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
     const filtered = useMemo(() => {
@@ -99,8 +117,11 @@ export default function InventoryPage() {
     const openAdd = () => { setEditItem(null); setForm(emptyForm); setShowModal(true); };
     const openEdit = (p) => { setEditItem(p); setForm({ ...p, buyPrice: p.buyPrice || '', sellPrice: p.sellPrice || '', stock: p.stock || '', minStock: p.minStock || '' }); setShowModal(true); };
 
-    const handleSave = () => {
-        if (!form.name.trim()) return;
+    const handleSave = async () => {
+        if (!form.name.trim()) {
+            Swal.fire({ icon: 'warning', title: 'Data Tidak Lengkap', text: 'Nama barang wajib diisi!', confirmButtonColor: '#3b82f6' });
+            return;
+        }
         const record = {
             ...form,
             buyPrice: Number(form.buyPrice) || 0,
@@ -108,17 +129,70 @@ export default function InventoryPage() {
             stock: Number(form.stock) || 0,
             minStock: Number(form.minStock) || 0,
         };
-        if (editItem) {
-            db.update('products', editItem.id, record);
-        } else {
-            record.code = form.code || ('PRD-' + Date.now().toString(36).toUpperCase());
-            db.insert('products', record);
+
+        try {
+            if (editItem) {
+                await api.put(`/products/${editItem.id}`, record);
+            } else {
+                record.code = form.code || ('PRD-' + Date.now().toString(36).toUpperCase());
+                await api.post('/products', record);
+            }
+            setShowModal(false);
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: `Barang ATK telah ${editItem ? 'diperbarui' : 'ditambahkan'}.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+            reload();
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Gagal Menyimpan', text: e.response?.data?.message || e.message, confirmButtonColor: '#ef4444' });
         }
-        setShowModal(false);
-        reload();
     };
 
-    const handleDelete = (id) => { db.delete('products', id); setConfirmDelete(null); reload(); };
+    const handleCancel = () => {
+        const isDirty = form.name.trim() !== '' || String(form.buyPrice) !== '' || String(form.sellPrice) !== '';
+        if (isDirty) {
+            Swal.fire({
+                title: 'Batalkan Pengisian?',
+                text: 'Data yang sudah Anda ketik akan hilang.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Lanjut Isi'
+            }).then((result) => {
+                if (result.isConfirmed) setShowModal(false);
+            });
+        } else {
+            setShowModal(false);
+        }
+    };
+
+    const handleDelete = async (p) => {
+        const result = await Swal.fire({
+            title: 'Hapus Barang ATK?',
+            html: `Anda yakin ingin menghapus <b>${p.name}</b>?<br/>Data tidak dapat dikembalikan.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/products/${p.id}`);
+                Swal.fire({ icon: 'success', title: 'Terhapus!', text: 'Barang berhasil dihapus.', timer: 1500, showConfirmButton: false });
+                reload();
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus produk.' });
+            }
+        }
+    };
 
     const getCatName = (catId) => { const c = categories.find(c => c.id === catId); return c ? c.name : '-'; };
     const getCatIcon = (catId) => CAT_ICONS[catId] || <FiBox size={18} />;
@@ -131,15 +205,15 @@ export default function InventoryPage() {
                 <div>
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                         <span className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-100 dark:shadow-none"><FiPackage /></span>
-                        Data Inventori
+                        Data Barang ATK
                     </h1>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Product Management & Stock Control System</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Retail Stationery & Products Management</p>
                 </div>
                 <button
                     onClick={openAdd}
                     className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
                 >
-                    <FiPlus /> Tambah Produk
+                    <FiPlus /> Tambah ATK
                 </button>
             </div>
 
@@ -149,7 +223,7 @@ export default function InventoryPage() {
                     { label: 'Total Produk', value: products.length, icon: <FiBox />, color: 'blue', sub: 'Active Inventory' },
                     { label: 'Kategori', value: catCount, icon: <FiLayers />, color: 'indigo', sub: 'Product Groups' },
                     { label: 'Stok Menipis', value: lowStockCount, icon: <FiAlertTriangle />, color: lowStockCount > 0 ? 'rose' : 'slate', sub: 'Need Restock' },
-                    { label: 'Nilai Inventori', value: formatRupiah(totalValue), icon: <FiDollarSign />, color: 'emerald', sub: 'Total Asset Value' },
+                    { label: 'Total Nilai Produk', value: formatRupiah(totalValue), icon: <FiDollarSign />, color: 'emerald', sub: 'Total Asset Value' },
                 ].map((s, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">
@@ -213,7 +287,7 @@ export default function InventoryPage() {
                     {filtered.length === 0 ? (
                         <div className="py-24 text-center">
                             <FiBox size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">{search ? 'Hasil pencarian tidak ditemukan' : 'Inventori kosong'}</p>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">{search ? 'Hasil pencarian tidak ditemukan' : 'Belum ada barang ATK'}</p>
                         </div>
                     ) : (
                         <table className="w-full">
@@ -280,7 +354,7 @@ export default function InventoryPage() {
                                                         <FiEdit size={14} />
                                                     </button>
                                                     <button
-                                                        onClick={() => setConfirmDelete(p)}
+                                                        onClick={() => handleDelete(p)}
                                                         className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
                                                     >
                                                         <FiTrash2 size={14} />
@@ -327,16 +401,16 @@ export default function InventoryPage() {
             {/* Product Modal */}
             <Modal
                 isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title={editItem ? 'Koreksi Data Produk' : 'Registrasi Produk Baru'}
+                onClose={handleCancel}
+                title={editItem ? 'Koreksi Data Barang' : 'Barang ATK Baru'}
                 icon={editItem ? <FiEdit className="text-blue-600" /> : <FiPlus className="text-emerald-600" />}
                 footer={
                     <div className="flex gap-4 w-full">
-                        <button className="flex-1 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500" onClick={() => setShowModal(false)}>
+                        <button className="flex-1 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500" onClick={handleCancel}>
                             <FiX className="inline mr-2" /> Batal
                         </button>
                         <button className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center" onClick={handleSave}>
-                            <FiSave className="mr-2" /> Simpan Produk
+                            <FiSave className="mr-2" /> Simpan Barang ATK
                         </button>
                     </div>
                 }
@@ -461,25 +535,7 @@ export default function InventoryPage() {
                 </div>
             </Modal>
 
-            {/* Confirm Delete */}
-            <Modal
-                isOpen={!!confirmDelete}
-                onClose={() => setConfirmDelete(null)}
-                title="Konfirmasi Penghapusan"
-                icon={<FiAlertTriangle className="text-rose-600" />}
-                footer={
-                    <div className="grid grid-cols-2 gap-4 w-full">
-                        <button className="py-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-200" onClick={() => setConfirmDelete(null)}>Gagalkan</button>
-                        <button className="py-3.5 bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 shadow-xl shadow-rose-500/20 active:scale-95" onClick={() => handleDelete(confirmDelete.id)}>Ya, Hapus Permanen</button>
-                    </div>
-                }
-            >
-                <div className="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-900/50 mb-4">
-                    <p className="text-xs font-bold text-rose-700 dark:text-rose-400 leading-relaxed text-center italic">
-                        "Apakah Anda yakin ingin menghapus produk <span className="uppercase not-italic font-black text-rose-800 dark:text-rose-300">[{confirmDelete?.name}]</span>? Data yang dihapus tidak dapat dipulihkan kembali."
-                    </p>
-                </div>
-            </Modal>
+
 
             {/* Prompt Modal */}
             <Modal
@@ -489,19 +545,23 @@ export default function InventoryPage() {
                 footer={
                     <div className="flex justify-end gap-3 w-full border-t border-slate-100 dark:border-slate-800/60 pt-4 mt-2">
                         <button className="px-5 py-3 rounded-2xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all hover:scale-105 active:scale-95" onClick={() => setPromptModal({ ...promptModal, isOpen: false })}>Batal</button>
-                        <button id="save-prompt-btn-inv" className="px-6 py-3 rounded-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" onClick={() => {
+                        <button id="save-prompt-btn-inv" className="px-6 py-3 rounded-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2" onClick={async () => {
                             const clean = promptModal.value.trim();
                             if (clean) {
                                 if (promptModal.type === 'unit') {
-                                    db.insert('units', { name: clean });
-                                    if (!unitOptions.includes(clean)) setUnitOptions([...unitOptions, clean]);
+                                    if (!unitOptions.includes(clean)) {
+                                        const newUnits = [...unitOptions, clean];
+                                        setUnitOptions(newUnits);
+                                        localStorage.setItem('custom_units', JSON.stringify(newUnits));
+                                    }
                                     set('unit', clean);
                                 } else if (promptModal.type === 'categoryId') {
-                                    const newId = 'c' + Date.now();
-                                    const newRecord = { id: newId, name: clean };
-                                    db.insert('categories', newRecord);
-                                    setCategories([...categories, newRecord]);
-                                    set('categoryId', newId);
+                                    try {
+                                        const res = await api.post('/products/categories', { name: clean });
+                                        const newRecord = { id: res.data.id, name: clean };
+                                        setCategories([...categories, newRecord]);
+                                        set('categoryId', newRecord.id);
+                                    } catch (e) { alert('Gagal menambah kategori'); }
                                 }
                             }
                             setPromptModal({ ...promptModal, isOpen: false });

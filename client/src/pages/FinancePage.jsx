@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect } from 'react';
+import api from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import { formatRupiah, formatDateTime, formatDate } from '../utils';
 import Modal from '../components/Modal';
-import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
+import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown, FiLoader } from 'react-icons/fi';
 
 const CATEGORIES_IN = ['Penjualan', 'Setoran Modal', 'Piutang Masuk', 'Pendapatan Lain'];
 const CATEGORIES_OUT = ['Pembelian Stok', 'Gaji', 'Listrik & Air', 'Sewa', 'Operasional', 'Pengeluaran Lain'];
@@ -10,7 +11,9 @@ const CATEGORIES_OUT = ['Pembelian Stok', 'Gaji', 'Listrik & Air', 'Sewa', 'Oper
 const emptyForm = { date: new Date().toISOString().slice(0, 10), description: '', amount: '', type: 'in', category: '', reference: '' };
 
 export default function FinancePage() {
-    const [cashFlow, setCashFlow] = useState(() => db.getAll('cash_flow'));
+    const { showToast } = useToast();
+    const [cashFlow, setCashFlow] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('journal');
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
@@ -20,7 +23,23 @@ export default function FinancePage() {
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
 
-    const reload = () => setCashFlow(db.getAll('cash_flow'));
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/finance');
+            setCashFlow(res.data);
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal memuat data keuangan', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
     const filtered = useMemo(() => {
@@ -36,27 +55,48 @@ export default function FinancePage() {
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-    const totalIn = cashFlow.filter(c => c.type === 'in').reduce((s, c) => s + (c.amount || 0), 0);
-    const totalOut = cashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (c.amount || 0), 0);
+    const totalIn = cashFlow.filter(c => c.type === 'in').reduce((s, c) => s + (Number(c.amount) || 0), 0);
+    const totalOut = cashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (Number(c.amount) || 0), 0);
     const saldo = totalIn - totalOut;
 
     const openAdd = (type) => { setEditItem(null); setForm({ ...emptyForm, type: type || 'in' }); setShowModal(true); };
     const openEdit = (c) => { setEditItem(c); setForm({ date: (c.date || c.createdAt || '').slice(0, 10), description: c.description || '', amount: c.amount || '', type: c.type || 'in', category: c.category || '', reference: c.reference || '' }); setShowModal(true); };
 
-    const handleSave = () => {
-        if (!form.description.trim() || !form.amount) return;
-        const record = { ...form, amount: Number(form.amount) || 0 };
-        if (editItem) {
-            db.update('cash_flow', editItem.id, record);
-        } else {
-            db.insert('cash_flow', record);
+    const handleSave = async () => {
+        if (!form.description.trim() || !form.amount) {
+            showToast('Lengkapi deskripsi dan jumlah!', 'warning');
+            return;
         }
-        db.logActivity('Admin', editItem ? 'Edit Kas' : 'Tambah Kas', `${record.type === 'in' ? 'Kas Masuk' : 'Kas Keluar'}: ${record.description} - ${formatRupiah(record.amount)}`);
-        setShowModal(false);
-        reload();
+
+        try {
+            const record = { ...form, amount: Number(form.amount) || 0 };
+            if (editItem) {
+                await api.put(`/finance/${editItem.id}`, record);
+                showToast('Entri berhasil diupdate!', 'success');
+            } else {
+                await api.post('/finance', record);
+                showToast('Entri berhasil ditambahkan!', 'success');
+            }
+            setShowModal(false);
+            loadData();
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal menyimpan data', 'error');
+        }
     };
 
-    const handleDelete = (id) => { db.delete('cash_flow', id); setConfirmDelete(null); reload(); };
+    const handleDelete = async (id) => {
+        try {
+            await api.delete(`/finance/${id}`);
+            showToast('Entri berhasil dihapus!', 'success');
+            setConfirmDelete(null);
+            loadData();
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal menghapus entri', 'error');
+        }
+    };
+
     const handleSearch = (v) => { setSearch(v); setPage(1); };
     const handleTab = (v) => { setActiveTab(v); setPage(1); };
 
@@ -138,8 +178,15 @@ export default function FinancePage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-x-auto">
-                    {paginated.length === 0 ? (
+                <div className="flex-1 overflow-x-auto relative">
+                    {loading ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 min-h-[300px]">
+                            <FiLoader className="animate-spin text-blue-600 mb-4" size={32} />
+                            <p className="text-sm font-bold text-slate-500 animate-pulse">Memuat Data Keuangan...</p>
+                        </div>
+                    ) : null}
+
+                    {!loading && paginated.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-32 text-slate-300 dark:text-slate-700">
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-full mb-4">
                                 <FiBookOpen size={48} className="opacity-20" />

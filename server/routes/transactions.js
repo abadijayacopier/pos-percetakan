@@ -27,9 +27,14 @@ router.get('/', verifyToken, async (req, res) => {
                 });
             });
         }
-        // Gabungkan items ke setiap transaksi
+        // Gabungkan items ke setiap transaksi dan map key database (snake_case) ke frontend (camelCase)
         const result = rows.map(t => ({
             ...t,
+            invoiceNo: t.invoice_no || t.invoiceNo,
+            customerName: t.customer_name || t.customerName,
+            userName: t.user_name || t.userName,
+            paymentType: t.payment_type || t.paymentType,
+            changeAmount: t.change_amount || t.changeAmount,
             items: detailsMap[t.id] || []
         }));
         res.json(result);
@@ -49,8 +54,8 @@ router.get('/history/today', verifyToken, async (req, res) => {
     }
 });
 
-// 2. GET Harga Fotocopy (Untuk PosPage kalkulator)
-router.get('/fotocopy-prices', verifyToken, async (req, res) => {
+// 2. GET Harga Fotocopy (Untuk PosPage kalkulator & Landing Page)
+router.get('/fotocopy-prices', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM fotocopy_prices');
         res.json(rows);
@@ -87,11 +92,13 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const mysqlDate = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
 
         // 3a. Insert Transaction Header
+        const validCustomerId = (customerId && customerId !== 'null' && customerId !== 'undefined' && String(customerId).trim() !== '') ? customerId : null;
+
         await connection.query(`
       INSERT INTO transactions 
       (id, invoice_no, date, customer_id, customer_name, user_id, user_name, type, subtotal, discount, total, paid, change_amount, payment_type, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newTrxId, invoiceNo, mysqlDate, customerId || null, customerName || 'Umum', req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
+    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
 
         // 3b. Insert Transaction Details (Item) & Update Stok
         for (const item of items) {
@@ -137,8 +144,21 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         res.status(201).json({ message: 'Transaksi berhasil disimpan!', id: newTrxId });
     } catch (error) {
         await connection.rollback();
-        console.error(error);
-        res.status(500).json({ message: 'Gagal menyimpan transaksi' });
+        console.error('Transaksi gagal:', error.message);
+
+        let errorMsg = 'Gagal menyimpan transaksi: ' + error.message;
+
+        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            if (error.message.includes('user_id')) {
+                // Trigger frontend interceptor logout on user deletion anomaly
+                return res.status(401).json({ message: 'Sesi akun tidak valid (Akun telah dihapus dari sistem). Silakan login ulang.' });
+            } else if (error.message.includes('customer_id')) {
+                errorMsg = 'Gagal: Pelanggan yang dipilih tidak valid atau telah dihapus.';
+            } else if (error.message.includes('product_id')) {
+                errorMsg = 'Gagal: Terdapat Produk di keranjang yang sudah dihapus dari database.';
+            }
+        }
+        res.status(500).json({ message: errorMsg });
     } finally {
         connection.release();
     }
@@ -204,6 +224,75 @@ router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, 
         res.status(500).json({ message: 'Gagal menghapus transaksi' });
     } finally {
         connection.release();
+    }
+});
+
+// 6. PUT Pelunasan Transaksi
+router.put('/:id/pay', verifyToken, async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const { id } = req.params;
+        const { paidAmount, paymentMethod } = req.body;
+
+        const [trxArr] = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
+        if (trxArr.length === 0) throw new Error('Trx not found');
+        const trx = trxArr[0];
+
+        const newPaid = Number(trx.paid || 0) + Number(paidAmount);
+        const newStatus = newPaid >= trx.total ? 'paid' : 'debt';
+
+        // Update transaction
+        await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ? WHERE id = ?',
+            [newPaid, paymentMethod, newStatus, id]);
+
+        // Insert cash flow
+        const cashFlowId = 'cf' + Date.now();
+        await connection.query(`
+            INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+            VALUES (?, CURDATE(), 'in', 'Penjualan', ?, ?, ?)
+        `, [cashFlowId, paidAmount, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
+
+        // Activity log
+        await connection.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'payment', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`]);
+
+        await connection.commit();
+        res.json({ message: 'Pembayaran berhasil dicatat' });
+    } catch (e) {
+        await connection.rollback();
+        console.error(e);
+        res.status(500).json({ message: 'Gagal mencatat pembayaran' });
+    } finally {
+        connection.release();
+    }
+});
+
+// 7. PUT Update Transaksi (Edit Header)
+router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { customerName, paymentType, paidAmount } = req.body;
+
+        // Cek total transaksi saat ini
+        const [trxArr] = await pool.query('SELECT total FROM transactions WHERE id = ?', [id]);
+        if (trxArr.length === 0) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
+
+        const total = trxArr[0].total;
+        const newStatus = Number(paidAmount) >= total ? 'paid' : 'unpaid';
+
+        await pool.query(
+            'UPDATE transactions SET customer_name = ?, payment_type = ?, paid = ?, status = ? WHERE id = ?',
+            [customerName, paymentType, paidAmount, newStatus, id]
+        );
+
+        await pool.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'edit_transaction', `Edit Transaksi ${id} `]);
+
+        res.json({ message: 'Transaksi berhasil diperbarui' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memperbarui transaksi' });
     }
 });
 

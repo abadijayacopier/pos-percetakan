@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import db from '../db';
 import api from '../services/api';
 import { formatRupiah, formatDate } from '../utils';
 import {
@@ -26,13 +25,20 @@ export default function ProfitLossPage() {
 
     // Fetch store info
     useEffect(() => {
-        const settings = db.getAll('settings');
-        const info = {};
-        settings.forEach(s => { info[s.key] = s.value; });
-        setStoreInfo({
-            name: info.store_name || 'FOTOCOPY ABADI JAYA',
-            address: info.store_address || '',
-            phone: info.store_phone || ''
+        api.get('/settings').then(res => {
+            const info = {};
+            res.data.forEach(s => { info[s.key] = s.value; });
+            setStoreInfo({
+                name: info.store_name || 'FOTOCOPY ABADI JAYA',
+                address: info.store_address || '',
+                phone: info.store_phone || ''
+            });
+        }).catch(() => {
+            setStoreInfo({
+                name: 'FOTOCOPY ABADI JAYA',
+                address: '',
+                phone: ''
+            });
         });
     }, []);
 
@@ -48,6 +54,7 @@ export default function ProfitLossPage() {
     // Fetch transactions from API
     const [transactions, setTransactions] = useState([]);
     const [cashFlow, setCashFlow] = useState([]);
+    const [products, setProducts] = useState([]);
 
     useEffect(() => {
         fetchData();
@@ -56,17 +63,16 @@ export default function ProfitLossPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [trxRes, cfRes] = await Promise.all([
+            const [trxRes, cfRes, prodRes] = await Promise.all([
                 api.get('/transactions'),
-                api.get('/cash-flow')
+                api.get('/finance'),
+                api.get('/products')
             ]);
             setTransactions(trxRes.data || []);
             setCashFlow(cfRes.data || []);
+            setProducts(prodRes.data || []);
         } catch (err) {
             console.error('Failed to fetch data:', err);
-            // Fallback to local DB
-            setTransactions(db.getAll('transactions'));
-            setCashFlow(db.getAll('cash_flow'));
         }
         setLoading(false);
     };
@@ -90,14 +96,14 @@ export default function ProfitLossPage() {
     const metrics = useMemo(() => {
         // Revenue from transactions
         const totalRevenue = filteredTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
-        
+
         // Cost of Goods Sold (HPP) - Calculate from products sold
         let cogs = 0;
         filteredTransactions.forEach(t => {
             (t.items || []).forEach(item => {
-                const product = db.getById('products', item.productId);
+                const product = products.find(p => p.id === item.productId);
                 if (product) {
-                    cogs += (product.buyPrice || 0) * item.qty;
+                    cogs += (Number(product.buyPrice) || 0) * item.qty;
                 }
             });
         });
@@ -206,35 +212,33 @@ export default function ProfitLossPage() {
                         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 no-print">
                             <button
                                 onClick={() => setPrintMode('detailed')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                                    printMode === 'detailed' 
-                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' 
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${printMode === 'detailed'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
-                                }`}
+                                    }`}
                             >
                                 <FiFileText size={14} />
                                 Detail
                             </button>
                             <button
                                 onClick={() => setPrintMode('compact')}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                                    printMode === 'compact' 
-                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' 
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${printMode === 'compact'
+                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
-                                }`}
+                                    }`}
                             >
                                 <FiLayout size={14} />
                                 Ringkas
                             </button>
                         </div>
-                        <button 
+                        <button
                             onClick={() => window.print()}
                             className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold transition-colors"
                         >
                             <FiPrinter size={16} />
                             Cetak
                         </button>
-                        <button 
+                        <button
                             onClick={() => {
                                 // Trigger print dialog with PDF save option
                                 window.print();
@@ -415,26 +419,25 @@ export default function ProfitLossPage() {
                                             setDateTo(now.toISOString().slice(0, 10));
                                         }
                                     }}
-                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                                        period === key 
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${period === key
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                                    }`}
+                                        }`}
                                 >
                                     {label}
                                 </button>
                             ))}
                         </div>
                         <div className="flex items-center gap-2 ml-auto">
-                            <input 
-                                type="date" 
+                            <input
+                                type="date"
                                 value={dateFrom}
                                 onChange={(e) => { setPeriod('custom'); setDateFrom(e.target.value); }}
                                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm dark:text-white"
                             />
                             <span className="text-slate-400">-</span>
-                            <input 
-                                type="date" 
+                            <input
+                                type="date"
                                 value={dateTo}
                                 onChange={(e) => { setPeriod('custom'); setDateTo(e.target.value); }}
                                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm dark:text-white"
@@ -511,8 +514,8 @@ export default function ProfitLossPage() {
                                         <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(amount)}</span>
                                     </div>
                                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                                        <div 
-                                            className="h-2 rounded-full bg-blue-600" 
+                                        <div
+                                            className="h-2 rounded-full bg-blue-600"
                                             style={{ width: `${getPercent(amount, metrics.totalRevenue)}%` }}
                                         ></div>
                                     </div>

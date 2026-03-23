@@ -5,10 +5,6 @@ import App from './App.jsx';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
-import seedData from './seed';
-
-// Initialize seed data on first load
-seedData();
 
 // Set default theme
 if (!document.documentElement.getAttribute('data-theme')) {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import db from '../db';
+import api from '../services/api';
 import { formatRupiah } from '../utils';
 import {
     FiDollarSign, FiPrinter, FiCpu, FiShoppingCart, FiAlertCircle,
@@ -29,7 +29,7 @@ const LoadingScreen = () => (
         <div className="relative w-32 h-32 mb-8">
             <div className="absolute inset-0 rounded-full border-t-4 border-b-4 border-primary/20 animate-[spin_3s_linear_infinite]"></div>
             <div className="absolute inset-2 rounded-full border-r-4 border-l-4 border-amber-500/30 animate-[spin_2s_linear_infinite_reverse]"></div>
-            <div className="absolute inset-4 rounded-full border-t-4 border-blue-500/40 animate-[spin_1.5s_ease-in-out_infinite]"></div>
+            <div className="absolute inset-4 rounded-full border-t-4 border-cyan-500/40 animate-[spin_1.5s_ease-in-out_infinite]"></div>
             <div className="absolute inset-0 flex items-center justify-center">
                 <FiPackage className="text-4xl text-primary animate-pulse" />
             </div>
@@ -56,8 +56,8 @@ const AreaChart = ({ data }) => {
                 >
                     <defs>
                         <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            <stop offset="5%" stopColor="#0891b2" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -90,11 +90,11 @@ const AreaChart = ({ data }) => {
                     <Area
                         type="monotone"
                         dataKey="total"
-                        stroke="#3b82f6"
+                        stroke="#0891b2"
                         strokeWidth={4}
                         fillOpacity={1}
                         fill="url(#colorTotal)"
-                        activeDot={{ r: 6, strokeWidth: 0, fill: '#3b82f6' }}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: '#0891b2' }}
                     />
                 </RechartsAreaChart>
             </ResponsiveContainer>
@@ -121,59 +121,27 @@ export default function DashboardPage({ onNavigate }) {
                 // Dimulasikan sedikit delay agar animasi spinner terasa premium
                 await new Promise(resolve => setTimeout(resolve, 800));
 
-                const allTrx = db.getAll('transactions');
-                const allCashFlow = db.getAll('cash_flow');
-                const allProducts = db.getAll('products');
-                const allPrintOrders = db.getAll('print_orders');
-                const allServiceOrders = db.getAll('service_orders');
-                const allActivityLog = db.getAll('activity_log');
+                const [statsRes, trxRes] = await Promise.all([
+                    api.get('/dashboard/stats'),
+                    api.get('/transactions')
+                ]);
 
-                const now = new Date();
-                const todayStr = now.toLocaleDateString('en-CA');
-
-                const todayTrx = allTrx.filter(t => {
-                    const tDate = new Date(t.date || t.created_at || t.timestamp).toLocaleDateString('en-CA');
-                    return tDate === todayStr;
-                });
-                const todayOmset = todayTrx.reduce((acc, t) => acc + (t.total || 0), 0);
-                const todayTrxCount = todayTrx.length;
-
-                const cashIn = allCashFlow.filter(c => c.type === 'in').reduce((acc, c) => acc + (c.amount || 0), 0);
-                const cashOut = allCashFlow.filter(c => c.type === 'out').reduce((acc, c) => acc + (c.amount || 0), 0);
-                const currentSaldo = cashIn - cashOut;
-
-                const pendingPrint = allPrintOrders.filter(o => !['selesai', 'diambil', 'batal'].includes(o.status)).length;
-                const pendingService = allServiceOrders.filter(o => !['selesai', 'diambil', 'batal'].includes(o.status)).length;
-                const lowStock = allProducts.filter(p => p.stock <= (p.minStock || 0)).length;
-
-                const weeklyData = [];
-                for (let i = 6; i >= 0; i--) {
-                    const d = new Date();
-                    d.setDate(d.getDate() - i);
-                    const labelDay = d.toLocaleDateString('en-CA');
-                    const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
-
-                    const dayTotal = allTrx
-                        .filter(t => {
-                            const tDate = new Date(t.date || t.created_at || t.timestamp).toLocaleDateString('en-CA');
-                            return tDate === labelDay;
-                        })
-                        .reduce((acc, t) => acc + (t.total || 0), 0);
-
-                    weeklyData.push({ label: dayName.toUpperCase(), total: dayTotal });
-                }
+                const data = statsRes.data;
+                const allTrx = trxRes.data;
 
                 setStats({
-                    omset: todayOmset,
-                    trxCount: todayTrxCount,
-                    saldo: currentSaldo,
-                    lowStockCount: lowStock,
-                    pendingPrintCount: pendingPrint,
-                    pendingServiceCount: pendingService,
-                    activityLog: allActivityLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10)
+                    omset: data.omset,
+                    trxCount: data.trxCount,
+                    saldo: data.saldo,
+                    lowStockCount: data.lowStockCount,
+                    pendingPrintCount: data.pendingPrintCount,
+                    pendingServiceCount: data.pendingServiceCount,
+                    activityLog: data.activityLog
                 });
 
-                setChartData(weeklyData);
+                setChartData(data.weeklyData);
+
+                // Sort transactions by date descending
                 const sortedTrx = [...allTrx].sort((a, b) => new Date(b.date || b.created_at || b.timestamp) - new Date(a.date || a.created_at || a.timestamp));
                 setAllSortedTrx(sortedTrx);
                 setCurrentPage(1);
@@ -227,7 +195,7 @@ export default function DashboardPage({ onNavigate }) {
             >
                 <div>
                     <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic flex items-center gap-3">
-                        <span className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20"><FiActivity /></span>
+                        <span className="p-3 bg-cyan-600 rounded-2xl text-white shadow-xl shadow-cyan-500/20"><FiActivity /></span>
                         Dashboard Bisnis
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2 ml-1 opacity-75">Sistem Monitoring & Inventori Terpadu</p>
@@ -258,7 +226,7 @@ export default function DashboardPage({ onNavigate }) {
             >
                 {[
                     { label: 'Pendapatan Hari Ini', value: formatRupiah(stats.omset), icon: FiDollarSign, color: 'emerald', tag: 'Hari Ini' },
-                    { label: 'Antrean Cetak', value: `${stats.pendingPrintCount} Tugas`, icon: FiPrinter, color: 'blue', tag: 'Antrean SPK' },
+                    { label: 'Antrean Cetak', value: `${stats.pendingPrintCount} Tugas`, icon: FiPrinter, color: 'cyan', tag: 'Antrean SPK' },
                     { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiCpu, color: 'amber', tag: 'Servis Berjalan' },
                     { label: 'Stok Menipis', value: `${stats.lowStockCount} Barang`, icon: FiLayers, color: 'rose', tag: 'Penting' },
                 ].map(s => (
@@ -279,7 +247,7 @@ export default function DashboardPage({ onNavigate }) {
                             </span>
                         </div>
                         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest relative z-10">{s.label}</p>
-                        <h3 className="text-2xl font-black italic tracking-tighter mt-1 text-slate-900 dark:text-white relative z-10">{s.value}</h3>
+                        <h3 className="font-code text-2xl font-black italic tracking-tighter mt-1 text-slate-900 dark:text-white relative z-10">{s.value}</h3>
                     </motion.div>
                 ))}
             </motion.div>
@@ -298,13 +266,13 @@ export default function DashboardPage({ onNavigate }) {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                         <div>
                             <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase italic tracking-tighter">
-                                <span className="p-2.5 bg-blue-600/10 rounded-xl text-blue-600"><FiTrendingUp size={20} /></span>
+                                <span className="p-2.5 bg-cyan-600/10 rounded-xl text-cyan-600"><FiTrendingUp size={20} /></span>
                                 Performa Penjualan
                             </h3>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-14 opacity-70 italic">Statistik Pendapatan 7 Hari Terakhir</p>
                         </div>
                         <div className="flex gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 self-start md:self-auto">
-                            <button className="px-6 py-2 text-[10px] font-black bg-white dark:bg-slate-900 text-blue-600 rounded-xl shadow-lg shadow-blue-500/5 border border-slate-200 dark:border-slate-800 tracking-widest uppercase">WEEKLY</button>
+                            <button className="px-6 py-2 text-[10px] font-black bg-white dark:bg-slate-900 text-cyan-600 rounded-xl shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800 tracking-widest uppercase">WEEKLY</button>
                             <button className="px-6 py-2 text-[10px] font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors tracking-widest uppercase">MONTHLY</button>
                         </div>
                     </div>
@@ -317,7 +285,7 @@ export default function DashboardPage({ onNavigate }) {
 
                     <div className="mt-16 pt-8 border-t border-slate-50 dark:border-slate-800/50 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
                         <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-lg bg-blue-600 shadow-xl shadow-blue-500/30"></div>
+                            <div className="w-5 h-5 rounded-lg bg-cyan-600 shadow-xl shadow-cyan-500/30"></div>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] italic">Pendapatan Aktual</span>
                         </div>
                         <div className="flex items-center gap-3 opacity-30">
@@ -333,12 +301,12 @@ export default function DashboardPage({ onNavigate }) {
                     className="space-y-6"
                 >
                     {/* Activity Brief */}
-                    <div className="bg-blue-600/5 dark:bg-blue-600/10 p-8 rounded-4xl border border-blue-600/10 flex items-center gap-6 group hover:bg-blue-600/10 transition-colors">
-                        <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0 group-hover:scale-110 transition-transform">
+                    <div className="bg-cyan-600/5 dark:bg-cyan-600/10 p-8 rounded-4xl border border-cyan-600/10 flex items-center gap-6 group hover:bg-cyan-600/10 transition-colors">
+                        <div className="w-14 h-14 rounded-2xl bg-cyan-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0 group-hover:scale-110 transition-transform">
                             <FiActivity size={28} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest italic">Aktivitas Tim</p>
+                            <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest italic">Aktivitas Tim</p>
                             <p className="text-sm font-bold text-slate-600 dark:text-slate-400 mt-1 leading-tight tracking-tight">Semua sistem sinkron & berjalan optimal.</p>
                         </div>
                     </div>
@@ -371,7 +339,7 @@ export default function DashboardPage({ onNavigate }) {
                                 >
                                     <FiChevronLeft size={18} />
                                 </button>
-                                <span className="text-[10px] font-black px-5 text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                                <span className="font-code text-[10px] font-black px-5 text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
                                     {currentPage} <span className="text-slate-300 dark:text-slate-700 mx-1">/</span> {totalPages || 1}
                                 </span>
                                 <button
@@ -382,7 +350,7 @@ export default function DashboardPage({ onNavigate }) {
                                     <FiChevronRight size={18} />
                                 </button>
                             </div>
-                            <button onClick={() => onNavigate('reports')} className="size-11 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg shadow-blue-500/20 transition-all active:scale-95">
+                            <button onClick={() => onNavigate('reports')} className="size-11 flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
                                 <FiArrowRight size={22} />
                             </button>
                         </div>
@@ -407,7 +375,7 @@ export default function DashboardPage({ onNavigate }) {
                                     >
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col">
-                                                <span className="font-black text-slate-900 dark:text-white group-hover:text-blue-600 uppercase tracking-tighter italic transition-colors">
+                                                <span className="font-code font-black text-slate-900 dark:text-white group-hover:text-cyan-600 uppercase tracking-tighter italic transition-colors">
                                                     {trx.invoice_no || trx.invoiceNo}
                                                 </span>
                                                 <span className="text-[10px] text-slate-400 group-hover:text-slate-500 font-bold uppercase mt-1 tracking-widest italic opacity-70">
@@ -417,7 +385,7 @@ export default function DashboardPage({ onNavigate }) {
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-500 text-[10px] border border-slate-200 dark:border-slate-700 group-hover:border-blue-200 transition-colors">
+                                                <div className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-500 text-[10px] border border-slate-200 dark:border-slate-700 group-hover:border-cyan-200 transition-colors">
                                                     {(trx.customer_name || trx.customerName || 'UMUM').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
@@ -427,7 +395,7 @@ export default function DashboardPage({ onNavigate }) {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <div className="font-black text-slate-900 dark:text-white tracking-widest text-sm italic">{formatRupiah(trx.total || 0)}</div>
+                                            <div className="font-code font-black text-slate-900 dark:text-white tracking-widest text-sm italic">{formatRupiah(trx.total || 0)}</div>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase italic mt-1.5 opacity-60">Metode: {trx.paymentType || 'Tunai'}</p>
                                         </td>
                                         <td className="px-8 py-6 text-center">
@@ -476,17 +444,17 @@ export default function DashboardPage({ onNavigate }) {
                                     <div className="absolute left-5 top-12 bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
                                     <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
                                         ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
-                                            log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-blue-50 text-blue-600' :
+                                            log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
                                                 log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
                                         <FiActivity size={18} />
                                     </div>
                                     <div className="pt-0.5">
                                         <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                            <span className="text-blue-600 italic font-black mr-2 uppercase tracking-tighter">{log.userName}</span>
+                                            <span className="text-cyan-600 italic font-black mr-2 uppercase tracking-tighter">{log.userName}</span>
                                             {log.action}
                                         </p>
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed italic opacity-85">"{log.detail}"</p>
-                                        <div className="flex items-center gap-2 mt-3 font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
+                                        <div className="flex items-center gap-2 mt-3 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
                                             <FiClock size={10} />
                                             {new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                         </div>

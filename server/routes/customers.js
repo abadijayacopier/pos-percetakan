@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const { validate } = require('../middleware/validate');
+const { customerSchema } = require('../validations/customerSchema');
 
 // 1. GET Semua Pelanggan
 router.get('/', verifyToken, async (req, res) => {
@@ -31,7 +33,7 @@ router.get('/:id/history', verifyToken, async (req, res) => {
 });
 
 // 3. POST Tambah Pelanggan Baru
-router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin', 'kasir']), validate(customerSchema), async (req, res) => {
     try {
         const { name, phone, address, type, company } = req.body;
         const newId = 'c' + Date.now();
@@ -48,7 +50,7 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
 });
 
 // 4. PUT Update Pelanggan
-router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), validate(customerSchema), async (req, res) => {
     try {
         const { name, phone, address, type, company } = req.body;
 

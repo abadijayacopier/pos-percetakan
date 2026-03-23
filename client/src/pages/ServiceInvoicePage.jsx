@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import db from '../db';
+import api from '../services/api';
 import { FiCpu, FiPrinter, FiArrowLeft, FiPhone, FiMapPin, FiGlobe, FiMail, FiCheckCircle } from 'react-icons/fi';
 
 const formatDate = (dateStr) => {
@@ -14,17 +14,24 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
     const [settings, setSettings] = useState({});
 
     useEffect(() => {
-        if (serviceId) {
-            const data = db.getById('service_orders', serviceId);
-            setService(data);
-        }
+        const loadData = async () => {
+            try {
+                if (serviceId) {
+                    const res = await api.get(`/service/${serviceId}`);
+                    setService(res.data);
+                }
 
-        const allSettings = db.getAll('settings');
-        const sObj = {};
-        allSettings.forEach(s => sObj[s.key] = s.value);
-        setSettings(sObj);
-
-        setLoading(false);
+                const setRes = await api.get('/settings');
+                const sObj = {};
+                setRes.data.forEach(s => sObj[s.key] = s.value);
+                setSettings(sObj);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, [serviceId]);
 
     // Tambahkan style cetak format A4

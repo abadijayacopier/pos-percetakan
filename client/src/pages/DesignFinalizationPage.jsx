@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import db from '../db';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function DesignFinalizationPage({ onNavigate, pageState }) {
@@ -11,8 +11,7 @@ export default function DesignFinalizationPage({ onNavigate, pageState }) {
 
     useEffect(() => {
         if (taskId) {
-            const t = db.getById('dp_tasks', taskId);
-            if (t) setTask(t);
+            api.get(`/dp_tasks/${taskId}`).then(res => setTask(res.data)).catch(console.error);
         }
 
         const interval = setInterval(() => setNow(new Date()), 1000);
@@ -47,28 +46,27 @@ export default function DesignFinalizationPage({ onNavigate, pageState }) {
     const billedHours = Math.max(0.5, Math.ceil(duration.totalHours * 2) / 2); // Round to nearest 0.5, min 0.5
     const finalDesignPrice = billedHours * hourlyRate;
 
-    const handleSimpanKeInvoice = () => {
+    const handleSimpanKeInvoice = async () => {
         if (!taskId) return;
 
-        db.update('dp_tasks', taskId, {
-            status: 'checkout',
-            design_price: finalDesignPrice,
-            design_duration: `${duration.h}h ${duration.m}m`,
-            updatedAt: new Date().toISOString()
-        });
-
-        db.logActivity(user?.name, 'Finalisasi Desain', `Menyelesaikan desain untuk pesanan #${taskId} - Biaya: ${finalDesignPrice}`);
-        onNavigate('dp-cart', { taskId: taskId });
+        try {
+            await api.put(`/dp_tasks/${taskId}`, {
+                status: 'checkout',
+                design_price: finalDesignPrice,
+                design_duration: `${duration.h}h ${duration.m}m`
+            });
+            onNavigate('dp-cart', { taskId: taskId });
+        } catch (e) { console.error(e); }
     };
 
-    const handleAktifkanRevisi = () => {
+    const handleAktifkanRevisi = async () => {
         if (!taskId) return;
-        db.update('dp_tasks', taskId, {
-            status: 'desain',
-            updatedAt: new Date().toISOString()
-        });
-        db.logActivity(user?.name, 'Aktifkan Revisi', `Mengaktifkan sesi revisi untuk pesanan #${taskId}`);
-        onNavigate('digital-printing');
+        try {
+            await api.put(`/dp_tasks/${taskId}`, {
+                status: 'desain'
+            });
+            onNavigate('digital-printing');
+        } catch (e) { console.error(e); }
     };
 
     const handleBatalkanSesi = () => {

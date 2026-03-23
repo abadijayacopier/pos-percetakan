@@ -7,6 +7,11 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Fira Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Fira Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        code: ['"Fira Code"', 'ui-monospace', 'monospace'],
+      },
       colors: {
         primary: '#137fec',
         'primary-light': '#4aa3ff',

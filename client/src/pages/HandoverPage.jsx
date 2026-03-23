@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import api from '../services/api';
 import { formatRupiah, formatDateTime } from '../utils';
 import Modal from '../components/Modal';
 import {
@@ -21,17 +21,40 @@ import {
 } from 'react-icons/fi';
 
 export default function HandoverPage() {
-    const [transactions] = useState(() => db.getAll('transactions'));
-    const [dpTasks] = useState(() => db.getAll('dp_tasks'));
+    const [transactions, setTransactions] = useState([]);
+    const [dpTasks, setDpTasks] = useState([]);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [selectedTrx, setSelectedTrx] = useState(null);
     const [receiverName, setReceiverName] = useState('');
     const [receiverPhone, setReceiverPhone] = useState('');
     const [notes, setNotes] = useState('');
-    const [handovers, setHandovers] = useState(() => db.getAll('handovers'));
+    const [handovers, setHandovers] = useState([]);
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
+
+    const loadData = async () => {
+        try {
+            const [trxRes, dpRes, handoversRes] = await Promise.all([
+                api.get('/transactions'),
+                api.get('/dp_tasks'),
+                api.get('/handovers')
+            ]);
+            setTransactions(trxRes.data.map(t => ({
+                id: t.id,
+                invoiceNo: t.invoiceNo,
+                date: t.date,
+                customerName: t.customerName,
+                total: t.total,
+                type: t.type,
+                dp_task_id: t.dp_task_id
+            })));
+            setDpTasks(dpRes.data);
+            setHandovers(handoversRes.data);
+        } catch (e) { console.error(e); }
+    };
+
+    useEffect(() => { loadData(); }, [loadData]);
 
     const getHandoverStatus = (trxId) => handovers.find(h => h.transactionId === trxId);
 
@@ -59,21 +82,22 @@ export default function HandoverPage() {
         setNotes('');
     };
 
-    const handleHandover = () => {
+    const handleHandover = async () => {
         if (!receiverName.trim() || !selectedTrx) return;
-        db.insert('handovers', {
-            transactionId: selectedTrx.id,
-            invoiceNo: selectedTrx.invoiceNo,
-            customerName: selectedTrx.customerName,
-            receiverName,
-            receiverPhone,
-            notes,
-            handoverDate: new Date().toISOString(),
-            handoverBy: 'Admin',
-        });
-        db.logActivity('Admin', 'Serah Terima', `Pesanan ${selectedTrx.invoiceNo} diserahkan ke ${receiverName}`);
-        setHandovers(db.getAll('handovers'));
-        setSelectedTrx(null);
+        try {
+            await api.post('/handovers', {
+                transactionId: selectedTrx.id,
+                invoiceNo: selectedTrx.invoiceNo,
+                customerName: selectedTrx.customerName,
+                receiverName,
+                receiverPhone,
+                notes,
+                handoverDate: new Date().toISOString(),
+                handoverBy: 'Admin',
+            });
+            await loadData();
+            setSelectedTrx(null);
+        } catch (e) { console.error(e); }
     };
 
     const handleSearch = (v) => { setSearch(v); setPage(1); };
@@ -106,8 +130,8 @@ export default function HandoverPage() {
                     <div key={idx} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">
                             <div className={`p-3 rounded-2xl transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' :
-                                    s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
-                                        'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                                s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' :
+                                    'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
                                 }`}>
                                 {s.icon}
                             </div>

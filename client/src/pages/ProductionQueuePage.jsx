@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { FiGrid, FiList, FiClock, FiCheckCircle, FiChevronRight, FiUser, FiZap, FiDownload, FiEdit2, FiTrash2, FiPrinter, FiX, FiCheck, FiArrowRight, FiLink, FiPaperclip, FiXCircle, FiAlertCircle, FiActivity, FiFileText, FiInfo, FiPlus, FiSearch, FiLayers } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -90,30 +89,29 @@ export default function ProductionQueuePage({ onNavigate }) {
         const finalFee = isAntrian ? 0 : (cancelFee || 0);
 
         const idToUpdate = cancelTaskModal.real_id || cancelTaskModal.id;
-        db.update('dp_tasks', idToUpdate, {
-            status: 'batal',
-            denda_batal: finalFee,
-            updatedAt: new Date().toISOString()
-        });
 
-        db.logActivity(user?.name, 'Pembatalan Pesanan', "Pesanan #" + cancelTaskModal.id + " dibatalkan dengan denda Rp " + finalFee);
+        try {
+            await api.put(`/dp_tasks/${idToUpdate}`, {
+                status: 'batal',
+                denda_batal: finalFee
+            });
 
-        printCancelInvoice(cancelTaskModal, finalFee);
-
-        loadProductionData();
-        setCancelTaskModal(null);
-        setCancelFee(0);
+            printCancelInvoice(cancelTaskModal, finalFee);
+            loadProductionData();
+            setCancelTaskModal(null);
+            setCancelFee(0);
+        } catch (e) { console.error(e); }
     };
 
-    const handleAssignTechnician = (taskId, techId, techName) => {
-        db.update('dp_tasks', taskId, {
-            technician_id: techId,
-            technician_name: techName,
-            updatedAt: new Date().toISOString()
-        });
-        db.logActivity(user?.name, 'Penugasan Operator', `Menugaskan teknisi ${techName} ke pesanan #${taskId}`);
-        loadProductionData();
-        setAssignTaskModal(null);
+    const handleAssignTechnician = async (taskId, techId, techName) => {
+        try {
+            await api.put(`/dp_tasks/${taskId}`, {
+                technician_id: techId,
+                technician_name: techName
+            });
+            loadProductionData();
+            setAssignTaskModal(null);
+        } catch (e) { console.error(e); }
     };
 
     const loadProductionData = async () => {
@@ -140,16 +138,19 @@ export default function ProductionQueuePage({ onNavigate }) {
                 updatedAt: s.updated_at
             }));
         } catch (err) {
-            console.error('Failed to fetch production data:', err);
+            console.error('Failed to fetch spk/assignments data:', err);
         }
 
-        const allTasks = db.getAll('dp_tasks');
-        const prodTasks = allTasks.filter(t => !['checkout', 'batal'].includes(t.status))
-            .map(t => ({
-                ...t,
-                type: t.type || 'digital',
-                status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi'].includes(t.status) ? 'produksi' : t.status
-            }));
+        let prodTasks = [];
+        try {
+            const { data: allTasks } = await api.get('/dp_tasks');
+            prodTasks = allTasks.filter(t => !['checkout', 'batal'].includes(t.status))
+                .map(t => ({
+                    ...t,
+                    type: t.type || 'digital',
+                    status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi'].includes(t.status) ? 'produksi' : t.status
+                }));
+        } catch (e) { console.error(e); }
 
         const combinedTasks = [...prodTasks, ...spkTasks];
 
@@ -181,13 +182,11 @@ export default function ProductionQueuePage({ onNavigate }) {
         loadProductionData();
     }, []);
 
-    const moveTask = (taskId, newStatus) => {
-        db.update('dp_tasks', taskId, {
-            status: newStatus,
-            updatedAt: new Date().toISOString()
-        });
-        db.logActivity(user?.name, 'Update Status Produksi', `Memindah pesanan #${taskId} ke tahap ${newStatus}`);
-        loadProductionData();
+    const moveTask = async (taskId, newStatus) => {
+        try {
+            await api.patch(`/dp_tasks/${taskId}/status`, { status: newStatus });
+            loadProductionData();
+        } catch (e) { console.error(e); }
     };
 
     const getTasksByStatus = (status) => {

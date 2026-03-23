@@ -1,28 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
-import db from '../db';
 import api from '../services/api';
 import { formatRupiah, formatDate, formatDateTime } from '../utils';
 import {
     FiTrendingUp, FiTrendingDown, FiDollarSign, FiPrinter
 } from 'react-icons/fi';
+import PrintReportLayout from './PrintReportLayout';
 
-export function ProfitLossContent({ dateFrom, dateTo }) {
-    const [storeInfo, setStoreInfo] = useState({});
+export function ProfitLossContent({ dateFrom, dateTo, storeInfo }) {
     const [transactions, setTransactions] = useState([]);
     const [cashFlow, setCashFlow] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Fetch store info
-    useEffect(() => {
-        const settings = db.getAll('settings');
-        const info = {};
-        settings.forEach(s => { info[s.key] = s.value; });
-        setStoreInfo({
-            name: info.store_name || 'FOTOCOPY ABADI JAYA',
-            address: info.store_address || '',
-            phone: info.store_phone || ''
-        });
-    }, []);
+    const [products, setProducts] = useState([]);
 
     // Fetch data
     useEffect(() => {
@@ -32,16 +21,16 @@ export function ProfitLossContent({ dateFrom, dateTo }) {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [trxRes, cfRes] = await Promise.all([
+            const [trxRes, cfRes, prodRes] = await Promise.all([
                 api.get('/transactions'),
-                api.get('/cash-flow')
+                api.get('/finance'),
+                api.get('/products')
             ]);
             setTransactions(trxRes.data || []);
             setCashFlow(cfRes.data || []);
+            setProducts(prodRes.data || []);
         } catch (err) {
             console.error('Failed to fetch data:', err);
-            setTransactions(db.getAll('transactions'));
-            setCashFlow(db.getAll('cash_flow'));
         }
         setLoading(false);
     };
@@ -68,9 +57,9 @@ export function ProfitLossContent({ dateFrom, dateTo }) {
         let cogs = 0;
         filteredTransactions.forEach(t => {
             (t.items || []).forEach(item => {
-                const product = db.getById('products', item.productId);
+                const product = products.find(p => p.id === item.productId);
                 if (product) {
-                    cogs += (product.buyPrice || 0) * item.qty;
+                    cogs += (Number(product.buyPrice) || 0) * item.qty;
                 }
             });
         });
@@ -121,13 +110,6 @@ export function ProfitLossContent({ dateFrom, dateTo }) {
 
     return (
         <div className="space-y-6">
-            {/* Actions Bar */}
-            <div className="flex items-center justify-end gap-4">
-                <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">
-                    <FiPrinter size={14} /> Cetak
-                </button>
-            </div>
-
             {/* DETAILED VIEW - Screen */}
             <div className="space-y-6 print:hidden">
                 {/* Summary Cards */}
@@ -207,126 +189,72 @@ export function ProfitLossContent({ dateFrom, dateTo }) {
             </div>
 
             {/* --- PRINT ONLY LABA RUGI REPORT (A4 FORMAT) --- */}
-            <div className="hidden print:block w-full text-black font-sans leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                <style>
-                    {`
-                        @media print {
-                          @page { size: A4 portrait; margin: 20mm; }
-                          body { background: none; padding: 0; background-color: white !important; -webkit-print-color-adjust: exact; color: black; }
-                          table { page-break-inside: auto; border-collapse: collapse; }
-                          tr { page-break-inside: avoid; page-break-after: auto; }
-                          thead { display: table-header-group; }
-                        }
-                        `}
-                </style>
-                <div className="print-wrapper">
-                    <header className="flex justify-between items-end border-b-2 border-black pb-4 mb-8">
-                        <div className="w-1/2">
-                            <h1 className="text-3xl font-black uppercase tracking-tight text-gray-900 mb-1">Abadi Jaya Percetakan & POS</h1>
-                            <p className="text-gray-600 text-sm">Sistem Monitoring & Inventori Terpadu</p>
-                            <p className="text-gray-600 text-sm">Laporan Generate Secara Otomatis</p>
-                        </div>
-                        <div className="w-1/2 text-right">
-                            <h2 className="text-2xl font-bold uppercase tracking-widest text-gray-800 mb-2">Laporan Laba Rugi</h2>
-                            <div className="text-xs text-gray-600 space-y-1">
-                                <p><span className="font-semibold text-gray-800">Tanggal Cetak:</span> {new Date().toLocaleString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                                <p><span className="font-semibold text-gray-800">Periode:</span> {dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}</p>
-                                <p><span className="font-semibold text-gray-800">Dicetak Oleh:</span> Admin Keuangan</p>
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* SUMMARY CARDS / HIGHLIGHTS */}
-                    <section className="grid grid-cols-3 gap-6 mb-8">
-                        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Pendapatan</h3>
-                            <p className="text-xl font-black text-gray-900">{formatCurrency(metrics.totalRevenue)}</p>
-                        </div>
-                        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Total Beban Operasional</h3>
-                            <p className="text-xl font-black text-red-600">{formatCurrency(metrics.totalExpenses)}</p>
-                        </div>
-                        <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 text-center">
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Net Profit Margin</h3>
-                            <p className="text-xl font-black text-blue-700">{metrics.npm.toFixed(1)}%</p>
-                        </div>
+            <PrintReportLayout
+                title="Laporan Laba Rugi"
+                period={dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}
+                printedBy="Admin Keuangan"
+                storeInfo={storeInfo}
+            >
+                <div className="flex gap-8 break-inside-avoid">
+                    <section className="w-1/2">
+                        <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-emerald-500 pl-2 uppercase">Pendapatan Operasional</h3>
+                        <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
+                            <thead className="bg-gray-100 border-b-2 border-gray-400">
+                                <tr>
+                                    <th className="py-2 px-3 font-bold text-gray-800">Keterangan</th>
+                                    <th className="py-2 px-3 font-bold text-gray-800 text-right">Jumlah (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {revenueByCategory.fotocopy > 0 && <tr><td className="py-2 px-3 text-gray-700">Pendapatan Fotocopy</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.fotocopy)}</td></tr>}
+                                {revenueByCategory.print > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Print Digital</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.print)}</td></tr>}
+                                {revenueByCategory.atk > 0 && <tr><td className="py-2 px-3 text-gray-700">Penjualan Alat Tulis Kantor</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.atk)}</td></tr>}
+                                {revenueByCategory.service > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Servis & Finishing</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.service)}</td></tr>}
+                                {revenueByCategory.binding > 0 && <tr><td className="py-2 px-3 text-gray-700">Pendapatan Jilid / Binding</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.binding)}</td></tr>}
+                                {revenueByCategory.other > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Lainnya</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.other)}</td></tr>}
+                            </tbody>
+                            <tfoot>
+                                <tr className="font-bold border-t border-black bg-gray-100">
+                                    <td className="py-2 px-3 uppercase text-gray-800">Total Pendapatan</td>
+                                    <td className="text-right py-2 px-3 text-gray-900">{formatCurrency(metrics.totalRevenue)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </section>
 
-                    <div className="flex gap-8 break-inside-avoid">
-                        <section className="w-1/2">
-                            <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-emerald-500 pl-2 uppercase">Pendapatan Operasional</h3>
-                            <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
-                                <thead className="bg-gray-100 border-b-2 border-gray-400">
-                                    <tr>
-                                        <th className="py-2 px-3 font-bold text-gray-800">Keterangan</th>
-                                        <th className="py-2 px-3 font-bold text-gray-800 text-right">Jumlah (Rp)</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {revenueByCategory.fotocopy > 0 && <tr><td className="py-2 px-3 text-gray-700">Pendapatan Fotocopy</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.fotocopy)}</td></tr>}
-                                    {revenueByCategory.print > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Print Digital</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.print)}</td></tr>}
-                                    {revenueByCategory.atk > 0 && <tr><td className="py-2 px-3 text-gray-700">Penjualan Alat Tulis Kantor</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.atk)}</td></tr>}
-                                    {revenueByCategory.service > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Servis & Finishing</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.service)}</td></tr>}
-                                    {revenueByCategory.binding > 0 && <tr><td className="py-2 px-3 text-gray-700">Pendapatan Jilid / Binding</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.binding)}</td></tr>}
-                                    {revenueByCategory.other > 0 && <tr className="bg-gray-50"><td className="py-2 px-3 text-gray-700">Pendapatan Lainnya</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(revenueByCategory.other)}</td></tr>}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="font-bold border-t border-black bg-gray-100">
-                                        <td className="py-2 px-3 uppercase text-gray-800">Total Pendapatan</td>
-                                        <td className="text-right py-2 px-3 text-gray-900">{formatCurrency(metrics.totalRevenue)}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </section>
-
-                        <section className="w-1/2">
-                            <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-red-500 pl-2 uppercase">Beban Operasional</h3>
-                            <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
-                                <thead className="bg-gray-100 border-b-2 border-gray-400">
-                                    <tr>
-                                        <th className="py-2 px-3 font-bold text-gray-800">Keterangan</th>
-                                        <th className="py-2 px-3 font-bold text-gray-800 text-right">Jumlah (Rp)</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {metrics.cogs > 0 && <tr><td className="py-2 px-3 text-gray-700">HPP (Bebak Pokok Penjualan)</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(metrics.cogs)}</td></tr>}
-                                    {expenseBreakdown.map((item, idx) => (
-                                        <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50' : ''}><td className="py-2 px-3 text-gray-700 capitalize">Beban {item.name}</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(item.amount)}</td></tr>
-                                    ))}
-                                </tbody>
-                                <tfoot>
-                                    <tr className="font-bold border-t border-black bg-gray-100 text-red-700">
-                                        <td className="py-2 px-3 uppercase">Total Beban</td>
-                                        <td className="text-right py-2 px-3">({formatCurrency(metrics.totalExpenses)})</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </section>
-                    </div>
-
-                    <section className="mt-8 p-6 bg-gray-50 border-2 border-gray-300 rounded-lg break-inside-avoid shadow-sm outline outline-1 outline-offset-4 outline-gray-200">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-black uppercase text-gray-800">Laba Bersih (Net Profit)</h2>
-                            <span className={`text-2xl font-black ${metrics.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`} style={{ borderBottom: '3px double #000' }}>{formatCurrency(metrics.netProfit)}</span>
-                        </div>
+                    <section className="w-1/2">
+                        <h3 className="font-bold text-gray-800 mb-3 border-l-4 border-red-500 pl-2 uppercase">Beban Operasional</h3>
+                        <table className="w-full text-left text-sm border-collapse outline outline-1 outline-gray-300">
+                            <thead className="bg-gray-100 border-b-2 border-gray-400">
+                                <tr>
+                                    <th className="py-2 px-3 font-bold text-gray-800">Keterangan</th>
+                                    <th className="py-2 px-3 font-bold text-gray-800 text-right">Jumlah (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {metrics.cogs > 0 && <tr><td className="py-2 px-3 text-gray-700">HPP (Bebak Pokok Penjualan)</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(metrics.cogs)}</td></tr>}
+                                {expenseBreakdown.map((item, idx) => (
+                                    <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50' : ''}><td className="py-2 px-3 text-gray-700 capitalize">Beban {item.name}</td><td className="text-right py-2 px-3 font-medium">{formatCurrency(item.amount)}</td></tr>
+                                ))}
+                            </tbody>
+                            <tfoot>
+                                <tr className="font-bold border-t border-black bg-gray-100 text-red-700">
+                                    <td className="py-2 px-3 uppercase">Total Beban</td>
+                                    <td className="text-right py-2 px-3">({formatCurrency(metrics.totalExpenses)})</td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </section>
-
-                    <section className="mt-16 flex justify-between px-10 text-center text-sm break-inside-avoid">
-                        <div className="w-48">
-                            <p className="mb-20 text-gray-600">Disiapkan Oleh,</p>
-                            <div className="border-t border-black font-bold text-gray-900 pt-2">Admin Keuangan</div>
-                        </div>
-                        <div className="w-48">
-                            <p className="mb-20 text-gray-600">Diketahui & Disetujui,</p>
-                            <div className="border-t border-black font-bold text-gray-900 pt-2">Pemilik Toko</div>
-                        </div>
-                    </section>
-
-                    <footer className="mt-12 text-center text-xs text-gray-400 italic font-mono pt-4 border-t border-gray-200 break-inside-avoid">
-                        Generated by Abadi Jaya POS System - {formatDateTime(new Date())} - Confidential
-                    </footer>
                 </div>
-            </div>
+
+                <section className="mt-8 p-6 bg-gray-50 border-2 border-gray-300 rounded-lg break-inside-avoid shadow-sm outline outline-1 outline-offset-4 outline-gray-200">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-black uppercase text-gray-800">Laba Bersih (Net Profit)</h2>
+                        <span className={`text-2xl font-black ${metrics.netProfit >= 0 ? 'text-emerald-700' : 'text-red-700'}`} style={{ borderBottom: '3px double #000' }}>{formatCurrency(metrics.netProfit)}</span>
+                    </div>
+                </section>
+
+            </PrintReportLayout>
         </div>
     );
 }

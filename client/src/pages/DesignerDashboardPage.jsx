@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
-import db from '../db';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink, FiChevronLeft, FiChevronRight, FiActivity, FiZap, FiTarget, FiBox, FiMessageSquare } from 'react-icons/fi';
@@ -28,10 +27,15 @@ export default function DesignerDashboardPage() {
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/designers/my-tasks');
-            // Enrich with dp_tasks data from localStorage (Simulating API relations for now)
+            const [tasksRes, dpTasksRes] = await Promise.all([
+                api.get('/designers/my-tasks'),
+                api.get('/dp_tasks')
+            ]);
+            const data = tasksRes.data;
+            const dpData = dpTasksRes.data;
+            // Enrich with dp_tasks data from API 
             const enriched = data.map(t => {
-                const dpTask = db.getById('dp_tasks', t.task_id);
+                const dpTask = dpData.find(d => d.id === t.task_id);
                 return { ...t, dpTask };
             });
             setTasks(enriched);
@@ -85,9 +89,9 @@ export default function DesignerDashboardPage() {
                 file_hasil_desain: fileDesain || null,
                 catatan: catatanDesain || null
             });
-            // Update local storage mock status
+            // Update backend status
             if (finishingTask.task_id) {
-                db.update('dp_tasks', finishingTask.task_id, { status: 'produksi' });
+                await api.put(`/dp_tasks/${finishingTask.task_id}`, { status: 'produksi' });
             }
             setShowFinishModal(false);
             setFinishingTask(null);

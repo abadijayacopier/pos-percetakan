@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import db from '../db';
+import api from '../services/api';
 import { FiArrowLeft, FiPrinter, FiShield, FiCalendar, FiBox } from 'react-icons/fi';
 
 export default function ServiceWarrantyStickerPage({ onNavigate, pageState }) {
@@ -13,16 +13,24 @@ export default function ServiceWarrantyStickerPage({ onNavigate, pageState }) {
     const periods = ['None', '1 Minggu', '2 Minggu', '1 Bulan'];
 
     useEffect(() => {
-        if (serviceId) {
-            const data = db.getById('service_orders', serviceId);
-            setService(data);
-        }
+        const loadData = async () => {
+            try {
+                if (serviceId) {
+                    const res = await api.get(`/service/${serviceId}`);
+                    setService(res.data);
+                }
 
-        const allSettings = db.getAll('settings');
-        const sObj = {};
-        allSettings.forEach(s => sObj[s.key] = s.value);
-        setSettings(sObj);
-        setLoading(false);
+                const setRes = await api.get('/settings');
+                const sObj = {};
+                setRes.data.forEach(s => sObj[s.key] = s.value);
+                setSettings(sObj);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
     }, [serviceId]);
 
     if (loading) return <div className="p-20 text-center font-bold">Memuat...</div>;

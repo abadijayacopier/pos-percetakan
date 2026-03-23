@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import db from '../db';
-import seedData from '../seed';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPrinter } from 'react-icons/fi';
+import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
+import Swal from 'sweetalert2';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
     const { user } = useAuth();
@@ -31,6 +30,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [customers, setCustomers] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState(null);
     const [manualCustomerName, setManualCustomerName] = useState('');
+    const [isCustomerModalOpen, setCustomerModalOpen] = useState(false);
+    const [customerSearch, setCustomerSearch] = useState('');
 
     // Clock Effect
     useEffect(() => {
@@ -62,6 +63,12 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [fcSide, setFcSide] = useState('1');
     const [fcQty, setFcQty] = useState(0);
 
+    // Jilid & Print States
+    const [jilidType, setJilidType] = useState(null);
+    const [jilidQty, setJilidQty] = useState(0);
+    const [printType, setPrintType] = useState(null);
+    const [printQty, setPrintQty] = useState(0);
+
     // Payment & Modal States
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('tunai');
@@ -89,24 +96,51 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     // Initial Data Loading
     useEffect(() => {
-        seedData();
-        setProducts(db.getAll('products'));
-        setBindingPrices(db.getAll('binding_prices'));
-        setPrintPrices(db.getAll('print_prices'));
-        setCustomers(db.getAll('customers'));
-        api.get('/transactions/fotocopy-prices')
-            .then(res => setFotocopyPrices(res.data))
-            .catch(() => setFotocopyPrices(db.getAll('fotocopy_prices')));
+        const loadInitialData = async () => {
+            try {
+                const [productsRes, bindingRes, printRes, customersRes, fcRes, settingsRes] = await Promise.all([
+                    api.get('/products').catch(() => ({ data: [] })),
+                    api.get('/pricing/binding').catch(() => ({ data: [] })),
+                    api.get('/pricing/print').catch(() => ({ data: [] })),
+                    api.get('/customers').catch(() => ({ data: [] })),
+                    api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
+                    api.get('/settings').catch(() => ({ data: [] }))
+                ]);
 
-        const allSettings = db.getAll('settings');
-        const sMap = {};
-        allSettings.forEach(s => { sMap[s.key] = s.value; });
-        setPrinterSettings({
-            autoPrint: sMap.auto_print === 'true',
-            printerName: sMap.printer_name || '',
-            printerSize: sMap.printer_size || '80mm',
-            paperSize: sMap.paper_size || 'A4'
-        });
+                // Filter or set states directly
+                setProducts(productsRes.data || []);
+                const bData = bindingRes.data || [];
+                setBindingPrices(bData);
+                if (bData.length > 0) setJilidType(bData[0]);
+
+                const pData = printRes.data || [];
+                setPrintPrices(pData);
+                if (pData.length > 0) setPrintType(pData[0]);
+
+                setCustomers(customersRes.data || []);
+                setFotocopyPrices(fcRes.data || []);
+
+                // Load Settings
+                const allSettings = settingsRes.data || [];
+                const sMap = {};
+                allSettings.forEach(s => { sMap[s.key] = s.value; });
+
+                setPrinterSettings({
+                    autoPrint: sMap.auto_print === 'true',
+                    printerName: sMap.printer_name || '',
+                    printerSize: sMap.printer_size || '80mm',
+                    paperSize: sMap.paper_size || 'A4'
+                });
+
+                if (sMap.fc_discounts) {
+                    try { setFcDiscounts(JSON.parse(sMap.fc_discounts)); } catch (e) { }
+                }
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+            }
+        };
+
+        loadInitialData();
     }, []);
 
     // Helper: find price for fotocopy based on selection
@@ -200,10 +234,27 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     const removeAll = () => {
-        if (window.confirm("Kosongkan keranjang?")) {
-            setCart([]);
-            setGlobalDiscount(0);
-        }
+        if (cart.length === 0) return;
+        Swal.fire({
+            title: 'Kosongkan Keranjang?',
+            text: 'Semua item akan dihapus dari daftar.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Kosongkan',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'dark:text-white'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setCart([]);
+                setGlobalDiscount(0);
+            }
+        });
     };
 
     // Services Add logic
@@ -236,37 +287,45 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     const addJilidToCart = (item) => {
+        if (!item) return;
         const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, 1);
-            return;
+            updateQty(existingItem.id, existingItem.quantity + 1);
+            showToast('Keranjang diperbarui!', 'success');
+        } else {
+            const newItem = {
+                id: `jilid-${Date.now()}-${Math.random()}`,
+                name: `${item.name}`,
+                sellPrice: item.price,
+                quantity: 1,
+                type: 'service'
+            };
+            setCart(prev => [...prev, newItem]);
+            showToast('Jilid ditambahkan ke keranjang!', 'success');
         }
-        const newItem = {
-            id: `jilid-${Date.now()}-${Math.random()}`,
-            name: `${item.name}`,
-            sellPrice: item.price,
-            quantity: 1,
-            type: 'service'
-        };
-        setCart(prev => [...prev, newItem]);
-        showToast('Ditambahkan ke keranjang!', 'success')
     };
 
-    const addPrintToCart = (item) => {
-        const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
-        if (existingItem) {
-            updateQty(existingItem.id, 1);
+    const addPrintToCart = (item, qty) => {
+        if (!item || qty <= 0) {
+            showToast('Pilih jenis cetakan dan masukkan jumlah lembar yang benar.', 'warning');
             return;
         }
-        const newItem = {
-            id: `print-${Date.now()}-${Math.random()}`,
-            name: item.name,
-            sellPrice: item.price,
-            quantity: 1,
-            type: 'service'
-        };
-        setCart(prev => [...prev, newItem]);
-        showToast('Ditambahkan ke keranjang!', 'success')
+        const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
+        if (existingItem) {
+            updateQty(existingItem.id, existingItem.quantity + qty);
+            showToast('Keranjang diperbarui!', 'success');
+        } else {
+            const newItem = {
+                id: `print-${Date.now()}-${Math.random()}`,
+                name: item.name,
+                sellPrice: item.price,
+                quantity: qty,
+                type: 'service'
+            };
+            setCart(prev => [...prev, newItem]);
+            showToast('Print ditambahkan ke keranjang!', 'success');
+        }
+        setPrintQty(0);
     };
 
     // Modals
@@ -312,7 +371,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             }
         } catch (err) {
             console.error('Print error:', err);
-            showToast('Gagal mencetak struk', 'error');
+            const backendMsg = err.response?.data?.message || err.message;
+            showToast(`Gagal mencetak struk: ${backendMsg}`, 'error');
         }
     };
 
@@ -323,7 +383,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         } catch (err) { }
     };
 
-    const handleConfirmPayment = () => {
+    const handleConfirmPayment = async () => {
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : total;
 
@@ -331,48 +391,66 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
 
         const transaction = {
-            id: `TRX-${Date.now()}`,
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
             customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
             customerName: customerName,
-            items: cart,
+            type: cart.some(c => c.type === 'fotocopy' || c.type === 'service') ? 'service' : 'sale',
+            items: cart.map(item => ({
+                id: item.type === 'atk' ? item.id : null,
+                name: item.name,
+                qty: item.quantity,
+                price: item.sellPrice,
+                subtotal: item.sellPrice * item.quantity,
+                discount: item.discount || 0,
+                source: item.type === 'atk' ? 'atk' : 'fc' // Treat service as fc logic
+            })),
             subtotal,
             discount: globalDiscount,
             total,
-            paymentMethod,
-            amountPaid: paid,
-            change: paid - total,
+            paymentType: paymentMethod,
+            paid: paid,
+            changeAmount: paid - total,
             status: 'completed'
         };
 
-        db.insert('transactions', transaction);
+        try {
+            const res = await api.post('/transactions', transaction);
+            transaction.id = res.data.id;
 
-        cart.forEach(item => {
-            if (item.type !== 'fotocopy' && item.type !== 'service') {
-                const p = db.getById('products', item.id);
-                if (p) db.update('products', item.id, { ...p, stock: p.stock - item.quantity });
+            // Update local stock for display (physical products only)
+            setProducts(prev => prev.map(p => {
+                const cartItem = cart.find(ci => ci.id === p.id);
+                if (cartItem && p.type !== 'fotocopy' && p.type !== 'service') {
+                    return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) };
+                }
+                return p;
+            }));
+
+            setTransactionComplete(transaction);
+
+            if (isMobile || printerSettings.autoPrint) {
+                handleDirectPrint(transaction);
             }
-        });
+            if (paymentMethod === 'tunai') {
+                openCashDrawer();
+            }
 
-        setTransactionComplete(transaction);
-
-        if (printerSettings.autoPrint && !isMobile) {
-            handleDirectPrint(transaction);
-        }
-        if (paymentMethod === 'tunai') {
-            openCashDrawer();
+            // Re-fetch transactions or just clear
+            setCart([]);
+            setGlobalDiscount(0);
+        } catch (error) {
+            showToast('Gagal memproses transaksi: ' + (error.response?.data?.message || error.message), 'error');
         }
     };
 
-    const saveQueue = () => {
+    const saveQueue = async () => {
         if (cart.length === 0) return;
 
         const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
         const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
 
         const queueItem = {
-            id: `Q-${Date.now()}`,
             customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
             customerName: customerName,
             title: cart.map(i => i.name).join(', ').substring(0, 50) + (cart.length > 1 ? '...' : ''),
@@ -381,10 +459,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             type: 'digital',
             createdAt: new Date().toISOString()
         };
-        db.insert('dp_tasks', queueItem);
-        showToast('Antrean disimpan.', 'success');
-        setCart([]);
-        setGlobalDiscount(0);
+
+        try {
+            await api.post('/print-orders', queueItem).catch(() => api.post('/spk', queueItem));
+            showToast('Antrean disimpan.', 'success');
+            setCart([]);
+            setGlobalDiscount(0);
+        } catch (error) {
+            showToast('Gagal menyimpan antrean: Pastikan endpoint exists.', 'error');
+        }
     };
 
     // Keyboard Shortcuts
@@ -399,9 +482,28 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         'Escape': () => {
             if (isPaymentModalOpen) closePaymentModal();
             else if (isDiscountModalOpen) toggleDiscountModal();
-            else if (cart.length > 0 && window.confirm("Batal transaksi?")) {
-                setCart([]);
-                setGlobalDiscount(0);
+            else if (isCustomerModalOpen) setCustomerModalOpen(false);
+            else if (cart.length > 0) {
+                Swal.fire({
+                    title: 'Batal Transaksi?',
+                    text: 'Semua barang di keranjang akan dihapus.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Batalkan!',
+                    cancelButtonText: 'Kembali',
+                    customClass: {
+                        confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                        cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                        popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                        title: 'dark:text-white'
+                    },
+                    buttonsStyling: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        setCart([]);
+                        setGlobalDiscount(0);
+                    }
+                });
             }
         },
     });
@@ -447,7 +549,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <div className="hidden md:flex items-center gap-6 justify-end shrink-0">
                     {/* Action Pills */}
                     <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-full border border-slate-100 dark:border-slate-700">
-                        <button onClick={toggleTheme} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Ganti Tema">
+                        <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Ganti Tema">
                             <span className="material-symbols-outlined text-[18px]">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
                         </button>
                         <button onClick={toggleFullScreen} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Layar Penuh (F11)">
@@ -570,9 +672,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             {activeServiceTab === 'jilid' && (
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {bindingPrices.map(item => (
-                                        <div key={item.id} onClick={() => addJilidToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center">
+                                        <div key={item.id} onClick={() => addJilidToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center bg-white dark:bg-slate-900 shadow-sm">
                                             <span className="material-symbols-outlined text-primary mb-2 text-3xl">auto_stories</span>
-                                            <h3 className="font-bold text-sm">{item.name}</h3>
+                                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-200">{item.name}</h3>
                                             <p className="text-xs mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
                                         </div>
                                     ))}
@@ -580,14 +682,46 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             )}
 
                             {activeServiceTab === 'print' && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {printPrices.map(item => (
-                                        <div key={item.id} onClick={() => addPrintToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center">
-                                            <span className="material-symbols-outlined text-primary mb-2 text-3xl">print</span>
-                                            <h3 className="font-bold text-sm">{item.name}</h3>
-                                            <p className="text-xs mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
+                                <div className="bg-slate-950/30 backdrop-blur-sm rounded-[28px] border border-slate-800/50 p-6 sm:p-8 flex flex-col lg:flex-row gap-8 shadow-xl">
+                                    <div className="flex-1 space-y-8">
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Pilih Spesifikasi Cetak</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                {printPrices.map(item => (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => setPrintType(item)}
+                                                        className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all ${printType?.id === item.id ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/20' : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'}`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-2xl">print</span>
+                                                        <span className="text-xs font-bold font-display uppercase tracking-widest text-center leading-tight">{item.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    ))}
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Jumlah Lembar</h3>
+                                            <div className="flex items-center gap-3 w-full sm:w-2/3">
+                                                <button onClick={() => setPrintQty(Math.max(0, printQty - 1))} className="size-10 sm:size-12 shrink-0 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">remove</span></button>
+                                                <input type="number" value={printQty || ''} onChange={(e) => setPrintQty(parseInt(e.target.value) || 0)} className="flex-1 h-10 sm:h-12 text-center text-xl font-bold bg-slate-900 border-2 border-slate-800 rounded-xl focus:border-primary text-white" placeholder="0" />
+                                                <button onClick={() => setPrintQty(printQty + 1)} className="size-10 sm:size-12 shrink-0 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">add</span></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:w-80 xl:w-96 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-6 sm:p-8 flex flex-col justify-center text-center border border-slate-100 dark:border-slate-800 shadow-sm">
+                                        <div className="mb-6">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Satuan</h4>
+                                            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{formatRupiah(printType?.price || 0)}</div>
+                                        </div>
+                                        <div className="w-full h-px bg-slate-200 dark:bg-slate-700 mb-6"></div>
+                                        <div className="mb-8">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Subtotal Layanan</h4>
+                                            <div className="text-3xl sm:text-4xl font-black text-primary">{formatRupiah((printType?.price || 0) * printQty)}</div>
+                                        </div>
+                                        <button onClick={() => addPrintToCart(printType, printQty)} className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-lg shadow-primary/25">
+                                            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span> Tambah ke Keranjang
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -663,37 +797,29 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                             TERMINAL ACTIVE
                         </div>
-                        {/* Customer Dropdown */}
-                        <div>
+                        {/* Customer Button Modern */}
+                        <div className="mt-2">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Pelanggan</label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                                    <span className="material-symbols-outlined text-lg">person</span>
+                            <button
+                                onClick={() => setCustomerModalOpen(true)}
+                                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all text-left shadow-sm group"
+                            >
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                        <FiUserPlus size={16} />
+                                    </div>
+                                    <div className="flex flex-col truncate">
+                                        <span className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                                            {selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru (Manual)') :
+                                                (customers.find(c => c.id === selectedCustomerId)?.name || 'Umum / Tanpa Nama')}
+                                        </span>
+                                        <span className="text-[10px] font-medium text-slate-500">
+                                            {selectedCustomerId ? 'Klik untuk mengubah pelanggan' : 'Pilih data pelanggan'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <select
-                                    value={selectedCustomerId || ''}
-                                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                                    className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-700 dark:text-slate-300 appearance-none outline-none focus:ring-2 focus:ring-primary shadow-sm cursor-pointer"
-                                >
-                                    <option value="">Umum / Tanpa Nama</option>
-                                    <option value="manual">+ Input Manual Baru</option>
-                                    {customers.length > 0 && <optgroup label="Daftar Pelanggan" />}
-                                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
-                                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
-                                    <span className="material-symbols-outlined text-lg">keyboard_arrow_down</span>
-                                </div>
-                            </div>
-                            {selectedCustomerId === 'manual' && (
-                                <input
-                                    type="text"
-                                    placeholder="Ketik nama pelanggan..."
-                                    value={manualCustomerName}
-                                    onChange={(e) => setManualCustomerName(e.target.value)}
-                                    className="mt-2 w-full px-4 py-2 rounded-xl border-2 border-primary/50 bg-primary/5 text-sm font-semibold outline-none focus:border-primary placeholder:font-normal"
-                                    autoFocus
-                                />
-                            )}
+                                <FiChevronRight className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+                            </button>
                         </div>
                     </div>
 
@@ -752,10 +878,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 <span className="font-bold text-slate-600 dark:text-slate-400">Total Tagihan</span>
                                 <span className="text-[1.7rem] md:text-3xl leading-none font-black text-primary drop-shadow-sm">{formatRupiah(subtotal - globalDiscount)}</span>
                             </div>
-                            <div className="grid grid-cols-1 gap-3 mb-3">
-                                <button onClick={saveQueue} className="flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors bg-white shadow-sm text-slate-700">
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <button onClick={saveQueue} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-[11px] lg:text-sm hover:bg-slate-100 transition-colors bg-white shadow-sm text-slate-700">
                                     <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 px-1 rounded text-[10px]">F12</span>
-                                    <span className="material-symbols-outlined text-lg">save</span> Simpan Antrean
+                                    <span className="material-symbols-outlined text-base">save</span> <span className="hidden xl:inline">Simpan</span> Antrean
+                                </button>
+                                <button onClick={() => onNavigate('spk-list')} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/20 font-bold text-[11px] lg:text-sm hover:bg-primary/5 transition-colors bg-white dark:bg-slate-800 shadow-sm text-primary">
+                                    <FiList className="text-base" /> <span className="hidden xl:inline">Daftar</span> Antrean
                                 </button>
                             </div>
                             <button onClick={openPayment} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3 transition-transform active:scale-95">
@@ -858,73 +987,167 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <button onClick={() => handleDirectPrint(transactionComplete)} className="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:bg-primary/90">
                                 <FiPrinter size={20} /> Cetak Struk
                             </button>
-                            <button onClick={closePaymentModal} className="w-full py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 transition-colors">
-                                Selesai Berbelanja
+                            <button onClick={closePaymentModal} className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                                Transaksi Baru
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6 pt-2">
-                        <div className="bg-primary/5 p-6 rounded-2xl text-center border border-primary/20">
-                            <p className="text-sm font-bold text-slate-500 uppercase mb-2">Total Tagihan</p>
-                            <p className="text-4xl lg:text-5xl font-black text-primary drop-shadow-sm">{formatRupiah(subtotal - globalDiscount)}</p>
+                    <div className="space-y-6 pt-4">
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-bold text-slate-500">Total Tagihan</span>
+                                <span className="text-3xl font-black text-primary">{formatRupiah(subtotal - globalDiscount)}</span>
+                            </div>
                         </div>
 
                         <div>
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Metode Pembayaran</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {['tunai', 'qris', 'transfer', 'piutang'].map(m => (
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-3">Metode Pembayaran</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {[{ id: 'tunai', icon: 'payments', label: 'Tunai' }, { id: 'transfer', icon: 'account_balance', label: 'Transfer' }, { id: 'qris', icon: 'qr_code_scanner', label: 'QRIS' }].map(m => (
                                     <button
-                                        key={m}
-                                        onClick={() => setPaymentMethod(m)}
-                                        className={`py-3 rounded-xl border-2 font-bold uppercase text-sm transition-all ${paymentMethod === m ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600'}`}
+                                        key={m.id}
+                                        onClick={() => setPaymentMethod(m.id)}
+                                        className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === m.id ? 'bg-primary/5 border-primary text-primary' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-500'}`}
                                     >
-                                        {m}
+                                        <span className="material-symbols-outlined">{m.icon}</span>
+                                        <span className="text-xs font-bold">{m.label}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         {paymentMethod === 'tunai' && (
-                            <div>
-                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Uang Diterima (Rp)</label>
+                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-3">Uang Diterima</label>
                                 <input
-                                    type="text"
-                                    value={amountPaid ? 'Rp ' + Number(amountPaid).toLocaleString('id-ID') : ''}
-                                    onChange={e => setAmountPaid(e.target.value.replace(/[^0-9]/g, ''))}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter') {
-                                            if ((parseFloat(amountPaid) || 0) >= (subtotal - globalDiscount)) handleConfirmPayment();
-                                        }
-                                    }}
-                                    placeholder="Rp 0"
-                                    className="w-full p-4 border-2 border-slate-200 focus:border-primary rounded-xl text-3xl font-black text-center text-slate-800 outline-none"
+                                    type="number"
+                                    value={amountPaid}
+                                    onChange={e => setAmountPaid(e.target.value)}
+                                    className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-primary text-2xl font-bold outline-none"
+                                    placeholder="0"
                                     autoFocus
                                 />
-                                {amountPaid && (
-                                    <div className="flex justify-between items-center mt-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                                        <span className="text-sm font-bold text-slate-500">Kembalian:</span>
-                                        <span className={`text-xl font-black ${parseFloat(amountPaid) - (subtotal - globalDiscount) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {formatRupiah(parseFloat(amountPaid) - (subtotal - globalDiscount))}
-                                        </span>
+                                <div className="grid grid-cols-4 gap-2 mt-3">
+                                    {[50000, 100000, 150000, (subtotal - globalDiscount)].map((v, i) => (
+                                        <button key={i} onClick={() => setAmountPaid(v)} className="py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-50 text-slate-600 dark:text-slate-300">
+                                            {formatRupiah(v).replace('Rp ', '')}
+                                        </button>
+                                    ))}
+                                </div>
+                                {Number(amountPaid) >= (subtotal - globalDiscount) && (
+                                    <div className="mt-4 p-4 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-200 text-orange-700 dark:text-orange-400 flex justify-between items-center">
+                                        <span className="text-sm font-bold uppercase tracking-widest">Kembalian</span>
+                                        <span className="text-2xl font-black">{formatRupiah(Number(amountPaid) - (subtotal - globalDiscount))}</span>
                                     </div>
                                 )}
                             </div>
                         )}
 
                         <button
-                            disabled={paymentMethod === 'tunai' && (parseFloat(amountPaid) || 0) < (subtotal - globalDiscount)}
                             onClick={handleConfirmPayment}
-                            className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-lg transition-all ${(paymentMethod !== 'tunai' || (parseFloat(amountPaid) || 0) >= (subtotal - globalDiscount))
-                                ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary/90'
-                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                }`}
+                            disabled={paymentMethod === 'tunai' && Number(amountPaid) < (subtotal - globalDiscount)}
+                            className="w-full py-4 bg-primary disabled:bg-slate-300 disabled:text-slate-500 text-white rounded-xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                         >
-                            <span className="material-symbols-outlined">payments</span>
-                            Proses Pembayaran
+                            Proses Transaksi Selesai
                         </button>
                     </div>
                 )}
+            </Modal>
+
+            {/* Customer Selection Modal */}
+            <Modal isOpen={isCustomerModalOpen} onClose={() => setCustomerModalOpen(false)} title="Pilih Data Pelanggan">
+                <div className="flex flex-col h-[65vh] md:h-[500px]">
+                    <div className="px-1 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                        <div className="relative">
+                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Cari nama atau telepon pelanggan..."
+                                value={customerSearch}
+                                onChange={e => setCustomerSearch(e.target.value)}
+                                className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-primary outline-none text-sm dark:bg-slate-900"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-1 space-y-2 py-4 hide-scrollbar">
+                        {/* Option: Default / Umum */}
+                        <div
+                            onClick={() => { setSelectedCustomerId(''); setCustomerModalOpen(false); }}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${selectedCustomerId === '' ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300'}`}
+                        >
+                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+                                <FiCheckCircle size={20} className={selectedCustomerId === '' ? 'text-primary' : 'opacity-0'} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-bold text-slate-800 dark:text-white">Umum / Tanpa Nama</h4>
+                                <p className="text-xs text-slate-500 mt-0.5">Transaksi anonim (default)</p>
+                            </div>
+                        </div>
+
+                        {/* Customer List */}
+                        {customers
+                            .filter(c => (c.name || '').toLowerCase().includes(customerSearch.toLowerCase()) || (c.phone || '').includes(customerSearch))
+                            .map(c => (
+                                <div
+                                    key={c.id}
+                                    onClick={() => { setSelectedCustomerId(c.id); setCustomerModalOpen(false); }}
+                                    className={`p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-4 ${selectedCustomerId === c.id ? 'border-primary bg-primary/5' : 'border-slate-100 dark:border-slate-800 hover:border-slate-300'}`}
+                                >
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                        {c.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-slate-800 dark:text-white">{c.name}</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">{c.phone || c.email || 'Tanpa Kontak'}</p>
+                                    </div>
+                                    {selectedCustomerId === c.id && <FiCheckCircle size={20} className="text-primary shrink-0" />}
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    {/* Manual Override Action */}
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4 shrink-0 px-1 mt-2">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Input Nama Cepat (Sekali Transaksi)</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Ketik nama pelanggan baru..."
+                                    value={manualCustomerName}
+                                    onChange={e => setManualCustomerName(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 outline-none focus:border-primary dark:bg-slate-900"
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (manualCustomerName.trim().length > 0) {
+                                            setSelectedCustomerId('manual');
+                                            setCustomerModalOpen(false);
+                                        } else {
+                                            Swal.fire({
+                                                icon: 'warning',
+                                                title: 'Nama Kosong',
+                                                text: 'Ketik nama terlebih dahulu',
+                                                customClass: {
+                                                    confirmButton: 'bg-primary hover:bg-primary-dark text-white font-bold py-3 px-6 rounded-xl',
+                                                    popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                                                    title: 'dark:text-white'
+                                                },
+                                                buttonsStyling: false
+                                            });
+                                        }
+                                    }}
+                                    className="px-4 py-2 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-bold hover:opacity-90 transition-opacity"
+                                >
+                                    Pilih
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </Modal>
         </div>
     );

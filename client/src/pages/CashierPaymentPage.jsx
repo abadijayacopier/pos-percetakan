@@ -1,18 +1,19 @@
-import { useState, useMemo } from 'react';
-import db from '../db';
+import { useState, useMemo, useEffect } from 'react';
+import api from '../services/api';
 import { formatRupiah, formatDateTime } from '../utils';
 import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import {
     FiCreditCard, FiSearch, FiCheckCircle, FiClock,
     FiDollarSign, FiChevronLeft, FiChevronRight,
-    FiPrinter, FiAlertTriangle, FiInfo, FiTrendingUp
+    FiPrinter, FiAlertTriangle, FiInfo, FiTrendingUp,
+    FiEdit, FiTrash2
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CashierPaymentPage({ onNavigate }) {
     const { user } = useAuth();
-    const [transactions, setTransactions] = useState(() => db.getAll('transactions'));
+    const [transactions, setTransactions] = useState([]);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [selectedTrx, setSelectedTrx] = useState(null);
@@ -21,7 +22,28 @@ export default function CashierPaymentPage({ onNavigate }) {
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
 
-    const reload = () => setTransactions(db.getAll('transactions'));
+    const [selectedEditTrx, setSelectedEditTrx] = useState(null);
+    const [editForm, setEditForm] = useState({ customerName: '', paidAmount: '', paymentType: '' });
+    const [selectedDeleteTrx, setSelectedDeleteTrx] = useState(null);
+
+    const loadData = async () => {
+        try {
+            const { data } = await api.get('/transactions');
+            setTransactions(data.map(t => ({
+                ...t,
+                invoiceNo: t.invoice_no || t.invoiceNo,
+                customerName: t.customer_name || t.customerName,
+                paidAmount: t.paid || t.paidAmount,
+                paymentType: t.payment_type || t.paymentType,
+                settledAt: t.updated_at || t.settledAt,
+                date: t.date
+            })));
+        } catch (e) { console.error(e); }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const reload = () => loadData();
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
@@ -65,15 +87,53 @@ export default function CashierPaymentPage({ onNavigate }) {
         setPayMethod('tunai');
     };
 
-    const handleSettle = () => {
+    const handleSettle = async () => {
         if (!selectedTrx) return;
         const paid = Number(amountPaid) || 0;
-        const newPaid = (selectedTrx.paidAmount || 0) + paid;
-        db.update('transactions', selectedTrx.id, { paidAmount: newPaid, paymentType: payMethod, settledAt: new Date().toISOString() });
-        db.insert('cash_flow', { type: 'in', amount: paid, description: `Pelunasan ${selectedTrx.invoiceNo}`, category: 'Penjualan', reference: selectedTrx.invoiceNo, date: new Date().toISOString() });
-        db.logActivity('Kasir', 'Pelunasan', `${selectedTrx.invoiceNo} - ${formatRupiah(paid)} via ${payMethod}`);
-        setSelectedTrx(null);
-        reload();
+        try {
+            await api.put(`/transactions/${selectedTrx.id}/pay`, {
+                paidAmount: paid,
+                paymentMethod: payMethod
+            });
+            setSelectedTrx(null);
+            reload();
+        } catch (e) {
+            console.error('Gagal melunasi:', e);
+            alert('Gagal melakukan pelunasan');
+        }
+    };
+
+    const openEdit = (trx) => {
+        setSelectedEditTrx(trx);
+        setEditForm({
+            customerName: trx.customerName || '',
+            paidAmount: trx.paidAmount || 0,
+            paymentType: trx.paymentType || 'tunai'
+        });
+    };
+
+    const handleEdit = async () => {
+        if (!selectedEditTrx) return;
+        try {
+            await api.put(`/transactions/${selectedEditTrx.id}`, editForm);
+            setSelectedEditTrx(null);
+            reload();
+        } catch (e) {
+            console.error(e);
+            alert('Gagal mengedit transaksi');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedDeleteTrx) return;
+        try {
+            await api.delete(`/transactions/${selectedDeleteTrx.id}`);
+            setSelectedDeleteTrx(null);
+            reload();
+        } catch (e) {
+            console.error(e);
+            alert('Gagal menghapus transaksi');
+        }
     };
 
     const handleSearch = (v) => { setSearch(v); setPage(1); };
@@ -219,21 +279,39 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                 )}
                                             </td>
                                             <td className="px-6 py-5 text-right">
-                                                {!isLunas ? (
+                                                <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => openSettle(t)}
-                                                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 ml-auto"
+                                                        onClick={() => openEdit(t)}
+                                                        className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-xl transition-all"
+                                                        title="Edit Transaksi"
                                                     >
-                                                        <FiDollarSign /> Lunasi
+                                                        <FiEdit size={16} />
                                                     </button>
-                                                ) : (
+
+                                                    {!isLunas ? (
+                                                        <button
+                                                            onClick={() => openSettle(t)}
+                                                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                        >
+                                                            <FiDollarSign /> Lunasi
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handlePrintReceipt(t)}
+                                                            className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                        >
+                                                            <FiPrinter /> Struk
+                                                        </button>
+                                                    )}
+
                                                     <button
-                                                        onClick={() => handlePrintReceipt(t)}
-                                                        className="px-5 py-2.5 bg-slate-900 hover:bg-black text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 ml-auto"
+                                                        onClick={() => setSelectedDeleteTrx(t)}
+                                                        className="p-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 rounded-xl transition-all"
+                                                        title="Hapus Transaksi"
                                                     >
-                                                        <FiPrinter /> Struk
+                                                        <FiTrash2 size={16} />
                                                     </button>
-                                                )}
+                                                </div>
                                             </td>
                                         </motion.tr>
                                     )
@@ -360,6 +438,92 @@ export default function CashierPaymentPage({ onNavigate }) {
                         </div>
                     </div>
                 )}
+            </Modal>
+
+            {/* Edit Modal */}
+            <Modal
+                isOpen={!!selectedEditTrx}
+                onClose={() => setSelectedEditTrx(null)}
+                title="Edit Transaksi"
+                footer={
+                    <div className="flex gap-4 w-full">
+                        <button
+                            onClick={() => setSelectedEditTrx(null)}
+                            className="flex-1 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleEdit}
+                            className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-3"
+                        >
+                            <FiCheckCircle size={16} /> Simpan
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Nama Pelanggan / Catatan</label>
+                        <input
+                            type="text"
+                            value={editForm.customerName}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, customerName: e.target.value }))}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Nominal Dibayar (Lunas jika ≥ Total)</label>
+                        <input
+                            type="number"
+                            value={editForm.paidAmount}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, paidAmount: e.target.value }))}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Metode Pembayaran</label>
+                        <select
+                            value={editForm.paymentType}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, paymentType: e.target.value }))}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 appearance-none"
+                        >
+                            <option value="tunai">Tunai</option>
+                            <option value="transfer">Transfer Bank</option>
+                            <option value="qris">QRIS</option>
+                            <option value="hutang">Hutang / Pending</option>
+                        </select>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Delete Modal */}
+            <Modal
+                isOpen={!!selectedDeleteTrx}
+                onClose={() => setSelectedDeleteTrx(null)}
+                title="Hapus Transaksi (Void)"
+                footer={
+                    <div className="flex gap-4 w-full">
+                        <button
+                            onClick={() => setSelectedDeleteTrx(null)}
+                            className="flex-1 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="flex-1 px-6 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-3"
+                        >
+                            <FiTrash2 size={16} />Hapus Transaksi
+                        </button>
+                    </div>
+                }
+            >
+                <div className="p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-2xl border border-rose-100 dark:border-rose-500/20 flex flex-col items-center text-center gap-4">
+                    <FiAlertTriangle size={48} className="my-2" />
+                    <p className="font-bold text-sm">Apakah Anda yakin ingin MENGHAPUS (Void) transaksi ini?</p>
+                    <p className="text-xs opacity-80">Aksi ini bersifat permanen, stok produk akan dikembalikan, dan riwayat akan dihapus.</p>
+                </div>
             </Modal>
         </div>
     );
