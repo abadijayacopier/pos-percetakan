@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import api from '../services/api';
 import { formatRupiah, formatDateTime } from '../utils';
+import Swal from 'sweetalert2';
 import Modal from '../components/Modal';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -99,7 +100,7 @@ export default function CashierPaymentPage({ onNavigate }) {
             reload();
         } catch (e) {
             console.error('Gagal melunasi:', e);
-            alert('Gagal melakukan pelunasan');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal melakukan pelunasan', timer: 3000 });
         }
     };
 
@@ -120,7 +121,7 @@ export default function CashierPaymentPage({ onNavigate }) {
             reload();
         } catch (e) {
             console.error(e);
-            alert('Gagal mengedit transaksi');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengedit transaksi', timer: 3000 });
         }
     };
 
@@ -132,7 +133,7 @@ export default function CashierPaymentPage({ onNavigate }) {
             reload();
         } catch (e) {
             console.error(e);
-            alert('Gagal menghapus transaksi');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus transaksi', timer: 3000 });
         }
     };
 

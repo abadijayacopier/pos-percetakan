@@ -3,6 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPenTool, FiClock, FiFileText, FiCheckCircle, FiPlayCircle, FiList, FiCheckSquare, FiLogOut, FiUploadCloud, FiX, FiLink, FiChevronLeft, FiChevronRight, FiActivity, FiZap, FiTarget, FiBox, FiMessageSquare } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -71,7 +72,7 @@ export default function DesignerDashboardPage() {
             await api.patch(`/designers/tasks/${assignmentId}/start`);
             fetchTasks();
         } catch (err) {
-            alert(err.response?.data?.message || 'Gagal memulai desain');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal memulai desain', timer: 3000 });
         }
     };
 
@@ -97,7 +98,7 @@ export default function DesignerDashboardPage() {
             setFinishingTask(null);
             fetchTasks();
         } catch (err) {
-            alert(err.response?.data?.message || 'Gagal menyelesaikan');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menyelesaikan', timer: 3000 });
         }
     };
 

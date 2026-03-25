@@ -123,12 +123,12 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         }
 
         // 3c. Jika status LUNAS, masukkan ke Cash Flow
-        if (status === 'paid' && paid > 0) {
+        if ((status === 'paid' || status === 'completed') && paid > 0) {
             const cashFlowId = 'cf' + Date.now();
             await connection.query(`
         INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
         VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
-      `, [cashFlowId, date.split('T')[0], total, `Penjualan ${type} - ${invoiceNo}`, newTrxId]);
+      `, [cashFlowId, date.split('T')[0], paid, `Penjualan ${type} - ${invoiceNo}`, newTrxId]);
         }
 
         // 3d. Sinkronisasi Master Pelanggan (total_trx & total_spend)

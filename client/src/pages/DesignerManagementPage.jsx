@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     FiUserPlus, FiUsers, FiCheckCircle, FiTrash2, FiEdit2,
     FiAlertCircle, FiActivity, FiSearch, FiMonitor, FiUserMinus,
-    FiLoader, FiCheck
+    FiLoader, FiCheck, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
@@ -30,6 +30,15 @@ export default function DesignerManagementPage({ onNavigate }) {
     const [saving, setSaving] = useState(false);
     const [toastMsg, setToastMsg] = useState(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    // Search & Pagination States
+    const [opSearch, setOpSearch] = useState('');
+    const [opPage, setOpPage] = useState(1);
+    const opPerPage = 5;
+
+    const [queueSearch, setQueueSearch] = useState('');
+    const [queuePage, setQueuePage] = useState(1);
+    const queuePerPage = 5;
 
     const toast = useCallback((msg, type = 'success') => setToastMsg({ msg, type }), []);
 
@@ -110,8 +119,21 @@ export default function DesignerManagementPage({ onNavigate }) {
     const aktifCount = designers.filter(d => d.is_active).length;
     const recentAssignments = assignments.filter(a => ['ditugaskan', 'dikerjakan'].includes(a.status));
 
+    // Computed Filtered & Paginated Data
+    const filteredDesigners = designers.filter(d =>
+        d.name.toLowerCase().includes(opSearch.toLowerCase()) ||
+        d.username.toLowerCase().includes(opSearch.toLowerCase())
+    );
+    const paginatedDesigners = filteredDesigners.slice((opPage - 1) * opPerPage, opPage * opPerPage);
+
+    const filteredQueue = recentAssignments.filter(a =>
+        a.task_id.toLowerCase().includes(queueSearch.toLowerCase()) ||
+        a.designer_name.toLowerCase().includes(queueSearch.toLowerCase())
+    );
+    const paginatedQueue = filteredQueue.slice((queuePage - 1) * queuePerPage, queuePage * queuePerPage);
+
     return (
-        <div className="p-4 md:p-8 flex flex-col gap-6 bg-slate-50/50 dark:bg-transparent min-h-screen">
+        <div className="p-4 md:p-8 pb-28 md:pb-8 flex flex-col gap-6 bg-slate-50/50 dark:bg-transparent">
             {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
 
             {/* Header */}
@@ -156,11 +178,21 @@ export default function DesignerManagementPage({ onNavigate }) {
             </div>
 
             {/* Main Table */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                         <FiUsers className="text-indigo-600" /> Daftar Operator Desain
                     </h2>
+                    <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Cari nama atau username..."
+                            value={opSearch}
+                            onChange={(e) => { setOpSearch(e.target.value); setOpPage(1); }}
+                            className="w-full md:w-64 pl-9 pr-4 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
                 </div>
 
                 {loading ? (
@@ -174,8 +206,8 @@ export default function DesignerManagementPage({ onNavigate }) {
                         <p className="text-[10px] font-black uppercase tracking-widest">Belum ada operator desainer</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
                                     <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operator</th>
@@ -186,7 +218,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {designers.map(d => (
+                                {paginatedDesigners.map(d => (
                                     <tr key={d.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
@@ -201,11 +233,11 @@ export default function DesignerManagementPage({ onNavigate }) {
                                         </td>
                                         <td className="p-4 text-sm text-slate-500 hidden md:table-cell">@{d.username}</td>
                                         <td className="p-4 text-center">
-                                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider
-                                                ${d.status_kerja === 'sibuk' 
-                                                    ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' 
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider
+                                                ${d.status_kerja === 'sibuk'
+                                                    ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'
                                                     : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20'
-                                                }"
+                                                }`}
                                             >
                                                 <span className={`w-2 h-2 rounded-full ${d.status_kerja === 'sibuk' ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`}></span>
                                                 {d.status_kerja === 'sibuk' ? 'Sibuk' : 'Kosong'}
@@ -243,17 +275,50 @@ export default function DesignerManagementPage({ onNavigate }) {
                         </table>
                     </div>
                 )}
+                {/* Pagination Operators */}
+                {!loading && filteredDesigners.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                            Menampilkan {Math.min(filteredDesigners.length, (opPage - 1) * opPerPage + 1)}-{Math.min(filteredDesigners.length, opPage * opPerPage)} dari {filteredDesigners.length}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setOpPage(p => Math.max(1, p - 1))}
+                                disabled={opPage === 1}
+                                className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30"
+                            ><FiChevronLeft /></button>
+                            <span className="text-xs font-bold w-12 text-center whitespace-nowrap">{opPage} / {Math.max(1, Math.ceil(filteredDesigners.length / opPerPage))}</span>
+                            <button
+                                onClick={() => setOpPage(p => Math.min(Math.ceil(filteredDesigners.length / opPerPage), p + 1))}
+                                disabled={opPage === Math.ceil(filteredDesigners.length / opPerPage) || filteredDesigners.length === 0}
+                                className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30"
+                            ><FiChevronRight /></button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Monitoring Penugasan Aktif */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                        <FiMonitor className="text-amber-500" /> Antrean Aktif
-                    </h2>
-                    <span className="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-900/20 text-[10px] font-black rounded-lg">
-                        {recentAssignments.length} Tugas
-                    </span>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                            <FiMonitor className="text-amber-500" /> Antrean Aktif
+                        </h2>
+                        <span className="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-900/20 text-[10px] font-black rounded-lg">
+                            {recentAssignments.length} Tugas
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Cari Order ID atau Operator..."
+                            value={queueSearch}
+                            onChange={(e) => { setQueueSearch(e.target.value); setQueuePage(1); }}
+                            className="w-full md:w-64 pl-9 pr-4 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-amber-500 outline-none"
+                        />
+                    </div>
                 </div>
 
                 {recentAssignments.length === 0 ? (
@@ -262,8 +327,8 @@ export default function DesignerManagementPage({ onNavigate }) {
                         <p className="text-[10px] font-black uppercase tracking-widest italic">Tidak ada antrean desain</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
                                     <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job ID</th>
@@ -273,7 +338,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {recentAssignments.map(a => (
+                                {paginatedQueue.map(a => (
                                     <tr key={a.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                                         <td className="p-4 text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter">{a.task_id}</td>
                                         <td className="p-4 text-sm font-medium text-slate-700 dark:text-slate-300">{a.designer_name}</td>
@@ -289,6 +354,27 @@ export default function DesignerManagementPage({ onNavigate }) {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+                {/* Pagination Antrean Aktif */}
+                {recentAssignments.length > 0 && filteredQueue.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                            Menampilkan {Math.min(filteredQueue.length, (queuePage - 1) * queuePerPage + 1)}-{Math.min(filteredQueue.length, queuePage * queuePerPage)} dari {filteredQueue.length}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setQueuePage(p => Math.max(1, p - 1))}
+                                disabled={queuePage === 1}
+                                className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30"
+                            ><FiChevronLeft /></button>
+                            <span className="text-xs font-bold w-12 text-center whitespace-nowrap">{queuePage} / {Math.max(1, Math.ceil(filteredQueue.length / queuePerPage))}</span>
+                            <button
+                                onClick={() => setQueuePage(p => Math.min(Math.ceil(filteredQueue.length / queuePerPage), p + 1))}
+                                disabled={queuePage === Math.ceil(filteredQueue.length / queuePerPage) || filteredQueue.length === 0}
+                                className="p-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg disabled:opacity-30"
+                            ><FiChevronRight /></button>
+                        </div>
                     </div>
                 )}
             </div>

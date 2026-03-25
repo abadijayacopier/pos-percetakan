@@ -122,20 +122,27 @@ export default function InventoryPage() {
             Swal.fire({ icon: 'warning', title: 'Data Tidak Lengkap', text: 'Nama barang wajib diisi!', confirmButtonColor: '#3b82f6' });
             return;
         }
-        const record = {
-            ...form,
-            buyPrice: Number(form.buyPrice) || 0,
-            sellPrice: Number(form.sellPrice) || 0,
-            stock: Number(form.stock) || 0,
-            minStock: Number(form.minStock) || 0,
-        };
+
+        const formData = new FormData();
+        formData.append('name', form.name);
+        formData.append('code', form.code || ('PRD-' + Date.now().toString(36).toUpperCase()));
+        formData.append('categoryId', form.categoryId || '');
+        formData.append('buyPrice', Number(form.buyPrice) || 0);
+        formData.append('sellPrice', Number(form.sellPrice) || 0);
+        formData.append('stock', Number(form.stock) || 0);
+        formData.append('minStock', Number(form.minStock) || 0);
+        formData.append('unit', form.unit || 'pcs');
+        formData.append('emoji', form.emoji || '📦');
+
+        if (form.image instanceof File) {
+            formData.append('image', form.image);
+        }
 
         try {
             if (editItem) {
-                await api.put(`/products/${editItem.id}`, record);
+                await api.put(`/products/${editItem.id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             } else {
-                record.code = form.code || ('PRD-' + Date.now().toString(36).toUpperCase());
-                await api.post('/products', record);
+                await api.post('/products', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             }
             setShowModal(false);
             Swal.fire({
@@ -160,9 +167,11 @@ export default function InventoryPage() {
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
+                cancelButtonColor: '#64748b',
                 confirmButtonText: 'Ya, Batalkan',
-                cancelButtonText: 'Lanjut Isi'
+                cancelButtonText: 'Lanjut Isi',
+                background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
+                color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'
             }).then((result) => {
                 if (result.isConfirmed) setShowModal(false);
             });
@@ -178,9 +187,11 @@ export default function InventoryPage() {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
+            cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
+            cancelButtonText: 'Batal',
+            background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
+            color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'
         });
 
         if (result.isConfirmed) {
@@ -309,9 +320,15 @@ export default function InventoryPage() {
                                         <tr key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all shadow-sm">
-                                                        {getCatIcon(p.categoryId)}
-                                                    </div>
+                                                    {p.image ? (
+                                                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
+                                                            <img src={`http://${window.location.hostname}:5001${p.image}`} alt={p.name} className="w-full h-full object-cover" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all shadow-sm shrink-0">
+                                                            {getCatIcon(p.categoryId)}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{p.name}</p>
                                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-75">{p.unit}</p>
@@ -406,7 +423,7 @@ export default function InventoryPage() {
                 icon={editItem ? <FiEdit className="text-blue-600" /> : <FiPlus className="text-emerald-600" />}
                 footer={
                     <div className="flex gap-4 w-full">
-                        <button className="flex-1 py-3.5 border border-slate-200 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-slate-500" onClick={handleCancel}>
+                        <button className="flex-1 py-3.5 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-slate-700 transition-all text-slate-600 dark:text-slate-300 active:scale-95 shadow-sm" onClick={handleCancel}>
                             <FiX className="inline mr-2" /> Batal
                         </button>
                         <button className="flex-1 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center" onClick={handleSave}>
@@ -531,6 +548,55 @@ export default function InventoryPage() {
                                 placeholder="Alert stock level..."
                             />
                         </div>
+
+                        <div className="md:col-span-2 space-y-1.5 mt-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Foto Produk (Opsional)</label>
+                            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-4">
+                                {form.image && (typeof form.image === 'string' || form.image instanceof File) ? (
+                                    <div className="size-16 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-center">
+                                        <img
+                                            src={form.image instanceof File ? URL.createObjectURL(form.image) : `http://${window.location.hostname}:5001${form.image}`}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => { e.target.onerror = null; e.target.src = ''; e.target.className = 'hidden'; }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="size-16 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex flex-col items-center justify-center shrink-0 border border-dashed border-slate-300 dark:border-slate-700">
+                                        <FiImage size={24} />
+                                    </div>
+                                )}
+                                <div className="flex-1">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        id="atk-image-upload"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                set('image', e.target.files[0]);
+                                            }
+                                        }}
+                                    />
+                                    <label
+                                        htmlFor="atk-image-upload"
+                                        className="inline-flex cursor-pointer px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm transition-all"
+                                    >
+                                        Pilih Gambar
+                                    </label>
+                                    <p className="text-[9px] text-slate-400 font-medium mt-1.5 ml-1">Format: JPG, PNG. Maksimal 5MB.</p>
+                                </div>
+                                {form.image && (
+                                    <button
+                                        className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors"
+                                        onClick={() => set('image', '')}
+                                        title="Hapus gambar"
+                                    >
+                                        <FiTrash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </Modal>
@@ -561,7 +627,7 @@ export default function InventoryPage() {
                                         const newRecord = { id: res.data.id, name: clean };
                                         setCategories([...categories, newRecord]);
                                         set('categoryId', newRecord.id);
-                                    } catch (e) { alert('Gagal menambah kategori'); }
+                                    } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menambah kategori', timer: 3000 }); }
                                 }
                             }
                             setPromptModal({ ...promptModal, isOpen: false });

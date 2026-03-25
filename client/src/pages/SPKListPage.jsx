@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Swal from 'sweetalert2';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle, FiXCircle } from 'react-icons/fi';
@@ -18,6 +19,7 @@ const STATUS_FILTERS = [
     { label: 'Selesai', value: 'Selesai', icon: <FiCheckCircle /> },
     { label: 'Siap Diambil', value: 'Siap Diambil', icon: <FiPackage /> },
     { label: 'Diambil', value: 'Diambil', icon: <FiTruck /> },
+    { label: 'Batal', value: 'Batal', icon: <FiXCircle /> },
 ];
 
 const STATUS_COLORS = {
@@ -28,6 +30,7 @@ const STATUS_COLORS = {
     'Selesai': { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', label: 'Selesai' },
     'Siap Diambil': { dot: 'bg-emerald-500 animate-pulse outline outline-4 outline-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: 'Siap' },
     'Diambil': { dot: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10', label: 'Serah' },
+    'Batal': { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-500/10', label: 'Batal' },
 };
 
 export default function SPKListPage({ onNavigate }) {
@@ -74,12 +77,12 @@ export default function SPKListPage({ onNavigate }) {
     const confirmCancelSPK = async () => {
         if (!cancelModal) return;
         try {
-            await api.put(`/spk/${cancelModal.id}`, { status: 'Batal' });
+            await api.patch(`/spk/${cancelModal.id}/status`, { status: 'Batal' });
             fetchSPK();
             setCancelModal(null);
         } catch (err) {
             console.error('Gagal membatalkan SPK:', err);
-            alert('Terjadi kesalahan saat membatalkan SPK.');
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan saat membatalkan SPK.', timer: 3000 });
         }
     };
 
@@ -343,12 +346,14 @@ export default function SPKListPage({ onNavigate }) {
                                                                         <FiXCircle size={14} /> Batal
                                                                     </button>
                                                                 )}
-                                                                <button
-                                                                    onClick={() => onNavigate('print-spk', { spkId: spk.id })}
-                                                                    className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                                                                >
-                                                                    <FiPrinter size={14} /> Cetak SPK
-                                                                </button>
+                                                                {spk.status !== 'Batal' && (
+                                                                    <button
+                                                                        onClick={() => onNavigate('print-spk', { spkId: spk.id })}
+                                                                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                                                                    >
+                                                                        <FiPrinter size={14} /> Cetak SPK
+                                                                    </button>
+                                                                )}
                                                             </>
                                                         )}
                                                     </div>

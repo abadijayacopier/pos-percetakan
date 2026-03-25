@@ -19,6 +19,7 @@ import {
     FiCalendar,
     FiPackage
 } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
@@ -61,7 +62,8 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
             // Filter SPK yang memiliki prefix "Offset -" di product_name
             const offsetSPKs = (spkRes.data.data || []).filter(s =>
-                s.product_name && s.product_name.startsWith('Offset -')
+                s.product_name && s.product_name.startsWith('Offset -') &&
+                s.status !== 'Batal' && s.status !== 'batal' && s.status !== 'Diambil'
             );
             setActiveOrders(offsetSPKs);
 
@@ -123,7 +125,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
     // Handle Pesanan Baru (Simpan ke DB lalu navigasi)
     const handleBuatPesanan = async () => {
-        if (!selectedProduct) return alert('Pilih produk terlebih dahulu.');
+        if (!selectedProduct) { Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pilih produk terlebih dahulu.', timer: 3000 }); return; }
 
         try {
             const customerObj = selectedCustomer ? customers.find(c => c.id === selectedCustomer) : null;
@@ -155,7 +157,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
         } catch (err) {
             console.error('Error create SPK:', err);
             const errMsg = err.response?.data?.message || err.message || 'Silakan coba lagi.';
-            alert('Gagal membuat pesanan SPK: ' + errMsg);
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal membuat pesanan SPK: ' + errMsg, timer: 3000 });
         }
     };
 

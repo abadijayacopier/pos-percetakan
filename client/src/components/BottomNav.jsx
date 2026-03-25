@@ -15,7 +15,7 @@ export default function BottomNav({ activePage, onNavigate }) {
     ];
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-end px-2 pt-2 pb-safe z-[90] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+        <div className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-end px-2 pt-2 pb-safe z-[90] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
             {items.map(item => {
                 const isActive = activePage === item.id;
                 return (
@@ -23,8 +23,8 @@ export default function BottomNav({ activePage, onNavigate }) {
                         key={item.id}
                         onClick={() => onNavigate(item.id)}
                         className={`relative flex flex-col items-center justify-center w-[20%] h-16 rounded-2xl transition-all duration-300 ${isActive
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
                             }`}
                     >
                         {isActive && (

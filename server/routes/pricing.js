@@ -184,49 +184,7 @@ router.post('/calculate', verifyToken, async (req, res) => {
     }
 });
 
-// 6. GET /api/pricing/binding
-// Fetch options and pricing for document binding (jilid)
-router.get('/binding', verifyToken, async (req, res) => {
-    try {
-        const [rows] = await pool.query("SELECT id, name, sell_price AS price, type FROM products WHERE (type = 'service' OR type = 'fotocopy' OR type = 'lainnya') AND name LIKE '%Jilid%'");
-        if (rows.length > 0) {
-            res.json(rows);
-        } else {
-            // Default fallback if table doesn't have it yet
-            res.json([
-                { id: 'b1', name: 'Jilid Lakban', price: 3000 },
-                { id: 'b2', name: 'Jilid Spiral Kawat', price: 15000 },
-                { id: 'b3', name: 'Jilid Softcover', price: 25000 },
-                { id: 'b4', name: 'Jilid Hardcover', price: 50000 }
-            ]);
-        }
-    } catch (error) {
-        console.error('Error fetching binding prices:', error);
-        res.status(500).json({ message: 'Gagal memuat harga jilid.' });
-    }
-});
 
-// 7. GET /api/pricing/print
-// Fetch options and pricing for document printing
-router.get('/print', verifyToken, async (req, res) => {
-    try {
-        const [rows] = await pool.query("SELECT id, name, sell_price AS price, type FROM products WHERE (type = 'service' OR type = 'fotocopy' OR type = 'lainnya') AND name LIKE '%Print%'");
-        if (rows.length > 0) {
-            res.json(rows);
-        } else {
-            // Default fallback
-            res.json([
-                { id: 'p1', name: 'Print A4 B/W', price: 500 },
-                { id: 'p2', name: 'Print A4 Warna', price: 1000 },
-                { id: 'p3', name: 'Print F4 B/W', price: 700 },
-                { id: 'p4', name: 'Print F4 Warna', price: 1500 }
-            ]);
-        }
-    } catch (error) {
-        console.error('Error fetching print prices:', error);
-        res.status(500).json({ message: 'Gagal memuat harga print.' });
-    }
-});
 
 // 5. GET /api/pricing/binding
 router.get('/binding', verifyToken, async (req, res) => {

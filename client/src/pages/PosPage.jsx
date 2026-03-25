@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
+import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth } from '../utils';
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 
 export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     // Running Text State
@@ -158,14 +159,14 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     // Cart Handlers
     const addToCart = (product) => {
         if (product.stock <= 0) {
-            alert(`Stok ${product.name} habis.`);
+            Swal.fire({ icon: 'warning', title: 'Stok Habis', text: `Stok ${product.name} habis.`, timer: 2500 });
             return;
         }
         setCart(prevCart => {
             const existingItem = prevCart.find(item => item.id === product.id);
             if (existingItem) {
                 if (existingItem.quantity >= product.stock) {
-                    alert(`Stok ${product.name} tidak mencukupi.`);
+                    Swal.fire({ icon: 'warning', title: 'Stok Terbatas', text: `Stok ${product.name} tidak mencukupi.`, timer: 2500 });
                     return prevCart;
                 }
                 return prevCart.map(item =>
@@ -183,7 +184,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
             // For items not in DB (like services or fotocopy), skip stock check
             if (amount > 0 && productInDb && itemToUpdate.quantity + amount > productInDb.stock) {
-                alert(`Stok ${productInDb.name} tidak mencukupi.`);
+                Swal.fire({ icon: 'warning', title: 'Stok Terbatas', text: `Stok ${productInDb.name} tidak mencukupi.`, timer: 2500 });
                 return prevCart;
             }
             const updatedCart = prevCart.map(item =>
@@ -219,10 +220,10 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                 footer: printSettings.receiptFooter
             };
 
-            const receiptText = generateRawReceipt(transaction, storeInfo, printSettings.printerSize);
+            const receiptText = generateRawReceipt(transaction, storeInfo, printSettings.printerSize, isMobile);
 
             if (isMobile) {
-                printViaRawBT(receiptText);
+                printViaBluetooth(receiptText);
                 console.log('Receipt sent to RawBT');
                 return;
             }
@@ -238,7 +239,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
             console.log('Receipt printed successfully via API');
         } catch (err) {
             console.error('Failed to print receipt:', err);
-            alert('Gagal mencetak nota: ' + (err.response?.data?.message || err.message));
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal mencetak nota: ' + (err.response?.data?.message || err.message), timer: 3000 });
         }
     };
 
@@ -257,7 +258,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
             paymentType: paymentMethod,
             paid: paymentMethod === 'tunai' ? parseFloat(amountPaid) : cartTotal,
             changeAmount: change,
-            status: 'paid',
+            status: (paymentMethod === 'tunai' && parseFloat(amountPaid) < cartTotal) ? 'pending' : 'paid',
             items: cart.map(item => {
                 const itemPrice = item.sellPrice || item.price || 0;
                 return {
@@ -293,7 +294,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
             clearCart();
         } catch (error) {
-            alert('Gagal memproses transaksi: ' + (error.response?.data?.message || error.message));
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal memproses transaksi: ' + (error.response?.data?.message || error.message), timer: 3000 });
         }
     };
 
@@ -343,7 +344,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
 
     const addFotocopyToCart = () => {
         if (fcQty < 1) {
-            alert('Jumlah lembar minimal 1');
+            Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Jumlah lembar minimal 1', timer: 2000 });
             return;
         }
 

@@ -129,6 +129,9 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
     try {
         const { status } = req.body;
         await pool.query('UPDATE dp_tasks SET status = ? WHERE id = ?', [status, req.params.id]);
+        if (status === 'batal') {
+            await pool.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+        }
         res.json({ message: 'Status task diupdate!' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal memindah status' });

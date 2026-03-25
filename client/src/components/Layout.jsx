@@ -281,7 +281,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                 {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full h-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0 pb-20 md:pb-0">
+                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full h-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0 pb-28 md:pb-0">
                         {children}
                     </div>
                 )}

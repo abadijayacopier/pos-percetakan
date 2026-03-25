@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import { formatRupiah, generateInvoice, generateRawReceipt, printViaRawBT } from '../utils';
+import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList } from 'react-icons/fi';
@@ -61,13 +61,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [fcPaper, setFcPaper] = useState('HVS A4');
     const [fcColor, setFcColor] = useState('bw');
     const [fcSide, setFcSide] = useState('1');
-    const [fcQty, setFcQty] = useState(0);
+    const [fcQty, setFcQty] = useState(1);
 
     // Jilid & Print States
     const [jilidType, setJilidType] = useState(null);
-    const [jilidQty, setJilidQty] = useState(0);
+    const [jilidQty, setJilidQty] = useState(1);
     const [printType, setPrintType] = useState(null);
-    const [printQty, setPrintQty] = useState(0);
+    const [printQty, setPrintQty] = useState(1);
 
     // Payment & Modal States
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -98,10 +98,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [productsRes, bindingRes, printRes, customersRes, fcRes, settingsRes] = await Promise.all([
+                const [productsRes, customersRes, fcRes, settingsRes] = await Promise.all([
                     api.get('/products').catch(() => ({ data: [] })),
-                    api.get('/pricing/binding').catch(() => ({ data: [] })),
-                    api.get('/pricing/print').catch(() => ({ data: [] })),
                     api.get('/customers').catch(() => ({ data: [] })),
                     api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
                     api.get('/settings').catch(() => ({ data: [] }))
@@ -109,14 +107,6 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                 // Filter or set states directly
                 setProducts(productsRes.data || []);
-                const bData = bindingRes.data || [];
-                setBindingPrices(bData);
-                if (bData.length > 0) setJilidType(bData[0]);
-
-                const pData = printRes.data || [];
-                setPrintPrices(pData);
-                if (pData.length > 0) setPrintType(pData[0]);
-
                 setCustomers(customersRes.data || []);
                 setFotocopyPrices(fcRes.data || []);
 
@@ -124,6 +114,20 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 const allSettings = settingsRes.data || [];
                 const sMap = {};
                 allSettings.forEach(s => { sMap[s.key] = s.value; });
+
+                let bData = [];
+                try { bData = sMap.binding_prices ? JSON.parse(sMap.binding_prices) : []; } catch (e) { }
+                setBindingPrices(bData);
+                if (bData.length > 0) setJilidType(bData[0]);
+
+                let pDataRaw = [];
+                try { pDataRaw = sMap.print_prices ? JSON.parse(sMap.print_prices) : []; } catch (e) { }
+                const pData = pDataRaw.map(p => ({
+                    ...p,
+                    name: p.name || `Print ${p.paper} (${p.color === 'bw' ? 'B/W' : 'Warna'})`
+                }));
+                setPrintPrices(pData);
+                if (pData.length > 0) setPrintType(pData[0]);
 
                 setPrinterSettings({
                     autoPrint: sMap.auto_print === 'true',
@@ -211,7 +215,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     // Cart Handlers
     const addToCart = (product) => {
-        if (product.stock <= 0) return alert('Stok habis!');
+        if (product.stock <= 0) { Swal.fire({ icon: 'warning', title: 'Stok Habis', text: 'Stok barang habis!', timer: 2500 }); return; }
         setCart(prev => {
             const existing = prev.find(item => item.id === product.id);
             if (existing) {
@@ -260,7 +264,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     // Services Add logic
     const addFotocopyToCart = (paper, color, side, qty) => {
         if (qty <= 0) {
-            showToast('Jumlah lembar harus lebih dari 0', 'warning');
+            showToast('Jumlah lembar Fotocopy harus lebih dari 0', 'warning');
             return;
         }
         const unitPrice = getFcUnitPrice(paper, color, side);
@@ -269,7 +273,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         if (existingItem) {
             updateQty(existingItem.id, qty);
             showToast('Keranjang diperbarui!', 'success');
-            setFcQty(0);
+            setFcQty(1);
             return;
         }
 
@@ -283,31 +287,43 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         };
         setCart(prev => [...prev, newItem]);
         showToast('Ditambahkan ke keranjang!', 'success');
-        setFcQty(0);
+        setFcQty(1);
     };
 
-    const addJilidToCart = (item) => {
-        if (!item) return;
+    const addJilidToCart = (item, qty) => {
+        if (!item) {
+            showToast('Pilih jenis Spesifikasi Jilid terlebih dahulu.', 'warning');
+            return;
+        }
+        if (qty <= 0) {
+            showToast('Masukkan jumlah Qty Jilid.', 'warning');
+            return;
+        }
         const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, existingItem.quantity + 1);
+            updateQty(existingItem.id, existingItem.quantity + qty);
             showToast('Keranjang diperbarui!', 'success');
         } else {
             const newItem = {
                 id: `jilid-${Date.now()}-${Math.random()}`,
                 name: `${item.name}`,
                 sellPrice: item.price,
-                quantity: 1,
+                quantity: qty,
                 type: 'service'
             };
             setCart(prev => [...prev, newItem]);
             showToast('Jilid ditambahkan ke keranjang!', 'success');
         }
+        setJilidQty(1);
     };
 
     const addPrintToCart = (item, qty) => {
-        if (!item || qty <= 0) {
-            showToast('Pilih jenis cetakan dan masukkan jumlah lembar yang benar.', 'warning');
+        if (!item) {
+            showToast('Pilih Spesifikasi Cetak terlebih dahulu.', 'warning');
+            return;
+        }
+        if (qty <= 0) {
+            showToast('Masukkan Jumlah Lembar untuk Print.', 'warning');
             return;
         }
         const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
@@ -325,7 +341,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             setCart(prev => [...prev, newItem]);
             showToast('Print ditambahkan ke keranjang!', 'success');
         }
-        setPrintQty(0);
+        setPrintQty(1);
     };
 
     // Modals
@@ -348,17 +364,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
 
         try {
-            const settings = db.getAll('settings').reduce((obj, s) => ({ ...obj, [s.key]: s.value }), {});
             const receiptText = generateRawReceipt(transaction, {
-                name: settings.store_name || 'Abadi Jaya',
-                address: settings.store_address || '',
-                phone: settings.store_phone || '',
-                footer: settings.receipt_footer || '',
+                name: printerSettings.storeName || 'Abadi Jaya',
+                address: printerSettings.storeAddress || '',
+                phone: printerSettings.storePhone || '',
+                footer: printerSettings.receiptFooter || '',
                 userName: user?.name || 'Kasir'
-            }, printerSettings.printerSize);
+            }, printerSettings.printerSize, isMobile);
 
             if (isMobile) {
-                printViaRawBT(receiptText);
+                printViaBluetooth(receiptText);
             } else {
                 await api.post('/print/receipt', {
                     text: receiptText,
@@ -385,7 +400,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     const handleConfirmPayment = async () => {
         const total = subtotal - globalDiscount;
-        const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : total;
+        const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : paymentMethod === 'pending' ? 0 : total;
 
         const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
         const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
@@ -403,15 +418,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 price: item.sellPrice,
                 subtotal: item.sellPrice * item.quantity,
                 discount: item.discount || 0,
-                source: item.type === 'atk' ? 'atk' : 'fc' // Treat service as fc logic
+                source: item.type === 'atk' ? 'atk' : 'fc'
             })),
             subtotal,
             discount: globalDiscount,
             total,
             paymentType: paymentMethod,
             paid: paid,
-            changeAmount: paid - total,
-            status: 'completed'
+            changeAmount: Math.max(0, paid - total),
+            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'completed')
         };
 
         try {
@@ -670,20 +685,52 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             )}
 
                             {activeServiceTab === 'jilid' && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {bindingPrices.map(item => (
-                                        <div key={item.id} onClick={() => addJilidToCart(item)} className="group cursor-pointer p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:bg-primary/5 transition-all text-center flex flex-col items-center justify-center bg-white dark:bg-slate-900 shadow-sm">
-                                            <span className="material-symbols-outlined text-primary mb-2 text-3xl">auto_stories</span>
-                                            <h3 className="font-bold text-sm text-slate-700 dark:text-slate-200">{item.name}</h3>
-                                            <p className="text-xs mt-1 font-bold text-primary">{formatRupiah(item.price)}</p>
+                                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                                    <div className="flex-1 space-y-6">
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Pilih Spesifikasi Jilid</h3>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                {bindingPrices.map(item => (
+                                                    <button
+                                                        key={item.id}
+                                                        onClick={() => setJilidType(item)}
+                                                        className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 border-2 transition-all shadow-sm ${jilidType?.id === item.id ? 'bg-primary/5 text-primary border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-primary/30'}`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-2xl">auto_stories</span>
+                                                        <span className="text-xs font-bold uppercase tracking-widest text-center leading-tight">{item.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    ))}
+                                        <div>
+                                            <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Qty Jilid</h3>
+                                            <div className="flex items-center gap-3 w-full sm:w-2/3">
+                                                <button onClick={() => setJilidQty(Math.max(0, jilidQty - 1))} className="size-10 sm:size-12 shrink-0 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">remove</span></button>
+                                                <input type="number" value={jilidQty || ''} onChange={(e) => setJilidQty(parseInt(e.target.value) || 0)} className="flex-1 h-10 sm:h-12 text-center text-xl font-bold border-2 border-slate-100 dark:border-slate-700 rounded-xl focus:ring-0 focus:border-primary dark:bg-slate-900 uppercase" placeholder="0" />
+                                                <button onClick={() => setJilidQty(jilidQty + 1)} className="size-10 sm:size-12 shrink-0 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-sm shadow-primary/30 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">add</span></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:w-80 xl:w-96 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-6 sm:p-8 flex flex-col justify-center text-center relative border border-slate-100 dark:border-slate-800 shadow-sm">
+                                        <div className="mb-6">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Satuan</h4>
+                                            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{formatRupiah(jilidType?.price || 0)}</div>
+                                        </div>
+                                        <div className="w-full h-px bg-slate-200 dark:bg-slate-700 mb-6"></div>
+                                        <div className="mb-8">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Subtotal Layanan</h4>
+                                            <div className="text-3xl sm:text-4xl font-black text-primary">{formatRupiah((jilidType?.price || 0) * jilidQty)}</div>
+                                        </div>
+                                        <button onClick={() => addJilidToCart(jilidType, jilidQty)} className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-lg shadow-primary/25">
+                                            <span className="material-symbols-outlined text-[20px]">add_shopping_cart</span> Tambah ke Keranjang
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
                             {activeServiceTab === 'print' && (
-                                <div className="bg-slate-950/30 backdrop-blur-sm rounded-[28px] border border-slate-800/50 p-6 sm:p-8 flex flex-col lg:flex-row gap-8 shadow-xl">
-                                    <div className="flex-1 space-y-8">
+                                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                                    <div className="flex-1 space-y-6">
                                         <div>
                                             <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Pilih Spesifikasi Cetak</h3>
                                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -691,10 +738,10 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                                     <button
                                                         key={item.id}
                                                         onClick={() => setPrintType(item)}
-                                                        className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all ${printType?.id === item.id ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/20' : 'border-slate-800 bg-slate-900/50 text-slate-400 hover:border-slate-700'}`}
+                                                        className={`p-4 rounded-xl flex flex-col items-center justify-center gap-2 border-2 transition-all shadow-sm ${printType?.id === item.id ? 'bg-primary/5 text-primary border-primary' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-primary/30'}`}
                                                     >
                                                         <span className="material-symbols-outlined text-2xl">print</span>
-                                                        <span className="text-xs font-bold font-display uppercase tracking-widest text-center leading-tight">{item.name}</span>
+                                                        <span className="text-xs font-bold uppercase tracking-widest text-center leading-tight">{item.name}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -702,13 +749,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         <div>
                                             <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Jumlah Lembar</h3>
                                             <div className="flex items-center gap-3 w-full sm:w-2/3">
-                                                <button onClick={() => setPrintQty(Math.max(0, printQty - 1))} className="size-10 sm:size-12 shrink-0 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">remove</span></button>
-                                                <input type="number" value={printQty || ''} onChange={(e) => setPrintQty(parseInt(e.target.value) || 0)} className="flex-1 h-10 sm:h-12 text-center text-xl font-bold bg-slate-900 border-2 border-slate-800 rounded-xl focus:border-primary text-white" placeholder="0" />
-                                                <button onClick={() => setPrintQty(printQty + 1)} className="size-10 sm:size-12 shrink-0 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">add</span></button>
+                                                <button onClick={() => setPrintQty(Math.max(0, printQty - 1))} className="size-10 sm:size-12 shrink-0 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">remove</span></button>
+                                                <input type="number" value={printQty || ''} onChange={(e) => setPrintQty(parseInt(e.target.value) || 0)} className="flex-1 h-10 sm:h-12 text-center text-xl font-bold border-2 border-slate-100 dark:border-slate-700 rounded-xl focus:ring-0 focus:border-primary dark:bg-slate-900 uppercase" placeholder="0" />
+                                                <button onClick={() => setPrintQty(printQty + 1)} className="size-10 sm:size-12 shrink-0 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-sm shadow-primary/30 flex items-center justify-center font-bold text-xl transition-colors"><span className="material-symbols-outlined">add</span></button>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="lg:w-80 xl:w-96 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-6 sm:p-8 flex flex-col justify-center text-center border border-slate-100 dark:border-slate-800 shadow-sm">
+                                    <div className="lg:w-80 xl:w-96 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-[28px] p-6 sm:p-8 flex flex-col justify-center text-center relative border border-slate-100 dark:border-slate-800 shadow-sm">
                                         <div className="mb-6">
                                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Harga Satuan</h4>
                                             <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{formatRupiah(printType?.price || 0)}</div>
@@ -914,7 +961,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             )}
 
             {/* Footer / Hotkeys Banner */}
-            <footer className="h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium flex items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-45 relative">
+            <footer className="hidden lg:flex h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-45 relative">
                 <div className="flex items-center gap-5 min-w-max">
                     <div className="flex items-center gap-1.5 text-primary-light font-bold">
                         <span className="material-symbols-outlined text-[14px]">keyboard</span>
@@ -1003,19 +1050,29 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                         <div>
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-3">Metode Pembayaran</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {[{ id: 'tunai', icon: 'payments', label: 'Tunai' }, { id: 'transfer', icon: 'account_balance', label: 'Transfer' }, { id: 'qris', icon: 'qr_code_scanner', label: 'QRIS' }].map(m => (
+                            <div className="grid grid-cols-4 gap-2">
+                                {[{ id: 'tunai', icon: 'payments', label: 'Tunai' }, { id: 'transfer', icon: 'account_balance', label: 'Transfer' }, { id: 'qris', icon: 'qr_code_scanner', label: 'QRIS' }, { id: 'pending', icon: 'schedule', label: 'Tunda' }].map(m => (
                                     <button
                                         key={m.id}
                                         onClick={() => setPaymentMethod(m.id)}
-                                        className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === m.id ? 'bg-primary/5 border-primary text-primary' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-500'}`}
+                                        className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === m.id ? (m.id === 'pending' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 text-amber-600' : 'bg-primary/5 border-primary text-primary') : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-500'}`}
                                     >
-                                        <span className="material-symbols-outlined">{m.icon}</span>
+                                        <span className="material-symbols-outlined text-xl">{m.icon}</span>
                                         <span className="text-xs font-bold">{m.label}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
+
+                        {paymentMethod === 'pending' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-200 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl p-4 flex gap-3 items-start">
+                                <span className="material-symbols-outlined text-amber-500 shrink-0 mt-0.5">info</span>
+                                <div>
+                                    <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Transaksi Ditunda / Hutang</p>
+                                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">Transaksi akan disimpan dengan status <b>Pending</b>. Pelanggan belum membayar. Dapat dilunasi nanti melalui halaman Riwayat Transaksi.</p>
+                                </div>
+                            </div>
+                        )}
 
                         {paymentMethod === 'tunai' && (
                             <div className="animate-in fade-in slide-in-from-bottom-2 duration-200">

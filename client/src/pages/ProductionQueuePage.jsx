@@ -122,21 +122,23 @@ export default function ProductionQueuePage({ onNavigate }) {
             assignments = data;
 
             const { data: spkRes } = await api.get('/spk');
-            spkTasks = (spkRes.data || []).map(s => ({
-                id: s.spk_number,
-                real_id: s.id,
-                status: s.status === 'Menunggu Antrian' ? 'produksi' :
-                    s.status === 'Proses Cetak' ? 'cetak' :
-                        s.status === 'Finishing' ? 'finishing' :
-                            s.status === 'QC' ? 'qc' :
-                                s.status === 'Selesai' ? 'selesai' : 'produksi',
-                customerName: s.customer_name,
-                title: s.product_name,
-                priority: s.priority?.toLowerCase(),
-                technician_name: s.assigned_name,
-                type: 'offset',
-                updatedAt: s.updated_at
-            }));
+            spkTasks = (spkRes.data || [])
+                .filter(s => s.status !== 'Batal' && s.status !== 'batal' && s.status !== 'Diambil')
+                .map(s => ({
+                    id: s.spk_number,
+                    real_id: s.id,
+                    status: s.status === 'Menunggu Antrian' ? 'produksi' :
+                        s.status === 'Proses Cetak' ? 'cetak' :
+                            s.status === 'Finishing' ? 'finishing' :
+                                s.status === 'QC' ? 'qc' :
+                                    s.status === 'Selesai' ? 'selesai' : 'produksi',
+                    customerName: s.customer_name,
+                    title: s.product_name,
+                    priority: s.priority?.toLowerCase(),
+                    technician_name: s.assigned_name,
+                    type: 'offset',
+                    updatedAt: s.updated_at
+                }));
         } catch (err) {
             console.error('Failed to fetch spk/assignments data:', err);
         }

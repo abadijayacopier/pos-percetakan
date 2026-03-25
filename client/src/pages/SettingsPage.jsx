@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatDateTime, printViaRawBT } from '../utils';
+import { formatDateTime, printViaBluetooth } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage } from 'react-icons/fi';
@@ -1191,7 +1191,7 @@ export default function SettingsPage() {
                                             let testText = lines.map(l => M + l).join('\n') + '\n\n\n';
 
                                             if (window.innerWidth < 1024) {
-                                                printViaRawBT(testText);
+                                                printViaBluetooth(testText);
                                                 showToast('Draft dikirim ke Bluetooth Printer', 'success');
                                                 return;
                                             }

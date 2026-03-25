@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const uploadDir = path.join(__dirname, '../public/uploads/products');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // 1. GET Semua Produk (Publik untuk user yang login)
 router.get('/', verifyToken, async (req, res) => {
@@ -9,7 +26,7 @@ router.get('/', verifyToken, async (req, res) => {
         const [rows] = await pool.query(`
       SELECT p.id, p.code, p.name, p.category_id as categoryId, 
              p.buy_price as buyPrice, p.sell_price as sellPrice, 
-             p.stock, p.min_stock as minStock, p.unit, p.emoji,
+             p.stock, p.min_stock as minStock, p.unit, p.emoji, p.image,
              c.name as category_name, c.emoji as category_emoji 
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.id
@@ -74,9 +91,10 @@ router.post('/categories', verifyToken, requireRole(['kasir', 'admin']), async (
 });
 
 // 3. POST Tambah Produk Baru (Kasir & Admin)
-router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) => {
+router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('image'), async (req, res) => {
     try {
         const { code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji } = req.body;
+        const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
 
         // Cek apakah kode unik
         const [existing] = await pool.query('SELECT id FROM products WHERE code = ?', [code]);
@@ -89,11 +107,11 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const newId = 'p' + Date.now();
         await pool.query(`
       INSERT INTO products 
-      (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newId, code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji || '📦']);
+      (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji, image) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [newId, code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji || '📦', imageUrl]);
 
-        res.status(201).json({ message: 'Produk berhasil ditambahkan!', id: newId });
+        res.status(201).json({ message: 'Produk berhasil ditambahkan!', id: newId, image: imageUrl });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Gagal menyimpan produk' });
@@ -101,10 +119,11 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
 });
 
 // 4. PUT Update Produk (Kasir & Admin)
-router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji } = req.body;
+        const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
 
         // Pastikan code tidak nabrak punya orang lain
         const [existing] = await pool.query('SELECT id FROM products WHERE code = ? AND id != ?', [code, id]);
@@ -114,18 +133,28 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), async (req, res
 
         const validCategoryId = (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && String(categoryId).trim() !== '') ? categoryId : null;
 
-        const [result] = await pool.query(`
+        let query = `
       UPDATE products 
       SET code = ?, name = ?, category_id = ?, buy_price = ?, sell_price = ?, 
           stock = ?, min_stock = ?, unit = ?, emoji = ?
-      WHERE id = ?
-    `, [code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji, id]);
+    `;
+        let params = [code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji];
+
+        if (imageUrl) {
+            query += `, image = ?`;
+            params.push(imageUrl);
+        }
+
+        query += ` WHERE id = ?`;
+        params.push(id);
+
+        const [result] = await pool.query(query, params);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Produk tidak ditemukan' });
         }
 
-        res.json({ message: 'Produk berhasil diperbarui!' });
+        res.json({ message: 'Produk berhasil diperbarui!', image: imageUrl });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Gagal update produk' });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import Swal from 'sweetalert2';
 
 export default function OrderInputPage() {
     // Form state
@@ -107,8 +108,8 @@ export default function OrderInputPage() {
     const handleSubmit = async (e) => {
         e?.preventDefault();
 
-        if (!customerId) return alert('Silakan pilih pelanggan!');
-        if (qty <= 0) return alert('Jumlah pesanan tidak valid!');
+        if (!customerId) { Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Silakan pilih pelanggan!', timer: 2500 }); return; }
+        if (qty <= 0) { Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Jumlah pesanan tidak valid!', timer: 2500 }); return; }
 
         setSubmitting(true);
         try {
@@ -131,11 +132,11 @@ export default function OrderInputPage() {
             };
 
             const response = await api.post('/offset-orders', formData);
-            alert('Pesanan Sukses Dibuat: ' + response.data.order_number);
+            Swal.fire({ icon: 'success', title: 'Sukses', text: 'Pesanan Sukses Dibuat: ' + response.data.order_number, timer: 3000 });
 
             // Opsional: Reset form atau navigasi
         } catch (error) {
-            alert('Gagal: ' + (error.response?.data?.message || error.message));
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || error.message, timer: 3000 });
         } finally {
             setSubmitting(false);
         }

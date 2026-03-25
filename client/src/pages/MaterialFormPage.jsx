@@ -47,6 +47,7 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
     const [toastMsg, setToastMsg] = useState(null);
     const [kategoriOptions, setKategoriOptions] = useState(["digital", "offset", "atk", "finishing"]);
     const [satuanOptions, setSatuanOptions] = useState(["lembar", "roll", "m2", "pcs", "box"]);
+    const [suppliers, setSuppliers] = useState([]);
     const [promptModal, setPromptModal] = useState({ isOpen: false, type: '', title: '', value: '' });
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -63,6 +64,10 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                 if (res.data?.satuan_unit) setSatuanOptions(res.data.satuan_unit);
             })
             .catch(err => console.error("Failed to load master data", err));
+
+        api.get('/suppliers')
+            .then(res => setSuppliers(res.data?.data || []))
+            .catch(err => console.error("Failed to load suppliers", err));
 
         if (form.harga_modal && form.harga_jual) {
             const hpp = parseFloat(form.harga_modal);
@@ -387,14 +392,22 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                         <FiTruck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                         <select
                                             value={form.supplier_id}
-                                            onChange={e => set('supplier_id', e.target.value)}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                if (val === 'NEW') {
+                                                    setPromptModal({ isOpen: true, type: 'supplier', title: 'Tambah Pemasok Baru', value: '' });
+                                                    set('supplier_id', '');
+                                                } else {
+                                                    set('supplier_id', val);
+                                                }
+                                            }}
                                             className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-violet-400/50 outline-none font-bold dark:text-white appearance-none"
                                         >
                                             <option value="">Pilih Pemasok Utama</option>
-                                            <option value="1">PT. Kertas Jaya Mandiri</option>
-                                            <option value="2">CV. Grafika Utama</option>
-                                            <option value="3">Supplier Tinta Berkah</option>
-                                            <option value="NEW">+ Tambah Pemasok Baru</option>
+                                            {suppliers.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                            <option value="NEW" className="font-bold text-violet-600">+ Tambah Pemasok Baru</option>
                                         </select>
                                     </div>
                                 </div>
@@ -511,6 +524,13 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                         if (!satuanOptions.includes(clean)) setSatuanOptions([...satuanOptions, clean]);
                                         set('satuan', clean);
                                         toast('Satuan berhasil ditambahkan!');
+                                    } else if (promptModal.type === 'supplier') {
+                                        const res = await api.post('/suppliers', { name: clean });
+                                        if (res.data?.data) {
+                                            setSuppliers([res.data.data, ...suppliers]);
+                                            set('supplier_id', res.data.data.id);
+                                            toast('Pemasok berhasil ditambahkan!');
+                                        }
                                     }
                                 } catch (err) {
                                     toast(`Gagal menambahkan ${promptModal.type}`, 'error');
@@ -530,16 +550,18 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
 
                     <div className="space-y-2">
                         <div className="flex justify-center mb-1">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama {promptModal.type === 'satuan' ? 'Satuan' : 'Kategori'}</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                                Nama {promptModal.type === 'satuan' ? 'Satuan' : promptModal.type === 'supplier' ? 'Pemasok/Supplier' : 'Kategori'}
+                            </label>
                         </div>
                         <div className="relative group flex items-center">
                             <div className="absolute left-4 text-slate-300 dark:text-slate-600 group-focus-within:text-blue-500 transition-colors pointer-events-none">
-                                {promptModal.type === 'satuan' ? <FiTag size={18} /> : <FiLayers size={18} />}
+                                {promptModal.type === 'satuan' ? <FiTag size={18} /> : promptModal.type === 'supplier' ? <FiTruck size={18} /> : <FiLayers size={18} />}
                             </div>
                             <input
                                 type="text"
                                 className="w-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 font-bold dark:text-white transition-all text-center sm:text-left shadow-sm"
-                                placeholder={`Ketik ${promptModal.type === 'satuan' ? 'satuan' : 'kategori'} baru...`}
+                                placeholder={`Ketik ${promptModal.type === 'satuan' ? 'satuan' : promptModal.type === 'supplier' ? 'nama pemasok' : 'kategori'} baru...`}
                                 value={promptModal.value}
                                 onChange={e => setPromptModal({ ...promptModal, value: e.target.value })}
                                 onKeyDown={e => { if (e.key === 'Enter') { document.getElementById('save-prompt-btn')?.click(); } }}

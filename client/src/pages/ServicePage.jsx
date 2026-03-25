@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import Swal from 'sweetalert2';
 import {
     FiCpu, FiPlus, FiSearch, FiFilter, FiCalendar, FiClock,
     FiCheckCircle, FiAlertCircle, FiChevronRight, FiMoreVertical,
@@ -130,7 +131,7 @@ export default function ServicePage({ onNavigate }) {
             resetForm();
             loadData();
         } catch (error) {
-            alert('Gagal menyimpan tiket: ' + (error.response?.data?.message || 'Terjadi kesalahan sistem'));
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Terjadi kesalahan sistem', timer: 3000 });
         }
     };
 
@@ -341,7 +342,7 @@ export default function ServicePage({ onNavigate }) {
                                                             });
                                                             setShowForm(true);
                                                         }).catch(() => {
-                                                            alert('Gagal memuat detail tiket');
+                                                            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal memuat detail tiket', timer: 3000 });
                                                         });
                                                     }
                                                 },

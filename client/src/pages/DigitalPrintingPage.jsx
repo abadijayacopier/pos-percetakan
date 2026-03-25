@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { formatRupiah, generateInvoice } from '../utils';
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { FiEye, FiEdit2, FiTrash2, FiSave, FiX, FiCheckCircle, FiZap, FiClipboard, FiUser, FiClock, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
-import { generateInvoice } from '../utils';
+import { FiCheckCircle, FiClock, FiFileText, FiChevronDown, FiPlus, FiTrash2, FiPrinter, FiEdit, FiEye, FiEdit2, FiSave, FiX, FiZap, FiClipboard, FiUser, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
+import Swal from 'sweetalert2';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    HELPERS
@@ -162,7 +164,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             setSelectedTask(null);
             loadData();
         } catch (err) {
-            alert(err.response?.data?.message || 'Gagal menugaskan');
+            Swal.fire({ icon: 'error', title: 'Oops...', text: err.response?.data?.message || 'Gagal menugaskan', timer: 3000 });
         }
     };
 
@@ -218,7 +220,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             customerId: customerId,
             customerName: selectedCust?.name || 'Pelanggan Umum',
             items: [{
-                id: newTask.id,
+                id: null,
                 name: newTask.title,
                 qty: 1,
                 price: totalEstimasi,
@@ -245,7 +247,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             loadData();
         }).catch(err => {
             console.error('Err:', err);
-            alert('Gagal buat pesanan');
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal buat pesanan', timer: 3000 });
         });
     };
 
@@ -280,7 +282,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             customerId: newTask.customerId,
             customerName: selectedCust?.name || 'Pelanggan Umum',
             items: [{
-                id: newTask.id,
+                id: null,
                 name: newTask.title,
                 qty: 1,
                 price: calcOrderData.estimatedTotal,
@@ -305,7 +307,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             loadData();
         }).catch(err => {
             setLoading(false);
-            alert('Gagal memproses kalkulasi orders');
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal memproses kalkulasi orders', timer: 3000 });
         });
     };
 
@@ -522,30 +524,6 @@ export default function DigitalPrintingPage({ onNavigate }) {
 
                         <form className="space-y-5 relative z-10" onSubmit={e => e.preventDefault()}>
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pelanggan</label>
-                                <div className="relative group/input">
-                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within/input:text-blue-600 transition-colors">
-                                        <FiUser size={14} />
-                                    </div>
-                                    <select
-                                        className={`w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none cursor-pointer ${errors.customerId ? 'border-rose-500 ring-2 ring-rose-500/10' : ''}`}
-                                        value={customerId}
-                                        onChange={e => {
-                                            setCustomerId(e.target.value);
-                                            setErrors(prev => { const n = { ...prev }; delete n.customerId; return n; });
-                                        }}
-                                    >
-                                        <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
-                                        {customers.map(c => (
-                                            <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} ({c.type || 'Personal'})</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                {errors.customerId && <p className="text-[10px] text-rose-500 font-bold mt-1 ml-1 uppercase">{errors.customerId}</p>}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bahan Cetak (Stok)</label>
                                 {/* === BANNER CALCULATOR (PREMIUM UI) === */}
                                 <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
                                     <h3 className="text-sm font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
@@ -758,7 +736,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 </div>
 
                 {/* Pagination */}
-                {recentLogs.length > logItemsPerPage && (
+                {recentLogs.length > 0 && (
                     <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                             Showing {Math.min(recentLogs.length, (logPage - 1) * logItemsPerPage + 1)}-{Math.min(recentLogs.length, logPage * logItemsPerPage)} of {recentLogs.length}
@@ -946,7 +924,6 @@ const AssignModal = ({ isOpen, onClose, selectedTask, availableDesigners, loadin
                         <span className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg"><FiUserCheck /></span>
                         Tugaskan Operator
                     </h3>
-                    <button onClick={() => setViewHistory(order.id)} className="p-2 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Riwayat Status"><FiClock size={16} /></button>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400"><FiX /></button>
                 </div>
                 <div className="p-6 space-y-4">

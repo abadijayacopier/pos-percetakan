@@ -1,3 +1,7 @@
+import Swal from 'sweetalert2';
+import EscPosEncoder from 'esc-pos-encoder';
+
+
 // ============================================
 // UTILITY FUNCTIONS — POS FOTOCOPY ABADI JAYA
 // ============================================
@@ -61,102 +65,174 @@ export const isToday = (dateStr) => {
   return new Date(dateStr).toDateString() === new Date().toDateString();
 };
 
-export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm') => {
-  // Lebar area konten (karakter) sesuai tipe printer
-  // LX-310 12cm: 36 char + margin 2 spasi
-  const W = printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : printerType === '80mm' ? 42 : 32;
-  const MARGIN = printerType === 'lx310' ? '  ' : ''; // 2 spasi margin kiri hanya untuk LX-310
-  const isLx310OrInkjet = printerType === 'lx310' || printerType === 'inkjet';
+export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', forceBinary = false) => {
+  const isBluetooth = forceBinary || printerType === 'bluetooth';
+  const W = printerType === '80mm' ? 42 : printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : 32;
 
-  const center = (str) => {
+  if (isBluetooth) {
+    const encoder = new EscPosEncoder();
+    encoder.initialize();
+
+    // Header (Center)
+    encoder.align('center')
+      .line((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())
+      .text(storeInfo.address || '').newline();
+    if (storeInfo.phone) encoder.text('Telp: ' + storeInfo.phone).newline();
+    encoder.line('-'.repeat(W)).align('left');
+
+    // Info Transaksi
+    encoder.text(`No      : ${receipt.invoiceNo || '-'}`).newline();
+    encoder.text(`Tanggal : ${formatDateTime(receipt.date || new Date())}`).newline();
+    encoder.text(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`).newline();
+    if (receipt.customerName && receipt.customerName !== 'Umum') {
+      encoder.text(`Customer: ${receipt.customerName}`).newline();
+    }
+    encoder.line('-'.repeat(W));
+
+    // Items
+    const items = receipt.items || [];
+    items.forEach(item => {
+      const qty = item.qty ?? item.quantity ?? 1;
+      const price = item.price ?? item.sellPrice ?? 0;
+      const subtotal = item.subtotal ?? (qty * price);
+
+      encoder.text((item.name || 'Item').substring(0, W)).newline();
+      const leftPart = `  ${qty}x ${Number(price).toLocaleString('id-ID')}`;
+      const rightPart = Number(subtotal).toLocaleString('id-ID');
+      const sp = W - leftPart.length - rightPart.length;
+      encoder.text(leftPart + ' '.repeat(sp > 0 ? sp : 1) + rightPart).newline();
+    });
+    encoder.line('-'.repeat(W));
+
+    // Totals
+    const rightAlign = (left, right) => {
+      const sp = W - left.length - right.length;
+      return left + ' '.repeat(sp > 0 ? sp : 1) + right;
+    };
+
+    const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
+    const totalTx = receipt.total ?? (subtotalTx - (receipt.discount ?? 0));
+
+    if ((receipt.discount ?? 0) > 0) {
+      encoder.text(rightAlign('Subtotal :', formatRupiah(subtotalTx))).newline();
+      encoder.text(rightAlign('Diskon   :', '-' + formatRupiah(receipt.discount))).newline();
+    }
+    encoder.bold(true).text(rightAlign('TOTAL    :', formatRupiah(totalTx))).bold(false).newline();
+    encoder.text(rightAlign('BAYAR    :', formatRupiah(receipt.paid ?? 0))).newline();
+    if ((receipt.change ?? 0) > 0) {
+      encoder.text(rightAlign('KEMBALI  :', formatRupiah(receipt.change))).newline();
+    }
+    encoder.text(rightAlign('Metode   :', (receipt.paymentType || 'Tunai').toUpperCase())).newline();
+
+    // Footer
+    encoder.line('-'.repeat(W)).align('center')
+      .text(storeInfo.footer || 'Terima kasih telah berbelanja').newline()
+      .newline().newline().newline().cut();
+
+    return encoder.encode();
+  }
+
+  // --- FALLBACK: RAW TEXT (LX-310 / Inkjet) ---
+  const MARGIN = printerType === 'lx310' ? '  ' : '';
+  const centerText = (str) => {
     const pad = Math.max(0, Math.floor((W - str.length) / 2));
     return ' '.repeat(pad) + str;
   };
-  const rightAlign = (left, right) => {
+  const rightAlignText = (left, right) => {
     const sp = W - left.length - right.length;
     return left + ' '.repeat(sp > 0 ? sp : 1) + right;
   };
 
   const lines = [];
+  lines.push(centerText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase()));
+  if (storeInfo.address) lines.push(centerText(storeInfo.address));
+  if (storeInfo.phone) lines.push(centerText('Telp: ' + storeInfo.phone));
 
-  // === Header Toko (center) ===
-  lines.push(center((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase()));
-  if (storeInfo.address) lines.push(center(storeInfo.address));
-  if (storeInfo.phone) lines.push(center('Telp: ' + storeInfo.phone));
-
-  if (isLx310OrInkjet) {
-    // LX-310 & Inkjet: judul NOTA PEMBAYARAN
+  if (printerType === 'lx310' || printerType === 'inkjet') {
     lines.push('='.repeat(W));
-    lines.push(center('NOTA PEMBAYARAN'));
+    lines.push(centerText('NOTA PEMBAYARAN'));
     lines.push('='.repeat(W));
   } else {
     lines.push('-'.repeat(W));
   }
 
-  // === Info Transaksi ===
   lines.push(`No      : ${receipt.invoiceNo || '-'}`);
   lines.push(`Tanggal : ${formatDateTime(receipt.date || new Date())}`);
   lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
-  if (receipt.customerName && receipt.customerName !== 'Umum') {
-    lines.push(`Customer: ${receipt.customerName}`);
-  }
   lines.push('-'.repeat(W));
 
-  // === Items ===
   const items = receipt.items || [];
   items.forEach(item => {
     const qty = item.qty ?? item.quantity ?? 1;
     const price = item.price ?? item.sellPrice ?? 0;
     const subtotal = item.subtotal ?? (qty * price);
-
     lines.push((item.name || 'Item').substring(0, W));
-    lines.push(rightAlign(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
+    lines.push(rightAlignText(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
   });
   lines.push('-'.repeat(W));
 
-  // === Totals ===
   const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
-  const discountTx = receipt.discount ?? 0;
-  const totalTx = receipt.total ?? (subtotalTx - discountTx);
-  const paidTx = receipt.paid ?? receipt.amountPaid ?? 0;
-  const changeTx = receipt.change ?? (paidTx - totalTx);
-  const paymentTypeTx = receipt.paymentType ?? receipt.paymentMethod ?? 'tunai';
+  const totalTx = receipt.total ?? (subtotalTx - (receipt.discount ?? 0));
 
-  if (discountTx > 0) {
-    lines.push(rightAlign('Subtotal :', formatRupiah(subtotalTx)));
-    lines.push(rightAlign('Diskon   :', '-' + formatRupiah(discountTx)));
-  }
-  lines.push(rightAlign('TOTAL    :', formatRupiah(totalTx)));
-  lines.push(rightAlign('BAYAR    :', formatRupiah(paidTx)));
-  if (changeTx > 0) {
-    lines.push(rightAlign('KEMBALI  :', formatRupiah(changeTx)));
-  }
-  lines.push(rightAlign('Metode   :', paymentTypeTx.toUpperCase()));
-
-  // === Footer ===
+  lines.push(rightAlignText('TOTAL    :', formatRupiah(totalTx)));
+  lines.push(rightAlignText('BAYAR    :', formatRupiah(receipt.paid ?? 0)));
   lines.push('-'.repeat(W));
-  lines.push(center(storeInfo.footer || 'Terima kasih telah berbelanja'));
+  lines.push(centerText(storeInfo.footer || 'Terima kasih telah berbelanja'));
   lines.push('');
   lines.push(`Dicetak: ${new Date().toLocaleString('id-ID')}`);
 
-  // Gabungkan semua baris dengan margin kiri
-  let text = lines.map(l => MARGIN + l).join('\n') + '\n';
+  let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
+  if (printerType === 'lx310') textResult += '\n\n\n\n\n\n\n\n\n\n';
+  else textResult += '\n\n\n';
 
-  if (printerType === 'lx310') {
-    // Dot matrix continuous: feed 15 baris untuk spasi sobek
-    text += '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n';
-  } else if (printerType === 'inkjet') {
-    // Inkjet/Laser: tidak perlu extra feed
-  } else {
-    // Thermal: feed lines agar bisa dipotong
-    text += '\n\n\n';
-  }
-
-  return text;
+  return textResult;
 };
 
-export const generateOrderReceipt = (order, storeInfo, printerType = '58mm') => {
-  const W = printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : printerType === '80mm' ? 42 : 32;
+export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', forceBinary = false) => {
+  const isBluetooth = forceBinary || printerType === 'bluetooth';
+  const W = printerType === '80mm' ? 42 : printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : 32;
+
+  if (isBluetooth) {
+    const encoder = new EscPosEncoder();
+    encoder.initialize();
+
+    encoder.align('center')
+      .line(storeInfo.name.toUpperCase())
+      .text(storeInfo.address).newline()
+      .text('Telp: ' + storeInfo.phone).newline()
+      .line('-'.repeat(W))
+      .align('left')
+      .text(`No Order : ${order.orderNo}`).newline()
+      .text(`Tanggal  : ${formatDateTime(order.createdAt || order.date || new Date())}`).newline()
+      .text(`Pelanggan: ${order.customerName}`).newline()
+      .line('-'.repeat(W))
+      .text(`Jenis  : ${order.type}`).newline()
+      .text(`Rincian: ${(order.description || '-')}`).newline()
+      .text(`Specs  : ${(order.specs || '-')}`).newline()
+      .text(`Jumlah : ${order.qty} ${order.unit}`).newline()
+      .text(`Selesai: ${formatDate(order.deadline)}`).newline()
+      .line('-'.repeat(W));
+
+    const rightAlign = (left, right) => {
+      const sp = W - left.length - right.length;
+      return left + ' '.repeat(sp > 0 ? sp : 1) + right;
+    };
+
+    encoder.bold(true).text(rightAlign('Total  :', formatRupiah(order.totalPrice))).bold(false).newline();
+    if (order.shippingCost > 0) {
+      encoder.text(rightAlign('Ongkir :', formatRupiah(order.shippingCost))).newline();
+    }
+    encoder.text(rightAlign('DP     :', formatRupiah(order.dpAmount))).newline();
+    encoder.bold(true).text(rightAlign('SISA   :', formatRupiah(order.remaining))).bold(false).newline();
+
+    encoder.line('-'.repeat(W)).align('center')
+      .text(storeInfo.footer || 'Terima kasih telah memesan').newline()
+      .newline().newline().newline().cut();
+
+    return encoder.encode();
+  }
+
+  // --- RAW FALLBACK ---
   let text = '';
   text += `${storeInfo.name.toUpperCase()}\n`;
   text += `${storeInfo.address}\n`;
@@ -169,18 +245,23 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm') => 
   text += `-`.repeat(W) + `\n`;
 
   text += `Jenis  : ${order.type}\n`;
-  text += `Rincian: ${(order.description || '-').substring(0, W - 9)}\n`;
-  text += `Specs  : ${(order.specs || '-').substring(0, W - 9)}\n`;
+  text += `Rincian: ${(order.description || '-').substring(0, W)}\n`;
+  text += `Specs  : ${(order.specs || '-').substring(0, W)}\n`;
   text += `Jumlah : ${order.qty} ${order.unit}\n`;
   text += `Selesai: ${formatDate(order.deadline)}\n`;
   text += `-`.repeat(W) + `\n`;
 
-  text += `Total  : ${formatRupiah(order.totalPrice).padStart(W - 9)}\n`;
+  const padR = (l, r) => {
+    const sp = W - l.length - r.length;
+    return l + ' '.repeat(sp > 0 ? sp : 1) + r;
+  };
+
+  text += padR('Total  :', formatRupiah(order.totalPrice)) + '\n';
   if (order.shippingCost > 0) {
-    text += `Ongkir : ${formatRupiah(order.shippingCost).padStart(W - 9)}\n`;
+    text += padR('Ongkir :', formatRupiah(order.shippingCost)) + '\n';
   }
-  text += `DP     : ${formatRupiah(order.dpAmount).padStart(W - 9)}\n`;
-  text += `SISA   : ${formatRupiah(order.remaining).padStart(W - 9)}\n`;
+  text += padR('DP     :', formatRupiah(order.dpAmount)) + '\n';
+  text += padR('SISA   :', formatRupiah(order.remaining)) + '\n';
 
   text += `\n`;
   text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
@@ -189,14 +270,131 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm') => 
   return text;
 };
 
+// Known Bluetooth Serial Port Profile UUIDs for thermal printers
+const BT_SERIAL_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
+const BT_SERIAL_CHAR = '00002af1-0000-1000-8000-00805f9b34fb';
+const BT_SPP_SERVICE = '00001101-0000-1000-8000-00805f9b34fb';
+
+// Fallback generic UUIDs used by many Chinese thermal printers
+const BT_GENERIC_SERVICE = '0000ff00-0000-1000-8000-00805f9b34fb';
+const BT_GENERIC_CHAR = '0000ff02-0000-1000-8000-00805f9b34fb';
+
+// Cache the last connected device to avoid re-scanning
+let _cachedBtDevice = null;
+
+export const printViaBluetooth = async (text) => {
+  if (!navigator.bluetooth) {
+    Swal.fire({ icon: 'error', title: 'Tidak Didukung', text: 'Browser ini tidak mendukung Bluetooth. Gunakan Chrome di Android.', timer: 4000 });
+    return false;
+  }
+
+  try {
+    let device = _cachedBtDevice;
+
+    // If no cached device or it's disconnected, scan for a new one
+    if (!device || !device.gatt?.connected) {
+      device = await navigator.bluetooth.requestDevice({
+        filters: [
+          { services: [BT_SERIAL_SERVICE] },
+          { services: [BT_GENERIC_SERVICE] },
+          { namePrefix: 'Printer' },
+          { namePrefix: 'RPP' },
+          { namePrefix: 'BlueTooth' },
+          { namePrefix: 'BT' },
+          { namePrefix: 'PT-' },
+          { namePrefix: 'MPT-' },
+          { namePrefix: 'POS' },
+        ],
+        optionalServices: [BT_SERIAL_SERVICE, BT_GENERIC_SERVICE]
+      });
+      _cachedBtDevice = device;
+    }
+
+    Swal.fire({ title: 'Menghubungkan...', text: `Menyambung ke ${device.name || 'Printer'}`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    const server = await device.gatt.connect();
+
+    // Try known service/characteristic pairs
+    let characteristic = null;
+    const tryPairs = [
+      { svc: BT_SERIAL_SERVICE, chr: BT_SERIAL_CHAR },
+      { svc: BT_GENERIC_SERVICE, chr: BT_GENERIC_CHAR },
+    ];
+
+    for (const pair of tryPairs) {
+      try {
+        const service = await server.getPrimaryService(pair.svc);
+        characteristic = await service.getCharacteristic(pair.chr);
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    // Fallback: discover all services and find any writable characteristic
+    if (!characteristic) {
+      const services = await server.getPrimaryServices();
+      for (const svc of services) {
+        try {
+          const chars = await svc.getCharacteristics();
+          const writable = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+          if (writable) { characteristic = writable; break; }
+        } catch { continue; }
+      }
+    }
+
+    if (!characteristic) {
+      Swal.close();
+      Swal.fire({ icon: 'error', title: 'Gagal', text: 'Tidak dapat menemukan channel cetak pada printer ini.', timer: 4000 });
+      server.disconnect();
+      return false;
+    }
+
+    // Encode text to bytes ONLY if it's a string
+    let data;
+    if (text instanceof Uint8Array) {
+      data = text;
+    } else {
+      const encoder = new TextEncoder();
+      data = encoder.encode(text);
+    }
+
+    // Send in chunks of 100 bytes (BLE MTU safe)
+    const CHUNK = 100;
+    for (let i = 0; i < data.length; i += CHUNK) {
+      const chunk = data.slice(i, i + CHUNK);
+      if (characteristic.properties.writeWithoutResponse) {
+        await characteristic.writeValueWithoutResponse(chunk);
+      } else {
+        await characteristic.writeValue(chunk);
+      }
+    }
+
+    Swal.close();
+    Swal.fire({ icon: 'success', title: 'Berhasil', text: `Nota telah dicetak ke ${device.name || 'Printer Bluetooth'}!`, timer: 2500, showConfirmButton: false });
+    return true;
+
+  } catch (err) {
+    Swal.close();
+    if (err.name === 'NotFoundError') {
+      // User cancelled the device picker — do nothing
+      return false;
+    }
+    console.error('Bluetooth print failed:', err);
+    Swal.fire({ icon: 'error', title: 'Gagal Cetak', text: err.message || 'Koneksi Bluetooth gagal. Pastikan printer menyala dan terhubung.', timer: 4000 });
+    _cachedBtDevice = null; // Clear cache on failure
+    return false;
+  }
+};
+
+// Legacy fallback kept for backward compat
 export const printViaRawBT = (text) => {
   try {
-    // Encodes string safely considering potentially non-ASCII characters
     const base64Data = btoa(unescape(encodeURIComponent(text)));
     const intentUrl = `intent:${base64Data}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
     window.location.href = intentUrl;
   } catch (err) {
     console.error('Failed to encode receipt for RawBT:', err);
-    alert('Gagal encode nota untuk printer Bluetooth');
+    Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal encode nota untuk printer Bluetooth', timer: 3000 });
   }
 };

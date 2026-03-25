@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import Swal from 'sweetalert2';
 
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
@@ -87,12 +88,12 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
 
             await api.post('/spk', payload);
 
-            alert(`Pesanan berhasil diproses! Mengalihkan kembali ke halaman Digital Printing...`);
+            await Swal.fire({ icon: 'success', title: 'Sukses', text: 'Pesanan berhasil diproses! Mengalihkan kembali...', timer: 2500, showConfirmButton: false });
             onNavigate('digital-printing');
 
         } catch (error) {
             console.error('Gagal memproses SPK:', error);
-            alert('Gagal memproses pesanan: ' + (error.response?.data?.message || error.message));
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal memproses pesanan: ' + (error.response?.data?.message || error.message), timer: 3000 });
         }
     };
 

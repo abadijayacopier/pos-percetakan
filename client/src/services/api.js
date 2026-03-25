@@ -1,4 +1,5 @@
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const api = axios.create({
     baseURL: `http://${window.location.hostname}:5001/api`,
@@ -50,7 +51,7 @@ api.interceptors.response.use(
             if (sessionStr) {
                 // Token expired / tidak valid — hanya logout jika BUKAN dari proses login
                 console.warn('[api] Token expired, melakukan logout otomatis. URL:', configUrl);
-                alert('Sesi login sudah habis. Silakan login kembali.');
+                Swal.fire({ icon: 'warning', title: 'Sesi Habis', text: 'Sesi login sudah habis. Silakan login kembali.', timer: 3000 });
                 localStorage.removeItem('token');
                 localStorage.removeItem('pos_session');
                 window.location.href = '/';

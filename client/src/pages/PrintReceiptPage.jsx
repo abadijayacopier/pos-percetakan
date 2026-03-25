@@ -1,8 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Swal from 'sweetalert2';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { generateRawReceipt, printViaBluetooth } from '../utils';
 
 export default function PrintReceiptPage({ pageState }) {
     const { user } = useAuth();
+    const [receiptData, setReceiptData] = useState(pageState?.receipt || null);
+    const [isLoading, setIsLoading] = useState(!pageState?.receipt);
+    const [printSettings, setPrintSettings] = useState({
+        storeName: 'JAYA COPY & PERCETAKAN',
+        storeAddress: 'Jl. Pendidikan No. 45, Jakarta Pusat',
+        storePhone: '0812-3456-7890',
+        receiptFooter: 'Terima Kasih Atas Kunjungan Anda!',
+        printerSize: '80mm',
+        printerName: ''
+    });
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
     useEffect(() => {
         // Apply print-specific styles dynamically
@@ -43,31 +57,155 @@ export default function PrintReceiptPage({ pageState }) {
         };
     }, []);
 
-    // Placeholder data, this can be swapped with real pageState data later
-    const receiptData = pageState?.receipt || {
-        invoiceNo: '#INV-20231025-01',
-        date: '25 Okt 2023 14:30',
-        cashier: user?.name || 'Budi Santoso',
-        customer: 'Umum',
-        items: [
-            { desc: 'Fotocopy A4 (B/W)', qty: 50, total: 12500, note: '@250 per lembar' },
-            { desc: 'Jilid Spiral Keras', qty: 1, total: 15000, note: 'Ukuran A4' },
-            { desc: 'Pulpen Pilot Black', qty: 2, total: 6000, note: '@3.000 per pcs' }
-        ],
-        subtotal: 33500,
-        tax: 3685,
-        total: 37185,
-        paymentMethod: 'Tunai',
-        paid: 50000,
-        change: 12815
-    };
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const fetchSettingsAndData = async () => {
+            try {
+                // Fetch settings
+                const settingsRes = await api.get('/settings');
+                if (settingsRes.data) {
+                    const sMap = {};
+                    settingsRes.data.forEach(s => sMap[s.key] = s.value);
+                    setPrintSettings({
+                        storeName: sMap.store_name || 'JAYA COPY & PERCETAKAN',
+                        storeAddress: sMap.store_address || 'Jl. Pendidikan No. 45, Jakarta Pusat',
+                        storePhone: sMap.store_phone || '0812-3456-7890',
+                        receiptFooter: sMap.receipt_footer || 'Terima Kasih Atas Kunjungan Anda!',
+                        printerSize: sMap.printer_size || '80mm',
+                        printerName: sMap.printer_name || ''
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to fetch settings:', err);
+            }
+
+            if (!pageState?.receipt) {
+                try {
+                    const res = await api.get('/transactions');
+                    if (res.data && res.data.length > 0) {
+                        const trx = res.data[0];
+                        const dateObj = new Date(trx.date || new Date());
+
+                        setReceiptData({
+                            invoiceNo: trx.invoiceNo || trx.invoice_no,
+                            date: dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                            cashier: trx.userName || trx.user_name || user?.name || 'Kasir',
+                            customer: trx.customerName || trx.customer_name || 'Umum',
+                            items: (trx.items || []).map(i => ({
+                                desc: i.name || 'Item Cetak',
+                                qty: i.qty || 1,
+                                total: i.subtotal || 0,
+                                note: ''
+                            })),
+                            subtotal: trx.subtotal || trx.total,
+                            tax: trx.tax || 0,
+                            total: trx.total,
+                            paymentMethod: trx.paymentType || 'Tunai',
+                            paid: trx.paid || trx.total,
+                            change: trx.changeAmount || 0
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch latest transaction:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            } else {
+                setIsLoading(false);
+            }
+        };
+        fetchSettingsAndData();
+    }, [pageState, user]);
+
+    if (isLoading) {
+        return (
+            <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex items-center justify-center font-display">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-500 font-bold animate-pulse">Memuat Nota Transaksi...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!receiptData) {
+        return (
+            <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex items-center justify-center font-display">
+                <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm text-center">
+                    <span className="material-symbols-outlined text-4xl text-slate-300 mb-2">receipt_long</span>
+                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Data Nota Kosong</h3>
+                    <p className="text-sm text-slate-500 mt-1">Belum ada transaksi di database.</p>
+                </div>
+            </div>
+        );
+    }
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(amount);
     };
 
+    const handleDirectPrint = async () => {
+        if (!receiptData) return;
+
+        try {
+            const storeInfo = {
+                name: printSettings.storeName,
+                address: printSettings.storeAddress,
+                phone: printSettings.storePhone,
+                footer: printSettings.receiptFooter
+            };
+
+            const txForPrint = {
+                ...receiptData,
+                userName: receiptData.cashier,
+                customerName: receiptData.customer,
+                items: receiptData.items.map(item => ({
+                    name: item.desc || item.name || 'Item',
+                    qty: item.qty || item.quantity || 1,
+                    price: Math.round((item.total || 0) / (item.qty || item.quantity || 1)),
+                    subtotal: item.total || item.subtotal || 0
+                }))
+            };
+
+            const receiptText = generateRawReceipt(txForPrint, storeInfo, printSettings.printerSize, isMobile);
+
+            if (isMobile) {
+                await printViaBluetooth(receiptText);
+                console.log('Receipt sent via Web Bluetooth');
+                return;
+            }
+
+            const payload = {
+                text: receiptText,
+                printerName: printSettings.printerName
+            };
+
+            if (printSettings.printerSize === 'lx310') payload.raw = true;
+
+            await api.post('/print/receipt', payload);
+            console.log('Receipt printed successfully via API');
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Perintah cetak telah dikirim ke printer!',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+        } catch (err) {
+            console.error('Failed to print receipt:', err);
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal mencetak nota: ' + (err.response?.data?.message || err.message), timer: 3000 });
+        }
+    };
+
     const handleShare = async () => {
-        const textData = `*NOTA PEMBAYARAN - JAYA COPY*\nNo. Nota: ${receiptData.invoiceNo}\nKasir: ${receiptData.cashier}\nTotal: Rp ${formatCurrency(receiptData.total)}\nStatus: ${receiptData.paid >= receiptData.total ? 'LUNAS' : 'SISA BAYAR Rp ' + formatCurrency(receiptData.total - receiptData.paid)}\n\nTerima Kasih Atas Kunjungan Anda!`;
+        const textData = `*NOTA PEMBAYARAN - ${printSettings.storeName.toUpperCase()}*\nNo. Nota: ${receiptData.invoiceNo}\nKasir: ${receiptData.cashier}\nTotal: Rp ${formatCurrency(receiptData.total)}\nStatus: ${receiptData.paid >= receiptData.total ? 'LUNAS' : 'SISA BAYAR Rp ' + formatCurrency(receiptData.total - receiptData.paid)}\n\nTerima Kasih Atas Kunjungan Anda!`;
 
         if (navigator.share) {
             try {
@@ -81,23 +219,23 @@ export default function PrintReceiptPage({ pageState }) {
         } else {
             // Fallback to clipboard
             navigator.clipboard.writeText(textData);
-            alert('Teks nota telah disalin ke clipboard! Silakan paste (tempel) di WhatsApp.');
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Teks nota telah disalin ke clipboard! Silakan paste (tempel) di WhatsApp.', timer: 3000 });
         }
     };
 
     return (
-        <div className="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center pt-10 pb-20 px-4 font-display">
+        <div className="bg-slate-100 dark:bg-slate-900 min-h-screen flex flex-col items-center pt-8 pb-24 px-4 font-display print:bg-white print:p-0">
             {/* Action Bar (No Print) */}
-            <div className="no-print mb-6 flex gap-4 w-full max-w-[380px]">
+            <div className="no-print sticky top-4 z-50 mb-6 flex gap-4 w-full max-w-[380px] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 rounded-2xl shadow-lg border border-white/40 dark:border-slate-700/50">
                 <button
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-2 px-4 rounded-lg font-bold hover:opacity-90 transition-opacity"
-                    onClick={() => window.print()}
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary text-white py-2.5 px-4 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-md shadow-primary/20"
+                    onClick={handleDirectPrint}
                 >
                     <span className="material-symbols-outlined">print</span>
                     Cetak Nota
                 </button>
                 <button
-                    className="flex-1 flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 py-2 px-4 rounded-lg font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 py-2.5 px-4 rounded-xl font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
                     onClick={handleShare}
                 >
                     <span className="material-symbols-outlined">share</span>
@@ -106,40 +244,40 @@ export default function PrintReceiptPage({ pageState }) {
             </div>
 
             {/* Main Receipt Container */}
-            <div className="thermal-width w-[380px] bg-white shadow-xl border border-slate-200 p-6 flex flex-col text-slate-900 mx-auto print:shadow-none print:p-2">
+            <div className="thermal-width w-[380px] bg-white text-black shadow-2xl shadow-slate-300/50 dark:shadow-black/50 border-t-8 border-t-slate-800 p-6 flex flex-col mx-auto print:shadow-none print:border-none print:p-2 relative overflow-hidden">
                 {/* Header / Logo Section */}
-                <div className="flex flex-col items-center text-center border-b border-dashed border-slate-300 pb-4 mb-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2 text-primary">
+                <div className="flex flex-col items-center text-center border-b-2 border-dashed border-slate-800 pb-4 mb-4">
+                    <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center mb-2 text-white">
                         <span className="material-symbols-outlined !text-3xl">print</span>
                     </div>
-                    <h1 className="text-lg font-bold uppercase tracking-tight">Jaya Copy & Percetakan</h1>
-                    <p className="text-[10px] text-slate-500 mt-1">Jl. Pendidikan No. 45, Jakarta Pusat</p>
-                    <p className="text-[10px] text-slate-500">Telp: 0812-3456-7890</p>
+                    <h1 className="text-xl font-black uppercase tracking-tighter">{printSettings.storeName}</h1>
+                    <p className="text-[10.5px] font-medium mt-1">{printSettings.storeAddress}</p>
+                    <p className="text-[10.5px] font-medium">Telp: {printSettings.storePhone}</p>
                 </div>
 
                 {/* Metadata Section */}
-                <div className="flex flex-col gap-1 text-xs mb-4 border-b border-dashed border-slate-300 dark:border-slate-700 pb-4">
+                <div className="flex flex-col gap-1 text-[11px] mb-4 border-b-2 border-dashed border-slate-800 pb-4 font-code">
                     <div className="flex justify-between">
-                        <span className="text-slate-500">No. Nota:</span>
-                        <span className="font-medium">{receiptData.invoiceNo}</span>
+                        <span className="font-bold">No. Nota</span>
+                        <span className="font-medium">: {receiptData.invoiceNo}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-slate-500">Tanggal:</span>
-                        <span className="font-medium">{receiptData.date}</span>
+                        <span className="font-bold">Tanggal</span>
+                        <span className="font-medium">: {receiptData.date}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-slate-500">Kasir:</span>
-                        <span className="font-medium">{receiptData.cashier}</span>
+                        <span className="font-bold">Kasir</span>
+                        <span className="font-medium uppercase">: {receiptData.cashier}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-slate-500">Pelanggan:</span>
-                        <span className="font-medium">{receiptData.customer}</span>
+                        <span className="font-bold">Pelanggan</span>
+                        <span className="font-medium uppercase">: {receiptData.customer}</span>
                     </div>
                 </div>
 
                 {/* Items Table */}
                 <div className="flex flex-col gap-3 mb-6 relative">
-                    <div className="flex justify-between text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider border-b border-black pb-1 mb-1">
                         <span className="w-1/2">Deskripsi</span>
                         <span className="w-1/4 text-right">Qty</span>
                         <span className="w-1/4 text-right">Total</span>
@@ -152,77 +290,67 @@ export default function PrintReceiptPage({ pageState }) {
                         const note = item.note || '';
 
                         return (
-                            <div key={index} className="flex flex-col gap-1">
-                                <div className="flex justify-between text-[11px] sm:text-sm">
-                                    <span className="w-1/2 font-medium break-words leading-tight pr-2">{desc}</span>
-                                    <span className="w-1/4 text-right text-slate-600 print:text-slate-900">{qty}</span>
+                            <div key={index} className="flex flex-col gap-1 font-code">
+                                <div className="flex justify-between text-[11px] sm:text-xs">
+                                    <span className="w-1/2 font-medium break-words leading-tight pr-2 uppercase">{desc}</span>
+                                    <span className="w-1/4 text-right font-bold">{qty}</span>
                                     <span className="w-1/4 text-right font-medium">{formatCurrency(total)}</span>
                                 </div>
-                                {note && <span className="text-[10px] text-slate-500 italic">{note}</span>}
+                                {note && <span className="text-[10px] text-slate-500 uppercase font-medium">{note}</span>}
                             </div>
                         );
                     })}
                 </div>
 
                 {/* Calculation Section */}
-                <div className="border-t border-dashed border-slate-300 dark:border-slate-700 pt-4 flex flex-col gap-2">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">Subtotal</span>
+                <div className="border-t-2 border-dashed border-slate-800 pt-4 flex flex-col gap-2 font-code">
+                    <div className="flex justify-between text-xs">
+                        <span className="font-bold uppercase">Subtotal</span>
                         <span className="font-medium">{formatCurrency(receiptData.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">Pajak (PPN 11%)</span>
-                        <span className="font-medium">{formatCurrency(receiptData.tax)}</span>
+                    <div className="flex justify-between text-xs">
+                        <span className="font-bold uppercase">Pajak (PPN 11%)</span>
+                        <span className="font-medium ">{formatCurrency(receiptData.tax)}</span>
                     </div>
-                    <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex justify-between text-lg font-black mt-2 pt-2 border-t border-black">
                         <span>TOTAL</span>
-                        <span className="text-primary">Rp {formatCurrency(receiptData.total)}</span>
+                        <span>Rp {formatCurrency(receiptData.total)}</span>
                     </div>
                 </div>
 
                 {/* Payment Info */}
-                <div className="mt-6 flex flex-col gap-1 text-xs text-slate-500 border-b border-dashed border-slate-300 dark:border-slate-700 pb-4">
+                <div className="mt-6 flex flex-col gap-1 text-[11px] border-b-2 border-dashed border-slate-800 pb-4 font-code">
                     <div className="flex justify-between">
-                        <span>Metode Pembayaran:</span>
-                        <span className="text-slate-900 dark:text-slate-100 font-medium">{receiptData.paymentMethod}</span>
+                        <span className="font-bold uppercase">Metode Bayar</span>
+                        <span className="font-medium uppercase">: {receiptData.paymentMethod}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>Bayar:</span>
-                        <span className="text-slate-900 dark:text-slate-100 font-medium">{formatCurrency(receiptData.paid)}</span>
+                        <span className="font-bold uppercase">Bayar</span>
+                        <span className="font-medium">: {formatCurrency(receiptData.paid)}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>Kembali:</span>
-                        <span className="text-slate-900 dark:text-slate-100 font-medium">{formatCurrency(receiptData.change)}</span>
+                        <span className="font-bold uppercase">Kembali</span>
+                        <span className="font-medium">: {formatCurrency(receiptData.change)}</span>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="mt-8 text-center">
-                    <p className="text-sm font-medium italic">Terima Kasih Atas Kunjungan Anda!</p>
-                    <p className="text-[10px] text-slate-400 mt-2">Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan.</p>
+                <div className="mt-8 text-center flex flex-col items-center">
+                    <p className="text-[11px] font-bold uppercase tracking-wider whitespace-pre-wrap">{printSettings.receiptFooter}</p>
+                    <p className="text-[9px] mt-4 border-t border-slate-300 pt-2 w-3/4 mx-auto uppercase">Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan.</p>
 
-                    <div className="mt-6 flex justify-center opacity-30 grayscale print:opacity-100 print:grayscale-0">
-                        {/* Simple barcode placeholder */}
-                        <div className="flex gap-1 h-8">
-                            <div className="w-1 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-2 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-0.5 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-3 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-1 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-2 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-1 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-0.5 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-3 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-1 bg-black dark:bg-white print:bg-black h-full"></div>
-                            <div className="w-2 bg-black dark:bg-white print:bg-black h-full"></div>
-                        </div>
+                    <div className="mt-6 flex justify-center h-12 w-full items-end pb-1 overflow-hidden">
+                        {[2, 4, 1, 3, 2, 5, 1, 2, 4, 2, 1, 1, 3, 2, 4, 1, 2, 5, 2, 1, 4, 2, 3, 1, 2, 4, 1, 2].map((w, i) => (
+                            <div key={i} className="bg-black h-full" style={{ width: `${w}px`, minWidth: `${w}px`, marginRight: `${w % 2 === 0 ? 2 : 1.5}px` }}></div>
+                        ))}
                     </div>
+                    <p className="font-code text-[10px] font-bold mt-2">{receiptData.invoiceNo}</p>
                 </div>
             </div>
 
             {/* Additional Info (No Print) */}
-            <div className="no-print mt-8 text-slate-500 text-sm max-w-[380px] text-center">
-                <p>Gunakan tombol cetak di atas untuk mencetak nota ini langsung ke printer thermal Anda.</p>
+            <div className="no-print mt-8 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs max-w-[380px] text-center mb-10 transition-colors">
+                <p>Siapkan printer thermal Anda, lalu gunakan tombol cetak di atas untuk mencetak nota ini.</p>
             </div>
         </div>
     );

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiCheck, FiX, FiSave, FiSearch, FiPlus, FiBox,
     FiAlertCircle, FiArrowRight, FiArrowLeft, FiEdit3,
-    FiSettings, FiGrid, FiList, FiFilter, FiDownload, FiTruck, FiActivity
+    FiSettings, FiGrid, FiList, FiFilter, FiDownload, FiTruck, FiActivity,
+    FiUpload, FiSliders
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
@@ -215,6 +216,13 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
 function StokModal({ bahan, onClose, onSaved, toast }) {
     const [form, setForm] = useState({ tipe: 'masuk', jumlah: '', catatan: '' });
     const [saving, setSaving] = useState(false);
+    const [suppliers, setSuppliers] = useState([]);
+
+    useEffect(() => {
+        api.get('/suppliers')
+            .then(res => setSuppliers(res.data?.data || []))
+            .catch(() => { });
+    }, []);
 
     const handleCancel = () => {
         if (form.jumlah) {
@@ -301,9 +309,9 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Jenis Mutasi</label>
                         <div className="grid grid-cols-3 gap-2">
                             {[
-                                { val: 'masuk', label: 'Masuk', icon: '📥', color: 'emerald' },
-                                { val: 'keluar', label: 'Keluar', icon: '📤', color: 'rose' },
-                                { val: 'penyesuaian', label: 'Set', icon: '⚖️', color: 'violet' },
+                                { val: 'masuk', label: 'Masuk', icon: <FiDownload size={24} />, color: 'emerald' },
+                                { val: 'keluar', label: 'Keluar', icon: <FiUpload size={24} />, color: 'rose' },
+                                { val: 'penyesuaian', label: 'Set', icon: <FiSliders size={24} />, color: 'violet' },
                             ].map(opt => (
                                 <button
                                     key={opt.val}
@@ -334,7 +342,11 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Keterangan</label>
                             <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-4 focus:ring-2 focus:ring-primary/50 dark:text-white text-sm outline-none"
                                 placeholder="Supplier..."
+                                list="stok-supplier-list"
                                 value={form.catatan} onChange={e => setForm(f => ({ ...f, catatan: e.target.value }))} />
+                            <datalist id="stok-supplier-list">
+                                {suppliers.map(s => <option key={s.id} value={s.name} />)}
+                            </datalist>
                         </div>
                     </div>
 

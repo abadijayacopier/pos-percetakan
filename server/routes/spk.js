@@ -58,7 +58,7 @@ router.get('/', verifyToken, async (req, res) => {
         res.json({
             data: rows,
             summary: {
-                total: total[0][0].total,
+                total: total[0] ? total[0].total : 0,
                 byStatus: summary.reduce((acc, r) => { acc[r.status] = r.count; return acc; }, {})
             }
         });
@@ -209,6 +209,10 @@ router.patch('/:id/status', verifyToken, requireRole(['admin', 'kasir', 'operato
         if (status === 'Selesai') updates.completed_at = new Date();
 
         await conn.query('UPDATE spk SET ? WHERE id = ?', [updates, req.params.id]);
+
+        if (status === 'Batal' || status === 'batal') {
+            await conn.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+        }
 
         await conn.query(
             'INSERT INTO spk_logs (spk_id, user_id, action, description, old_value, new_value) VALUES (?, ?, ?, ?, ?, ?)',
