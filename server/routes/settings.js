@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireRole } = require('../middleware/auth');
 
 // GET Semua Settings
 router.get('/', verifyToken, async (req, res) => {
@@ -26,7 +26,7 @@ router.get('/public', async (req, res) => {
 });
 
 // POST Simpan Multiple Settings
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const settings = req.body; // expects array [{key, value}]
         if (!Array.isArray(settings)) return res.status(400).json({ message: 'Format data salah' });
@@ -109,7 +109,7 @@ router.get('/master', verifyToken, async (req, res) => {
 });
 
 // POST Add new Master Data item
-router.post('/master', verifyToken, async (req, res) => {
+router.post('/master', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { type, value } = req.body; // type = 'kategori_bahan' or 'satuan_unit', value = 'string'
 

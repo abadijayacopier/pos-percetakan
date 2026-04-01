@@ -21,14 +21,8 @@ router.post('/login', async (req, res) => {
 
         const user = rows[0];
 
-        // Cek password. (Sementara hardcode 'admin123' dll untuk dev jika belum pakai hash, 
-        // Tapi praktik nyatanya, harus pakai bcrypt.compare)
-        let validPass = false;
-        if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
-            validPass = await bcrypt.compare(password, user.password);
-        } else {
-            validPass = (password === user.password); // fallback unhashed for seed data
-        }
+        // Verify password via bcrypt
+        const validPass = await bcrypt.compare(password, user.password);
 
         if (!validPass) {
             return res.status(401).json({ message: 'Password salah!' });

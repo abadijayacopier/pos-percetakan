@@ -37,7 +37,7 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
         fetchDetail();
     }, [spkId]);
 
-    // Tambahkan style cetak format A4
+    // Tambahkan style cetak format A4 dan handler mode gelap
     useEffect(() => {
         const style = document.createElement('style');
         style.innerHTML = `
@@ -61,8 +61,29 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
             }
         `;
         document.head.appendChild(style);
+
+        // Mencegah dark mode terbawa ke print (menghemat tinta & masalah specificity Tailwind)
+        let wasDark = false;
+        const handleBeforePrint = () => {
+            if (document.documentElement.classList.contains('dark')) {
+                wasDark = true;
+                document.documentElement.classList.remove('dark');
+            }
+        };
+        const handleAfterPrint = () => {
+            if (wasDark) {
+                document.documentElement.classList.add('dark');
+                wasDark = false;
+            }
+        };
+
+        window.addEventListener('beforeprint', handleBeforePrint);
+        window.addEventListener('afterprint', handleAfterPrint);
+
         return () => {
             document.head.removeChild(style);
+            window.removeEventListener('beforeprint', handleBeforePrint);
+            window.removeEventListener('afterprint', handleAfterPrint);
         };
     }, []);
 

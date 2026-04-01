@@ -42,6 +42,18 @@ export default function PrintReportLayout({ title, period, printedBy, storeInfo,
                     border-bottom: 1px solid #e5e7eb;
                     font-size: 12px;
                 }
+                
+                /* Override any global section break-inside blocks */
+                section {
+                    page-break-inside: auto !important;
+                    break-inside: auto !important;
+                }
+                
+                .break-inside-avoid {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
+
                 .print-table th {
                     background-color: transparent !important;
                     border-top: 2px solid #000 !important;

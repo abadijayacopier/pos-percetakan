@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireRole } = require('../middleware/auth');
 
 // GET all purchases
 router.get('/', verifyToken, async (req, res) => {
@@ -29,7 +29,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // POST new purchase
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     const conn = await pool.getConnection();
     try {
         await conn.beginTransaction();

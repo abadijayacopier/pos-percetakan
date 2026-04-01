@@ -62,7 +62,7 @@ router.get('/stats', verifyToken, async (req, res) => {
 });
 
 // 3. POST Entri Kas Baru (Masuk/Keluar)
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const { date, type, category, amount, description, reference } = req.body;
         const newId = 'cf' + Date.now();
@@ -78,7 +78,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // 4. PUT Update Entri Kas
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const { date, type, category, amount, description, reference } = req.body;
         await pool.query(`
@@ -93,7 +93,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 });
 
 // 5. DELETE Entri Kas
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         await pool.query('DELETE FROM cash_flow WHERE id=?', [req.params.id]);
         res.json({ message: 'Entri kas berhasil dihapus!' });

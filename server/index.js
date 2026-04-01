@@ -50,28 +50,6 @@ const startServer = async () => {
     // Test koneksi database saat start
     await testConnection();
 
-    // Auto-create missing tables
-    try {
-        const { pool } = require('./config/database');
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS cash_flow (
-                id VARCHAR(50) PRIMARY KEY,
-                date DATE NOT NULL,
-                type ENUM('in','out') NOT NULL DEFAULT 'in',
-                category VARCHAR(100) DEFAULT NULL,
-                amount DECIMAL(15,2) NOT NULL DEFAULT 0,
-                description TEXT,
-                reference VARCHAR(100) DEFAULT NULL,
-                reference_id VARCHAR(50) DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        `);
-        console.log('✅ Tabel cash_flow siap.');
-    } catch (err) {
-        console.error('⚠️ Gagal auto-create tabel:', err.message);
-    }
-
     app.listen(PORT, () => {
         console.log(`🚀 Server backend berjalan di http://localhost:${PORT}`);
     });

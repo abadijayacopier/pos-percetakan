@@ -1,10 +1,11 @@
 ﻿const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const { verifyToken, requireRole } = require('../middleware/auth');
 const crypto = require('crypto');
 
 // GET all suppliers
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM suppliers ORDER BY created_at DESC');
         res.json({
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST add new supplier
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const { name, contact_person, phone, address, notes } = req.body;
 
@@ -45,7 +46,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update supplier
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, contact_person, phone, address, notes } = req.body;
@@ -74,7 +75,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE supplier
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
 

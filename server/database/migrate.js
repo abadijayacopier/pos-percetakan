@@ -11,7 +11,7 @@ const createTables = async () => {
         name VARCHAR(100) NOT NULL,
         username VARCHAR(50) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        role ENUM('admin', 'kasir', 'operator', 'teknisi') NOT NULL,
+        role ENUM('admin', 'kasir', 'operator', 'teknisi', 'desainer') NOT NULL,
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -40,6 +40,7 @@ const createTables = async () => {
         min_stock INT NOT NULL DEFAULT 0,
         unit VARCHAR(20) DEFAULT 'pcs',
         emoji VARCHAR(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+        image VARCHAR(255) DEFAULT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
       )

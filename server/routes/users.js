@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/database');
-const { verifyToken, verifyRole } = require('../middleware/auth');
+const { verifyToken, requireRole } = require('../middleware/auth');
 
-// GET all users (Admin only recommended, but we verifyToken here)
-router.get('/', verifyToken, async (req, res) => {
+// GET all users (Admin only)
+router.get('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT id, name, username, role, is_active FROM users');
         res.json(rows.map(r => ({
@@ -19,9 +19,14 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // POST new user
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { name, username, password, role, isActive } = req.body;
+
+        if (!name || !username || !role) {
+            return res.status(400).json({ message: 'Nama, username, dan role wajib diisi' });
+        }
+
         // Check existing
         const [existing] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
         if (existing.length > 0) return res.status(400).json({ message: 'Username sudah terpakai' });
@@ -39,7 +44,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // PUT update user
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, username, password, role, isActive } = req.body;
@@ -69,7 +74,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 });
 
 // DELETE user
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM users WHERE id = ?', [id]);
