@@ -47,4 +47,5 @@ Kini pemilik toko bisa mengunggah foto interior toko atau hasil kerja (percetaka
 3. `npm start` (atau gunakan `nodemon`)
 
 ---
+donate for contributtion buy coffee DANA 085655620979
 Dikembangkan dengan ❤️ untuk **Abadi Jaya Copier**.
