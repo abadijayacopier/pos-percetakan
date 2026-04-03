@@ -4,6 +4,33 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
+const { z } = require('zod');
+const crypto = require('crypto');
+
+// Validation Schema
+const spkSchema = z.object({
+    customer_id: z.string().optional().nullable(),
+    customer_name: z.string().min(1, "Nama pelanggan wajib diisi"),
+    customer_phone: z.string().optional().nullable(),
+    customer_company: z.string().optional().nullable(),
+    product_name: z.string().min(1, "Nama produk wajib diisi"),
+    product_qty: z.number().positive("Jumlah wajib positif").default(1),
+    product_unit: z.string().default('pcs'),
+    kategori: z.string().default('Cetak Offset'),
+    specs_material: z.string().optional().nullable(),
+    specs_finishing: z.string().optional().nullable(),
+    specs_notes: z.string().optional().nullable(),
+    biaya_cetak: z.number().min(0).default(0),
+    biaya_material: z.number().min(0).default(0),
+    biaya_finishing: z.number().min(0).default(0),
+    biaya_desain: z.number().min(0).default(0),
+    biaya_lainnya: z.number().min(0).default(0),
+    dp_amount: z.number().min(0).default(0),
+    priority: z.enum(['Rendah', 'Normal', 'Tinggi', 'Urgent']).default('Normal'),
+    assigned_to: z.string().optional().nullable(),
+    deadline: z.string().optional().nullable()
+});
+
 // ══════════════════════════════════════════════════════════════
 // 1. GET /api/spk — Daftar SPK + filter + search
 // ══════════════════════════════════════════════════════════════
@@ -124,20 +151,22 @@ router.get('/:id', verifyToken, async (req, res) => {
 router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
     const conn = await pool.getConnection();
     try {
-        await conn.beginTransaction();
+        const validatedData = spkSchema.parse(req.body);
         const {
             customer_id, customer_name, customer_phone, customer_company,
             product_name, product_qty, product_unit, kategori,
             specs_material, specs_finishing, specs_notes,
             biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
             dp_amount, priority, assigned_to, deadline
-        } = req.body;
+        } = validatedData;
+
+        await conn.beginTransaction();
 
         const total_biaya = (biaya_cetak || 0) + (biaya_material || 0) + (biaya_finishing || 0) +
             (biaya_desain || 0) + (biaya_lainnya || 0);
         const sisa_tagihan = total_biaya - (dp_amount || 0);
 
-        const id = 'spk-' + Date.now();
+        const id = crypto.randomUUID();
         // Generate SPK number: SPK-YYYY-NNNNN
         const year = new Date().getFullYear();
         const [countRows] = await conn.query(
@@ -160,11 +189,11 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
             id, spk_number, customer_id || null, customer_name, customer_phone || null, customer_company || null,
-            product_name, product_qty || 1, product_unit || 'pcs', kategori || 'Cetak Offset',
+            product_name, product_qty, product_unit, kategori,
             specs_material || null, specs_finishing || null, specs_notes || null,
-            biaya_cetak || 0, biaya_material || 0, biaya_finishing || 0, biaya_desain || 0, biaya_lainnya || 0,
-            total_biaya, dp_amount || 0, sisa_tagihan,
-            priority || 'Normal', assigned_to || null, validUserId, deadline || null
+            biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
+            total_biaya, dp_amount, sisa_tagihan,
+            priority, assigned_to || null, validUserId, deadline || null
         ]);
 
         // Log: SPK dibuat
@@ -371,6 +400,35 @@ router.get('/payments/qris', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('GET qris error:', error);
         res.status(500).json({ message: 'Gagal mengambil data QRIS' });
+    }
+});
+
+// ══════════════════════════════════════════════════════════════
+// DELETE /api/spk/:id — Batalkan / Hapus SPK
+// ══════════════════════════════════════════════════════════════
+router.delete('/:id', verifyToken, async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [spk] = await conn.query('SELECT * FROM spk WHERE id = ?', [req.params.id]);
+        if (spk.length === 0) return res.status(404).json({ message: 'SPK tidak ditemukan' });
+
+        // Hapus relasi
+        await conn.query('DELETE FROM spk_logs WHERE spk_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM spk_payments WHERE spk_id = ?', [req.params.id]);
+        await conn.query('DELETE FROM spk_handovers WHERE spk_id = ?', [req.params.id]);
+
+        // Hapus SPK Utama
+        await conn.query('DELETE FROM spk WHERE id = ?', [req.params.id]);
+
+        await conn.commit();
+        res.json({ message: 'SPK berhasil dihapus permanen' });
+    } catch (error) {
+        await conn.rollback();
+        console.error('DELETE spk error:', error);
+        res.status(500).json({ message: 'Gagal menghapus pesanan (Konflik Foreign Key)' });
+    } finally {
+        conn.release();
     }
 });
 

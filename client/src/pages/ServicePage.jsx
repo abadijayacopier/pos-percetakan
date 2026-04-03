@@ -255,7 +255,7 @@ export default function ServicePage({ onNavigate }) {
                             onChange={(e) => handleSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2 w-full overflow-x-auto pb-2 lg:pb-0 items-center custom-scrollbar">
+                    <div className="flex gap-2 w-full overflow-auto pb-2 lg:pb-0 items-center custom-scrollbar">
                         <div className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mr-2 border-r border-slate-200 dark:border-slate-800 pr-4 whitespace-nowrap">Filter:</div>
                         {['all', 'approval', 'pengerjaan', 'selesai'].map(status => (
                             <button
@@ -272,7 +272,7 @@ export default function ServicePage({ onNavigate }) {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto w-full">
+                <div className="overflow-auto w-full">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="border-b border-slate-100 dark:border-slate-800">

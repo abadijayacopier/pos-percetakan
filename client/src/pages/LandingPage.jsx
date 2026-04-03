@@ -468,7 +468,7 @@ export default function LandingPage({ onNavigate }) {
                                             { name: 'name', label: 'Nama Lengkap', type: 'text', required: true, placeholder: 'Sesuai KTP/Nama Toko', colSpan: true },
                                             { name: 'phone', label: 'WhatsApp', type: 'tel', required: true, placeholder: '0812xxxx' },
                                             { name: 'model', label: 'Model Mesin', type: 'text', required: true, placeholder: 'Canon iR 6000, dll' },
-                                            { name: 'sn', label: 'Serial Number', type: 'text', placeholder: 'Opsional' },
+                                            { name: 'sn', label: 'Serial Number (SN)', type: 'text', placeholder: 'Tertera di bodi mesin' },
                                         ].map(field => (
                                             <div key={field.name} className={`space-y-2 ${field.colSpan ? 'sm:col-span-2' : ''}`}>
                                                 <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{field.label}</label>
@@ -476,15 +476,15 @@ export default function LandingPage({ onNavigate }) {
                                             </div>
                                         ))}
                                         <div className="space-y-2 sm:col-span-2">
-                                            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Alamat Unit</label>
-                                            <textarea name="address" required rows="2" placeholder="Detail alamat..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-white text-sm focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-600" />
+                                            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Alamat Lokasi Unit</label>
+                                            <textarea name="address" required rows="2" placeholder="Detail alamat lengkap..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-white text-sm focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-600" />
                                         </div>
                                         <div className="space-y-2 sm:col-span-2">
-                                            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Keluhan / Diagnosis</label>
-                                            <textarea name="issue" required rows="3" placeholder="Jelaskan kerusakan..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-white text-sm focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-600" />
+                                            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Keluhan / Detail Masalah</label>
+                                            <textarea name="issue" required rows="3" placeholder="Jelaskan kerusakan mesin secara detail..." className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-white text-sm focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-600" />
                                         </div>
                                         <button type="submit" className="sm:col-span-2 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-xl font-bold shadow-xl shadow-sky-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                                            <FiSend /> Kirim Permintaan
+                                            <FiSend /> Kirim Permintaan Service
                                         </button>
                                     </form>
                                 )}
@@ -548,7 +548,7 @@ export default function LandingPage({ onNavigate }) {
                                 {[
                                     { icon: <FiMapPin size={20} />, label: 'Alamat', value: storeInfo.address },
                                     { icon: <FiPhone size={20} />, label: 'Telepon', value: storeInfo.phone },
-                                    { icon: <FiClock size={20} />, label: 'Jam Operasi', value: 'Senin–Sabtu: 07:00–20:00', sub: 'Minggu: 08:00–16:00' },
+                                    { icon: <FiClock size={20} />, label: 'Jam Operasional', value: 'Senin–Sabtu: 07:00–20:00', sub: 'Minggu: 08:00–16:00' },
                                 ].map((item, i) => (
                                     <div key={i} className="flex gap-4">
                                         <div className="size-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0">
@@ -611,7 +611,7 @@ export default function LandingPage({ onNavigate }) {
                     </div>
 
                     <div className="space-y-5">
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Links</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tautan Cepat</h4>
                         <ul className="space-y-3">
                             {NAV_ITEMS.map(link => (
                                 <li key={link.label}><a href={link.href} className="text-sm text-slate-400 hover:text-sky-400 transition-colors">{link.label}</a></li>
@@ -629,19 +629,19 @@ export default function LandingPage({ onNavigate }) {
                     </div>
 
                     <div className="space-y-5">
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Instant Support</h4>
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dukungan Instan</h4>
                         <div className="p-5 bg-white/[0.03] border border-white/[0.06] rounded-2xl space-y-4">
                             <p className="text-xs text-slate-400 leading-relaxed">Punya pertanyaan mendesak? Chat langsung via WhatsApp.</p>
                             <button onClick={() => window.open(waLink, '_blank')} className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white py-3 rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer">
-                                <FaWhatsapp /> Fast Response
+                                <FaWhatsapp /> Respon Cepat
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto px-6 mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-600">
-                    <p>&copy; {new Date().getFullYear()} {storeInfo.name}. All Rights Reserved.</p>
-                    <p>Designed with ❤️ for Supriyanto Abadi Jaya</p>
+                    <p>&copy; {new Date().getFullYear()} {storeInfo.name}. Seluruh Hak Cipta Dilindungi.</p>
+                    <p>Didesain dengan ❤️ untuk Supriyanto Abadi Jaya</p>
                 </div>
             </footer>
         </div>

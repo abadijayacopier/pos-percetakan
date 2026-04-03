@@ -356,7 +356,7 @@ export default function DashboardPage({ onNavigate }) {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50/50 dark:bg-slate-800/30 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                                 <tr>

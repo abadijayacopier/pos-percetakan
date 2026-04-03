@@ -3,11 +3,12 @@ import api from '../services/api';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList } from 'react-icons/fi';
+import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Swal from 'sweetalert2';
+import ReceiptProMax from '../components/ReceiptProMax';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
     const { user } = useAuth();
@@ -76,6 +77,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [transactionComplete, setTransactionComplete] = useState(null);
     const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     // Mencegah ID invoice terus berubah akibat re-render dari timer
     const draftInvoiceId = useMemo(() => {
@@ -87,7 +89,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         autoPrint: false,
         printerName: '',
         printerSize: '80mm',
-        paperSize: 'A4'
+        paperSize: 'A4',
+        storeName: 'FOTOCOPY ABADI JAYA',
+        storeAddress: '',
+        storePhone: '',
+        receiptFooter: ''
     });
 
     const searchInputRef = useRef(null);
@@ -133,7 +139,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     autoPrint: sMap.auto_print === 'true',
                     printerName: sMap.printer_name || '',
                     printerSize: sMap.printer_size || '80mm',
-                    paperSize: sMap.paper_size || 'A4'
+                    paperSize: sMap.paper_size || 'A4',
+                    storeName: sMap.store_name || 'FOTOCOPY ABADI JAYA',
+                    storeAddress: sMap.store_address || '',
+                    storePhone: sMap.store_phone || '',
+                    receiptFooter: sMap.receipt_footer || ''
                 });
 
                 if (sMap.fc_discounts) {
@@ -365,7 +375,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
         try {
             const receiptText = generateRawReceipt(transaction, {
-                name: printerSettings.storeName || 'Abadi Jaya',
+                name: printerSettings.storeName || 'FOTOCOPY ABADI JAYA',
                 address: printerSettings.storeAddress || '',
                 phone: printerSettings.storePhone || '',
                 footer: printerSettings.receiptFooter || '',
@@ -399,6 +409,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     const handleConfirmPayment = async () => {
+        if (isProcessingPayment) return;
+        setIsProcessingPayment(true);
+
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : paymentMethod === 'pending' ? 0 : total;
 
@@ -456,6 +469,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             setGlobalDiscount(0);
         } catch (error) {
             showToast('Gagal memproses transaksi: ' + (error.response?.data?.message || error.message), 'error');
+        } finally {
+            setIsProcessingPayment(false);
         }
     };
 
@@ -593,7 +608,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6 relative">
                     {/* Services Tabs */}
                     <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 sm:p-6 shadow-sm flex-1 flex flex-col">
-                        <div className="flex border-b text-sm border-slate-200 dark:border-slate-800 overflow-x-auto hide-scrollbar mb-6">
+                        <div className="flex border-b text-sm border-slate-200 dark:border-slate-800 overflow-auto hide-scrollbar mb-6">
                             <button onClick={() => setActiveServiceTab('fotocopy')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F1</span>
                                 <span className="material-symbols-outlined text-[20px]">content_copy</span> Fotocopy
@@ -961,7 +976,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             )}
 
             {/* Footer / Hotkeys Banner */}
-            <footer className="hidden lg:flex h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium items-center justify-between px-4 shrink-0 overflow-x-auto hide-scrollbar z-45 relative">
+            <footer className="hidden lg:flex h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium items-center justify-between px-4 shrink-0 overflow-auto hide-scrollbar z-45 relative">
                 <div className="flex items-center gap-5 min-w-max">
                     <div className="flex items-center gap-1.5 text-primary-light font-bold">
                         <span className="material-symbols-outlined text-[14px]">keyboard</span>
@@ -1022,20 +1037,36 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
             <Modal isOpen={isPaymentModalOpen} onClose={closePaymentModal} title={transactionComplete ? 'TRANSAKSI BERHASIL' : 'PROSES PEMBAYARAN'}>
                 {transactionComplete ? (
-                    <div className="text-center py-6 flex flex-col items-center gap-4">
-                        <div className="size-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center">
-                            <FiCheckCircle size={48} />
+                    <div className="flex flex-col items-center bg-slate-900/50 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+                        <div className="w-full bg-emerald-500/10 p-6 flex flex-col items-center border-b border-white/5">
+                            <div className="size-16 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4 animate-bounce">
+                                <FiCheckCircle size={32} />
+                            </div>
+                            <h3 className="text-2xl font-black text-white">Transaksi Berhasil!</h3>
+                            <p className="text-emerald-500/70 font-bold text-sm tracking-widest mt-1 uppercase">Pembayaran Diterima</p>
                         </div>
-                        <div>
-                            <h3 className="text-2xl font-black text-slate-800 dark:text-white">Pembayaran Selesai</h3>
-                            <p className="text-sm text-slate-500 mt-1 font-medium">{transactionComplete.invoiceNo}</p>
+
+                        <div className="w-full p-6 sm:p-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-slate-950/30">
+                            <ReceiptProMax
+                                receiptData={transactionComplete}
+                                printSettings={printerSettings}
+                                formatCurrency={formatRupiah}
+                                printerWidthClass={printerSettings.printerSize === '80mm' ? 'w-full max-w-[340px]' : 'w-full max-w-[300px]'}
+                            />
                         </div>
-                        <div className="w-full space-y-3 mt-4">
-                            <button onClick={() => handleDirectPrint(transactionComplete)} className="w-full py-4 bg-primary text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:bg-primary/90">
-                                <FiPrinter size={20} /> Cetak Struk
+
+                        <div className="w-full p-6 bg-slate-900/80 border-t border-white/5 flex gap-3">
+                            <button
+                                onClick={() => handleDirectPrint(transactionComplete)}
+                                className="flex-1 py-4 bg-white/5 text-white border border-white/10 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all active:scale-95"
+                            >
+                                <FiPrinter /> Cetak Nota
                             </button>
-                            <button onClick={closePaymentModal} className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                                Transaksi Baru
+                            <button
+                                onClick={closePaymentModal}
+                                className="flex-1 py-4 bg-primary text-white border-none rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95"
+                            >
+                                <FiPlus /> Transaksi Baru
                             </button>
                         </div>
                     </div>
@@ -1103,10 +1134,10 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                         <button
                             onClick={handleConfirmPayment}
-                            disabled={paymentMethod === 'tunai' && Number(amountPaid) < (subtotal - globalDiscount)}
+                            disabled={isProcessingPayment || (paymentMethod === 'tunai' && Number(amountPaid) < (subtotal - globalDiscount))}
                             className="w-full py-4 bg-primary disabled:bg-slate-300 disabled:text-slate-500 text-white rounded-xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                         >
-                            Proses Transaksi Selesai
+                            {isProcessingPayment ? 'Memproses...' : 'Proses Transaksi Selesai'}
                         </button>
                     </div>
                 )}

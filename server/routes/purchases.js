@@ -3,6 +3,28 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
+const { z } = require('zod');
+const crypto = require('crypto');
+
+// Validation Schema
+const purchaseSchema = z.object({
+    supplier_id: z.string().optional().nullable(),
+    supplier_name: z.string().optional().default('Umum'),
+    date: z.string().optional(),
+    total_amount: z.number().min(0, "Total harus positif"),
+    payment_status: z.enum(['lunas', 'hutang']).optional().default('lunas'),
+    notes: z.string().optional().nullable(),
+    items: z.array(z.object({
+        type: z.enum(['product', 'material']),
+        id: z.string().min(1, "ID item wajib"),
+        name: z.string().min(1, "Nama item wajib"),
+        qty: z.number().positive("Jumlah wajib positif"),
+        cost: z.number().min(0, "Harga modal wajib positif"),
+        subtotal: z.number().min(0, "Subtotal wajib positif"),
+        unit: z.string().optional()
+    })).min(1, "Minimal harus ada satu item")
+});
+
 // GET all purchases
 router.get('/', verifyToken, async (req, res) => {
     try {
@@ -32,17 +54,19 @@ router.get('/:id', verifyToken, async (req, res) => {
 router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     const conn = await pool.getConnection();
     try {
-        await conn.beginTransaction();
-        const { supplier_id, supplier_name, date, total_amount, payment_status, notes, items } = req.body;
+        const validatedData = purchaseSchema.parse(req.body);
+        const { supplier_id, supplier_name, date, total_amount, payment_status, notes, items } = validatedData;
 
-        const purchase_id = 'PURC-' + Date.now();
+        await conn.beginTransaction();
+
+        const purchase_id = 'PURC-' + crypto.randomUUID().split('-')[0].toUpperCase() + '-' + Date.now().toString().slice(-4);
         const invoice_no = 'INV-' + Date.now().toString().slice(-6);
         const user_id = req.user?.id || null;
 
         await conn.query(
             `INSERT INTO purchases (id, invoice_no, supplier_id, supplier_name, date, total_amount, payment_status, notes, user_id) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [purchase_id, invoice_no, supplier_id || null, supplier_name || 'Umum', date || new Date(), total_amount, payment_status || 'lunas', notes || null, user_id]
+            [purchase_id, invoice_no, supplier_id || null, supplier_name, date || new Date(), total_amount, payment_status, notes || null, user_id]
         );
 
         for (const item of items) {
@@ -75,6 +99,9 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
         res.status(201).json({ message: 'Pembelian berhasil dicatat', id: purchase_id });
     } catch (err) {
         await conn.rollback();
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: err.errors[0].message });
+        }
         console.error(err);
         res.status(500).json({ message: 'Gagal mencatat pembelian', error: err.message });
     } finally {

@@ -3,6 +3,19 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
+const { z } = require('zod');
+const crypto = require('crypto');
+
+// Validation Schema
+const cashFlowSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+    type: z.enum(['in', 'out']),
+    category: z.string().min(1, "Kategori wajib diisi"),
+    amount: z.number().positive("Jumlah harus lebih dari 0"),
+    description: z.string().optional(),
+    reference: z.string().optional()
+});
+
 // 1. GET Semua Data Arus Kas (Buku Kas)
 router.get('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
@@ -64,14 +77,20 @@ router.get('/stats', verifyToken, async (req, res) => {
 // 3. POST Entri Kas Baru (Masuk/Keluar)
 router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        const { date, type, category, amount, description, reference } = req.body;
-        const newId = 'cf' + Date.now();
+        const validatedData = cashFlowSchema.parse(req.body);
+        const { date, type, category, amount, description, reference } = validatedData;
+
+        const newId = crypto.randomUUID();
         await pool.query(`
-            INSERT INTO cash_flow (id, date, type, category, amount, description, reference)
+            INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [newId, date, type, category, amount, description, reference || '']);
-        res.status(201).json({ message: 'Entri kas berhasil dicatat!' });
+
+        res.status(201).json({ message: 'Entri kas berhasil dicatat!', id: newId });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
         console.error(error);
         res.status(500).json({ message: 'Gagal mencatat entri kas' });
     }
@@ -80,13 +99,23 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
 // 4. PUT Update Entri Kas
 router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        const { date, type, category, amount, description, reference } = req.body;
-        await pool.query(`
-            UPDATE cash_flow SET date=?, type=?, category=?, amount=?, description=?, reference=?
+        const validatedData = cashFlowSchema.parse(req.body);
+        const { date, type, category, amount, description, reference } = validatedData;
+
+        const [result] = await pool.query(`
+            UPDATE cash_flow SET date=?, type=?, category=?, amount=?, description=?, reference_id=?
             WHERE id=?
-        `, [date, type, category, amount, description, reference || '', req.params.id]);
+        `, [date, type, category, amount, description || null, reference || null, req.params.id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Entri kas tidak ditemukan' });
+        }
+
         res.json({ message: 'Entri kas berhasil diperbarui!' });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
         console.error(error);
         res.status(500).json({ message: 'Gagal memperbarui entri kas' });
     }
@@ -95,7 +124,10 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
 // 5. DELETE Entri Kas
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        await pool.query('DELETE FROM cash_flow WHERE id=?', [req.params.id]);
+        const [result] = await pool.query('DELETE FROM cash_flow WHERE id=?', [req.params.id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Entri kas tidak ditemukan' });
+        }
         res.json({ message: 'Entri kas berhasil dihapus!' });
     } catch (error) {
         console.error(error);

@@ -288,7 +288,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
             {/* Controls Bar */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8 mt-4">
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-auto w-full md:w-auto">
                     {['Semua', 'Digital', 'Offset'].map(tab => (
                         <button
                             key={tab}
@@ -310,7 +310,7 @@ export default function ProductionQueuePage({ onNavigate }) {
             </div>
 
             {/* Kanban Board */}
-            <div className="flex gap-6 overflow-x-auto pb-8 flex-1 items-start min-h-[500px] w-full snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
+            <div className="flex gap-6 overflow-auto pb-8 flex-1 items-start min-h-0 md:min-h-[500px] w-full snap-x snap-mandatory scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent">
                 {[
                     { id: 'produksi', label: 'MENUNGGU ANTRIAN', color: 'slate' },
                     { id: 'cetak', label: 'PROSES CETAK', color: 'blue' },

@@ -678,7 +678,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">

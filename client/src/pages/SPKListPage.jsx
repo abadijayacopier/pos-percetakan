@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle, FiXCircle } from 'react-icons/fi';
+import html2pdf from 'html2pdf.js';
+import { FiSearch, FiFileText, FiPrinter, FiPlus, FiArrowRight, FiClock, FiCheckCircle, FiActivity, FiPackage, FiTruck, FiDollarSign, FiChevronLeft, FiChevronRight, FiFilter, FiDownload, FiAlertCircle, FiXCircle, FiTrash2, FiEye, FiEdit } from 'react-icons/fi';
 const FiLayers = () => (
     <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
@@ -41,6 +42,8 @@ export default function SPKListPage({ onNavigate }) {
     const [activeKategori, setActiveKategori] = useState('Semua');
     const [search, setSearch] = useState('');
     const [cancelModal, setCancelModal] = useState(null);
+    const [showRekapModal, setShowRekapModal] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Pagination States
     const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +87,34 @@ export default function SPKListPage({ onNavigate }) {
             console.error('Gagal membatalkan SPK:', err);
             Swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan saat membatalkan SPK.', timer: 3000 });
         }
+    };
+
+    const handleDeleteSPK = async (id, spkNumber) => {
+        Swal.fire({
+            title: 'Hapus Pesanan?',
+            text: `Data SPK #${spkNumber} akan dihapus secara permanen dari sistem!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus Permanen',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'dark:text-white'
+            },
+            buttonsStyling: false
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await api.delete(`/spk/${id}`);
+                    Swal.fire({ icon: 'success', title: 'Terhapus', text: 'SPK berhasil dihapus permanen.', timer: 2000, showConfirmButton: false });
+                    fetchSPK();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus SPK dari database.', timer: 2000, showConfirmButton: false });
+                }
+            }
+        });
     };
 
     const handleSearch = (e) => {
@@ -135,7 +166,10 @@ export default function SPKListPage({ onNavigate }) {
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                     className="flex flex-wrap items-center gap-3"
                 >
-                    <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold shadow-sm hover:shadow-md transition-all active:scale-95">
+                    <button
+                        onClick={() => setShowRekapModal(true)}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold shadow-sm hover:shadow-md transition-all active:scale-95"
+                    >
                         <FiDownload /> Rekap Produksi
                     </button>
                     <button
@@ -182,7 +216,7 @@ export default function SPKListPage({ onNavigate }) {
                 >
                     {/* Filter Bar */}
                     <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col xl:flex-row items-center justify-between gap-6 bg-slate-50/50 dark:bg-slate-900/50">
-                        <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2 xl:pb-0 no-scrollbar w-full xl:w-auto">
+                        <div className="flex flex-wrap items-center gap-2 overflow-auto pb-2 xl:pb-0 no-scrollbar w-full xl:w-auto">
                             <div className="flex items-center gap-2 mr-4 text-slate-400">
                                 <FiFilter className="text-sm" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Filter Status</span>
@@ -224,7 +258,7 @@ export default function SPKListPage({ onNavigate }) {
                     </div>
 
                     {/* Table Container */}
-                    <div className="flex-1 overflow-x-auto custom-scrollbar">
+                    <div className="flex-1 overflow-auto custom-scrollbar">
                         {loading ? (
                             <div className="p-32 flex flex-col items-center justify-center gap-4 text-center">
                                 <motion.div
@@ -327,35 +361,56 @@ export default function SPKListPage({ onNavigate }) {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
-                                                    <div className="flex justify-end gap-2">
+                                                    <div className="flex justify-end gap-1.5 flex-wrap">
+                                                        <button
+                                                            onClick={() => onNavigate('spk-detail', { spkId: spk.id })}
+                                                            className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-lg transition-all shadow-sm"
+                                                            title="Lihat Detail"
+                                                        >
+                                                            <FiEye size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => onNavigate('spk-detail', { spkId: spk.id })}
+                                                            className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-amber-500 hover:bg-white dark:hover:bg-slate-900 rounded-lg transition-all shadow-sm"
+                                                            title="Edit SPK / Status"
+                                                        >
+                                                            <FiEdit size={16} />
+                                                        </button>
+                                                        {spk.status !== 'Batal' && (
+                                                            <button
+                                                                onClick={() => onNavigate('print-spk', { spkId: spk.id })}
+                                                                className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-900 rounded-lg transition-all shadow-sm"
+                                                                title="Cetak SPK"
+                                                            >
+                                                                <FiPrinter size={16} />
+                                                            </button>
+                                                        )}
                                                         {ready ? (
                                                             <button
                                                                 onClick={() => onNavigate('spk-settlement', { spkId: spk.id })}
-                                                                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/30 active:scale-95"
+                                                                className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg transition-all shadow-sm"
+                                                                title="Pelunasan"
                                                             >
-                                                                <FiDollarSign /> Tagih
+                                                                <FiDollarSign size={16} />
                                                             </button>
                                                         ) : (
-                                                            <>
-                                                                {!['Batal', 'Selesai', 'Siap Diambil', 'Diambil'].includes(spk.status) && (
-                                                                    <button
-                                                                        onClick={() => handleCancelSPK(spk.id, spk.spk_number)}
-                                                                        className="flex items-center gap-2 px-3 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm border border-rose-100 dark:border-rose-500/20"
-                                                                        title="Batalkan SPK"
-                                                                    >
-                                                                        <FiXCircle size={14} /> Batal
-                                                                    </button>
-                                                                )}
-                                                                {spk.status !== 'Batal' && (
-                                                                    <button
-                                                                        onClick={() => onNavigate('print-spk', { spkId: spk.id })}
-                                                                        className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-primary-50 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                                                                    >
-                                                                        <FiPrinter size={14} /> Cetak SPK
-                                                                    </button>
-                                                                )}
-                                                            </>
+                                                            !['Batal', 'Selesai', 'Siap Diambil', 'Diambil'].includes(spk.status) && (
+                                                                <button
+                                                                    onClick={() => handleCancelSPK(spk.id, spk.spk_number)}
+                                                                    className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all shadow-sm"
+                                                                    title="Batalkan SPK"
+                                                                >
+                                                                    <FiXCircle size={16} />
+                                                                </button>
+                                                            )
                                                         )}
+                                                        <button
+                                                            onClick={() => handleDeleteSPK(spk.id, spk.spk_number)}
+                                                            className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-500 hover:text-white dark:text-rose-400 dark:hover:text-white rounded-lg transition-all shadow-sm"
+                                                            title="Hapus Permanen SPK"
+                                                        >
+                                                            <FiTrash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </motion.tr>
@@ -457,6 +512,146 @@ export default function SPKListPage({ onNavigate }) {
                                         className="flex-[1.5] py-3 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 transition-colors text-sm flex items-center justify-center gap-2"
                                     >
                                         <FiXCircle size={16} /> Iya, Batalkan
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Glassmorphic PDF Preview & Recap Modal */}
+            <AnimatePresence>
+                {showRekapModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                            onClick={() => !isExporting && setShowRekapModal(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-5xl max-h-[90vh] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[2.5rem] border border-white/20 shadow-2xl shadow-primary/20 flex flex-col overflow-hidden"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 md:px-10 md:py-8 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+                                <div>
+                                    <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-white flex items-center gap-3">
+                                        <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                                            <FiActivity size={24} />
+                                        </div>
+                                        Audit Rekap Produksi SPK
+                                    </h2>
+                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
+                                        Pratinjau laporan daftar perintah cetak aktif dan arsip.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowRekapModal(false)}
+                                    disabled={isExporting}
+                                    className="p-3 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-500/20 rounded-2xl transition-colors shrink-0 disabled:opacity-50"
+                                >
+                                    <FiXCircle size={24} />
+                                </button>
+                            </div>
+
+                            {/* Print Content Preview Area */}
+                            <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar  bg-slate-50 dark:bg-[#0b0f1a]">
+                                <div id="rekap-pdf-content" className="max-w-[794px] mx-auto bg-white p-12 custom-shadow">
+                                    {/* Print Header */}
+                                    <div className="flex items-center justify-between border-b-4 border-slate-900 pb-6 mb-8">
+                                        <div>
+                                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Rekapitulasi SPK</h1>
+                                            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">CV. Abadi Jaya Percetakan & POS</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Tanggal Laporan</p>
+                                            <p className="text-base font-black text-slate-900">{new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Data Table */}
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="border-b-2 border-slate-300">
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Nomor SPK</th>
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Pemesan</th>
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Item Produk</th>
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Qty</th>
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Deadline</th>
+                                                <th className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 text-right">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {spkList.map(spk => (
+                                                <tr key={spk.id} className={`${spk.status === 'Batal' ? 'bg-rose-50/50' : ''}`}>
+                                                    <td className="py-3 text-xs font-bold text-slate-800">#{spk.spk_number}</td>
+                                                    <td className="py-3 text-xs text-slate-700 font-medium">{spk.customer_company || spk.customer_name}</td>
+                                                    <td className="py-3 text-xs text-slate-700 line-clamp-1 max-w-[150px]">{spk.product_name}</td>
+                                                    <td className="py-3 text-xs text-slate-700 font-bold">{spk.product_qty} {spk.product_unit}</td>
+                                                    <td className="py-3 text-xs text-slate-600">{formatDate(spk.deadline).split(',')[0]}</td>
+                                                    <td className="py-3 text-xs text-right font-black uppercase tracking-wider">
+                                                        <span className={
+                                                            spk.status === 'Selesai' || spk.status === 'Diambil' ? 'text-emerald-600' :
+                                                                spk.status === 'Batal' ? 'text-rose-500' : 'text-amber-500'
+                                                        }>{spk.status}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    <div className="mt-12 text-center text-slate-400 text-[10px] uppercase tracking-widest font-bold">
+                                        Dicetak otomatis oleh Sistem Abadi Jaya POS pada {new Date().toLocaleString('id-ID')}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Footer Controls */}
+                            <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 flex items-center justify-between">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Format Laporan A4</p>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setShowRekapModal(false)}
+                                        disabled={isExporting}
+                                        className="px-6 py-3 rounded-xl font-bold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            setIsExporting(true);
+                                            const element = document.getElementById('rekap-pdf-content');
+                                            try {
+                                                await html2pdf().from(element).set({
+                                                    margin: 10,
+                                                    filename: `Rekap_Produksi_${new Date().toISOString().split('T')[0]}.pdf`,
+                                                    image: { type: 'jpeg', quality: 0.98 },
+                                                    html2canvas: { scale: 2, useCORS: true },
+                                                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                                }).save();
+                                            } catch (err) {
+                                                console.error('Error generating PDF:', err);
+                                            } finally {
+                                                setIsExporting(false);
+                                            }
+                                        }}
+                                        disabled={isExporting}
+                                        className="flex items-center gap-2 px-8 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 shadow-lg shadow-primary/30 transition-all disabled:opacity-50 active:scale-95"
+                                    >
+                                        {isExporting ? (
+                                            <motion.div
+                                                animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                                                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                                            />
+                                        ) : (
+                                            <FiDownload size={18} />
+                                        )}
+                                        {isExporting ? 'Memproses PDF...' : 'Unduh Laporan PDF'}
                                     </button>
                                 </div>
                             </div>

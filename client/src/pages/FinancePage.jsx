@@ -146,9 +146,9 @@ export default function FinancePage() {
             </div>
 
             {/* Main Content Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-auto min-h-0 md:min-h-[500px] flex flex-col">
                 <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-6 bg-slate-50/50 dark:bg-slate-800/30">
-                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm w-full lg:w-auto overflow-x-auto no-scrollbar">
+                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm w-full lg:w-auto overflow-auto no-scrollbar">
                         {[
                             { key: 'journal', label: 'Jurnal Umum', icon: <FiBookOpen /> },
                             { key: 'in', label: 'Kas Masuk', icon: <FiArrowDownCircle /> },
@@ -178,7 +178,7 @@ export default function FinancePage() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-x-auto relative">
+                <div className="flex-1 overflow-auto relative">
                     {loading ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 min-h-[300px]">
                             <FiLoader className="animate-spin text-blue-600 mb-4" size={32} />

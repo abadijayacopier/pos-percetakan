@@ -335,7 +335,7 @@ export default function SettingsPage() {
             <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
 
                 {/* Navigation Tabs */}
-                <div className="mb-8 overflow-x-auto no-scrollbar pb-2">
+                <div className="mb-8 overflow-auto no-scrollbar pb-2">
                     <div className="flex gap-2 min-w-max p-1.5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl w-fit">
                         {TABS.map(t => {
                             const isActive = activeTab === t.id;
@@ -570,7 +570,7 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="p-0 sm:p-6">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-auto">
                                             <table className="w-full text-left border-collapse min-w-[700px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -681,7 +681,7 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div className="p-0 sm:p-6">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-auto">
                                             <table className="w-full text-left border-collapse min-w-[600px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -779,7 +779,7 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div className="p-0 sm:p-6">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-auto">
                                             <table className="w-full text-left border-collapse min-w-[400px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
@@ -866,7 +866,7 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
                                     <div className="p-0 sm:p-6">
-                                        <div className="overflow-x-auto">
+                                        <div className="overflow-auto">
                                             <table className="w-full text-left border-collapse min-w-[500px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">

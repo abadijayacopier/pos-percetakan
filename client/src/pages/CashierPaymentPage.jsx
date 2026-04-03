@@ -179,7 +179,7 @@ export default function CashierPaymentPage({ onNavigate }) {
             </div>
 
             {/* Content Table Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-auto flex flex-col min-h-0 md:min-h-[500px]">
                 {/* Filter Bar */}
                 <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center gap-6 bg-slate-50/30 dark:bg-slate-800/20">
                     <div className="relative flex-1 group">
@@ -212,7 +212,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto [&>table]:min-w-[800px] lg:[&>table]:min-w-[1000px]">
+                <div className="overflow-auto [&>table]:min-w-[800px] lg:[&>table]:min-w-[1000px]">
                     {paginated.length === 0 ? (
                         <div className="py-32 flex flex-col items-center justify-center text-slate-400 gap-4">
                             <div className="p-8 bg-slate-50 dark:bg-slate-950 rounded-full">

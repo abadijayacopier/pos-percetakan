@@ -316,7 +316,7 @@ export default function ReportsPage() {
 
             {/* Filter Bar */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row gap-6 justify-between print:hidden">
-                <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 items-center">
+                <div className="flex gap-2 overflow-auto pb-2 lg:pb-0 items-center">
                     {[
                         { id: 'sales', label: 'Penjualan', icon: FiShoppingCart },
                         { id: 'products', label: 'Produk', icon: FiBox },
@@ -409,7 +409,7 @@ export default function ReportsPage() {
                                     Log Transaksi Periode ({transactions.length})
                                 </h3>
                             </div>
-                            <div className="overflow-x-auto">
+                            <div className="overflow-auto">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
@@ -609,7 +609,7 @@ export default function ReportsPage() {
                                         Database Master SKU ({allProducts.length})
                                     </h3>
                                 </div>
-                                <div className="overflow-x-auto">
+                                <div className="overflow-auto">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">
@@ -725,7 +725,7 @@ export default function ReportsPage() {
                                         Strategic Account Analysis ({allCustomers.length})
                                     </h3>
                                 </div>
-                                <div className="overflow-x-auto">
+                                <div className="overflow-auto">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30">

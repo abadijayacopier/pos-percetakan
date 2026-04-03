@@ -531,7 +531,7 @@ export default function MaterialsPage({ onNavigate }) {
                             />
                         </div>
 
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar w-full lg:w-auto">
+                        <div className="flex items-center gap-2 overflow-auto pb-2 lg:pb-0 no-scrollbar w-full lg:w-auto">
                             {[
                                 { id: 'all', label: 'Semua', icon: <FiGrid /> },
                                 { id: 'digital', label: 'Digital', icon: <FiActivity /> },
@@ -559,7 +559,7 @@ export default function MaterialsPage({ onNavigate }) {
                     </div>
 
                     {/* Table Container */}
-                    <div className="flex-1 overflow-x-auto custom-scrollbar">
+                    <div className="flex-1 overflow-auto custom-scrollbar">
                         {loading ? (
                             <div className="p-24 flex flex-col items-center justify-center gap-4">
                                 <motion.div

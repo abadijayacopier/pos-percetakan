@@ -150,7 +150,7 @@ const createTables = async () => {
       )
     `);
 
-    // 9. Extra Table for Service Spareparts as JSON (for simplicity, or separate table. We'll use a JSON text field inside service_orders or separate table)
+    // 9. Extra Table for Service Spareparts
     await connection.query(`
       CREATE TABLE IF NOT EXISTS service_spareparts (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -162,7 +162,75 @@ const createTables = async () => {
       )
     `);
 
-    // 10. Cash Flow / Keuangan
+    // 10. Suppliers
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS suppliers (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        contact_person VARCHAR(100),
+        phone VARCHAR(20),
+        address TEXT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 11. Purchases (Head of the transaction)
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS purchases (
+        id VARCHAR(50) PRIMARY KEY,
+        invoice_no VARCHAR(50) UNIQUE NOT NULL,
+        supplier_id VARCHAR(50) NULL,
+        supplier_name VARCHAR(100) NOT NULL DEFAULT 'Umum',
+        date DATETIME NOT NULL,
+        total_amount INT NOT NULL DEFAULT 0,
+        payment_status ENUM('lunas','hutang') NOT NULL DEFAULT 'lunas',
+        notes TEXT NULL,
+        user_id VARCHAR(50) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_purchases_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        CONSTRAINT fk_purchases_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 12. Purchase Items
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS purchase_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        purchase_id VARCHAR(50) NOT NULL,
+        item_type ENUM('product','material') NOT NULL,
+        item_id VARCHAR(50) NOT NULL,
+        item_name VARCHAR(150) NOT NULL,
+        qty DECIMAL(10,2) NOT NULL,
+        unit_cost INT NOT NULL DEFAULT 0,
+        subtotal INT NOT NULL DEFAULT 0,
+        CONSTRAINT fk_purchase_items_parent FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB
+    `);
+
+    // 13. Materials
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS materials (
+        id VARCHAR(50) PRIMARY KEY,
+        barcode VARCHAR(50) UNIQUE,
+        nama VARCHAR(100) NOT NULL,
+        kategori VARCHAR(50) NOT NULL DEFAULT 'digital',
+        satuan VARCHAR(50) NOT NULL DEFAULT 'pcs',
+        stok_saat_ini DECIMAL(10,2) DEFAULT 0,
+        stok_minimum DECIMAL(10,2) DEFAULT 0,
+        lokasi_rak VARCHAR(100),
+        supplier_id VARCHAR(50),
+        harga_modal INT DEFAULT 0,
+        harga_jual INT DEFAULT 0,
+        keterangan TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 14. Cash Flow / Keuangan
     await connection.query(`
       CREATE TABLE IF NOT EXISTS cash_flow (
         id VARCHAR(50) PRIMARY KEY,
@@ -176,7 +244,7 @@ const createTables = async () => {
       )
     `);
 
-    // 11. Stock Movements
+    // 15. Stock Movements
     await connection.query(`
       CREATE TABLE IF NOT EXISTS stock_movements (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -190,7 +258,24 @@ const createTables = async () => {
       )
     `);
 
-    // 12. Activity Log
+    // 16. Material Movements
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS material_movements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        material_id VARCHAR(50) NOT NULL,
+        tipe ENUM('masuk', 'keluar', 'penyesuaian') NOT NULL,
+        jumlah DECIMAL(10,2) NOT NULL,
+        satuan VARCHAR(20) NOT NULL,
+        referensi VARCHAR(100),
+        catatan TEXT,
+        user_id VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB
+    `);
+
+    // 17. Activity Log
     await connection.query(`
       CREATE TABLE IF NOT EXISTS activity_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -212,7 +297,7 @@ const createTables = async () => {
       )
     `);
 
-    // 14. Fotocopy Prices Master
+    // 20. Fotocopy Prices Master
     await connection.query(`
       CREATE TABLE IF NOT EXISTS fotocopy_prices (
         id VARCHAR(50) PRIMARY KEY,
@@ -222,6 +307,22 @@ const createTables = async () => {
         price INT NOT NULL,
         label VARCHAR(100) NOT NULL
       )
+    `);
+
+    // 21. Handovers (General Transaction Handover)
+    await connection.query(`
+        CREATE TABLE IF NOT EXISTS handovers (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transaction_id VARCHAR(50) NOT NULL,
+            invoice_no VARCHAR(50),
+            customer_name VARCHAR(100),
+            receiver_name VARCHAR(100),
+            receiver_phone VARCHAR(20),
+            notes TEXT,
+            handover_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            handover_by VARCHAR(50),
+            FOREIGN KEY (handover_by) REFERENCES users(id) ON DELETE SET NULL
+        ) ENGINE=InnoDB;
     `);
 
     // 15. SPK (Surat Perintah Kerja)

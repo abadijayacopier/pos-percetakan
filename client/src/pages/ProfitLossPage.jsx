@@ -213,8 +213,8 @@ export default function ProfitLossPage() {
                             <button
                                 onClick={() => setPrintMode('detailed')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${printMode === 'detailed'
-                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 <FiFileText size={14} />
@@ -223,8 +223,8 @@ export default function ProfitLossPage() {
                             <button
                                 onClick={() => setPrintMode('compact')}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${printMode === 'compact'
-                                        ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
+                                    ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
                                 <FiLayout size={14} />
@@ -420,8 +420,8 @@ export default function ProfitLossPage() {
                                         }
                                     }}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${period === key
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                         }`}
                                 >
                                     {label}
@@ -527,7 +527,7 @@ export default function ProfitLossPage() {
                     {/* Expense Breakdown */}
                     <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                         <h3 className="text-lg font-bold mb-6 text-slate-900 dark:text-white">Rincian Beban Operasional</h3>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-auto">
                             <table className="min-w-full">
                                 <thead>
                                     <tr className="border-b border-slate-200 dark:border-slate-700">

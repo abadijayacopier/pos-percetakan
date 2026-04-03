@@ -17,7 +17,8 @@ import {
     FiPaperclip,
     FiTag,
     FiCalendar,
-    FiPackage
+    FiPackage,
+    FiTrash2
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
@@ -161,6 +162,34 @@ export default function OffsetPrintingPage({ onNavigate }) {
         }
     };
 
+    const handleDeleteOrder = async (id) => {
+        Swal.fire({
+            title: 'Batalkan Pesanan?',
+            text: 'Pesanan cetak offset ini akan dibatalkan dan dihapus dari daftar.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Kembali',
+            customClass: {
+                confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'dark:text-white'
+            },
+            buttonsStyling: false
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await api.delete(`/spk/${id}`);
+                    Swal.fire({ icon: 'success', title: 'Dibatalkan', text: 'Pesanan berhasil dibatalkan', timer: 2000, showConfirmButton: false });
+                    fetchOffsetData();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal membatalkan pesanan', timer: 2000, showConfirmButton: false });
+                }
+            }
+        });
+    };
+
     return (
         <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
             {/* Header */}
@@ -266,7 +295,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                 <FiRefreshCw className="group-hover:rotate-180 transition-transform duration-500" />
                             </button>
                         </div>
-                        <div className="overflow-x-auto">
+                        <div className="overflow-auto">
                             <table className="w-full">
                                 <thead>
                                     <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-left">
@@ -305,12 +334,22 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => onNavigate('spk-detail', { spkId: o.id })}
-                                                    className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl transition-all shadow-sm group-hover:shadow"
-                                                >
-                                                    <FiEye />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => onNavigate('spk-detail', { spkId: o.id })}
+                                                        className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl transition-all shadow-sm group-hover:shadow"
+                                                        title="Lihat Detail SPK"
+                                                    >
+                                                        <FiEye />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteOrder(o.id)}
+                                                        className="p-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-400 hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl transition-all shadow-sm group-hover:shadow"
+                                                        title="Batalkan Pesanan"
+                                                    >
+                                                        <FiTrash2 />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

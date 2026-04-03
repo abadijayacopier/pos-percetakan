@@ -180,7 +180,7 @@ export default function HandoverPage() {
                 </div>
 
                 {/* Table Area */}
-                <div className="overflow-x-auto">
+                <div className="overflow-auto">
                     {paginated.length === 0 ? (
                         <div className="py-24 text-center">
                             <FiInbox size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />

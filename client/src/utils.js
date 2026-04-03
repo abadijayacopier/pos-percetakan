@@ -17,9 +17,14 @@ export const formatDate = (date) => {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-export const formatDateTime = (date) => {
-  if (!date) return '-';
-  const d = new Date(date);
+export const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    // Try to clean/extract if it's already a partial string or contains "Invalid Date"
+    if (typeof dateStr === 'string' && !dateStr.includes('Invalid')) return dateStr;
+    return new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -69,23 +74,50 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   const isBluetooth = forceBinary || printerType === 'bluetooth';
   const W = printerType === '80mm' ? 42 : printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : 32;
 
+  const wrapText = (text, maxWidth) => {
+    if (!text) return [];
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + word).length > maxWidth) {
+        if (currentLine) lines.push(currentLine.trim());
+        currentLine = word + ' ';
+      } else {
+        currentLine += word + ' ';
+      }
+    });
+    if (currentLine) lines.push(currentLine.trim());
+    return lines;
+  };
+
+  // Safe Date string
+  const dateStr = receipt.date || new Date();
+  const safeDate = typeof dateStr === 'string' && dateStr.includes(',') ? dateStr : formatDateTime(dateStr);
+
   if (isBluetooth) {
     const encoder = new EscPosEncoder();
     encoder.initialize();
 
     // Header (Center)
     encoder.align('center')
+      .bold(true).size('normal', 'normal') // Try bold default size
       .line((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())
-      .text(storeInfo.address || '').newline();
-    if (storeInfo.phone) encoder.text('Telp: ' + storeInfo.phone).newline();
+      .bold(false).size('normal', 'normal');
+
+    const addressLines = wrapText(storeInfo.address || '', W);
+    addressLines.forEach(l => encoder.line(l));
+
+    if (storeInfo.phone) encoder.line('Telp: ' + storeInfo.phone);
     encoder.line('-'.repeat(W)).align('left');
 
     // Info Transaksi
-    encoder.text(`No      : ${receipt.invoiceNo || '-'}`).newline();
-    encoder.text(`Tanggal : ${formatDateTime(receipt.date || new Date())}`).newline();
-    encoder.text(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`).newline();
+    encoder.line(`No      : ${receipt.invoiceNo || '-'}`);
+    encoder.line(`Tanggal : ${safeDate}`);
+    encoder.line(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
     if (receipt.customerName && receipt.customerName !== 'Umum') {
-      encoder.text(`Customer: ${receipt.customerName}`).newline();
+      encoder.line(`Customer: ${receipt.customerName}`);
     }
     encoder.line('-'.repeat(W));
 
@@ -93,14 +125,18 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
     const items = receipt.items || [];
     items.forEach(item => {
       const qty = item.qty ?? item.quantity ?? 1;
-      const price = item.price ?? item.sellPrice ?? 0;
-      const subtotal = item.subtotal ?? (qty * price);
+      const subtotal = item.total ?? item.subtotal ?? 0;
+      // Extract proper unit price:
+      let price = item.price ?? item.sellPrice ?? item.unit_price ?? item.harga_satuan ?? 0;
+      if (price === 0 && subtotal > 0 && qty > 0) price = Math.round(subtotal / qty);
 
-      encoder.text((item.name || 'Item').substring(0, W)).newline();
-      const leftPart = `  ${qty}x ${Number(price).toLocaleString('id-ID')}`;
-      const rightPart = Number(subtotal).toLocaleString('id-ID');
+      const nameLines = wrapText(item.name || item.desc || 'Item', W);
+      nameLines.forEach(l => encoder.line(l));
+
+      const leftPart = `  ${qty}x ${formatRupiah(price)}`;
+      const rightPart = formatRupiah(subtotal);
       const sp = W - leftPart.length - rightPart.length;
-      encoder.text(leftPart + ' '.repeat(sp > 0 ? sp : 1) + rightPart).newline();
+      encoder.line(leftPart + ' '.repeat(sp > 0 ? sp : 1) + rightPart);
     });
     encoder.line('-'.repeat(W));
 
@@ -110,29 +146,36 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
       return left + ' '.repeat(sp > 0 ? sp : 1) + right;
     };
 
-    const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
+    const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.total ?? item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
     const totalTx = receipt.total ?? (subtotalTx - (receipt.discount ?? 0));
 
     if ((receipt.discount ?? 0) > 0) {
-      encoder.text(rightAlign('Subtotal :', formatRupiah(subtotalTx))).newline();
-      encoder.text(rightAlign('Diskon   :', '-' + formatRupiah(receipt.discount))).newline();
+      encoder.line(rightAlign('Subtotal :', formatRupiah(subtotalTx)));
+      encoder.line(rightAlign('Diskon   :', '-' + formatRupiah(receipt.discount)));
     }
-    encoder.bold(true).text(rightAlign('TOTAL    :', formatRupiah(totalTx))).bold(false).newline();
-    encoder.text(rightAlign('BAYAR    :', formatRupiah(receipt.paid ?? 0))).newline();
+    encoder.bold(true).line(rightAlign('TOTAL    :', formatRupiah(totalTx))).bold(false);
+    encoder.line(rightAlign('BAYAR    :', formatRupiah(receipt.paid ?? totalTx)));
     if ((receipt.change ?? 0) > 0) {
-      encoder.text(rightAlign('KEMBALI  :', formatRupiah(receipt.change))).newline();
+      encoder.line(rightAlign('KEMBALI  :', formatRupiah(receipt.change)));
     }
-    encoder.text(rightAlign('Metode   :', (receipt.paymentType || 'Tunai').toUpperCase())).newline();
+    if (receipt.paymentType) {
+      encoder.line(rightAlign('Metode   :', (receipt.paymentType).toUpperCase()));
+    }
 
     // Footer
     encoder.line('-'.repeat(W)).align('center')
-      .text(storeInfo.footer || 'Terima kasih telah berbelanja').newline()
-      .newline().newline().newline().cut();
+      .line(storeInfo.footer || 'Terima kasih atas kunjungan Anda!')
+      .newline().newline().newline().newline().newline().newline().newline().newline().cut();
 
     return encoder.encode();
   }
 
   // --- FALLBACK: RAW TEXT (LX-310 / Inkjet) ---
+  const ESC = '\x1b';
+  const BOLD_ON = ESC + 'E';
+  const BOLD_OFF = ESC + 'F';
+  const boldText = (t) => (printerType === 'lx310' ? BOLD_ON + t + BOLD_OFF : t);
+
   const MARGIN = printerType === 'lx310' ? '  ' : '';
   const centerText = (str) => {
     const pad = Math.max(0, Math.floor((W - str.length) / 2));
@@ -144,46 +187,68 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   };
 
   const lines = [];
-  lines.push(centerText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase()));
-  if (storeInfo.address) lines.push(centerText(storeInfo.address));
+  lines.push(centerText(boldText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())));
+  const addressLinesRaw = wrapText(storeInfo.address || '', W);
+  addressLinesRaw.forEach(l => lines.push(centerText(l)));
+
   if (storeInfo.phone) lines.push(centerText('Telp: ' + storeInfo.phone));
 
   if (printerType === 'lx310' || printerType === 'inkjet') {
     lines.push('='.repeat(W));
-    lines.push(centerText('NOTA PEMBAYARAN'));
+    lines.push(centerText(boldText('NOTA PEMBAYARAN')));
     lines.push('='.repeat(W));
   } else {
     lines.push('-'.repeat(W));
   }
 
   lines.push(`No      : ${receipt.invoiceNo || '-'}`);
-  lines.push(`Tanggal : ${formatDateTime(receipt.date || new Date())}`);
+  lines.push(`Tanggal : ${safeDate}`);
   lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
   lines.push('-'.repeat(W));
 
   const items = receipt.items || [];
   items.forEach(item => {
     const qty = item.qty ?? item.quantity ?? 1;
-    const price = item.price ?? item.sellPrice ?? 0;
-    const subtotal = item.subtotal ?? (qty * price);
-    lines.push((item.name || 'Item').substring(0, W));
+    const subtotal = item.total ?? item.subtotal ?? 0;
+    let price = item.price ?? item.sellPrice ?? item.unit_price ?? item.harga_satuan ?? 0;
+    // Calculation fallback if price is missing or zero
+    if (!price || price === 0) {
+      if (subtotal > 0 && qty > 0) price = Math.round(subtotal / qty);
+    }
+
+    const nameLines = wrapText(item.name || item.desc || 'Item', W);
+    nameLines.forEach(l => lines.push(l));
     lines.push(rightAlignText(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
   });
   lines.push('-'.repeat(W));
 
-  const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
+  const subtotalTx = receipt.subtotal ?? items.reduce((acc, item) => acc + (item.total ?? item.subtotal ?? ((item.qty ?? item.quantity ?? 1) * (item.price ?? item.sellPrice ?? 0))), 0);
   const totalTx = receipt.total ?? (subtotalTx - (receipt.discount ?? 0));
 
-  lines.push(rightAlignText('TOTAL    :', formatRupiah(totalTx)));
-  lines.push(rightAlignText('BAYAR    :', formatRupiah(receipt.paid ?? 0)));
+  if ((receipt.discount ?? 0) > 0) {
+    lines.push(rightAlignText('Subtotal :', formatRupiah(subtotalTx)));
+    lines.push(rightAlignText('Diskon   :', '-' + formatRupiah(receipt.discount)));
+  }
+
+  lines.push(rightAlignText(boldText('TOTAL    :'), formatRupiah(totalTx)));
+  lines.push(rightAlignText('BAYAR    :', formatRupiah(receipt.paid ?? totalTx)));
+  if ((receipt.change ?? 0) > 0) {
+    lines.push(rightAlignText('KEMBALI  :', formatRupiah(receipt.change)));
+  }
+
   lines.push('-'.repeat(W));
-  lines.push(centerText(storeInfo.footer || 'Terima kasih telah berbelanja'));
+  lines.push(centerText(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
   lines.push('');
   lines.push(`Dicetak: ${new Date().toLocaleString('id-ID')}`);
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
-  if (printerType === 'lx310') textResult += '\n\n\n\n\n\n\n\n\n\n';
-  else textResult += '\n\n\n';
+  if (printerType === 'lx310') {
+    // For Dot Matrix LX-310, we feed and then Form Feed to hit the next perforation
+    textResult += '\n\n\n\n\n\n\n\n\n\n\n\x0c';
+  } else {
+    // For Thermal, usually 6-8 lines is enough to reach the cutter
+    textResult += '\n\n\n\n\n\n\n\n';
+  }
 
   return textResult;
 };
@@ -227,7 +292,7 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
 
     encoder.line('-'.repeat(W)).align('center')
       .text(storeInfo.footer || 'Terima kasih telah memesan').newline()
-      .newline().newline().newline().cut();
+      .newline().newline().newline().newline().newline().newline().newline().newline().cut();
 
     return encoder.encode();
   }
@@ -265,7 +330,8 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
 
   text += `\n`;
   text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
-  text += `\n\n\n`;
+  text += `\n\n\n\n\n\n\n\n`;
+  if (printerType === 'lx310') text += '\x0c';
 
   return text;
 };

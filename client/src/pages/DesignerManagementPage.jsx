@@ -178,7 +178,7 @@ export default function DesignerManagementPage({ onNavigate }) {
             </div>
 
             {/* Main Table */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-auto shadow-sm">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
                         <FiUsers className="text-indigo-600" /> Daftar Operator Desain
@@ -206,7 +206,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                         <p className="text-[10px] font-black uppercase tracking-widest">Belum ada operator desainer</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto custom-scrollbar">
+                    <div className="overflow-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[700px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
@@ -299,7 +299,7 @@ export default function DesignerManagementPage({ onNavigate }) {
             </div>
 
             {/* Monitoring Penugasan Aktif */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-auto shadow-sm">
                 <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <h2 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
@@ -327,7 +327,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                         <p className="text-[10px] font-black uppercase tracking-widest italic">Tidak ada antrean desain</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto custom-scrollbar">
+                    <div className="overflow-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>

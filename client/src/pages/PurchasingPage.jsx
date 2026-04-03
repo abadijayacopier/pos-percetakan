@@ -396,7 +396,7 @@ export default function PurchasingPage({ onNavigate }) {
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-x-auto min-h-[350px]">
+                            <div className="flex-1 overflow-auto min-h-[350px]">
                                 {items.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-80">
                                         <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-inner text-slate-300 dark:text-slate-600">
@@ -493,7 +493,7 @@ export default function PurchasingPage({ onNavigate }) {
                                         Total Kuitansi Vendor
                                     </h3>
                                     <div className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                                        Rp {formatRupiah(totalAmount)}
+                                        {formatRupiah(totalAmount)}
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">
                                         Pastikan HPP yang diinput sesuai faktur.

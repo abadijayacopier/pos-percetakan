@@ -186,10 +186,16 @@ export default function InventoryPage() {
             html: `Anda yakin ingin menghapus <b>${p.name}</b>?<br/>Data tidak dapat dikembalikan.`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Hapus!',
             cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'text-slate-800 dark:text-white font-black',
+                htmlContainer: 'text-slate-600 dark:text-slate-300'
+            },
+            buttonsStyling: false,
             background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
             color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'
         });
@@ -294,7 +300,7 @@ export default function InventoryPage() {
                 </div>
 
                 {/* Table Area */}
-                <div className="overflow-x-auto">
+                <div className="overflow-auto">
                     {filtered.length === 0 ? (
                         <div className="py-24 text-center">
                             <FiBox size={48} className="mx-auto mb-4 text-slate-200 dark:text-slate-800" />
