@@ -212,7 +212,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                 </div>
 
                 {/* Table */}
-                <div className="overflow-auto [&>table]:min-w-[800px] lg:[&>table]:min-w-[1000px]">
+                <div className="overflow-auto md:[&>table]:min-w-[800px] lg:[&>table]:min-w-[1000px]">
                     {paginated.length === 0 ? (
                         <div className="py-32 flex flex-col items-center justify-center text-slate-400 gap-4">
                             <div className="p-8 bg-slate-50 dark:bg-slate-950 rounded-full">

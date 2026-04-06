@@ -3406,8 +3406,7 @@ img {
   }
 
   /* Dark mode table cards */
-  .dark table tbody tr,
-  [class*="dark"] table tbody tr {
+  .dark table tbody tr {
     background: #1e293b;
     border-color: #334155;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -3431,8 +3430,7 @@ img {
     margin-bottom: 0.25rem;
   }
 
-  .dark table tbody tr td:first-child,
-  [class*="dark"] table tbody tr td:first-child {
+  .dark table tbody tr td:first-child {
     border-bottom-color: #334155 !important;
   }
 
@@ -3444,8 +3442,7 @@ img {
     justify-content: flex-end;
   }
 
-  .dark table tbody tr td:last-child,
-  [class*="dark"] table tbody tr td:last-child {
+  .dark table tbody tr td:last-child {
     border-top-color: #334155 !important;
   }
 

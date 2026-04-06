@@ -76,10 +76,18 @@ export default function CustomersPage() {
             text: 'Data yang sudah Anda ketik akan hilang.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
             confirmButtonText: 'Ya, Batalkan',
-            cancelButtonText: 'Lanjut Isi'
+            cancelButtonText: 'Lanjut Isi',
+            customClass: {
+                confirmButton: 'bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'text-slate-800 dark:text-white font-black',
+                htmlContainer: 'text-slate-600 dark:text-slate-300'
+            },
+            buttonsStyling: false,
+            background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
+            color: document.documentElement.classList.contains('dark') ? '#e2e8f0' : '#1e293b'
         }).then((result) => {
             if (result.isConfirmed) setShowModal(false);
         });

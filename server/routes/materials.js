@@ -14,7 +14,7 @@ router.get('/', verifyToken, async (req, res) => {
         const [rows] = await pool.query(`
             SELECT *, updated_at AS updatedAt
             FROM materials
-            ORDER BY kategori, nama_bahan
+            ORDER BY kategori ASC, nama_bahan ASC
         `);
         res.json(rows);
     } catch (e) {

@@ -65,8 +65,11 @@ export default function PurchasingPage({ onNavigate }) {
                 const suppliersData = supRes.data?.data || supRes.data;
                 setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
             } catch (error) {
-                console.error(error);
-                showToast('Gagal memuat data master', 'error');
+                const errMsg = error.response?.data?.message || error.message || 'Unknown error';
+                console.error('[PurchasingPage] Error:', error, 'Response:', error.response);
+                showToast(`Gagal memuat data master: ${errMsg}`, 'error');
+                // Use Swal to force show the error if it's critical
+                if (window.Swal) window.Swal.fire('Error', `Detail: ${errMsg}`, 'error');
             }
         };
         loadData();

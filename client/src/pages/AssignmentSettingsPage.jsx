@@ -91,7 +91,7 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                     </div>
                     <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[700px]">
+                            <table className="w-full text-left border-collapse md:min-w-[700px]">
                                 <thead>
                                     <tr className="border-b border-slate-100 dark:border-slate-800">
                                         <th className="px-6 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Teknisi</th>

@@ -20,8 +20,11 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
     });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
+    // Dynamic Printer Auto-Switching: Mobile -> 58mm Bluetooth, Desktop -> User Preferred (LX-310/80mm)
+    const effectivePrinterSize = isMobile ? '58mm' : printSettings.printerSize;
+
     const getPrinterWidthClass = () => {
-        switch (printSettings.printerSize) {
+        switch (effectivePrinterSize) {
             case '58mm': return 'max-w-[300px]';
             case '80mm': return 'max-w-[380px]';
             case 'lx310': return 'max-w-[600px] text-lg'; // continuous prints usually need wider
@@ -31,7 +34,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
     };
 
     const getPrintWidth = () => {
-        switch (printSettings.printerSize) {
+        switch (effectivePrinterSize) {
             case '58mm': return '58mm';
             case '80mm': return '80mm';
             case 'lx310': return '9.5in';
@@ -197,7 +200,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                 }))
             };
 
-            const receiptText = generateRawReceipt(txForPrint, storeInfo, printSettings.printerSize, isMobile);
+            const receiptText = generateRawReceipt(txForPrint, storeInfo, effectivePrinterSize, isMobile);
 
             if (isMobile) {
                 await printViaBluetooth(receiptText);
@@ -207,10 +210,9 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
 
             const payload = {
                 text: receiptText,
-                printerName: printSettings.printerName
+                printerName: printSettings.printerName,
+                raw: effectivePrinterSize === 'lx310'
             };
-
-            if (printSettings.printerSize === 'lx310') payload.raw = true;
 
             await api.post('/print/receipt', payload);
             console.log('Receipt printed successfully via API');
@@ -278,7 +280,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
             <div className="flex-1 flex flex-col items-center justify-start p-4 sm:p-12 overflow-y-auto bg-slate-100/50 dark:bg-slate-900/50 custom-scrollbar">
                 <ReceiptProMax
                     receiptData={receiptData}
-                    printSettings={printSettings}
+                    printSettings={{ ...printSettings, printerSize: effectivePrinterSize }}
                     formatCurrency={formatCurrency}
                     printerWidthClass={getPrinterWidthClass()}
                 />

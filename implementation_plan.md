@@ -125,6 +125,23 @@ React entry point, router setup, Firebase init
 - `components.css` — Cards, buttons, forms, modals, tables, badges
 - `modules.css` — POS layout, kanban, dashboard grid, responsive (mobile/tablet/desktop)
 
+# Fix Theme Consistency & Bluetooth Printing
+
+This plan addresses two critical UI/UX issues:
+1. **Inventory Cards Theme Bug**: Mobile inventory cards appear dark even in light mode because a CSS selector `[class*="dark"]` is matching Tailwind's `dark:` variant classes.
+2. **Bluetooth Printing Error**: Mobile devices require a Secure Context (HTTPS) to use the Web Bluetooth API.
+
+## Proposed Changes
+
+### Client (UI & Styling)
+
+#### [MODIFY] [index.css](file:///d:/WEB/pos/client/src/index.css)
+- Refactor the responsive table-to-card selectors to avoid matching Tailwind classes.
+- Change `[class*="dark"] table tbody tr` to `.dark table tbody tr` to ensure it only applies when the global dark mode is active.
+
+#### [MODIFY] [utils.js](file:///d:/WEB/pos/client/src/utils.js)
+- Enhance the Bluetooth error message to explain the HTTPS requirement more clearly.
+
 #### [NEW] [client/src/contexts/AuthContext.jsx](file:///c:/Users/AJ/Videos/pos/client/src/contexts/AuthContext.jsx)
 Auth state, login/logout, JWT token management, RBAC
 

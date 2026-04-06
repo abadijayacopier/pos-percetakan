@@ -20,15 +20,32 @@
 - [ ] Kas Masuk & Keluar
 - [ ] Piutang tracking
 - [ ] Laporan Penjualan (harian/mingguan/bulanan)
+- [x] Fix Theme Inconsistency
+  - [x] Update `index.css` global table-to-card selector
+  - [x] Audit `Layout.jsx` for theme-aware classes
+- [x] Fix Bluetooth Printing Support
+  - [x] Update `utils.js` error message with secure context explanation
+  - [x] Add fallback/instruction for mobile dev testing (HTTPS)
+  - [x] Reconstruct ESC/POS encoder with raw-byte padding for stable centering
+  - [x] Synchronize thermal layout with ProMax PDF design
+- [x] Fix Data Master Loading
+  - [x] Reconcile materials table schema (local & docker)
+- [x] Fix UI Interaction
+  - [x] Restore SweetAlert cancel button visibility via Tailwind classes
+- [x] Final Verification
+  - [x] Verify Light/Dark mode consistency on mobile
+  - [x] Verify Bluetooth error messaging on mobile
+  - [x] Verify ProMax printer layout on physical hardware
+- [ ] Build for production 
 - [ ] Laporan Stok & Inventory
 - [ ] Dashboard Analytics (charts)
-
-## Phase 4: Enhancement
 - [ ] Export PDF
 - [ ] Stok Opname
 - [ ] Supplier Management
 - [ ] Settings & User Management
 - [ ] Log Aktivitas (riwayat aksi user)
+
+## Phase 4: Enhancement
 - [ ] Pengaturan Printer (thermal 58mm/80mm)
 - [ ] Template Nota/Struk/Invoice
 - [ ] WhatsApp Gateway (kirim nota & status)

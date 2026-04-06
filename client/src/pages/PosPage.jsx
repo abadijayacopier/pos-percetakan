@@ -220,20 +220,22 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                 footer: printSettings.receiptFooter
             };
 
-            const receiptText = generateRawReceipt(transaction, storeInfo, printSettings.printerSize, isMobile);
+            // Dynamic Printer Auto-Switching: Mobile -> 58mm Bluetooth, Desktop -> User Preferred (LX-310/80mm)
+            const effectivePrinterSize = isMobile ? '58mm' : printSettings.printerSize;
+
+            const receiptText = generateRawReceipt(transaction, storeInfo, effectivePrinterSize, isMobile);
 
             if (isMobile) {
                 printViaBluetooth(receiptText);
-                console.log('Receipt sent to RawBT');
+                console.log('Receipt sent to Bluetooth');
                 return;
             }
 
             const payload = {
                 text: receiptText,
-                printerName: printSettings.printerName
+                printerName: printSettings.printerName,
+                raw: effectivePrinterSize === 'lx310'
             };
-
-            if (printSettings.printerSize === 'lx310') payload.raw = true;
 
             await api.post('/print/receipt', payload);
             console.log('Receipt printed successfully via API');

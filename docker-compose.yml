@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-pos_abadi}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-admin}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: ./server
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASS: ${DB_PASS:-admin}
+      DB_NAME: ${DB_NAME:-pos_abadi}
+      JWT_SECRET: ${JWT_SECRET:-rahasia_super_kuat_pos_abadi_jaya_2025}
+      PORT: 5001
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+    depends_on:
+      - db
+    volumes:
+      - ./server/public/uploads:/app/public/uploads
+
+  frontend:
+    build: ./client
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

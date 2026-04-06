@@ -2,7 +2,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const api = axios.create({
-    baseURL: `http://${window.location.hostname}:5001/api`,
+    baseURL: '/api',
 });
 
 // Otomatis menempelkan token JWT di setiap request HTTP

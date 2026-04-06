@@ -571,7 +571,7 @@ export default function SettingsPage() {
 
                                     <div className="p-0 sm:p-6">
                                         <div className="overflow-auto">
-                                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                            <table className="w-full text-left border-collapse md:min-w-[700px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
                                                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Kertas</th>
@@ -682,7 +682,7 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="p-0 sm:p-6">
                                         <div className="overflow-auto">
-                                            <table className="w-full text-left border-collapse min-w-[600px]">
+                                            <table className="w-full text-left border-collapse md:min-w-[600px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
                                                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Kertas</th>
@@ -780,7 +780,7 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="p-0 sm:p-6">
                                         <div className="overflow-auto">
-                                            <table className="w-full text-left border-collapse min-w-[400px]">
+                                            <table className="w-full text-left border-collapse md:min-w-[400px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
                                                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Jilid</th>
@@ -867,7 +867,7 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="p-0 sm:p-6">
                                         <div className="overflow-auto">
-                                            <table className="w-full text-left border-collapse min-w-[500px]">
+                                            <table className="w-full text-left border-collapse md:min-w-[500px]">
                                                 <thead>
                                                     <tr className="border-b border-slate-100 dark:border-slate-800">
                                                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Minimal Jumlah / Lembar (≥)</th>
@@ -1310,7 +1310,7 @@ export default function SettingsPage() {
                                     </div>
 
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse min-w-[800px]">
+                                        <table className="w-full text-left border-collapse md:min-w-[800px]">
                                             <thead>
                                                 <tr className="border-b border-slate-100 dark:border-slate-800">
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Waktu</th>

@@ -374,13 +374,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
 
         try {
+            // Dynamic Printer Auto-Switching: Mobile -> 58mm Bluetooth, Desktop -> User Preferred (LX-310/80mm)
+            const effectivePrinterSize = isMobile ? '58mm' : printerSettings.printerSize;
+
             const receiptText = generateRawReceipt(transaction, {
                 name: printerSettings.storeName || 'FOTOCOPY ABADI JAYA',
                 address: printerSettings.storeAddress || '',
                 phone: printerSettings.storePhone || '',
                 footer: printerSettings.receiptFooter || '',
                 userName: user?.name || 'Kasir'
-            }, printerSettings.printerSize, isMobile);
+            }, effectivePrinterSize, isMobile);
 
             if (isMobile) {
                 printViaBluetooth(receiptText);
@@ -388,8 +391,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 await api.post('/print/receipt', {
                     text: receiptText,
                     printerName: printerSettings.printerName,
-                    raw: printerSettings.printerSize === 'lx310',
-                    mode: printerSettings.printerSize === 'inkjet' ? 'inkjet' : 'normal',
+                    raw: effectivePrinterSize === 'lx310',
+                    mode: effectivePrinterSize === 'inkjet' ? 'inkjet' : 'normal',
                     paperSize: printerSettings.paperSize
                 });
                 showToast('Struk berhasil dicetak', 'success');

@@ -200,7 +200,7 @@ export default function ProductionQueuePage({ onNavigate }) {
     };
 
     return (
-        <div className="p-4 sm:p-8 flex flex-col min-h-screen bg-slate-50/30 dark:bg-transparent font-display text-slate-900 dark:text-slate-100">
+        <div className="p-4 sm:p-8 flex flex-col min-h-full bg-slate-50/30 dark:bg-transparent font-display text-slate-900 dark:text-slate-100 pb-32">
             {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">

@@ -273,7 +273,7 @@ export default function ServicePage({ onNavigate }) {
                 </div>
 
                 <div className="overflow-auto w-full">
-                    <table className="w-full text-left border-collapse min-w-[800px]">
+                    <table className="w-full text-left border-collapse md:min-w-[800px]">
                         <thead>
                             <tr className="border-b border-slate-100 dark:border-slate-800">
                                 <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 whitespace-nowrap">ID Tiket</th>

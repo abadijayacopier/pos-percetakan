@@ -207,7 +207,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                     </div>
                 ) : (
                     <div className="overflow-auto custom-scrollbar">
-                        <table className="w-full text-left border-collapse min-w-[700px]">
+                        <table className="w-full text-left border-collapse md:min-w-[700px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
                                     <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Operator</th>
@@ -328,7 +328,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                     </div>
                 ) : (
                     <div className="overflow-auto custom-scrollbar">
-                        <table className="w-full text-left border-collapse min-w-[600px]">
+                        <table className="w-full text-left border-collapse md:min-w-[600px]">
                             <thead className="bg-slate-50 dark:bg-slate-800/50">
                                 <tr>
                                     <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Job ID</th>

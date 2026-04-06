@@ -214,7 +214,7 @@ const createTables = async () => {
       CREATE TABLE IF NOT EXISTS materials (
         id VARCHAR(50) PRIMARY KEY,
         barcode VARCHAR(50) UNIQUE,
-        nama VARCHAR(100) NOT NULL,
+        nama_bahan VARCHAR(100) NOT NULL,
         kategori VARCHAR(50) NOT NULL DEFAULT 'digital',
         satuan VARCHAR(50) NOT NULL DEFAULT 'pcs',
         stok_saat_ini DECIMAL(10,2) DEFAULT 0,
@@ -223,6 +223,7 @@ const createTables = async () => {
         supplier_id VARCHAR(50),
         harga_modal INT DEFAULT 0,
         harga_jual INT DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
         keterangan TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
