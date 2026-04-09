@@ -49,18 +49,18 @@ const MENU_GROUPS = [
         title: 'Data Master',
         items: [
             { id: 'inventory', label: 'Barang ATK', icon: <FiBox />, roles: ['admin', 'kasir'] },
-            { id: 'pembelian', label: 'Barang Masuk', icon: <FiPackage />, roles: ['admin', 'kasir', 'operator'] },
-            { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'kasir', 'operator'] },
+            { id: 'pembelian', label: 'Barang Masuk', icon: <FiPackage />, roles: ['admin', 'operator'] },
+            { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'operator'] },
             { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'Keuangan',
         items: [
-            { id: 'finance', label: 'Kas & Keuangan', icon: <FiCreditCard />, roles: ['admin', 'kasir'] },
+            { id: 'finance', label: 'Kas & Keuangan', icon: <FiCreditCard />, roles: ['admin'] },
             { id: 'kasir-payment', label: 'Pembayaran', icon: <FiDollarSign />, roles: ['admin', 'kasir'] },
             { id: 'qris-monitor', label: 'Monitoring QRIS', icon: <FiSmartphone />, roles: ['admin'] },
-            { id: 'reports', label: 'Laporan', icon: <HiOutlineDocumentReport />, roles: ['admin', 'kasir'] },
+            { id: 'reports', label: 'Laporan', icon: <HiOutlineDocumentReport />, roles: ['admin'] },
         ]
     },
 ];
@@ -89,7 +89,11 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
     };
 
     const handleNav = (id) => {
-        onNavigate(id);
+        let targetId = id;
+        if (targetId === 'dashboard' && user?.role === 'desainer') {
+            targetId = 'dashboard-desainer';
+        }
+        onNavigate(targetId);
         if (window.innerWidth < 1024) onClose();
     };
 
@@ -195,6 +199,8 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                             const isExpanded = !!expanded[item.id];
                                             const isParentOfActive = hasChildren && item.subItems.some(sub => activePage === sub.id);
                                             const highlightParent = isActive || isParentOfActive;
+                                            const userRoleNormalized = (user?.role || '').toLowerCase();
+                                            const isAdminOrPemilik = userRoleNormalized === 'admin' || userRoleNormalized === 'pemilik';
 
                                             return (
                                                 <motion.div
@@ -257,8 +263,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                                                 <div className="py-1 space-y-1">
                                                                     {item.subItems
                                                                         .filter(sub => {
-                                                                            const userRole = user?.role ? String(user.role).toLowerCase() : '';
-                                                                            return userRole === 'admin' || sub.roles?.includes(userRole) || userRole === 'pemilik';
+                                                                            return isAdminOrPemilik || sub.roles?.includes(userRoleNormalized);
                                                                         })
                                                                         .map((sub) => {
                                                                             const subActive = activePage === sub.id;
@@ -294,18 +299,20 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                     {/* Footer / User Info */}
                     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <div className={`space-y-2 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
-                            <button
-                                onClick={() => handleNav('settings')}
-                                title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
-                                className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
-                                ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
-                                ${activePage === 'settings'
-                                        ? 'bg-white text-blue-600 border-blue-600'
-                                        : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
-                            >
-                                <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
-                                {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
-                            </button>
+                            {((user?.role || '').toLowerCase() === 'admin' || (user?.role || '').toLowerCase() === 'pemilik') && (
+                                <button
+                                    onClick={() => handleNav('settings')}
+                                    title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
+                                    className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                    ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
+                                    ${activePage === 'settings'
+                                            ? 'bg-white text-blue-600 border-blue-600'
+                                            : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                >
+                                    <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
+                                    {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
+                                </button>
+                            )}
 
                             <div className={`bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center group
                                 ${isCollapsed && isDesktop ? 'justify-center p-1 border-none bg-transparent dark:bg-transparent px-1' : 'justify-between'}`}>

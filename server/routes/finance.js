@@ -135,4 +135,30 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     }
 });
 
+// 1. GET Semua Cash Flow
+router.get('/', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC LIMIT 500');
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil data cash flow' });
+    }
+});
+
+// 2. POST Manual Cash Flow (Petty Cash)
+router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+    try {
+        const { date, type, category, amount, description } = req.body;
+        const id = 'cf' + Date.now();
+        await pool.query(`
+            INSERT INTO cash_flow (id, date, type, category, amount, description)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [id, date || new Date().toISOString().split('T')[0], type, category, amount, description]);
+        res.status(201).json({ message: 'Data cash flow berhasil ditambahkan!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal menambah data cash flow' });
+    }
+});
+
 module.exports = router;

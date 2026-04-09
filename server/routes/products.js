@@ -235,4 +235,46 @@ router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator
     }
 });
 
+// 6. POST Stock Opname (Penyesuaian Stok)
+router.post('/stock-opname', verifyToken, requireRole(['admin', 'operator']), async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const { productId, currentStock, actualStock, notes } = req.body;
+
+        const diff = actualStock - currentStock;
+        const type = diff >= 0 ? 'in' : 'out';
+        const absDiff = Math.abs(diff);
+
+        // 1. Update stok produk
+        await connection.query('UPDATE products SET stock = ? WHERE id = ?', [actualStock, productId]);
+
+        // 2. Catat di stock_movements
+        const reference = 'OPNAME-' + Date.now().toString().slice(-6);
+        await connection.query(`
+            INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+            VALUES (?, 'adjust', ?, ?, ?)
+        `, [productId, diff, reference, notes || 'Penyesuaian Stock Opname']);
+
+        await connection.commit();
+        res.json({ message: 'Stock Opname berhasil dicatat!', newStock: actualStock });
+    } catch (error) {
+        await connection.rollback();
+        console.error(error);
+        res.status(500).json({ message: 'Gagal mencatat Stock Opname' });
+    } finally {
+        connection.release();
+    }
+});
+
+// 7. GET Stock History
+router.get('/:id/history', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM stock_movements WHERE product_id = ? ORDER BY date DESC LIMIT 100', [req.params.id]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil history stok' });
+    }
+});
+
 module.exports = router;

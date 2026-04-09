@@ -148,4 +148,42 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     }
 });
 
+// 7. POST Pelunasan Task (Finansial)
+router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const { totalAmount, dpAmount, title } = req.body;
+
+        // 1. Update status task & is_paid
+        await connection.query("UPDATE dp_tasks SET is_paid = 1, status = 'diambil' WHERE id = ?", [req.params.id]);
+
+        // 2. Masukkan sisa pembayaran ke Cash Flow
+        const sisa = totalAmount - dpAmount;
+        if (sisa > 0) {
+            const cashFlowId = 'cf' + Date.now();
+            const date = new Date().toISOString().split('T')[0];
+            await connection.query(`
+                INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                VALUES (?, ?, 'in', 'Percetakan', ?, ?, ?)
+            `, [cashFlowId, date, sisa, `Pelunasan: ${title} (${req.params.id})`, req.params.id]);
+        }
+
+        // 3. Update total spend customer
+        const [taskRows] = await connection.query('SELECT customerId FROM dp_tasks WHERE id = ?', [req.params.id]);
+        if (taskRows.length > 0 && taskRows[0].customerId) {
+            await connection.query('UPDATE customers SET total_spend = total_spend + ? WHERE id = ?', [sisa, taskRows[0].customerId]);
+        }
+
+        await connection.commit();
+        res.json({ message: 'Pelunasan berhasil diproses!' });
+    } catch (error) {
+        await connection.rollback();
+        console.error(error);
+        res.status(500).json({ message: 'Gagal memproses pelunasan' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;

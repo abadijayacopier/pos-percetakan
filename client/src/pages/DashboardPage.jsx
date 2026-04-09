@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { formatRupiah } from '../utils';
 import {
@@ -67,6 +68,8 @@ const AreaChart = ({ data }) => {
                         tickLine={false}
                         tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }}
                         dy={10}
+                        interval={data?.length > 7 ? 'preserveStartEnd' : 0}
+                        minTickGap={20}
                     />
                     <YAxis
                         axisLine={false}
@@ -103,12 +106,19 @@ const AreaChart = ({ data }) => {
 };
 
 export default function DashboardPage({ onNavigate }) {
+    const { user } = useAuth();
+    const userRole = (user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'pemilik';
+
     const [stats, setStats] = useState({
         omset: 0, trxCount: 0, saldo: 0,
         lowStockCount: 0, pendingPrintCount: 0, pendingServiceCount: 0,
-        activityLog: []
+        activityLog: [], weeklyData: [], monthlyData: []
     });
-    const [chartData, setChartData] = useState([]);
+    const [viewMode, setViewMode] = useState('weekly');
+    const chartData = useMemo(() => {
+        return viewMode === 'weekly' ? stats.weeklyData : stats.monthlyData;
+    }, [viewMode, stats]);
     const [allSortedTrx, setAllSortedTrx] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(5);
@@ -136,10 +146,10 @@ export default function DashboardPage({ onNavigate }) {
                     lowStockCount: data.lowStockCount,
                     pendingPrintCount: data.pendingPrintCount,
                     pendingServiceCount: data.pendingServiceCount,
-                    activityLog: data.activityLog
+                    activityLog: data.activityLog,
+                    weeklyData: data.weeklyData || [],
+                    monthlyData: data.monthlyData || []
                 });
-
-                setChartData(data.weeklyData);
 
                 // Sort transactions by date descending
                 const sortedTrx = [...allTrx].sort((a, b) => new Date(b.date || b.created_at || b.timestamp) - new Date(a.date || a.created_at || a.timestamp));
@@ -182,7 +192,7 @@ export default function DashboardPage({ onNavigate }) {
     };
 
     return (
-        <div className="p-6 sm:p-8 space-y-8 font-display bg-white dark:bg-slate-950 min-h-screen min-w-0 overflow-x-hidden">
+        <div className="p-6 sm:p-8 space-y-8 font-display bg-slate-50 dark:bg-slate-950 min-h-screen min-w-0 overflow-x-hidden transition-colors duration-500">
             <AnimatePresence>
                 {loading && <LoadingScreen />}
             </AnimatePresence>
@@ -225,24 +235,24 @@ export default function DashboardPage({ onNavigate }) {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
             >
                 {[
-                    { label: 'Pendapatan Hari Ini', value: formatRupiah(stats.omset), icon: FiDollarSign, color: 'emerald', tag: 'Hari Ini' },
+                    { label: 'Pendapatan Hari Ini', value: formatRupiah(stats.omset), icon: FiDollarSign, color: 'emerald', tag: 'Hari Ini', hidden: !isAdmin },
                     { label: 'Antrean Cetak', value: `${stats.pendingPrintCount} Tugas`, icon: FiPrinter, color: 'cyan', tag: 'Antrean SPK' },
                     { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiCpu, color: 'amber', tag: 'Servis Berjalan' },
                     { label: 'Stok Menipis', value: `${stats.lowStockCount} Barang`, icon: FiLayers, color: 'rose', tag: 'Penting' },
-                ].map(s => (
+                ].filter(s => !s.hidden).map(s => (
                     <motion.div
                         variants={itemVariants}
                         key={s.label}
-                        className="bg-white dark:bg-slate-900 p-6 rounded-4xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all"
+                        className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all"
                     >
                         <div className={`absolute -top-4 -right-4 p-8 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-125 text-8xl text-${s.color}-500`}>
                             <s.icon />
                         </div>
-                        <div className="flex justify-between items-start mb-6 relative z-10">
-                            <div className={`p-4 bg-${s.color}-50 dark:bg-${s.color}-500/10 text-${s.color}-500 rounded-2xl transition-transform group-hover:scale-110`}>
-                                <s.icon size={24} />
+                        <div className="flex justify-between items-start mb-8 relative z-10">
+                            <div className={`p-5 bg-${s.color}-50 dark:bg-${s.color}-500/10 text-${s.color}-600 dark:text-${s.color}-400 rounded-[1.5rem] transition-transform group-hover:scale-110 shadow-sm`}>
+                                <s.icon size={26} />
                             </div>
-                            <span className={`text-[9px] font-black px-3 py-1.5 rounded-xl bg-${s.color}-50 dark:bg-${s.color}-900/20 text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-widest border border-${s.color}-100 dark:border-${s.color}-500/20`}>
+                            <span className={`text-[9px] font-black px-4 py-2 rounded-xl bg-${s.color}-50 dark:bg-${s.color}-900/20 text-${s.color}-600 dark:text-${s.color}-400 uppercase tracking-widest border border-${s.color}-100 dark:border-${s.color}-500/20`}>
                                 {s.tag}
                             </span>
                         </div>
@@ -252,66 +262,78 @@ export default function DashboardPage({ onNavigate }) {
                 ))}
             </motion.div>
 
-            <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate={loading ? "hidden" : "visible"}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-            >
-                {/* Modern Area Chart */}
+            {isAdmin && (
                 <motion.div
-                    variants={itemVariants}
-                    className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col min-h-[450px] min-w-0"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate={loading ? "hidden" : "visible"}
+                    className="grid grid-cols-1 lg:grid-cols-3 gap-8"
                 >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                        <div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase italic tracking-tighter">
-                                <span className="p-2.5 bg-cyan-600/10 rounded-xl text-cyan-600"><FiTrendingUp size={20} /></span>
-                                Performa Penjualan
-                            </h3>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-14 opacity-70 italic">Statistik Pendapatan 7 Hari Terakhir</p>
+                    {/* Modern Area Chart */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="lg:col-span-2 bg-white dark:bg-slate-900 p-8 md:p-12 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col min-h-[480px] min-w-0"
+                    >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3 uppercase italic tracking-tighter">
+                                    <span className="p-2.5 bg-cyan-600/10 rounded-xl text-cyan-600"><FiTrendingUp size={20} /></span>
+                                    Performa Penjualan
+                                </h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-14 opacity-70 italic">{viewMode === 'weekly' ? 'Statistik Pendapatan 7 Hari Terakhir' : 'Statistik Pendapatan 30 Hari Terakhir'}</p>
+                            </div>
+                            <div className="flex gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 self-start md:self-auto">
+                                <button
+                                    onClick={() => setViewMode('weekly')}
+                                    className={`px-6 py-2 text-[10px] font-black rounded-xl transition-all tracking-widest uppercase cursor-pointer ${viewMode === 'weekly' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                >
+                                    WEEKLY
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('monthly')}
+                                    className={`px-6 py-2 text-[10px] font-black rounded-xl transition-all tracking-widest uppercase cursor-pointer ${viewMode === 'monthly' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                >
+                                    MONTHLY
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 self-start md:self-auto">
-                            <button className="px-6 py-2 text-[10px] font-black bg-white dark:bg-slate-900 text-cyan-600 rounded-xl shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800 tracking-widest uppercase">WEEKLY</button>
-                            <button className="px-6 py-2 text-[10px] font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors tracking-widest uppercase">MONTHLY</button>
-                        </div>
-                    </div>
 
-                    <div className="flex-1 relative mt-4 min-h-[220px]">
-                        <div className="h-full w-full">
-                            <AreaChart data={chartData} />
+                        <div className="flex-1 relative mt-4 min-h-[220px]">
+                            <div className="h-full w-full">
+                                <AreaChart data={chartData} />
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="mt-16 pt-8 border-t border-slate-50 dark:border-slate-800/50 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-lg bg-cyan-600 shadow-xl shadow-cyan-500/30"></div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] italic">Pendapatan Aktual</span>
+                        <div className="mt-16 pt-8 border-t border-slate-50 dark:border-slate-800/50 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-5 h-5 rounded-lg bg-cyan-600 shadow-xl shadow-cyan-500/30"></div>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] italic">Pendapatan Aktual</span>
+                            </div>
+                            <div className="flex items-center gap-3 opacity-30">
+                                <div className="w-5 h-5 rounded-lg border-2 border-slate-400"></div>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] italic">Target Proyeksi</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3 opacity-30">
-                            <div className="w-5 h-5 rounded-lg border-2 border-slate-400"></div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] italic">Target Proyeksi</span>
+                    </motion.div>
+
+                    {/* Quick Shortcuts & Activity Brief */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="space-y-6"
+                    >
+                        {/* Activity Brief */}
+                        <div className="bg-cyan-600/5 dark:bg-cyan-600/10 p-10 rounded-[2.5rem] border border-cyan-600/10 flex items-center gap-6 group hover:bg-cyan-600/10 transition-colors">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-cyan-600 text-white flex items-center justify-center shadow-xl shadow-cyan-500/20 shrink-0 group-hover:scale-110 transition-transform">
+                                <FiActivity size={32} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest italic">Aktivitas Tim</p>
+                                <p className="text-sm font-bold text-slate-600 dark:text-slate-400 mt-1 leading-tight tracking-tight">Semua sistem sinkron & berjalan optimal.</p>
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </motion.div>
-
-                {/* Quick Shortcuts & Activity Brief */}
-                <motion.div
-                    variants={itemVariants}
-                    className="space-y-6"
-                >
-                    {/* Activity Brief */}
-                    <div className="bg-cyan-600/5 dark:bg-cyan-600/10 p-8 rounded-4xl border border-cyan-600/10 flex items-center gap-6 group hover:bg-cyan-600/10 transition-colors">
-                        <div className="w-14 h-14 rounded-2xl bg-cyan-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0 group-hover:scale-110 transition-transform">
-                            <FiActivity size={28} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black text-cyan-600 uppercase tracking-widest italic">Aktivitas Tim</p>
-                            <p className="text-sm font-bold text-slate-600 dark:text-slate-400 mt-1 leading-tight tracking-tight">Semua sistem sinkron & berjalan optimal.</p>
-                        </div>
-                    </div>
-                </motion.div>
-            </motion.div>
+            )}
 
             {/* Bottom Row */}
             <motion.div
@@ -323,7 +345,7 @@ export default function DashboardPage({ onNavigate }) {
                 {/* Paginated Transactions Table */}
                 <motion.div
                     variants={itemVariants}
-                    className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-w-0"
+                    className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col min-w-0"
                 >
                     <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-slate-50/20 dark:bg-slate-800/20">
                         <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3 italic">
@@ -350,9 +372,11 @@ export default function DashboardPage({ onNavigate }) {
                                     <FiChevronRight size={18} />
                                 </button>
                             </div>
-                            <button onClick={() => onNavigate('reports')} className="size-11 flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
-                                <FiArrowRight size={22} />
-                            </button>
+                            {isAdmin && (
+                                <button onClick={() => onNavigate('reports')} className="size-11 flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white rounded-2xl shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
+                                    <FiArrowRight size={22} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -423,47 +447,49 @@ export default function DashboardPage({ onNavigate }) {
                 </motion.div>
 
                 {/* Activity Log */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-w-0"
-                >
-                    <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/20 dark:bg-slate-800/20">
-                        <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">Aliran Aktivitas</h3>
-                        <div className="p-2 bg-slate-900 text-white rounded-lg"><FiClock size={16} /></div>
-                    </div>
-                    <div className="p-8 space-y-10 overflow-y-auto max-h-[580px] custom-scrollbar">
-                        <AnimatePresence mode="popLayout">
-                            {stats.activityLog.map((log, i) => (
-                                <motion.div
-                                    key={log.id}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className="relative flex gap-5"
-                                >
-                                    <div className="absolute left-5 top-12 bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
-                                    <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
-                                        ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
-                                            log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
-                                                log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
-                                        <FiActivity size={18} />
-                                    </div>
-                                    <div className="pt-0.5">
-                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                            <span className="text-cyan-600 italic font-black mr-2 uppercase tracking-tighter">{log.userName}</span>
-                                            {log.action}
-                                        </p>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed italic opacity-85">"{log.detail}"</p>
-                                        <div className="flex items-center gap-2 mt-3 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
-                                            <FiClock size={10} />
-                                            {new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                {isAdmin && (
+                    <motion.div
+                        variants={itemVariants}
+                        className="bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-w-0"
+                    >
+                        <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/20 dark:bg-slate-800/20">
+                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">Aliran Aktivitas</h3>
+                            <div className="p-2 bg-slate-900 text-white rounded-lg"><FiClock size={16} /></div>
+                        </div>
+                        <div className="p-8 space-y-10 overflow-y-auto max-h-[580px] custom-scrollbar">
+                            <AnimatePresence mode="popLayout">
+                                {stats.activityLog.map((log, i) => (
+                                    <motion.div
+                                        key={log.id}
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className="relative flex gap-5"
+                                    >
+                                        <div className="absolute left-5 top-12 bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
+                                        <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
+                                            ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
+                                                log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
+                                                    log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
+                                            <FiActivity size={18} />
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                </motion.div>
+                                        <div className="pt-0.5">
+                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                                                <span className="text-cyan-600 italic font-black mr-2 uppercase tracking-tighter">{log.userName}</span>
+                                                {log.action}
+                                            </p>
+                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed italic opacity-85">"{log.detail}"</p>
+                                            <div className="flex items-center gap-2 mt-3 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
+                                                <FiClock size={10} />
+                                                {new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
+                )}
             </motion.div>
         </div>
     );

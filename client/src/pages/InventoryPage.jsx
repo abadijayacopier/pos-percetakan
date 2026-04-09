@@ -26,11 +26,15 @@ import {
     FiChevronLeft,
     FiChevronRight,
     FiTag,
-    FiCheck,
     FiAlertCircle,
-    FiInfo
+    FiInfo,
+    FiRefreshCw,
+    FiClock,
+    FiBarChart2,
+    FiCheck
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import StockOpnameModal from '../components/StockOpnameModal';
 
 const emptyForm = { code: '', name: '', categoryId: '', buyPrice: '', sellPrice: '', stock: '', minStock: '', unit: 'pcs', emoji: '📦', image: '' };
 
@@ -58,9 +62,10 @@ const CAT_ICON_SMALL = {
     c9: <FiCpu size={12} />,
 };
 
-export default function InventoryPage() {
+export default function InventoryPage({ onNavigate }) {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [opnameTarget, setOpnameTarget] = useState(null);
     const [unitOptions, setUnitOptions] = useState(() => {
         const saved = localStorage.getItem('custom_units');
         const parsed = saved ? JSON.parse(saved) : [];
@@ -98,7 +103,7 @@ export default function InventoryPage() {
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return products.filter(p => {
-            const matchSearch = !q || p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q);
+            const matchSearch = !q || (p.name || '').toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q);
             const matchCat = filterCat === 'all' || p.categoryId === filterCat;
             return matchSearch && matchCat;
         });
@@ -377,13 +382,29 @@ export default function InventoryPage() {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">
                                                     <button
+                                                        onClick={() => onNavigate('stock-history', { product: p })}
+                                                        title="History Stok"
+                                                        className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                    >
+                                                        <FiClock size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setOpnameTarget(p)}
+                                                        title="Stock Opname"
+                                                        className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                    >
+                                                        <FiRefreshCw size={14} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => openEdit(p)}
+                                                        title="Edit Barang"
                                                         className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
                                                     >
                                                         <FiEdit size={14} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(p)}
+                                                        title="Hapus Barang"
                                                         className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
                                                     >
                                                         <FiTrash2 size={14} />
@@ -678,6 +699,14 @@ export default function InventoryPage() {
                     </div>
                 </div>
             </Modal>
+
+            {/* Stock Opname Modal */}
+            <StockOpnameModal
+                isOpen={!!opnameTarget}
+                onClose={() => setOpnameTarget(null)}
+                product={opnameTarget}
+                onSuccess={reload}
+            />
         </div>
     );
 }

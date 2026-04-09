@@ -68,6 +68,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     // Jilid & Print States
     const [jilidQty, setJilidQty] = useState(1);
     const [printType, setPrintType] = useState(null);
+    const [jilidType, setJilidType] = useState(null);
+    const [fcDiscounts, setFcDiscounts] = useState([]);
     const [printQty, setPrintQty] = useState(1);
 
     // Digital & Service Order States (Opsi B)
@@ -76,6 +78,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [digitalHeight, setDigitalHeight] = useState('');
     const [digitalQty, setDigitalQty] = useState(1);
     const [digitalNotes, setDigitalNotes] = useState('');
+    const [digitalDesignFee, setDigitalDesignFee] = useState(0);
     const [serviceDevice, setServiceDevice] = useState('');
     const [serviceIssue, setServiceIssue] = useState('');
     const [serviceCost, setServiceCost] = useState('');
@@ -232,7 +235,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         return products.filter(p =>
             p.type !== 'service' &&
             p.type !== 'fotocopy' &&
-            ((p.name || '').toLowerCase().includes(query) || (p.code || '').toLowerCase().includes(query))
+            ((p.name || '').toLowerCase().includes(query) ||
+                p.code?.toLowerCase().includes(query))
         );
     }, [products, searchQuery]);
 
@@ -374,19 +378,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
         const luas = parseFloat(w) * parseFloat(h);
         const unitPrice = parseFloat(mat.harga_jual) || 0;
-        const subtotalCalc = luas * unitPrice * qty;
+        const designFee = parseFloat(digitalDesignFee) || 0;
+        const subtotalCalc = (luas * unitPrice * qty) + designFee;
 
         const newItem = {
             id: `dig-${Date.now()}-${Math.random()}`,
-            name: `Banner: ${mat.nama_bahan} (${w}x${h}m)`,
-            sellPrice: unitPrice * luas, // Price per unit (luas * harga)
+            name: `Banner: ${mat.nama_bahan} (${w}x${h}m)${designFee > 0 ? ' + Desain' : ''}`,
+            sellPrice: (unitPrice * luas) + (designFee / (qty || 1)), // Price per unit distributed
             quantity: qty,
             type: 'digital',
-            meta: { materialId: matId, width: w, height: h, notes }
+            meta: { materialId: matId, width: w, height: h, notes, designFee }
         };
         setCart(prev => [...prev, newItem]);
         showToast('Order Digital ditambahkan!', 'success');
         setDigitalWidth(''); setDigitalHeight(''); setDigitalNotes('');
+        setDigitalDesignFee(0);
     };
 
     const addServiceToCart = (device, issue, cost) => {
@@ -893,22 +899,29 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                                         <label className="text-[9px] font-black text-slate-400 ml-1">CATATAN / FINISHING</label>
                                                         <textarea value={digitalNotes} onChange={(e) => setDigitalNotes(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2 px-4 font-bold text-sm h-16 resize-none" placeholder="Contoh: Mata ayam pojok-pojok..."></textarea>
                                                     </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[9px] font-black text-slate-400 ml-1">BIAYA DESAIN (RP)</label>
+                                                        <div className="relative group/fee">
+                                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 group-focus-within/fee:text-primary transition-colors">Rp</div>
+                                                            <input type="number" value={digitalDesignFee} onChange={(e) => setDigitalDesignFee(parseFloat(e.target.value) || 0)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 font-black text-base text-primary" placeholder="0" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="lg:w-80 shrink-0 bg-secondary/5 rounded-3xl p-8 border-2 border-secondary/20 flex flex-col justify-center text-center">
+                                    <div className="lg:w-80 shrink-0 bg-indigo-500/5 rounded-3xl p-8 border-2 border-indigo-500/20 flex flex-col justify-center text-center">
                                         <div className="mb-6">
-                                            <h4 className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Estimasi Luas</h4>
+                                            <h4 className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Estimasi Luas</h4>
                                             <div className="text-2xl font-black text-slate-800 dark:text-white">{(parseFloat(digitalWidth) || 0) * (parseFloat(digitalHeight) || 0)} m2</div>
                                         </div>
                                         <div className="mb-8">
                                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Biaya</h4>
                                             <div className="text-3xl font-black text-primary">
-                                                {formatRupiah((parseFloat(digitalWidth) || 0) * (parseFloat(digitalHeight) || 0) * (materials.find(m => m.id === digitalMatId)?.harga_jual || 0) * digitalQty)}
+                                                {formatRupiah(((parseFloat(digitalWidth) || 0) * (parseFloat(digitalHeight) || 0) * (materials.find(m => m.id === digitalMatId)?.harga_jual || 0) * digitalQty) + (parseFloat(digitalDesignFee) || 0))}
                                             </div>
                                         </div>
-                                        <button onClick={() => addDigitalToCart(digitalMatId, digitalWidth, digitalHeight, digitalQty, digitalNotes)} className="w-full bg-secondary text-white py-4 rounded-xl font-bold shadow-lg shadow-secondary/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95">
+                                        <button onClick={() => addDigitalToCart(digitalMatId, digitalWidth, digitalHeight, digitalQty, digitalNotes, digitalDesignFee)} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95">
                                             <span className="material-symbols-outlined">wallpaper</span> Tambah ke Keranjang
                                         </button>
                                     </div>

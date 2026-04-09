@@ -981,7 +981,9 @@ export default function SettingsPage() {
                                                         </td>
                                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{u.username}</td>
                                                         <td className="px-6 py-4">
-                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' :
+                                                                    u.role === 'desainer' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
+                                                                        'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
                                                                 }`}>
                                                                 {u.role}
                                                             </span>
@@ -1581,6 +1583,7 @@ export default function SettingsPage() {
                                             <option value="kasir">Kasir</option>
                                             <option value="operator">Operator</option>
                                             <option value="teknisi">Teknisi</option>
+                                            <option value="desainer">Desain</option>
                                         </select>
                                     </div>
                                     <div className="space-y-2">

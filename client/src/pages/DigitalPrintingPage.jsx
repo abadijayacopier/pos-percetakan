@@ -41,6 +41,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
         width: '',
         height: '',
         notes: '',
+        designFee: 0,
+        isManualCustomer: false,
+        manualCustomerName: '',
         estimatedTotal: 0
     });
     const [loading, setLoading] = useState(false);
@@ -48,9 +51,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
     useEffect(() => {
         const mat = materials.find(m => m.id === calcOrderData.materialId);
         const luas = (parseFloat(calcOrderData.width) || 0) * (parseFloat(calcOrderData.height) || 0);
-        const total = luas * (mat?.sellPrice || 0);
+        const total = (luas * (mat?.sellPrice || 0)) + (parseFloat(calcOrderData.designFee) || 0);
         setCalcOrderData(prev => ({ ...prev, estimatedTotal: total }));
-    }, [calcOrderData.width, calcOrderData.height, calcOrderData.materialId, materials]);
+    }, [calcOrderData.width, calcOrderData.height, calcOrderData.materialId, calcOrderData.designFee, materials]);
 
     // Pagination for Logs
     const [logPage, setLogPage] = useState(1);
@@ -261,14 +264,14 @@ export default function DigitalPrintingPage({ onNavigate }) {
         const newTask = {
             id: 'ORD-' + pad(Math.floor(Math.random() * 9999)),
             status: 'menunggu_desain',
-            customerName: selectedCust?.name || 'Pelanggan Umum',
-            customerId: calcOrderData.customerId || (customers.length > 0 ? customers[0].id : ''),
+            customerName: calcOrderData.isManualCustomer ? calcOrderData.manualCustomerName : (selectedCust?.name || 'Pelanggan Umum'),
+            customerId: calcOrderData.isManualCustomer ? null : (calcOrderData.customerId || (customers.length > 0 ? customers[0].id : '')),
             title: `${selectedMat?.name} (${calcOrderData.width}x${calcOrderData.height}m)`,
             material_id: calcOrderData.materialId,
             material_name: selectedMat?.name,
             dimensions: { width: calcOrderData.width, height: calcOrderData.height },
-            material_price: calcOrderData.estimatedTotal,
-            design_price: 0,
+            material_price: calcOrderData.estimatedTotal - (parseFloat(calcOrderData.designFee) || 0),
+            design_price: parseFloat(calcOrderData.designFee) || 0,
             priority: 'normal',
             pesan_desainer: calcOrderData.notes || null,
             type: 'digital',
@@ -280,10 +283,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
             invoiceNo: generateInvoice(),
             date: new Date().toISOString(),
             customerId: newTask.customerId,
-            customerName: selectedCust?.name || 'Pelanggan Umum',
+            customerName: newTask.customerName,
             items: [{
                 id: null,
-                name: newTask.title,
+                name: newTask.title + (newTask.design_price > 0 ? ' + Desain' : ''),
                 qty: 1,
                 price: calcOrderData.estimatedTotal,
                 subtotal: calcOrderData.estimatedTotal,
@@ -302,7 +305,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
         api.post('/dp_tasks', newTask).then(() => {
             return api.post('/transactions', newTransaction);
         }).then(() => {
-            setCalcOrderData({ customerId: '', materialId: '', width: '', height: '', notes: '', estimatedTotal: 0 });
+            setCalcOrderData({ customerId: '', materialId: '', width: '', height: '', notes: '', designFee: 0, isManualCustomer: false, manualCustomerName: '', estimatedTotal: 0 });
             setLoading(false);
             loadData();
         }).catch(err => {
@@ -523,137 +526,160 @@ export default function DigitalPrintingPage({ onNavigate }) {
                         </h3>
 
                         <form className="space-y-5 relative z-10" onSubmit={e => e.preventDefault()}>
-                            <div className="space-y-1.5">
-                                {/* === BANNER CALCULATOR (PREMIUM UI) === */}
-                                <div className="bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]">
-                                    <h3 className="text-sm font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3 uppercase tracking-widest">
-                                        <span className="p-2.5 bg-blue-50/80 dark:bg-blue-500/10 text-blue-600 rounded-xl shadow-sm"><FiSave size={16} /></span>
-                                        Kalkulator Banner
-                                    </h3>
-
-                                    <div className="space-y-5">
-                                        <div className="grid grid-cols-1 gap-5">
-                                            <div>
-                                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Pelanggan</label>
-                                                <select
-                                                    value={calcOrderData.customerId}
-                                                    onChange={(e) => setCalcOrderData({ ...calcOrderData, customerId: e.target.value })}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
-                                                >
-                                                    <option value="" className="text-slate-900 dark:text-white">Pilih Pelanggan Umum</option>
-                                                    {customers.map(c => (
-                                                        <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.company ? `(${c.company})` : ''}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Bahan Cetak (Stok)</label>
-                                                <select
-                                                    value={calcOrderData.materialId}
-                                                    onChange={(e) => setCalcOrderData({ ...calcOrderData, materialId: e.target.value })}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
-                                                >
-                                                    <option value="" className="text-slate-900 dark:text-white">Pilih Bahan Roll/Banner</option>
-                                                    {materials.map(m => (
-                                                        <option key={m.id} value={m.id} className="text-slate-900 dark:text-white">
-                                                            {m.name} — Rp {(m.sellPrice || 0).toLocaleString('id-ID')}/{m.unit} (Stok: {m.stok})
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Lebar (M)</label>
-                                                <input
-                                                    type="number"
-                                                    min="0.1"
-                                                    step="0.1"
-                                                    value={calcOrderData.width}
-                                                    onChange={(e) => setCalcOrderData({ ...calcOrderData, width: parseFloat(e.target.value) || 0 })}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
-                                                    placeholder="0.0"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Tinggi (M)</label>
-                                                <input
-                                                    type="number"
-                                                    min="0.1"
-                                                    step="0.1"
-                                                    value={calcOrderData.height}
-                                                    onChange={(e) => setCalcOrderData({ ...calcOrderData, height: parseFloat(e.target.value) || 0 })}
-                                                    className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
-                                                    placeholder="0.0"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* ESTIMASI KOTAK */}
-                                        <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-slate-400 dark:text-slate-400 shadow-lg shadow-red-500/30 border border-white/20 dark:border-white/20 relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
-                                                <FiTag size={64} />
-                                            </div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
-                                            <p className="text-3xl font-black italic tracking-tight relative z-10 drop-shadow-md">
-                                                Rp {calcOrderData.estimatedTotal.toLocaleString('id-ID')}
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Catatan Desainer</label>
-                                            <textarea
-                                                value={calcOrderData.notes}
-                                                onChange={(e) => setCalcOrderData({ ...calcOrderData, notes: e.target.value })}
-                                                className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[13px] shadow-sm resize-none"
-                                                rows="3"
-                                                placeholder="Warna dominan, font, ornamen, dll..."
-                                            />
-                                        </div>
-
+                            <div className="grid grid-cols-1 gap-5">
+                                <div>
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Pelanggan</label>
                                         <button
-                                            onClick={handleCreateOrderFromCalc}
-                                            disabled={!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading}
-                                            className={`w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all shadow-md flex justify-center items-center gap-2 uppercase
-                            ${(!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading)
-                                                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                                                    : 'bg-linear-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-slate-400 dark:text-slate-400 shadow-violet-500/50 hover:shadow-lg hover:-translate-y-0.5'}`}
+                                            onClick={() => setCalcOrderData({ ...calcOrderData, isManualCustomer: !calcOrderData.isManualCustomer })}
+                                            className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg transition-all border ${calcOrderData.isManualCustomer ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-100 text-slate-400 border-slate-200'}`}
                                         >
-                                            <FiPlusCircle size={18} />
-                                            {loading ? 'Memproses...' : 'Buat Pesanan & SPK'}
+                                            {calcOrderData.isManualCustomer ? 'Input Manual Aktif' : 'Pilih dari Database'}
                                         </button>
                                     </div>
+                                    {calcOrderData.isManualCustomer ? (
+                                        <input
+                                            type="text"
+                                            value={calcOrderData.manualCustomerName}
+                                            onChange={(e) => setCalcOrderData({ ...calcOrderData, manualCustomerName: e.target.value })}
+                                            className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-blue-200 dark:border-blue-500/30 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
+                                            placeholder="Ketik Nama Pelanggan Manual..."
+                                        />
+                                    ) : (
+                                        <select
+                                            value={calcOrderData.customerId}
+                                            onChange={(e) => setCalcOrderData({ ...calcOrderData, customerId: e.target.value })}
+                                            className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
+                                        >
+                                            <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.company ? `(${c.company})` : ''}</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
-                                {/* WA Gateway */}
-                                <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full -mr-24 -mt-24 blur-3xl animate-pulse"></div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
-                                                <FiMessageSquare size={18} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-white uppercase tracking-wider">WA Gateway</h3>
-                                                <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Active Connection</p>
-                                            </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Bahan Cetak (Stok)</label>
+                                    <select
+                                        value={calcOrderData.materialId}
+                                        onChange={(e) => setCalcOrderData({ ...calcOrderData, materialId: e.target.value })}
+                                        className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
+                                    >
+                                        <option value="" className="text-slate-900 dark:text-white">Pilih Bahan Roll/Banner</option>
+                                        {materials.map(m => (
+                                            <option key={m.id} value={m.id} className="text-slate-900 dark:text-white">
+                                                {m.name} — Rp {(m.sellPrice || 0).toLocaleString('id-ID')}/{m.unit} (Stok: {m.stok})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Lebar (M)</label>
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={calcOrderData.width}
+                                        onChange={(e) => setCalcOrderData({ ...calcOrderData, width: parseFloat(e.target.value) || 0 })}
+                                        className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Tinggi (M)</label>
+                                    <input
+                                        type="number"
+                                        min="0.1"
+                                        step="0.1"
+                                        value={calcOrderData.height}
+                                        onChange={(e) => setCalcOrderData({ ...calcOrderData, height: parseFloat(e.target.value) || 0 })}
+                                        className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* ESTIMASI KOTAK */}
+                            <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-lg shadow-red-500/30 border border-white/20 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
+                                    <FiTag size={64} />
+                                </div>
+                                <p className="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
+                                <p className="text-3xl font-black italic tracking-tight relative z-10 drop-shadow-md">
+                                    Rp {calcOrderData.estimatedTotal.toLocaleString('id-ID')}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-5">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Biaya Desain (RP)</label>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 transition-colors">Rp</div>
+                                        <input
+                                            type="number"
+                                            value={calcOrderData.designFee}
+                                            onChange={(e) => setCalcOrderData({ ...calcOrderData, designFee: parseFloat(e.target.value) || 0 })}
+                                            className="w-full px-4 py-3 pl-10 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-blue-600 dark:text-blue-400 font-black outline-none text-[14px] shadow-sm"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Catatan Desainer</label>
+                                <textarea
+                                    value={calcOrderData.notes}
+                                    onChange={(e) => setCalcOrderData({ ...calcOrderData, notes: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[13px] shadow-sm resize-none"
+                                    rows="3"
+                                    placeholder="Warna dominan, font, ornamen, dll..."
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleCreateOrderFromCalc}
+                                disabled={!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading}
+                                className={`w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all shadow-md flex justify-center items-center gap-2 uppercase
+                            ${(!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading)
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
+                                        : 'bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-blue-500/30 hover:shadow-lg hover:-translate-y-0.5'}`}
+                            >
+                                <FiPlusCircle size={18} />
+                                {loading ? 'Memproses...' : 'Buat Pesanan & SPK'}
+                            </button>
+
+
+                            {/* WA Gateway */}
+                            <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full -mr-24 -mt-24 blur-3xl animate-pulse"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
+                                            <FiMessageSquare size={18} />
                                         </div>
-                                        <div className="space-y-4">
-                                            {[
-                                                { icon: <FiCheckCircle />, text: 'SPK Terbit: Notifikasi WA Otomatis' },
-                                                { icon: <FiZap />, text: 'Update Produksi: Real-time Alert' },
-                                                { icon: <FiCheckCircle />, text: 'Selesai: Undangan Pengambilan' },
-                                            ].map((item, idx) => (
-                                                <div key={idx} className="flex gap-4 items-center group/item">
-                                                    <div className="size-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover/item:bg-emerald-500/20 transition-colors text-emerald-400">
-                                                        {item.icon}
-                                                    </div>
-                                                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide group-hover/item:text-white transition-colors">{item.text}</p>
+                                        <div>
+                                            <h3 className="text-sm font-black text-white uppercase tracking-wider">WA Gateway</h3>
+                                            <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Active Connection</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {[
+                                            { icon: <FiCheckCircle />, text: 'SPK Terbit: Notifikasi WA Otomatis' },
+                                            { icon: <FiZap />, text: 'Update Produksi: Real-time Alert' },
+                                            { icon: <FiCheckCircle />, text: 'Selesai: Undangan Pengambilan' },
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="flex gap-4 items-center group/item">
+                                                <div className="size-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover/item:bg-emerald-500/20 transition-colors text-emerald-400">
+                                                    {item.icon}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide group-hover/item:text-white transition-colors">{item.text}</p>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -662,7 +688,6 @@ export default function DigitalPrintingPage({ onNavigate }) {
 
                 </div>
             </div>
-
 
             {/* Logs Table */}
             <div className="mt-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -735,7 +760,6 @@ export default function DigitalPrintingPage({ onNavigate }) {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {recentLogs.length > 0 && (
                     <div className="p-6 bg-slate-50/30 dark:bg-slate-800/30 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-4">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -824,7 +848,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                 <div className="h-px bg-white/10 my-2"></div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-slate-300 font-black uppercase text-[10px] tracking-widest">Grand Total</span>
-                                    <span className="text-xl font-black text-blue-400 italic tracking-tighter">{fmt(selectedTask.material_price + selectedTask.design_price)}</span>
+                                    <span className="text-xl font-black text-blue-400 italic tracking-tighter">{fmt((parseFloat(selectedTask.material_price) || 0) + (parseFloat(selectedTask.design_price) || 0))}</span>
                                 </div>
                             </div>
                         </div>
@@ -910,6 +934,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 type="danger"
             />
         </div>
+
     );
 };
 

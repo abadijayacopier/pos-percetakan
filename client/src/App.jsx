@@ -40,6 +40,7 @@ import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
 import LandingPage from './pages/LandingPage';
 import PurchasingPage from './pages/PurchasingPage';
 import SuppliersPage from './pages/SuppliersPage';
+import StockHistoryPage from './pages/StockHistoryPage';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -47,18 +48,30 @@ export default function App() {
     // Public landing page by default if not logged in
     if (!user) return 'landing';
     // Auto-redirect desainer to their dashboard
-    if (user?.role === 'desainer') return 'dashboard-desainer';
+    if (user?.role?.toLowerCase() === 'desainer') return 'dashboard-desainer';
+    if (user?.role?.toLowerCase() === 'kasir') return 'pos';
     return 'dashboard';
   });
   const [showLoginInPortal, setShowLoginInPortal] = useState(false);
   const [pageState, setPageState] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // When user finishes loading, auto-redirect desainer to their dashboard 
-  // if they are currently mapped to the default 'dashboard'.
+  // When user finishes loading or logins, auto-redirect based on roles
   useEffect(() => {
-    if (user && user.role === 'desainer' && activePage === 'dashboard') {
+    if (!user) return;
+
+    const role = (user.role || '').toLowerCase();
+    // Redirect desainer to designer dashboard if they are on general landing/login/dashboard
+    if (role === 'desainer' && (activePage === 'dashboard' || activePage === 'landing' || activePage === 'login')) {
       setActivePage('dashboard-desainer');
+    }
+    // Redirect kasir to POS if they are on general landing/login/dashboard
+    else if (role === 'kasir' && (activePage === 'dashboard' || activePage === 'landing' || activePage === 'login')) {
+      setActivePage('pos');
+    }
+    // Redirect other non-admins away from settings if they somehow get there (manual fix/etc)
+    else if (role !== 'admin' && role !== 'pemilik' && activePage === 'settings') {
+      setActivePage('dashboard');
     }
   }, [user, activePage]);
 
@@ -299,7 +312,9 @@ export default function App() {
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
       case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-warranty-sticker': return <ServiceWarrantyStickerPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'stock-history': return <StockHistoryPage onNavigate={handleNavigate} pageState={pageState} />;
       default: return <DashboardPage onNavigate={handleNavigate} />;
     }
   };

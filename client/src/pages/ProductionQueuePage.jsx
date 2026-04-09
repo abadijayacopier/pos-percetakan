@@ -3,6 +3,8 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { FiGrid, FiList, FiClock, FiCheckCircle, FiChevronRight, FiUser, FiZap, FiDownload, FiEdit2, FiTrash2, FiPrinter, FiX, FiCheck, FiArrowRight, FiLink, FiPaperclip, FiXCircle, FiAlertCircle, FiActivity, FiFileText, FiInfo, FiPlus, FiSearch, FiLayers } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
+import PelunasanModal from '../components/PelunasanModal';
+import { FiDollarSign as FiDollar } from 'react-icons/fi';
 
 function Toast({ msg, type, onClose }) {
     useEffect(() => { const t = setTimeout(onClose, 5000); return () => clearTimeout(t); }, [onClose]);
@@ -37,6 +39,7 @@ export default function ProductionQueuePage({ onNavigate }) {
     const [cancelFee, setCancelFee] = useState(0);
     const [activeTab, setActiveTab] = useState('Semua');
     const [toastMsg, setToastMsg] = useState(null);
+    const [settleTask, setSettleTask] = useState(null);
 
     const showToast = useCallback((msg, type = 'info') => setToastMsg({ msg, type }), []);
 
@@ -435,6 +438,14 @@ export default function ProductionQueuePage({ onNavigate }) {
                                                         <FiArrowRight size={14} />
                                                     </button>
                                                 )}
+                                                {col.id === 'selesai' && task.is_paid === 0 && (
+                                                    <button
+                                                        onClick={() => setSettleTask(task)}
+                                                        className="px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                                                    >
+                                                        <FiDollar size={12} /> Bayar & Ambil
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </motion.div>
@@ -444,6 +455,17 @@ export default function ProductionQueuePage({ onNavigate }) {
                     </div>
                 ))}
             </div>
+
+            {/* Pelunasan Modal */}
+            <PelunasanModal
+                isOpen={!!settleTask}
+                onClose={() => setSettleTask(null)}
+                task={settleTask}
+                onSuccess={() => {
+                    loadProductionData();
+                    showToast('Pelunasan berhasil diproses!');
+                }}
+            />
 
             {/* Modal Detail Design */}
             <AnimatePresence>

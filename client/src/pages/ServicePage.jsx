@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi';
 import api from '../services/api';
 import { formatRupiah } from '../utils';
+import PelunasanModal from '../components/PelunasanModal';
+import { FiDollarSign as FiDollar } from 'react-icons/fi';
 
 const formatDate = (dateStr, pattern = 'dd/MM/yyyy') => {
     if (!dateStr) return '-';
@@ -30,6 +32,7 @@ export default function ServicePage({ onNavigate }) {
     const [showForm, setShowForm] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
     const [page, setPage] = useState(1);
+    const [settleTask, setSettleTask] = useState(null);
     const PER_PAGE = 10;
 
     // Form State
@@ -366,6 +369,15 @@ export default function ServicePage({ onNavigate }) {
                                                     {btn.icon}
                                                 </button>
                                             ))}
+                                            {srv.status === 'selesai' && (
+                                                <button
+                                                    onClick={() => setSettleTask(srv)}
+                                                    className="p-2 rounded-xl text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 transition-all shadow-sm flex items-center justify-center hover:bg-emerald-600 hover:text-white"
+                                                    title="Pelunasan & Ambil"
+                                                >
+                                                    <FiDollar />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -775,6 +787,23 @@ export default function ServicePage({ onNavigate }) {
                     </div>
                 </div>
             )}
+            {/* Pelunasan Modal */}
+            <PelunasanModal
+                isOpen={!!settleTask}
+                onClose={() => setSettleTask(null)}
+                task={settleTask}
+                type="service"
+                onSuccess={() => {
+                    loadData();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Pelunasan servis berhasil diproses.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }}
+            />
         </div>
     );
 }

@@ -100,14 +100,19 @@ export default function PurchasingPage({ onNavigate }) {
     }, [products, materials, searchQuery]);
 
     const handleAddItem = (option) => {
-        const exists = items.find(i => i.id === option.id && i.type === option.type);
-        if (exists) {
-            setItems(items.map(i => i.id === exists.id && i.type === exists.type ? { ...i, qty: Number(i.qty) + 1, subtotal: (Number(i.qty) + 1) * i.cost } : i));
-        } else {
-            setItems([...items, { ...option, qty: 1, cost: 0, subtotal: 0 }]);
-        }
-        setShowSearch(false);
-        setSearchQuery('');
+        setItems(prev => {
+            const exists = prev.find(i => String(i.id) === String(option.id) && i.type === option.type);
+            if (exists) {
+                return prev.map(i =>
+                    String(i.id) === String(option.id) && i.type === option.type
+                        ? { ...i, qty: (Number(i.qty) || 0) + 1, subtotal: ((Number(i.qty) || 0) + 1) * (Number(i.cost) || 0) }
+                        : i
+                );
+            }
+            return [...prev, { ...option, qty: 1, cost: 0, subtotal: 0 }];
+        });
+        showToast(`Berhasil menambah: ${option.name}`, 'success');
+        // We removed setShowSearch(false) to allow adding multiple items and avoid race conditions
     };
 
     const updateItem = (index, field, value) => {
@@ -349,7 +354,7 @@ export default function PurchasingPage({ onNavigate }) {
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.98 }}
                                         transition={{ duration: 0.2 }}
-                                        className="absolute z-50 w-full mt-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl border border-white dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden"
+                                        className="absolute z-50 w-full mt-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden"
                                     >
                                         <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-2">
                                             {combinedOptions.length === 0 ? (
@@ -362,8 +367,12 @@ export default function PurchasingPage({ onNavigate }) {
                                                 combinedOptions.map(opt => (
                                                     <div
                                                         key={`${opt.type}-${opt.id}`}
-                                                        onClick={() => handleAddItem(opt)}
-                                                        className="px-5 py-4 m-1 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border border-transparent hover:border-blue-100 dark:hover:border-blue-800/50 flex justify-between items-center group transition-all"
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault(); // Keep focus in search while adding
+                                                            e.stopPropagation();
+                                                            handleAddItem(opt);
+                                                        }}
+                                                        className="px-5 py-4 m-1 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer border border-transparent hover:border-blue-100 dark:hover:border-blue-800/50 flex justify-between items-center group transition-all"
                                                     >
                                                         <div>
                                                             <div className="font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-base">{opt.name}</div>
@@ -523,7 +532,7 @@ export default function PurchasingPage({ onNavigate }) {
             {
                 showSearch && (
                     <div
-                        className="fixed inset-0 z-40 bg-slate-900/10 dark:bg-[#0b0f1a]/40 backdrop-blur-sm"
+                        className="fixed inset-0 z-40 bg-slate-900/20 dark:bg-black/40"
                         onClick={() => setShowSearch(false)}
                     />
                 )
