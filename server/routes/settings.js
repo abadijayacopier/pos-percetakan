@@ -17,7 +17,7 @@ router.get('/', verifyToken, async (req, res) => {
 // GET Public Settings (Hanya untuk Landing Page)
 router.get('/public', async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices')");
+        const [rows] = await pool.query("SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices', 'tarif_desain_per_jam')");
         res.json(rows);
     } catch (e) {
         console.error(e);

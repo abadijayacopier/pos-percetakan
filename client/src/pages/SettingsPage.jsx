@@ -28,6 +28,7 @@ export default function SettingsPage() {
     const [galleryImages, setGalleryImages] = useState([]);
 
     const [fcDiscounts, setFcDiscounts] = useState([]);
+    const [tarifDesainPerJam, setTarifDesainPerJam] = useState(50000);
 
     // Branding & Terminal States
     const [storeName, setStoreName] = useState('');
@@ -128,6 +129,8 @@ export default function SettingsPage() {
             setBankAccount(sMap.bank_account || '');
             setBankAccountName(sMap.bank_account_name || 'SUPRIYANTO');
 
+            setTarifDesainPerJam(parseInt(sMap.tarif_desain_per_jam) || 50000);
+
         } catch (error) {
             console.error(error);
             showToast('Gagal memuat data dari server', 'error');
@@ -203,7 +206,8 @@ export default function SettingsPage() {
                 { key: 'bank_account', value: bankAccount },
                 { key: 'bank_account_name', value: bankAccountName },
                 { key: 'print_prices', value: JSON.stringify(printPrices) },
-                { key: 'binding_prices', value: JSON.stringify(bindPrices) }
+                { key: 'binding_prices', value: JSON.stringify(bindPrices) },
+                { key: 'tarif_desain_per_jam', value: tarifDesainPerJam.toString() }
             ];
             await api.post('/settings', payload);
             showToast('Pengaturan berhasil disimpan!', 'success');
@@ -319,7 +323,7 @@ export default function SettingsPage() {
 
     const TABS = [
         { id: 'general', icon: <FiSettings />, text: 'Umum' },
-        { id: 'fotocopy', icon: <FiFile />, text: 'Harga Layanan' },
+        { id: 'fotocopy', icon: <FiFile />, text: 'Layanan & Harga' },
         { id: 'landing', icon: <FiImage />, text: 'Landing Page' },
         { id: 'users', icon: <FiUsers />, text: 'Users' },
         { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
@@ -570,13 +574,29 @@ export default function SettingsPage() {
                                             </div>
                                             <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Fotocopy</h3>
                                         </div>
-                                        <div className="flex w-full sm:w-auto gap-3">
-                                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
-                                                const newId = 'fc' + Date.now();
-                                                const newItem = { id: newId, paper: 'HVS A4', color: 'bw', side: '1', price: 0, label: 'Baru' };
-                                                setFotocopyPrices([...fotocopyPrices, newItem]);
-                                            }}><FiPlus /> Tambah</button>
-                                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveAllFotocopyPrices}><FiSave /> Simpan</button>
+                                    </div>
+
+                                    {/* Tarif Desain */}
+                                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                                    <FiEdit size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-800 dark:text-white text-sm">Tarif Desain per Jam</h4>
+                                                    <p className="text-[10px] text-slate-500">Biaya profesional desain per jam kerja</p>
+                                                </div>
+                                            </div>
+                                            <div className="relative w-full max-w-[200px]">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
+                                                <input
+                                                    type="number"
+                                                    className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                                    value={tarifDesainPerJam}
+                                                    onChange={(e) => setTarifDesainPerJam(e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
@@ -982,8 +1002,8 @@ export default function SettingsPage() {
                                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{u.username}</td>
                                                         <td className="px-6 py-4">
                                                             <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' :
-                                                                    u.role === 'desainer' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
-                                                                        'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
+                                                                u.role === 'desainer' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
+                                                                    'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
                                                                 }`}>
                                                                 {u.role}
                                                             </span>

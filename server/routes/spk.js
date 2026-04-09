@@ -151,69 +151,76 @@ router.get('/:id', verifyToken, async (req, res) => {
 router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
     const conn = await pool.getConnection();
     try {
-        const validatedData = spkSchema.parse(req.body);
-        const {
-            customer_id, customer_name, customer_phone, customer_company,
-            product_name, product_qty, product_unit, kategori,
-            specs_material, specs_finishing, specs_notes,
-            biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
-            dp_amount, priority, assigned_to, deadline
-        } = validatedData;
+        try {
+            const validatedData = spkSchema.parse(req.body);
+            const {
+                customer_id, customer_name, customer_phone, customer_company,
+                product_name, product_qty, product_unit, kategori,
+                specs_material, specs_finishing, specs_notes,
+                biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
+                dp_amount, priority, assigned_to, deadline
+            } = validatedData;
 
-        await conn.beginTransaction();
+            await conn.beginTransaction();
 
-        const total_biaya = (biaya_cetak || 0) + (biaya_material || 0) + (biaya_finishing || 0) +
-            (biaya_desain || 0) + (biaya_lainnya || 0);
-        const sisa_tagihan = total_biaya - (dp_amount || 0);
+            const total_biaya = (biaya_cetak || 0) + (biaya_material || 0) + (biaya_finishing || 0) +
+                (biaya_desain || 0) + (biaya_lainnya || 0);
+            const sisa_tagihan = total_biaya - (dp_amount || 0);
 
-        const id = crypto.randomUUID();
-        // Generate SPK number: SPK-YYYY-NNNNN
-        const year = new Date().getFullYear();
-        const [countRows] = await conn.query(
-            "SELECT COUNT(*) as cnt FROM spk WHERE spk_number LIKE ?", [`SPK-${year}-%`]
-        );
-        const nextNum = String((countRows[0].cnt || 0) + 1).padStart(5, '0');
-        const spk_number = `SPK-${year}-${nextNum}`;
+            const id = crypto.randomUUID();
+            // Generate SPK number: SPK-YYYY-NNNNN
+            const year = new Date().getFullYear();
+            const [countRows] = await conn.query(
+                "SELECT COUNT(*) as cnt FROM spk WHERE spk_number LIKE ?", [`SPK-${year}-%`]
+            );
+            const nextNum = String((countRows[0].cnt || 0) + 1).padStart(5, '0');
+            const spk_number = `SPK-${year}-${nextNum}`;
 
-        // Verifikasi keberadaan user id untuk menghindari Foreign Key error jika session kadaluarsa/reset DB
-        const [usr] = await conn.query('SELECT id FROM users WHERE id = ?', [req.user.id]);
-        const validUserId = usr.length > 0 ? req.user.id : null;
+            // Verifikasi keberadaan user id untuk menghindari Foreign Key error jika session kadaluarsa/reset DB
+            const [usr] = await conn.query('SELECT id FROM users WHERE id = ?', [req.user.id]);
+            const validUserId = usr.length > 0 ? req.user.id : null;
 
-        await conn.query(`
-            INSERT INTO spk (
-                id, spk_number, customer_id, customer_name, customer_phone, customer_company,
-                product_name, product_qty, product_unit, kategori, specs_material, specs_finishing, specs_notes,
+            await conn.query(`
+                INSERT INTO spk (
+                    id, spk_number, customer_id, customer_name, customer_phone, customer_company,
+                    product_name, product_qty, product_unit, kategori, specs_material, specs_finishing, specs_notes,
+                    biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
+                    total_biaya, dp_amount, sisa_tagihan,
+                    priority, assigned_to, created_by, deadline
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                id, spk_number, customer_id || null, customer_name, customer_phone || null, customer_company || null,
+                product_name, product_qty, product_unit, kategori,
+                specs_material || null, specs_finishing || null, specs_notes || null,
                 biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
                 total_biaya, dp_amount, sisa_tagihan,
-                priority, assigned_to, created_by, deadline
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            id, spk_number, customer_id || null, customer_name, customer_phone || null, customer_company || null,
-            product_name, product_qty, product_unit, kategori,
-            specs_material || null, specs_finishing || null, specs_notes || null,
-            biaya_cetak, biaya_material, biaya_finishing, biaya_desain, biaya_lainnya,
-            total_biaya, dp_amount, sisa_tagihan,
-            priority, assigned_to || null, validUserId, deadline || null
-        ]);
+                priority, assigned_to || null, validUserId, deadline || null
+            ]);
 
-        // Log: SPK dibuat
-        await conn.query(
-            'INSERT INTO spk_logs (spk_id, user_id, action, description, new_value) VALUES (?, ?, ?, ?, ?)',
-            [id, validUserId, 'STATUS_CHANGE', 'SPK Baru Dibuat', 'Menunggu Antrian']
-        );
-
-        // Catat DP jika ada
-        if (dp_amount > 0) {
+            // Log: SPK dibuat
             await conn.query(
-                'INSERT INTO spk_payments (spk_id, payment_type, method, amount, paid_by) VALUES (?, ?, ?, ?, ?)',
-                [id, 'DP', 'Tunai', dp_amount, validUserId]
+                'INSERT INTO spk_logs (spk_id, user_id, action, description, new_value) VALUES (?, ?, ?, ?, ?)',
+                [id, validUserId, 'STATUS_CHANGE', 'SPK Baru Dibuat', 'Menunggu Antrian']
             );
-        }
 
-        await conn.commit();
-        res.status(201).json({ message: 'SPK berhasil dibuat!', id, spk_number });
+            // Catat DP jika ada
+            if (dp_amount > 0) {
+                await conn.query(
+                    'INSERT INTO spk_payments (spk_id, payment_type, method, amount, paid_by) VALUES (?, ?, ?, ?, ?)',
+                    [id, 'DP', 'Tunai', dp_amount, validUserId]
+                );
+            }
+
+            await conn.commit();
+            res.status(201).json({ message: 'SPK berhasil dibuat!', id, spk_number });
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                return res.status(400).json({ message: 'Validasi gagal', errors: err.errors });
+            }
+            throw err;
+        }
     } catch (error) {
-        await conn.rollback();
+        if (conn.connection) await conn.rollback();
         console.error('POST /api/spk error:', error);
         res.status(500).json({ message: 'Gagal membuat SPK: ' + error.message });
     } finally {

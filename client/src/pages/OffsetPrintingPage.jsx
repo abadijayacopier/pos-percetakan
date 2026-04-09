@@ -54,12 +54,19 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const fetchOffsetData = useCallback(async () => {
         setLoading(true);
         try {
-            const [formRes, spkRes] = await Promise.all([
+            const [formRes, spkRes, settingsRes] = await Promise.all([
                 api.get('/offset-orders/form-data'),
-                api.get('/spk')
+                api.get('/spk'),
+                api.get('/settings/public')
             ]);
             setProducts(formRes.data.products || []);
             setCustomers(formRes.data.customers || []);
+
+            const sMap = {};
+            settingsRes.data.forEach(s => { sMap[s.key] = s.value; });
+            if (sMap.tarif_desain_per_jam) {
+                setHourlyRate(parseInt(sMap.tarif_desain_per_jam));
+            }
 
             // Filter SPK yang memiliki prefix "Offset -" di product_name
             const offsetSPKs = (spkRes.data.data || []).filter(s =>
@@ -86,7 +93,6 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const [designSeconds, setDesignSeconds] = useState(0);
     const [designRunning, setDesignRunning] = useState(false);
     const intervalRef = useRef(null);
-    const tarifDesainPerJam = 50000;
 
     useEffect(() => {
         if (designRunning) {
@@ -104,7 +110,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
         return `${h}:${m}:${sc}`;
     };
 
-    const biayaDesain = Math.round((designSeconds / 3600) * tarifDesainPerJam);
+    const biayaDesain = Math.round((designSeconds / 3600) * hourlyRate);
 
     // Calculate Price using backend product data
     useEffect(() => {

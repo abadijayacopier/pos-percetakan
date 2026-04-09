@@ -9,9 +9,21 @@ export default function DesignFinalizationPage({ onNavigate, pageState }) {
     const [task, setTask] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
     const [now, setNow] = useState(new Date());
-    const [saving, setSaving] = useState(false);
+    const [loadingSettings, setLoadingSettings] = useState(true);
+    const [hourlyRate, setHourlyRate] = useState(50000);
 
     useEffect(() => {
+        // Fetch Settings
+        api.get('/settings/public').then(res => {
+            const sMap = {};
+            res.data.forEach(s => { sMap[s.key] = s.value; });
+            if (sMap.tarif_desain_per_jam) {
+                setHourlyRate(parseInt(sMap.tarif_desain_per_jam));
+            }
+        }).catch(err => {
+            console.error('Gagal memuat settings:', err);
+        }).finally(() => setLoadingSettings(false));
+
         if (taskId) {
             api.get(`/dp_tasks/${taskId}`).then(res => setTask(res.data)).catch(console.error);
         }
@@ -43,7 +55,6 @@ export default function DesignFinalizationPage({ onNavigate, pageState }) {
     };
 
     const duration = calculateDuration();
-    const hourlyRate = 50000;
     const billedHours = Math.max(0.5, Math.ceil(duration.totalHours * 2) / 2);
     const finalDesignPrice = billedHours * hourlyRate;
 

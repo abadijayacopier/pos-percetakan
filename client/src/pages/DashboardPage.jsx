@@ -298,10 +298,8 @@ export default function DashboardPage({ onNavigate }) {
                             </div>
                         </div>
 
-                        <div className="flex-1 relative mt-4 min-h-[220px]">
-                            <div className="h-full w-full">
-                                <AreaChart data={chartData} />
-                            </div>
+                        <div className="relative mt-4 h-[280px] w-full">
+                            <AreaChart data={chartData} />
                         </div>
 
                         <div className="mt-16 pt-8 border-t border-slate-50 dark:border-slate-800/50 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
