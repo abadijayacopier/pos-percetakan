@@ -673,26 +673,26 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6 relative">
                     {/* Services Tabs */}
                     <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 sm:p-6 shadow-sm flex-1 flex flex-col">
-                        <div className="flex border-b text-sm border-slate-200 dark:border-slate-800 overflow-auto hide-scrollbar mb-6">
-                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F1</span>
-                                <span className="material-symbols-outlined text-[20px]">content_copy</span> Fotocopy
+                        <div className="flex items-center gap-2 border-b text-sm border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar mb-6 px-1">
+                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F1</span>
+                                <span className="material-symbols-outlined text-[18px]">content_copy</span> FOTOCOPY
                             </button>
-                            <button onClick={() => setActiveServiceTab('jilid')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'jilid' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F2</span>
-                                <span className="material-symbols-outlined text-[20px]">book</span> Jilid
+                            <button onClick={() => setActiveServiceTab('jilid')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'jilid' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F2</span>
+                                <span className="material-symbols-outlined text-[18px]">book</span> JILID
                             </button>
-                            <button onClick={() => setActiveServiceTab('print')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'print' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F3</span>
-                                <span className="material-symbols-outlined text-[20px]">print</span> PRINT
+                            <button onClick={() => setActiveServiceTab('print')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'print' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F3</span>
+                                <span className="material-symbols-outlined text-[18px]">print</span> PRINT
                             </button>
-                            <button onClick={() => setActiveServiceTab('digital')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'digital' ? 'border-primary text-secondary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'digital' ? 'bg-secondary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F4</span>
-                                <span className="material-symbols-outlined text-[20px]">wallpaper</span> DIGITAL
+                            <button onClick={() => setActiveServiceTab('digital')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'digital' ? 'border-secondary text-secondary bg-secondary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'digital' ? 'bg-secondary text-white shadow-sm shadow-secondary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F4</span>
+                                <span className="material-symbols-outlined text-[18px]">wallpaper</span> DIGITAL
                             </button>
-                            <button onClick={() => setActiveServiceTab('service')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'service' ? 'border-emerald-500 text-emerald-500' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'service' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F6</span>
-                                <span className="material-symbols-outlined text-[20px]">build</span> SERVICE
+                            <button onClick={() => setActiveServiceTab('service')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'service' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'service' ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F6</span>
+                                <span className="material-symbols-outlined text-[18px]">build</span> SERVICE
                             </button>
                         </div>
 
