@@ -24,6 +24,7 @@ export default function ServicePage({ onNavigate }) {
     const [services, setServices] = useState([]);
     const [customers, setCustomers] = useState([]);
     const [technicians, setTechnicians] = useState([]);
+    const [products, setProducts] = useState([]); // Opsi A
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showForm, setShowForm] = useState(false);
@@ -53,14 +54,16 @@ export default function ServicePage({ onNavigate }) {
 
     const loadData = async () => {
         try {
-            const [srvRes, custRes, usersRes] = await Promise.all([
+            const [srvRes, custRes, usersRes, prodRes] = await Promise.all([
                 api.get('/service').catch(() => ({ data: [] })),
                 api.get('/customers').catch(() => ({ data: [] })),
-                api.get('/users').catch(() => ({ data: [] }))
+                api.get('/users').catch(() => ({ data: [] })),
+                api.get('/products').catch(() => ({ data: [] }))
             ]);
             setServices((srvRes.data || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
             setCustomers(custRes.data || []);
             setTechnicians((usersRes.data || []).filter(u => u.role === 'teknisi'));
+            setProducts(prodRes.data || []);
         } catch (e) {
             console.error(e);
         }
@@ -155,7 +158,7 @@ export default function ServicePage({ onNavigate }) {
     const addSparepart = () => {
         setFormData({
             ...formData,
-            spareparts: [...formData.spareparts, { id: Date.now(), name: '', qty: 1, price: 0, subtotal: 0 }]
+            spareparts: [...formData.spareparts, { id: Date.now(), productId: '', name: '', qty: 1, price: 0, subtotal: 0 }]
         });
     };
 
@@ -609,13 +612,42 @@ export default function ServicePage({ onNavigate }) {
                                                         >
                                                             <FiTrash2 size={12} />
                                                         </button>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Nama Komponen / Sparepart"
-                                                            className="w-full bg-transparent border-none p-0 focus:ring-0 font-black text-[11px] text-slate-800 dark:text-white uppercase placeholder:text-slate-300 placeholder:normal-case"
-                                                            value={part.name}
-                                                            onChange={(e) => updateSparepart(part.id, 'name', e.target.value)}
-                                                        />
+                                                        <div className="space-y-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Pilih Sparepart dari Inventory</label>
+                                                                <select
+                                                                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl py-2 px-3 text-[10px] font-black focus:ring-2 focus:ring-emerald-500 appearance-none cursor-pointer"
+                                                                    value={part.productId || ''}
+                                                                    onChange={(e) => {
+                                                                        const p = products.find(prod => prod.id === e.target.value);
+                                                                        if (p) {
+                                                                            updateSparepart(part.id, 'productId', p.id);
+                                                                            updateSparepart(part.id, 'name', p.name);
+                                                                            updateSparepart(part.id, 'price', p.sellPrice);
+                                                                        } else {
+                                                                            updateSparepart(part.id, 'productId', '');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <option value="">-- PILIH BARANG --</option>
+                                                                    {products.filter(p => !p.category_name || p.category_name.toLowerCase().includes('sparepart')).map(p => (
+                                                                        <option key={p.id} value={p.id}>{p.name.toUpperCase()} (STOK: {p.stock})</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                <label className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Nama Deskripsi (Custom)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Nama Komponen / Sparepart"
+                                                                    className="w-full bg-transparent border-b border-slate-100 dark:border-slate-800 p-0 focus:ring-0 font-black text-[11px] text-slate-800 dark:text-white uppercase placeholder:text-slate-300 placeholder:normal-case"
+                                                                    value={part.name}
+                                                                    onChange={(e) => updateSparepart(part.id, 'name', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+
                                                         <div className="flex gap-4 items-center">
                                                             <div className="flex-1 flex flex-col gap-1">
                                                                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantity/Qty</span>
@@ -627,7 +659,7 @@ export default function ServicePage({ onNavigate }) {
                                                                 />
                                                             </div>
                                                             <div className="flex-2 flex flex-col gap-1">
-                                                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Landed Price (Rp)</span>
+                                                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Price (Rp)</span>
                                                                 <input
                                                                     type="number"
                                                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg py-1.5 px-2 text-xs font-black focus:ring-2 focus:ring-emerald-500"

@@ -1,5 +1,6 @@
 import Swal from 'sweetalert2';
 import EscPosEncoder from 'esc-pos-encoder';
+import qz from 'qz-tray';
 
 
 // ============================================
@@ -510,3 +511,83 @@ export const printViaRawBT = (text) => {
     Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal encode nota untuk printer Bluetooth', timer: 3000 });
   }
 };
+
+// ============================================
+// QZ TRAY INTEGRATION (LX-310 / DOT MATRIX)
+// ============================================
+
+export const initQZ = async () => {
+  if (qz.websocket.isActive()) return true;
+
+  try {
+    // Basic config for QZ Tray (unsigned/dev mode)
+    // To suppress popups, we would need a proper signing certificate
+    await qz.websocket.connect();
+    console.log('QZ Tray Connected');
+    return true;
+  } catch (err) {
+    console.warn('QZ Tray not running or connection failed:', err);
+    return false;
+  }
+};
+
+/**
+ * List local printers via QZ Tray
+ * @returns {Promise<string[]>}
+ */
+export const listQZPrinters = async () => {
+  try {
+    const isConnected = await initQZ();
+    if (!isConnected) return [];
+
+    return await qz.printers.find();
+  } catch (err) {
+    console.error('QZ List Printers Error:', err);
+    return [];
+  }
+};
+
+export const printViaQZ = async (data, printerName = 'LX-310') => {
+  try {
+    const isConnected = await initQZ();
+    if (!isConnected) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'QZ Tray Tidak Aktif',
+        text: 'Pastikan aplikasi QZ Tray sudah berjalan di komputer ini.',
+        confirmButtonText: 'Oke'
+      });
+      return false;
+    }
+
+    // Find the printer
+    const printer = await qz.printers.find(printerName);
+    const config = qz.configs.create(printer);
+
+    // Send raw data (ESC/P or Text)
+    // Wrap text in array as required by QZ
+    const printData = [
+      data
+    ];
+
+    await qz.print(config, printData);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text: `Nota dikirim ke ${printerName} via QZ Tray!`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+    return true;
+  } catch (err) {
+    console.error('QZ Print Error:', err);
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Cetak LX-310',
+      text: 'Error: ' + err.message
+    });
+    return false;
+  }
+};
+

@@ -190,6 +190,7 @@ export function ProfitLossContent({ dateFrom, dateTo, storeInfo }) {
 
             {/* --- PRINT ONLY LABA RUGI REPORT (A4 FORMAT) --- */}
             <PrintReportLayout
+                id="print-profit-loss"
                 title="Laporan Laba Rugi"
                 period={dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}
                 printedBy="Admin Keuangan"

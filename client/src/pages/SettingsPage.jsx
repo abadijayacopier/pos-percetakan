@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { formatDateTime, printViaBluetooth } from '../utils';
+import { formatDateTime, printViaBluetooth, listQZPrinters } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage } from 'react-icons/fi';
@@ -24,6 +24,7 @@ export default function SettingsPage() {
     const [printPrices, setPrintPrices] = useState([]);
     const [bindPrices, setBindPrices] = useState([]);
     const [systemPrinters, setSystemPrinters] = useState([]);
+    const [qzPrinters, setQZPrinters] = useState([]);
     const [galleryImages, setGalleryImages] = useState([]);
 
     const [fcDiscounts, setFcDiscounts] = useState([]);
@@ -138,6 +139,16 @@ export default function SettingsPage() {
     useEffect(() => {
         loadSettings();
     }, []);
+
+    useEffect(() => {
+        if (printerSize === 'lx310') {
+            const fetchQZ = async () => {
+                const list = await listQZPrinters();
+                setQZPrinters(list);
+            };
+            fetchQZ();
+        }
+    }, [printerSize]);
 
     // Functions
     const refreshUsers = async () => {
@@ -1070,8 +1081,15 @@ export default function SettingsPage() {
                                                 <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mb-4 leading-relaxed">Struk dikirim langsung ke hardware printer tanpa dialog browser (Silent Print).</p>
                                                 <select className="w-full bg-white dark:bg-slate-900 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white" value={printerName} onChange={e => setPrinterName(e.target.value)}>
                                                     <option value="">Cetak via Dialog Browser (Bawaan PDF)</option>
-                                                    {systemPrinters.map(p => <option key={p} value={p}>{p}</option>)}
+                                                    {printerSize === 'lx310' ? (
+                                                        qzPrinters.map(p => <option key={p} value={p}>{p} (QZ Tray)</option>)
+                                                    ) : (
+                                                        systemPrinters.map(p => <option key={p} value={p}>{p}</option>)
+                                                    )}
                                                 </select>
+                                                {printerSize === 'lx310' && qzPrinters.length === 0 && (
+                                                    <p className="text-[10px] text-red-500 mt-2 font-bold animate-pulse">Menghubungkan ke QZ Tray... Pastikan aplikasi aktif di komputer.</p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

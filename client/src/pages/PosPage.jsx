@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth } from '../utils';
+import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 import Swal from 'sweetalert2';
@@ -131,6 +131,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
         };
 
         loadInitialData();
+        initQZ(); // Initialize QZ connection on POS load
     }, []);
 
     // Filter products based on search
@@ -228,6 +229,12 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
             if (isMobile) {
                 printViaBluetooth(receiptText);
                 console.log('Receipt sent to Bluetooth');
+                return;
+            }
+
+            if (effectivePrinterSize === 'lx310') {
+                await printViaQZ(receiptText, printSettings.printerName || 'LX-310');
+                console.log('Receipt sent via QZ Tray (LX-310)');
                 return;
             }
 

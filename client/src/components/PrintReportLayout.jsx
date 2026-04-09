@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatDateTime } from '../utils';
 
-export default function PrintReportLayout({ title, period, printedBy, storeInfo, children }) {
+export default function PrintReportLayout({ id = "print-report-content", title, period, printedBy, storeInfo, children }) {
     const defaultStore = {
         name: "ABADI JAYA",
         tagline: "Percetakan & Fotocopy",
@@ -10,7 +10,7 @@ export default function PrintReportLayout({ title, period, printedBy, storeInfo,
     const store = storeInfo || defaultStore;
 
     return (
-        <div id="print-report-content" className="hidden print:block w-full text-black font-sans leading-relaxed bg-white" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div id={id} className="hidden print:block w-full text-black font-sans leading-relaxed bg-white" style={{ fontFamily: "'Inter', sans-serif" }}>
             <style>
                 {`
                 @media print {
@@ -92,7 +92,7 @@ export default function PrintReportLayout({ title, period, printedBy, storeInfo,
                 {children}
             </main>
 
-            <section className="mt-12 flex justify-between px-16 text-center text-sm break-inside-avoid">
+            <section className="mt-12 flex justify-between px-16 text-center text-sm break-inside-avoid bg-white">
                 <div className="w-56">
                     <p className="mb-24 text-gray-500 text-xs font-bold uppercase tracking-wider">Dibuat Oleh,</p>
                     <div className="border-t border-black font-black text-gray-900 pt-2">{printedBy}</div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { generateRawReceipt, printViaBluetooth } from '../utils';
+import { generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import { FiPrinter, FiArrowLeft, FiPlus, FiCheck } from 'react-icons/fi';
 import ReceiptProMax from '../components/ReceiptProMax';
 
@@ -148,6 +148,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
             }
         };
         fetchSettingsAndData();
+        initQZ();
     }, [pageState, user]);
 
     if (isLoading) {
@@ -208,6 +209,12 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                 return;
             }
 
+            if (effectivePrinterSize === 'lx310') {
+                await printViaQZ(receiptText, printSettings.printerName || 'LX-310');
+                console.log('Receipt sent via QZ Tray (LX-310)');
+                return;
+            }
+
             const payload = {
                 text: receiptText,
                 printerName: printSettings.printerName,
@@ -232,22 +239,72 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
     };
 
     const handleShare = async () => {
-        const textData = `*NOTA PEMBAYARAN - ${printSettings.storeName.toUpperCase()}*\nNo. Nota: ${receiptData.invoiceNo}\nKasir: ${receiptData.cashier}\nTotal: Rp ${formatCurrency(receiptData.total)}\nStatus: ${receiptData.paid >= receiptData.total ? 'LUNAS' : 'SISA BAYAR Rp ' + formatCurrency(receiptData.total - receiptData.paid)}\n\nTerima Kasih Atas Kunjungan Anda!`;
+        if (!receiptData) return;
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Nota ${receiptData.invoiceNo}`,
-                    text: textData,
-                });
-            } catch (err) {
-                console.log('User cancelled share or share failed', err);
+        // Formatted Receipt Text for WhatsApp
+        const storeName = (printSettings.storeName || 'Abadi Jaya').toUpperCase();
+        const itemsText = (receiptData.items || []).map(item =>
+            `» ${item.desc} x${item.qty} = Rp ${formatCurrency(item.total)}`
+        ).join('\n');
+
+        const status = receiptData.paid >= receiptData.total ? '*LUNAS*' : `*SISA BAYAR: Rp ${formatCurrency(receiptData.total - receiptData.paid)}*`;
+
+        const waText = `*${storeName}*\n` +
+            `────────────────────────\n` +
+            `■ *NOTA PEMBAYARAN*\n` +
+            `––––––––––––––––––––––––––\n` +
+            `ID Nota  : ${receiptData.invoiceNo}\n` +
+            `Tanggal : ${receiptData.date}\n` +
+            `Kasir   : ${receiptData.cashier}\n` +
+            `––––––––––––––––––––––––––\n` +
+            `${itemsText}\n` +
+            `––––––––––––––––––––––––––\n` +
+            `*TOTAL: Rp ${formatCurrency(receiptData.total)}*\n` +
+            `Status: ${status}\n\n` +
+            `Terima kasih telah berlangganan di ${storeName} ✦\n` +
+            `Barang yang sudah dibeli tidak dapat ditukar.`;
+
+        const encodedText = encodeURIComponent(waText);
+        const waUrl = `https://wa.me/?text=${encodedText}`;
+
+        // Action sheet for sharing
+        Swal.fire({
+            title: 'Bagikan Nota',
+            text: 'Pilih metode pengiriman:',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'WhatsApp',
+            cancelButtonText: 'Lainnya (System Share)',
+            confirmButtonColor: '#25D366', // WhatsApp Green
+            denyButtonText: 'Salin Teks',
+            showDenyButton: true,
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'rounded-xl font-bold px-6 py-3',
+                cancelButton: 'rounded-xl font-bold px-6 py-3',
+                denyButton: 'rounded-xl font-bold px-6 py-3'
             }
-        } else {
-            // Fallback to clipboard
-            navigator.clipboard.writeText(textData);
-            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Teks nota telah disalin ke clipboard! Silakan paste (tempel) di WhatsApp.', timer: 3000 });
-        }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Open WhatsApp
+                window.open(waUrl, '_blank');
+            } else if (result.isDenied) {
+                // Clipboard
+                navigator.clipboard.writeText(waText);
+                Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Teks nota telah disalin!', timer: 2000, showConfirmButton: false });
+            } else if (result.dismiss === Swal.DismissReason.cancel) {
+                // Native Share
+                if (navigator.share) {
+                    navigator.share({
+                        title: `Nota ${receiptData.invoiceNo}`,
+                        text: waText,
+                    }).catch(() => { });
+                } else {
+                    navigator.clipboard.writeText(waText);
+                    Swal.fire({ icon: 'info', title: 'Clipboard', text: 'Browser tidak mendukung Share API. Teks disalin ke clipboard.', timer: 2000 });
+                }
+            }
+        });
     };
 
     return (

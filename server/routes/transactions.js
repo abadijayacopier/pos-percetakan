@@ -120,6 +120,36 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
           VALUES (?, 'out', ?, ?, 'Penjualan POS')
         `, [item.id, item.qty, invoiceNo]);
             }
+
+            // ─── Opsi B: Digital Printing Integration ────────────────
+            if (item.type === 'digital') {
+                const orderId = 'ORD-' + Date.now().toString().slice(-6);
+                await connection.query(`
+                    INSERT INTO dp_tasks (id, status, customerName, customerId, title, material_id, material_name, 
+                    dimensions_w, dimensions_h, material_price, type, qty, is_paid)
+                    VALUES(?, 'produksi', ?, ?, ?, ?, ?, ?, ?, ?, 'digital', ?, 1)
+                `, [
+                    orderId, customerName || 'Umum', validCustomerId, item.name,
+                    item.meta?.materialId || null, item.name,
+                    item.meta?.width || null, item.meta?.height || null,
+                    (item.price / (item.qty || 1)), item.qty || 1
+                ]);
+            }
+
+            // ─── Opsi B: Service Order Integration ────────────────────
+            if (item.type === 'service_order') {
+                const soId = 'so' + Date.now();
+                const serviceNo = 'SVC-' + Date.now().toString().slice(-6);
+                await connection.query(`
+                    INSERT INTO service_orders (id, service_no, customer_id, customer_name, machine_info, complaint, total_cost, status, technician_id)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, 'diterima', ?)
+                `, [
+                    soId, serviceNo, validCustomerId, customerName || 'Umum',
+                    item.meta?.device || 'Unknown Device',
+                    item.meta?.issue || 'No description',
+                    item.price, req.user.id
+                ]);
+            }
         }
 
         // 3c. Jika status LUNAS, masukkan ke Cash Flow

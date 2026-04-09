@@ -8,7 +8,7 @@
 - [ ] Master Produk & Kategori (CRUD)
 - [ ] Transaksi Penjualan ATK (POS Kasir)
 - [ ] Transaksi Fotocopy (calculator, volume discount)
-- [ ] Cetak struk / receipt
+- [x] Cetak struk / receipt (Thermal & Dot-Matrix)
 
 ## Phase 2: Order Management
 - [ ] Order Percetakan + Status Tracking (Kanban) + Biaya Ongkir
@@ -46,8 +46,9 @@
 - [ ] Log Aktivitas (riwayat aksi user)
 
 ## Phase 4: Enhancement
-- [ ] Pengaturan Printer (thermal 58mm/80mm)
-- [ ] Template Nota/Struk/Invoice
-- [ ] WhatsApp Gateway (kirim nota & status)
+- [x] Integrasi QZ Tray (LX-310 Dot-Matrix)
+- [x] Pengaturan Printer (thermal 58mm/80mm)
+- [x] Template Nota/Struk/Invoice (ProMax PDF & Raw)
+- [x] WhatsApp Gateway (Bagikan via wa.me)
 - [ ] Backup & Restore data
 - [ ] Theme toggle (Light/Dark/System)

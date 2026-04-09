@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../services/api';
-import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth } from '../utils';
+import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft } from 'react-icons/fi';
@@ -26,6 +26,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [bindingPrices, setBindingPrices] = useState([]);
     const [printPrices, setPrintPrices] = useState([]);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [materials, setMaterials] = useState([]); // Opsi B
 
     // Customer States
     const [customers, setCustomers] = useState([]);
@@ -65,10 +66,19 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [fcQty, setFcQty] = useState(1);
 
     // Jilid & Print States
-    const [jilidType, setJilidType] = useState(null);
     const [jilidQty, setJilidQty] = useState(1);
     const [printType, setPrintType] = useState(null);
     const [printQty, setPrintQty] = useState(1);
+
+    // Digital & Service Order States (Opsi B)
+    const [digitalMatId, setDigitalMatId] = useState('');
+    const [digitalWidth, setDigitalWidth] = useState('');
+    const [digitalHeight, setDigitalHeight] = useState('');
+    const [digitalQty, setDigitalQty] = useState(1);
+    const [digitalNotes, setDigitalNotes] = useState('');
+    const [serviceDevice, setServiceDevice] = useState('');
+    const [serviceIssue, setServiceIssue] = useState('');
+    const [serviceCost, setServiceCost] = useState('');
 
     // Payment & Modal States
     const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -104,17 +114,19 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [productsRes, customersRes, fcRes, settingsRes] = await Promise.all([
+                const [productsRes, customersRes, fcRes, settingsRes, materialsRes] = await Promise.all([
                     api.get('/products').catch(() => ({ data: [] })),
                     api.get('/customers').catch(() => ({ data: [] })),
                     api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
-                    api.get('/settings').catch(() => ({ data: [] }))
+                    api.get('/settings').catch(() => ({ data: [] })),
+                    api.get('/materials').catch(() => ({ data: [] }))
                 ]);
 
                 // Filter or set states directly
                 setProducts(productsRes.data || []);
                 setCustomers(customersRes.data || []);
                 setFotocopyPrices(fcRes.data || []);
+                setMaterials((materialsRes.data || []).filter(m => m.is_active && m.kategori === 'digital'));
 
                 // Load Settings
                 const allSettings = settingsRes.data || [];
@@ -155,6 +167,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         };
 
         loadInitialData();
+        initQZ(); // Start QZ connection on POS load
     }, []);
 
     // Helper: find price for fotocopy based on selection
@@ -354,6 +367,43 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setPrintQty(1);
     };
 
+    const addDigitalToCart = (matId, w, h, qty, notes) => {
+        const mat = materials.find(m => m.id === matId);
+        if (!mat) { showToast('Pilih bahan terlebih dahulu', 'warning'); return; }
+        if (!w || !h) { showToast('Masukkan ukuran panjang & lebar', 'warning'); return; }
+
+        const luas = parseFloat(w) * parseFloat(h);
+        const unitPrice = parseFloat(mat.harga_jual) || 0;
+        const subtotalCalc = luas * unitPrice * qty;
+
+        const newItem = {
+            id: `dig-${Date.now()}-${Math.random()}`,
+            name: `Banner: ${mat.nama_bahan} (${w}x${h}m)`,
+            sellPrice: unitPrice * luas, // Price per unit (luas * harga)
+            quantity: qty,
+            type: 'digital',
+            meta: { materialId: matId, width: w, height: h, notes }
+        };
+        setCart(prev => [...prev, newItem]);
+        showToast('Order Digital ditambahkan!', 'success');
+        setDigitalWidth(''); setDigitalHeight(''); setDigitalNotes('');
+    };
+
+    const addServiceToCart = (device, issue, cost) => {
+        if (!device || !issue) { showToast('Lengkapi info service', 'warning'); return; }
+        const newItem = {
+            id: `srv-${Date.now()}-${Math.random()}`,
+            name: `Service: ${device} (${issue})`,
+            sellPrice: parseInt(cost) || 0,
+            quantity: 1,
+            type: 'service_order',
+            meta: { device, issue }
+        };
+        setCart(prev => [...prev, newItem]);
+        showToast('Order Service ditambahkan!', 'success');
+        setServiceDevice(''); setServiceIssue(''); setServiceCost('');
+    };
+
     // Modals
     const toggleDiscountModal = () => setDiscountModalOpen(!isDiscountModalOpen);
     const openPayment = () => { if (cart.length > 0) setPaymentModalOpen(true); };
@@ -387,6 +437,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
             if (isMobile) {
                 printViaBluetooth(receiptText);
+            } else if (effectivePrinterSize === 'lx310') {
+                await printViaQZ(receiptText, printerSettings.printerName || 'LX-310');
             } else {
                 await api.post('/print/receipt', {
                     text: receiptText,
@@ -428,13 +480,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             customerName: customerName,
             type: cart.some(c => c.type === 'fotocopy' || c.type === 'service') ? 'service' : 'sale',
             items: cart.map(item => ({
-                id: item.type === 'atk' ? item.id : null,
+                id: item.id,
                 name: item.name,
                 qty: item.quantity,
                 price: item.sellPrice,
                 subtotal: item.sellPrice * item.quantity,
                 discount: item.discount || 0,
-                source: item.type === 'atk' ? 'atk' : 'fc'
+                source: item.type === 'atk' ? 'atk' : 'fc',
+                type: item.type,
+                meta: item.meta
             })),
             subtotal,
             discount: globalDiscount,
@@ -508,6 +562,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         'F1': () => setActiveServiceTab('fotocopy'),
         'F2': () => setActiveServiceTab('jilid'),
         'F3': () => setActiveServiceTab('print'),
+        'F4': () => setActiveServiceTab('digital'), // Opsi B
+        'F6': () => setActiveServiceTab('service'), // Opsi B
         'F5': () => searchInputRef.current?.focus(),
         'F9': () => toggleDiscountModal(),
         'F10': () => openPayment(),
@@ -620,9 +676,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'jilid' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F2</span>
                                 <span className="material-symbols-outlined text-[20px]">book</span> Jilid
                             </button>
-                            <button onClick={() => setActiveServiceTab('print')} className={`flex-1 min-w-[140px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                            <button onClick={() => setActiveServiceTab('print')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'print' ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F3</span>
                                 <span className="material-symbols-outlined text-[20px]">print</span> PRINT
+                            </button>
+                            <button onClick={() => setActiveServiceTab('digital')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'digital' ? 'border-primary text-secondary' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'digital' ? 'bg-secondary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F4</span>
+                                <span className="material-symbols-outlined text-[20px]">wallpaper</span> DIGITAL
+                            </button>
+                            <button onClick={() => setActiveServiceTab('service')} className={`flex-1 min-w-[120px] pb-3 flex items-center justify-center gap-2 border-b-2 font-bold transition-all ${activeServiceTab === 'service' ? 'border-emerald-500 text-emerald-500' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'}`}>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${activeServiceTab === 'service' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>F6</span>
+                                <span className="material-symbols-outlined text-[20px]">build</span> SERVICE
                             </button>
                         </div>
 
@@ -789,6 +853,106 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     </div>
                                 </div>
                             )}
+
+                            {activeServiceTab === 'digital' && (
+                                <div className="flex flex-col lg:flex-row gap-8">
+                                    <div className="flex-1 space-y-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Parameter Cetak</h3>
+                                                <div className="space-y-3">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[9px] font-black text-slate-400 ml-1">BAHAN / MATERIAL</label>
+                                                        <select value={digitalMatId} onChange={(e) => setDigitalMatId(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-3 px-4 font-bold text-sm">
+                                                            <option value="">-- Pilih Bahan --</option>
+                                                            {materials.map(m => (
+                                                                <option key={m.id} value={m.id}>{m.nama_bahan?.toUpperCase()} ({formatRupiah(m.harga_jual)}/m2)</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[9px] font-black text-slate-400 ml-1">PANJANG (M)</label>
+                                                            <input type="number" step="0.1" value={digitalWidth} onChange={(e) => setDigitalWidth(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base" placeholder="0.0" />
+                                                        </div>
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <label className="text-[9px] font-black text-slate-400 ml-1">LEBAR (M)</label>
+                                                            <input type="number" step="0.1" value={digitalHeight} onChange={(e) => setDigitalHeight(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base" placeholder="0.0" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Detail Opsional</h3>
+                                                <div className="space-y-3">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[9px] font-black text-slate-400 ml-1">JUMLAH (QTY)</label>
+                                                        <input type="number" value={digitalQty} onChange={(e) => setDigitalQty(parseInt(e.target.value) || 1)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base" />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <label className="text-[9px] font-black text-slate-400 ml-1">CATATAN / FINISHING</label>
+                                                        <textarea value={digitalNotes} onChange={(e) => setDigitalNotes(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2 px-4 font-bold text-sm h-16 resize-none" placeholder="Contoh: Mata ayam pojok-pojok..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:w-80 shrink-0 bg-secondary/5 rounded-3xl p-8 border-2 border-secondary/20 flex flex-col justify-center text-center">
+                                        <div className="mb-6">
+                                            <h4 className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-1">Estimasi Luas</h4>
+                                            <div className="text-2xl font-black text-slate-800 dark:text-white">{(parseFloat(digitalWidth) || 0) * (parseFloat(digitalHeight) || 0)} m2</div>
+                                        </div>
+                                        <div className="mb-8">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Biaya</h4>
+                                            <div className="text-3xl font-black text-primary">
+                                                {formatRupiah((parseFloat(digitalWidth) || 0) * (parseFloat(digitalHeight) || 0) * (materials.find(m => m.id === digitalMatId)?.harga_jual || 0) * digitalQty)}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => addDigitalToCart(digitalMatId, digitalWidth, digitalHeight, digitalQty, digitalNotes)} className="w-full bg-secondary text-white py-4 rounded-xl font-bold shadow-lg shadow-secondary/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95">
+                                            <span className="material-symbols-outlined">wallpaper</span> Tambah ke Keranjang
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeServiceTab === 'service' && (
+                                <div className="flex flex-col lg:flex-row gap-8">
+                                    <div className="flex-1 space-y-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="flex flex-col gap-4">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Informasi Unit</h3>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[9px] font-black text-slate-400 ml-1">NAMA UNIT / MODEL</label>
+                                                    <input type="text" value={serviceDevice} onChange={(e) => setServiceDevice(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-3 px-4 font-bold text-base" placeholder="Contoh: Epson L3110..." />
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[9px] font-black text-slate-400 ml-1">KELUHAN / PROBLEM</label>
+                                                    <textarea value={serviceIssue} onChange={(e) => setServiceIssue(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-3 px-4 font-bold text-sm h-24 resize-none" placeholder="Jelaskan kerusakan mesin..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-4">
+                                                <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Biaya & Estimasi</h3>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="text-[9px] font-black text-slate-400 ml-1">ESTIMASI BIAYA (RP)</label>
+                                                    <input type="number" value={serviceCost} onChange={(e) => setServiceCost(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-3 px-4 font-bold text-xl text-emerald-500" placeholder="0" />
+                                                </div>
+                                                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-xl border border-emerald-100 dark:border-emerald-800 text-[11px] text-emerald-600 font-medium">
+                                                    Biaya ini adalah estimasi awal. Biaya final akan diupdate oleh teknisi setelah pengecekan mendalam.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="lg:w-80 shrink-0 bg-emerald-500/5 rounded-3xl p-8 border-2 border-emerald-500/20 flex flex-col justify-center text-center">
+                                        <div className="mb-8">
+                                            <h4 className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Penerimaan Unit</h4>
+                                            <div className="text-3xl font-black text-slate-800 dark:text-white">{formatRupiah(serviceCost || 0)}</div>
+                                        </div>
+                                        <button onClick={() => addServiceToCart(serviceDevice, serviceIssue, serviceCost)} className="w-full bg-emerald-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95">
+                                            <span className="material-symbols-outlined">construction</span> Buat Order Service
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -836,8 +1000,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
+                    </div >
+                </div >
 
                 {/* Right Sidebar: Cart */}
                 <aside className={`fixed inset-y-0 right-0 z-50 lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-full' : 'translate-x-0'}`}>
@@ -899,7 +1063,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 <div key={item.id} className="flex gap-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm p-3 rounded-xl hover:border-slate-300 transition-colors">
                                     <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
                                         <span className="material-symbols-outlined">
-                                            {item.type === 'fotocopy' ? 'content_copy' : item.type === 'service' ? 'book' : 'inventory_2'}
+                                            {item.type === 'fotocopy' ? 'content_copy' : item.type === 'digital' ? 'wallpaper' : item.type === 'service_order' ? 'build' : item.type === 'service' ? 'book' : 'inventory_2'}
                                         </span>
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -963,20 +1127,24 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             </main>
 
             {/* Overlay for mobile cart */}
-            {isMobile && isCartOpen && (
-                <div
-                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
-                    onClick={() => setIsCartOpen(false)}
-                />
-            )}
+            {
+                isMobile && isCartOpen && (
+                    <div
+                        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden animate-in fade-in duration-300"
+                        onClick={() => setIsCartOpen(false)}
+                    />
+                )
+            }
 
             {/* Float trigger for mobile cart inside `<main>` overlap or sticky at bottom if needed, currently placed in header */}
-            {isMobile && cart.length > 0 && !isCartOpen && (
-                <button onClick={() => { setIsCartOpen(true); }} className="fixed bottom-16 right-6 z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
-                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full size-6 flex items-center justify-center border-2 border-white">{cart.length}</span>
-                </button>
-            )}
+            {
+                isMobile && cart.length > 0 && !isCartOpen && (
+                    <button onClick={() => { setIsCartOpen(true); }} className="fixed bottom-16 right-6 z-40 size-14 bg-primary text-white rounded-full shadow-2xl flex items-center justify-center text-2xl animate-bounce">
+                        <span className="material-symbols-outlined">shopping_cart_checkout</span>
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full size-6 flex items-center justify-center border-2 border-white">{cart.length}</span>
+                    </button>
+                )
+            }
 
             {/* Footer / Hotkeys Banner */}
             <footer className="hidden lg:flex h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium items-center justify-between px-4 shrink-0 overflow-auto hide-scrollbar z-45 relative">
@@ -985,7 +1153,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         <span className="material-symbols-outlined text-[14px]">keyboard</span>
                         BANTUAN TOMBOL:
                     </div>
-                    {['F1', 'Fotocopy', 'F2', 'Jilid', 'F3', 'Cetak', 'F5', 'Cari ATK / Barcode Auto', 'F8', 'Laci Uang', 'F9', 'Diskon', 'F10', 'Bayar', 'F11', 'Layar Penuh', 'F12', 'Simpan List', 'ESC', 'Batal'].map((key, i) => (
+                    {['F1', 'Fotocopy', 'F2', 'Jilid', 'F3', 'Cetak', 'F4', 'Digital/Spanduk', 'F6', 'Service', 'F5', 'Cari ATK / Barcode Auto', 'F8', 'Laci Uang', 'F9', 'Diskon', 'F10', 'Bayar', 'F11', 'Layar Penuh', 'F12', 'Simpan List', 'ESC', 'Batal'].map((key, i) => (
                         <div key={i} className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap">
                             {i % 2 === 0 ? (
                                 <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-[9px] font-bold text-slate-400 capitalize">

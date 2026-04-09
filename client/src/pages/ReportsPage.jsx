@@ -187,7 +187,11 @@ export default function ReportsPage() {
             allowOutsideClick: false,
             didOpen: async () => {
                 Swal.showLoading();
-                const element = document.getElementById('print-report-content');
+                const reportId = activeTab === 'sales' ? 'print-sales' :
+                    activeTab === 'products' ? 'print-products' :
+                        activeTab === 'customers' ? 'print-customers' :
+                            activeTab === 'profit-loss' ? 'print-profit-loss' : 'print-report-content';
+                const element = document.getElementById(reportId);
                 if (element) {
                     const wasHidden = element.classList.contains('hidden');
                     if (wasHidden) {
@@ -195,10 +199,15 @@ export default function ReportsPage() {
                         element.classList.add('block');
                     }
                     const opt = {
-                        margin: 15,
+                        margin: 10,
                         filename: `Laporan_${activeTab}_${Date.now()}.pdf`,
                         image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true },
+                        html2canvas: {
+                            scale: 2,
+                            useCORS: true,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                     };
                     try {
@@ -470,6 +479,7 @@ export default function ReportsPage() {
 
                     {/* --- PRINT ONLY SALES REPORT (A4 FORMAT) --- */}
                     <PrintReportLayout
+                        id="print-sales"
                         title="Laporan Penjualan"
                         period={dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}
                         printedBy="Admin / Kasir"
@@ -648,6 +658,7 @@ export default function ReportsPage() {
 
                     {/* --- PRINT ONLY PRODUCT REPORT (A4 FORMAT) --- */}
                     <PrintReportLayout
+                        id="print-products"
                         title="Laporan Stok Produk"
                         printedBy="Admin Gudang"
                         storeInfo={storeInfo}
@@ -769,6 +780,7 @@ export default function ReportsPage() {
 
                         {/* --- PRINT ONLY CUSTOMER REPORT (A4 FORMAT) --- */}
                         <PrintReportLayout
+                            id="print-customers"
                             title="Laporan Pelanggan"
                             printedBy="Admin Marketer"
                             storeInfo={storeInfo}

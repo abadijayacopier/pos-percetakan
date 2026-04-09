@@ -315,7 +315,7 @@ export default function PurchasingPage({ onNavigate }) {
                         className="lg:col-span-8 flex flex-col gap-6"
                     >
                         {/* Search Bar / Add Item */}
-                        <div className="relative z-20">
+                        <div className="relative z-50">
                             <div className="relative group">
                                 <div className="absolute left-5 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 p-2 rounded-xl text-slate-400 group-focus-within:text-blue-500 shadow-sm transition-colors border border-slate-100 dark:border-slate-700 pointer-events-none">
                                     <FiSearch size={20} />

@@ -85,19 +85,54 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin']), async (req, r
             WHERE id = ?
                 `, [diagnosis, laborCost || 0, status, warrantyEnd || null, req.params.id]);
 
-        // Reset sparepart lama jika ada (cara sederhana: hapus lalu insert ulang)
+        // ─── Otomatisasi Stok Sparepart (Opsi A) ──────────────────────
         if (spareparts && Array.isArray(spareparts)) {
+            // 1. Ambil sparepart lama untuk dikembalikan ke stok (Restore)
+            const [oldSpareparts] = await connection.query(
+                'SELECT product_id, qty FROM service_spareparts WHERE service_order_id = ? AND product_id IS NOT NULL',
+                [req.params.id]
+            );
+
+            for (const old of oldSpareparts) {
+                await connection.query(
+                    'UPDATE products SET stock = stock + ? WHERE id = ?',
+                    [old.qty, old.product_id]
+                );
+                // Catat restore di stock_movements
+                await connection.query(
+                    `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+                     VALUES (?, 'in', ?, ?, ?)`,
+                    [old.product_id, old.qty, `RESTORE-${req.params.id}`, `Koreksi/Hapus sparepart service ${req.params.id}`]
+                );
+            }
+
+            // 2. Hapus data lama
             await connection.query('DELETE FROM service_spareparts WHERE service_order_id = ?', [req.params.id]);
 
+            // 3. Insert data baru & Kurangi Stok
             for (const sp of spareparts) {
                 await connection.query(`
-                    INSERT INTO service_spareparts(service_order_id, name, qty, price)
-                    VALUES(?, ?, ?, ?)
-                `, [req.params.id, sp.name, sp.qty, sp.price]);
+                    INSERT INTO service_spareparts(service_order_id, name, qty, price, product_id)
+                    VALUES(?, ?, ?, ?, ?)
+                `, [req.params.id, sp.name, sp.qty, sp.price, sp.productId || null]);
+
+                if (sp.productId) {
+                    await connection.query(
+                        'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?',
+                        [sp.qty, sp.productId]
+                    );
+
+                    // Catat pengeluaran di stock_movements
+                    await connection.query(
+                        `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+                         VALUES (?, 'out', ?, ?, ?)`,
+                        [sp.productId, sp.qty, req.params.id, `Pemakaian sparepart service ${req.params.id}`]
+                    );
+                }
                 totalSparepartCost += (sp.qty * sp.price);
             }
         } else {
-            // Hitung ulang current spareparts jika array tak dikirim
+            // Hitung ulang current spareparts jika array tak dikirim (fallback)
             const [currentSp] = await connection.query('SELECT qty, price FROM service_spareparts WHERE service_order_id = ?', [req.params.id]);
             totalSparepartCost = currentSp.reduce((sum, item) => sum + (item.qty * item.price), 0);
         }

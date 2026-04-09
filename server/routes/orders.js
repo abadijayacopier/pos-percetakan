@@ -185,6 +185,27 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
                 `INSERT INTO production_status (order_item_id, status) VALUES (?, 'menunggu')`,
                 [itemId]
             );
+
+            // ─── Otomatisasi Stok Material (Opsi A) ──────────────────────────
+            if (safeMaterialId) {
+                // Untuk digital printing, pengurangan berdasarkan luas_total * qty
+                // Untuk lainnya (offset, dll), pengurangan berdasarkan quantity
+                const deduction = (safeLayanan === 'digital_printing' && luasTotal)
+                    ? (parseFloat(luasTotal) * (parseInt(item.quantity) || 1))
+                    : (parseInt(item.quantity) || 1);
+
+                await conn.query(
+                    `UPDATE materials SET stok_saat_ini = GREATEST(0, stok_saat_ini - ?) WHERE id = ?`,
+                    [deduction, safeMaterialId]
+                );
+
+                // Catat di material_movements
+                await conn.query(
+                    `INSERT INTO material_movements (material_id, tipe, jumlah, satuan, referensi, catatan, user_id)
+                     SELECT ?, 'keluar', ?, satuan, ?, ?, ? FROM materials WHERE id = ?`,
+                    [safeMaterialId, deduction, orderNo, `Order ${orderNo} - ${item.nama_item}`, validUserId, safeMaterialId]
+                );
+            }
         }
 
         // Catat DP ke cash_flow jika ada
