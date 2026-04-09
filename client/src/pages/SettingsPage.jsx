@@ -565,6 +565,30 @@ export default function SettingsPage() {
                         {/* Fotocopy Prices */}
                         {activeTab === 'fotocopy' && (
                             <div className="space-y-8 pb-12">
+                                {/* Tarif Desain (Standalone Section) */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+                                    <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-blue-50/50 dark:bg-blue-900/10">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold">
+                                                <FiEdit size={20} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-white text-base">Tarif Desain per Jam</h4>
+                                                <p className="text-xs text-slate-500">Biaya kerja desain per jam (digunakan di modul Desain & Offset)</p>
+                                            </div>
+                                        </div>
+                                        <div className="relative w-full max-w-[240px]">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
+                                            <input
+                                                type="number"
+                                                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                                value={tarifDesainPerJam}
+                                                onChange={(e) => setTarifDesainPerJam(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Master Harga Fotocopy */}
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                                     <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
@@ -573,30 +597,6 @@ export default function SettingsPage() {
                                                 <FiFile size={20} />
                                             </div>
                                             <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Fotocopy</h3>
-                                        </div>
-                                    </div>
-
-                                    {/* Tarif Desain */}
-                                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-900/10">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                                                    <FiEdit size={20} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-white text-sm">Tarif Desain per Jam</h4>
-                                                    <p className="text-[10px] text-slate-500">Biaya profesional desain per jam kerja</p>
-                                                </div>
-                                            </div>
-                                            <div className="relative w-full max-w-[200px]">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
-                                                <input
-                                                    type="number"
-                                                    className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                                                    value={tarifDesainPerJam}
-                                                    onChange={(e) => setTarifDesainPerJam(e.target.value)}
-                                                />
-                                            </div>
                                         </div>
                                     </div>
 
