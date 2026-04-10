@@ -218,6 +218,9 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   lines.push(`No      : ${receipt.invoiceNo || '-'}`);
   lines.push(`Tanggal : ${safeDate}`);
   lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
+  if (receipt.customerName && receipt.customerName !== 'Umum') {
+    lines.push(`Pelanggn: ${receipt.customerName}`);
+  }
   lines.push('-'.repeat(W));
 
   const items = receipt.items || [];
@@ -249,6 +252,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   if ((receipt.change ?? 0) > 0) {
     lines.push(rightAlignText('KEMBALI  :', formatRupiah(receipt.change)));
   }
+  lines.push(rightAlignText('STATUS   :', receipt.status === 'completed' ? boldText('LUNAS') : boldText('BELUM LUNAS')));
 
   lines.push('-'.repeat(W));
   lines.push(centerText(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
@@ -257,8 +261,9 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
   if (printerType === 'lx310') {
-    // For Dot Matrix LX-310, we feed and then Form Feed to hit the next perforation
-    textResult += '\n\n\n\n\n\n\n\n\n\n\n\x0c';
+    // For Dot Matrix LX-310, we feed just enough to reach the tear-off point without skipping pages
+    // Usually 5-6 lines is better for fanfold paper if not wanting to eject a full page
+    textResult += '\n\n\n\n\n';
   } else {
     // For Thermal, usually 6-8 lines is enough to reach the cutter
     textResult += '\n\n\n\n\n\n\n\n';
@@ -372,9 +377,7 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
 
   text += `\n`;
   text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
-  text += `\n\n\n\n\n\n\n\n`;
-  if (printerType === 'lx310') text += '\x0c';
-
+  text += `\n\n\n\n\n`;
   return text;
 };
 
