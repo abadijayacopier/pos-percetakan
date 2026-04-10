@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiPackage, FiPlus, FiTrash2, FiSave, FiSearch,
     FiCalendar, FiUser, FiFileText, FiArrowLeft, FiShoppingCart, FiCheckCircle,
-    FiAlertCircle, FiCheck, FiX, FiList, FiClock
+    FiAlertCircle, FiCheck, FiX, FiList, FiClock, FiEye, FiTrash2 as FiTrashAlt
 } from 'react-icons/fi';
+import Swal from 'sweetalert2';
 import api from '../services/api';
 import { formatRupiah } from '../utils';
 
@@ -32,6 +33,7 @@ export default function PurchasingPage({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('entry'); // 'entry' | 'history'
     const [purchaseHistory, setPurchaseHistory] = useState([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [viewDetail, setViewDetail] = useState(null);
 
     // Master Data
     const [products, setProducts] = useState([]);
@@ -93,6 +95,43 @@ export default function PurchasingPage({ onNavigate }) {
     useEffect(() => {
         if (activeTab === 'history') fetchHistory();
     }, [activeTab]);
+
+    const handleViewPurchase = async (id) => {
+        try {
+            const res = await api.get(`/purchases/${id}`);
+            setViewDetail(res.data);
+        } catch (err) {
+            console.error('Error fetching purchase detail:', err);
+        }
+    };
+
+    const handleDeletePurchase = (purchase) => {
+        Swal.fire({
+            title: 'Hapus Pembelian?',
+            html: `<p class="text-sm">Invoice <strong>${purchase.invoice_no}</strong> akan dihapus dan stok akan dikembalikan.</p>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
+                title: 'dark:text-white',
+                confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl'
+            },
+            buttonsStyling: false
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await api.delete(`/purchases/${purchase.id}`);
+                    Swal.fire({ icon: 'success', title: 'Dihapus!', text: 'Pembelian berhasil dihapus dan stok dikembalikan.', timer: 2000, showConfirmButton: false });
+                    fetchHistory();
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal menghapus pembelian', timer: 3000 });
+                }
+            }
+        });
+    };
 
     const showToast = (msg, type = 'success') => {
         setToastMsg({ msg, type });
@@ -311,6 +350,7 @@ export default function PurchasingPage({ onNavigate }) {
                                                 <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
                                                 <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</th>
                                                 <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -331,6 +371,16 @@ export default function PurchasingPage({ onNavigate }) {
                                                         <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${p.payment_status === 'lunas' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
                                                             {p.payment_status === 'lunas' ? 'Lunas' : 'Hutang'}
                                                         </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            <button onClick={() => handleViewPurchase(p.id)} className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-xl transition-all" title="Lihat Detail">
+                                                                <FiEye size={15} />
+                                                            </button>
+                                                            <button onClick={() => handleDeletePurchase(p)} className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-400 hover:text-rose-600 rounded-xl transition-all" title="Hapus">
+                                                                <FiTrashAlt size={15} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -639,8 +689,95 @@ export default function PurchasingPage({ onNavigate }) {
             </main>
 
 
+            {/* Detail Modal */}
+            <AnimatePresence>
+                {viewDetail && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+                        onClick={() => setViewDetail(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-800 dark:text-white">{viewDetail.invoice_no}</h3>
+                                    <p className="text-xs text-slate-400 font-bold mt-0.5">{viewDetail.id}</p>
+                                </div>
+                                <button onClick={() => setViewDetail(null)} className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                                    <FiX size={18} />
+                                </button>
+                            </div>
+                            <div className="p-6 md:p-8 space-y-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Supplier</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{viewDetail.supplier_name || 'Umum'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{viewDetail.date ? new Date(viewDetail.date).toLocaleDateString('id-ID') : '-'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+                                        <p className="text-sm font-black text-blue-600">{formatRupiah(viewDetail.total_amount)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                                        <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${viewDetail.payment_status === 'lunas' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
+                                            {viewDetail.payment_status === 'lunas' ? 'Lunas' : 'Hutang'}
+                                        </span>
+                                    </div>
+                                </div>
 
-            {/* Toast Notification handled by <Toast> Component up top */}
+                                {viewDetail.notes && (
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Catatan</p>
+                                        <p className="text-sm text-slate-600 dark:text-slate-300">{viewDetail.notes}</p>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Detail Item ({viewDetail.items?.length || 0})</p>
+                                    <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="bg-slate-50 dark:bg-slate-800/50">
+                                                    <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama</th>
+                                                    <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe</th>
+                                                    <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                                                    <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga</th>
+                                                    <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                                {(viewDetail.items || []).map((item, idx) => (
+                                                    <tr key={idx}>
+                                                        <td className="px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200">{item.item_name}</td>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${item.item_type === 'product' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'}`}>
+                                                                {item.item_type === 'product' ? 'Produk' : 'Bahan'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300">{item.qty}</td>
+                                                        <td className="px-4 py-3 text-right text-xs font-medium text-slate-500">{formatRupiah(item.unit_cost)}</td>
+                                                        <td className="px-4 py-3 text-right text-xs font-black text-slate-800 dark:text-white">{formatRupiah(item.subtotal)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Toast */}
             <AnimatePresence>
                 {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
             </AnimatePresence>

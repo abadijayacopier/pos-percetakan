@@ -126,4 +126,47 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
     }
 });
 
+// DELETE a purchase (reverse stock + remove cash_flow)
+router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const purchaseId = req.params.id;
+        const [purchases] = await conn.query('SELECT * FROM purchases WHERE id = ?', [purchaseId]);
+        if (purchases.length === 0) return res.status(404).json({ message: 'Pembelian tidak ditemukan' });
+
+        const purchase = purchases[0];
+        await conn.beginTransaction();
+
+        // Reverse stock changes
+        const [items] = await conn.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [purchaseId]);
+        for (const item of items) {
+            if (item.item_type === 'product') {
+                await conn.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [item.qty, item.item_id]);
+            } else if (item.item_type === 'material') {
+                await conn.query('UPDATE materials SET stok_saat_ini = GREATEST(0, stok_saat_ini - ?) WHERE id = ?', [item.qty, item.item_id]);
+            }
+        }
+
+        // Remove related records
+        await conn.query('DELETE FROM purchase_items WHERE purchase_id = ?', [purchaseId]);
+        await conn.query('DELETE FROM cash_flow WHERE reference_id = ?', [purchaseId]);
+        await conn.query('DELETE FROM purchases WHERE id = ?', [purchaseId]);
+
+        // Activity log
+        await conn.query(
+            'INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
+            [req.user?.id, req.user?.name || 'System', 'DELETE_PURCHASE', `Hapus pembelian ${purchase.invoice_no} (${purchaseId})`]
+        );
+
+        await conn.commit();
+        res.json({ message: 'Pembelian berhasil dihapus dan stok dikembalikan' });
+    } catch (err) {
+        if (conn) await conn.rollback();
+        console.error('Error deleting purchase:', err);
+        res.status(500).json({ message: 'Gagal menghapus pembelian', error: err.message });
+    } finally {
+        conn.release();
+    }
+});
+
 module.exports = router;
