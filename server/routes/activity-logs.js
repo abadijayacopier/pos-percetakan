@@ -7,10 +7,9 @@ const { verifyToken } = require('../middleware/auth');
 router.get('/', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT al.*, u.name as user_name, u.username
+            SELECT al.id, al.user_id, al.user_name, al.action, al.detail
             FROM activity_log al
-            LEFT JOIN users u ON al.user_id = u.id
-            ORDER BY al.created_at DESC
+            ORDER BY al.id DESC
             LIMIT 500
         `);
         res.json(rows);
