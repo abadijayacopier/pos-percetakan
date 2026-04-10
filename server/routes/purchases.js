@@ -95,6 +95,23 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
             }
         }
 
+        // Insert cash_flow record for 'lunas' purchases
+        if (payment_status === 'lunas' && total_amount > 0) {
+            const cfId = 'cf' + Date.now();
+            const cfDate = date ? date.split('T')[0] : new Date().toISOString().split('T')[0];
+            await conn.query(
+                `INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                VALUES (?, ?, 'out', 'Pembelian', ?, ?, ?)`,
+                [cfId, cfDate, total_amount, `Pembelian ${supplier_name} - ${invoice_no}`, purchase_id]
+            );
+        }
+
+        // Activity log
+        await conn.query(
+            'INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
+            [user_id, req.user?.name || 'System', 'ADD_PURCHASE', `Pembelian ${invoice_no} total Rp ${total_amount.toLocaleString('id-ID')} dari ${supplier_name}`]
+        );
+
         await conn.commit();
         res.status(201).json({ message: 'Pembelian berhasil dicatat', id: purchase_id });
     } catch (err) {
