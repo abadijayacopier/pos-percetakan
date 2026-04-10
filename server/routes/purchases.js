@@ -6,24 +6,24 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 const { z } = require('zod');
 const crypto = require('crypto');
 
-// Validation Schema
+// Validation Schema - coerce numbers from string inputs
 const purchaseSchema = z.object({
-    supplier_id: z.string().optional().nullable(),
+    supplier_id: z.preprocess(v => (v === '' || v === undefined) ? null : v, z.string().nullable().optional()),
     supplier_name: z.string().optional().default('Umum'),
     date: z.string().optional(),
-    total_amount: z.number().min(0, "Total harus positif"),
+    total_amount: z.coerce.number().min(0, "Total harus positif"),
     payment_status: z.enum(['lunas', 'hutang']).optional().default('lunas'),
     notes: z.string().optional().nullable(),
     items: z.array(z.object({
         type: z.enum(['product', 'material']),
         id: z.string().min(1, "ID item wajib"),
         name: z.string().min(1, "Nama item wajib"),
-        qty: z.number().positive("Jumlah wajib positif"),
-        cost: z.number().min(0, "Harga modal wajib positif"),
-        subtotal: z.number().min(0, "Subtotal wajib positif"),
+        qty: z.coerce.number().positive("Jumlah wajib positif"),
+        cost: z.coerce.number().min(0, "Harga modal wajib positif"),
+        subtotal: z.coerce.number().min(0, "Subtotal wajib positif"),
         unit: z.string().optional()
-    })).min(1, "Minimal harus ada satu item")
-});
+    }).passthrough()).min(1, "Minimal harus ada satu item")
+}).passthrough();
 
 // GET all purchases
 router.get('/', verifyToken, async (req, res) => {
