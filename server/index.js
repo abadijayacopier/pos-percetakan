@@ -45,7 +45,8 @@ app.use('/api/purchases', require('./routes/purchases'));
 app.use('/api/qris', require('./routes/qris'));
 app.use('/api/dp_tasks', require('./routes/dp_tasks'));
 app.use('/api/handovers', require('./routes/handovers'));
-app.use('/api/health', require('./routes/health'));
+app.use(process.env.NODE_ENV === 'production' ? '/api/health' : '/api/health', require('./routes/health'));
+app.use('/api/activity-logs', require('./routes/activity-logs'));
 
 const startServer = async () => {
     // Test koneksi database saat start

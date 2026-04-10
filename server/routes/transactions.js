@@ -166,9 +166,17 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             await connection.query('UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?', [paid, customerId]);
         }
 
-        // 3e. Activity Log
-        await connection.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'add_transaction', `Invoice ${invoiceNo} (${total})`]);
+        // 3e. Activity Log & Stock Check
+        const { logActivity, checkStockLevels } = require('../utils/logger');
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        await logActivity(req.user.id, 'ADD_TRANSACTION', invoiceNo, `Invoice ${invoiceNo} total ${total}`, ip);
+
+        // Trigger low stock checks in background
+        for (const item of items) {
+            if (item.source === 'atk' && item.id) {
+                checkStockLevels(item.id, connection);
+            }
+        }
 
         await connection.commit();
         res.status(201).json({ message: 'Transaksi berhasil disimpan!', id: newTrxId });

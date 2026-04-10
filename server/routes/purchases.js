@@ -98,11 +98,11 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
         await conn.commit();
         res.status(201).json({ message: 'Pembelian berhasil dicatat', id: purchase_id });
     } catch (err) {
-        await conn.rollback();
+        if (conn) await conn.rollback();
         if (err instanceof z.ZodError) {
             return res.status(400).json({ message: err.errors[0].message });
         }
-        console.error(err);
+        console.error('CRITICAL: Gagal mencatat pembelian:', err);
         res.status(500).json({ message: 'Gagal mencatat pembelian', error: err.message });
     } finally {
         conn.release();

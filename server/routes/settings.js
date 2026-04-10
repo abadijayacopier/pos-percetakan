@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer({ dest: 'temp/' });
+const fs = require('fs');
 
 // GET Semua Settings
 router.get('/', verifyToken, async (req, res) => {
@@ -43,6 +46,12 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
                 }
             }
             await connection.commit();
+
+            // Activity Log
+            const { logActivity } = require('../utils/logger');
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            await logActivity(req.user.id, 'UPDATE_SETTINGS', 'settings', `Update ${settings.length} pengaturan sistem`, ip);
+
             res.json({ message: 'Pengaturan berhasil disimpan' });
         } catch (dbErr) {
             await connection.rollback();
@@ -59,7 +68,13 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
 // GET Activity Logs
 router.get('/logs', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 200');
+        const [rows] = await pool.query(`
+            SELECT al.*, u.name as user_name, u.username
+            FROM activity_log al
+            LEFT JOIN users u ON al.user_id = u.id
+            ORDER BY al.created_at DESC
+            LIMIT 200
+        `);
         res.json(rows);
     } catch (e) {
         console.error(e);
@@ -148,6 +163,91 @@ router.post('/master', verifyToken, requireRole(['admin']), async (req, res) => 
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Gagal menambahkan master data' });
+    }
+});
+
+// GET Backup Data (JSON)
+router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const TABLES = [
+            'settings', 'users', 'customers', 'products', 'suppliers',
+            'orders', 'order_items', 'production_status', 'transactions',
+            'transaction_details', 'pricing_fotocopy', 'stock_movements',
+            'activity_log', 'design_logs', 'purchases'
+        ];
+
+        const backup = {};
+        for (const table of TABLES) {
+            try {
+                const [rows] = await pool.query(`SELECT * FROM ${table}`);
+                backup[table] = rows;
+            } catch (err) {
+                console.warn(`Table ${table} not found or error, skipping...`);
+                backup[table] = [];
+            }
+        }
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=pos_backup_${new Date().toISOString().slice(0, 10)}.json`);
+        res.send(JSON.stringify(backup, null, 2));
+
+        // Log this action
+        const { logActivity } = require('../utils/logger');
+        await logActivity(req.user.id, 'BACKUP_DATA', 'system', 'Eksport data ke file JSON', req.ip);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal melakukan backup' });
+    }
+});
+
+// POST Restore Data (JSON)
+router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {
+    let connection;
+    try {
+        if (!req.file) return res.status(400).json({ message: 'File backup tidak ditemukan' });
+
+        const data = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
+        fs.unlinkSync(req.file.path); // Cleanup temp file
+
+        connection = await pool.getConnection();
+        await connection.beginTransaction();
+
+        const TABLES = Object.keys(data);
+
+        // Disable foreign key checks for clean restore
+        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+
+        for (const table of TABLES) {
+            const rows = data[table];
+            if (!Array.isArray(rows)) continue;
+
+            // Clear table
+            await connection.query(`DELETE FROM \`${table}\``);
+
+            if (rows.length > 0) {
+                const columns = Object.keys(rows[0]);
+                const values = rows.map(r => columns.map(c => r[c]));
+
+                // Use a proper escaped query for bulk insert
+                const query = `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES ?`;
+                await connection.query(query, [values]);
+            }
+        }
+
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+        await connection.commit();
+
+        // Log this action
+        const { logActivity } = require('../utils/logger');
+        await logActivity(req.user.id, 'RESTORE_DATA', 'system', 'Data dipulihkan dari file backup', req.ip);
+
+        res.json({ message: 'Data berhasil dipulihkan' });
+    } catch (e) {
+        if (connection) await connection.rollback();
+        console.error('Restore failed:', e);
+        res.status(500).json({ message: 'Gagal memulihkan data: ' + e.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

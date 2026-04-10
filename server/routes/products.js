@@ -217,10 +217,9 @@ router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator
             );
 
             // Jika ada selisih, catat aktivitas kasir yang mengopname
-            await connection.query(
-                'INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-                [req.user.id, req.user.name, 'stok_opname', `Opname ${rows[0].name}: Fisik ${actualStock} (Selisih ${diff > 0 ? '+' + diff : diff})`]
-            );
+            const { logActivity } = require('../utils/logger');
+            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+            await logActivity(req.user.id, 'STOK_OPNAME', rows[0].name, `Opname ${rows[0].name}: Fisik ${actualStock} (Selisih ${diff > 0 ? '+' + diff : diff})`, ip);
 
             await connection.commit();
             res.json({ message: 'Stok Opname berhasil disimpan', actualStock, diff });

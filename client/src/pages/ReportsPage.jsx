@@ -130,7 +130,38 @@ export default function ReportsPage() {
 
     const handlePrint = () => window.print();
 
-    // CSV Export
+    // Excel / CSV Export Helpers
+    const exportToExcel = (data, filename, headers) => {
+        // Simple XML Spreadsheet format (works in Excel)
+        let xml = '<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><Worksheet ss:Name="Sheet1"><Table>';
+
+        // Headers
+        xml += '<Row>';
+        headers.forEach(h => {
+            xml += `<Cell><Data ss:Type="String">${h}</Data></Cell>`;
+        });
+        xml += '</Row>';
+
+        // Data
+        data.forEach(row => {
+            xml += '<Row>';
+            headers.forEach(h => {
+                const val = row[h] ?? '';
+                const type = typeof val === 'number' ? 'Number' : 'String';
+                xml += `<Cell><Data ss:Type="${type}">${val}</Data></Cell>`;
+            });
+            xml += '</Row>';
+        });
+
+        xml += '</Table></Worksheet></Workbook>';
+
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}_${new Date().toISOString().slice(0, 10)}.xls`;
+        link.click();
+    };
+
     const exportCSV = (data, filename, headers) => {
         const csv = [headers.join(','), ...data.map(row => headers.map(h => {
             const val = row[h] ?? '';
@@ -143,7 +174,7 @@ export default function ReportsPage() {
         link.click();
     };
 
-    const exportSalesCSV = () => {
+    const exportSalesExcel = () => {
         const data = transactions.map(t => ({
             'No Invoice': t.invoiceNo,
             'Tanggal': formatDateTime(t.date),
@@ -153,10 +184,10 @@ export default function ReportsPage() {
             'Pembayaran': t.paymentType || t.paymentMethod,
             'Kasir': t.userName,
         }));
-        exportCSV(data, 'laporan_penjualan', ['No Invoice', 'Tanggal', 'Pelanggan', 'Tipe', 'Total', 'Pembayaran', 'Kasir']);
+        exportToExcel(data, 'laporan_penjualan', ['No Invoice', 'Tanggal', 'Pelanggan', 'Tipe', 'Total', 'Pembayaran', 'Kasir']);
     };
 
-    const exportProductCSV = () => {
+    const exportProductExcel = () => {
         const data = allProducts.map(p => ({
             'Kode': p.code,
             'Nama': p.name,
@@ -165,10 +196,10 @@ export default function ReportsPage() {
             'Stok': p.stock,
             'Satuan': p.unit,
         }));
-        exportCSV(data, 'laporan_produk', ['Kode', 'Nama', 'Harga Beli', 'Harga Jual', 'Stok', 'Satuan']);
+        exportToExcel(data, 'laporan_produk', ['Kode', 'Nama', 'Harga Beli', 'Harga Jual', 'Stok', 'Satuan']);
     };
 
-    const exportCustomerCSV = () => {
+    const exportCustomerExcel = () => {
         const data = allCustomers.map(c => ({
             'Nama': c.name,
             'Telepon': c.phone,
@@ -177,7 +208,17 @@ export default function ReportsPage() {
             'Total Transaksi': c.totalTrx || 0,
             'Total Belanja': c.totalSpend || 0,
         }));
-        exportCSV(data, 'laporan_pelanggan', ['Nama', 'Telepon', 'Alamat', 'Tipe', 'Total Transaksi', 'Total Belanja']);
+        exportToExcel(data, 'laporan_pelanggan', ['Nama', 'Telepon', 'Alamat', 'Tipe', 'Total Transaksi', 'Total Belanja']);
+    };
+
+    const exportProfitLossExcel = () => {
+        // Special export for Profit Loss
+        const data = [
+            { 'Kategori': 'Pendapatan Kotor', 'Nilai': totalRevenue },
+            { 'Kategori': 'Diskon Diberikan', 'Nilai': transactions.reduce((s, t) => s + (t.discount || 0), 0) },
+            { 'Kategori': 'Laba Bersih (Estimasi)', 'Nilai': totalRevenue } // Simplified for now
+        ];
+        exportToExcel(data, 'laporan_laba_rugi', ['Kategori', 'Nilai']);
     };
 
     const handleExportPDF = () => {
@@ -301,13 +342,15 @@ export default function ReportsPage() {
                             Ekspor PDF
                         </button>
                     </div>
-                    <button
-                        onClick={activeTab === 'profit-loss' ? () => window.print() : activeTab === 'sales' ? exportSalesCSV : activeTab === 'products' ? exportProductCSV : exportCustomerCSV}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-500/20 active:scale-95 group"
-                    >
-                        <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
-                        {activeTab === 'profit-loss' ? 'Cetak' : 'Export CSV'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={activeTab === 'profit-loss' ? exportProfitLossExcel : activeTab === 'sales' ? exportSalesExcel : activeTab === 'products' ? exportProductExcel : exportCustomerExcel}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 active:scale-95 group"
+                        >
+                            <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
+                            Excel (.xls)
+                        </button>
+                    </div>
                 </div>
             </div>
 

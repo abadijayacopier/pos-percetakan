@@ -36,8 +36,9 @@ router.post('/login', async (req, res) => {
         );
 
         // Activity Log
-        await pool.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [user.id, user.name, 'login', `Login sebagai ${user.role}`]);
+        const { logActivity } = require('../utils/logger');
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        await logActivity(user.id, 'LOGIN', 'auth', `Login sukses sebagai ${user.role}`, ip);
 
         res.json({
             success: true,

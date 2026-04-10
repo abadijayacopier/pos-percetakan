@@ -307,12 +307,38 @@ export default function SettingsPage() {
         }
     };
 
-    const handleBackup = () => {
-        showToast('Fitur backup manual via endpoint dinonaktifkan di mode MySQL', 'warning');
+    const handleBackup = async () => {
+        try {
+            showToast('Menyiapkan backup data...', 'info');
+            const res = await api.get('/settings/backup', { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `pos_backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(link);
+            link.click();
+            showToast('Backup berhasil diunduh!', 'success');
+        } catch (error) {
+            showToast('Gagal melakukan backup', 'error');
+        }
     };
 
-    const handleRestore = (e) => {
-        showToast('Fitur restore manual via endpoint dinonaktifkan', 'warning');
+    const handleRestore = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!confirm('PERINGATAN: Memulihkan data akan menimpa data saat ini. Lanjutkan?')) return;
+
+        const formData = new FormData();
+        formData.append('backup', file);
+
+        try {
+            showToast('Memulihkan data...', 'info');
+            await api.post('/settings/restore', formData);
+            showToast('Data berhasil dipulihkan! Halaman akan direfresh.', 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            showToast('Gagal memulihkan data', 'error');
+        }
     };
 
     const resetData = () => {
@@ -577,14 +603,22 @@ export default function SettingsPage() {
                                                 <p className="text-xs text-slate-500">Biaya kerja desain per jam (digunakan di modul Desain & Offset)</p>
                                             </div>
                                         </div>
-                                        <div className="relative w-full max-w-[240px]">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
-                                            <input
-                                                type="number"
-                                                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                                                value={tarifDesainPerJam}
-                                                onChange={(e) => setTarifDesainPerJam(e.target.value)}
-                                            />
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative w-full max-w-[240px]">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
+                                                <input
+                                                    type="number"
+                                                    className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                                    value={tarifDesainPerJam}
+                                                    onChange={(e) => setTarifDesainPerJam(e.target.value)}
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={saveSettings}
+                                                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-200 dark:shadow-none flex items-center gap-2 shrink-0 active:scale-95"
+                                            >
+                                                <FiSave size={16} /> Simpan
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1356,6 +1390,8 @@ export default function SettingsPage() {
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Waktu</th>
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">User</th>
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Aksi</th>
+                                                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Target</th>
+                                                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">IP</th>
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Detail</th>
                                                 </tr>
                                             </thead>
@@ -1363,27 +1399,33 @@ export default function SettingsPage() {
                                                 {activityLog.map(l => (
                                                     <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
-                                                            {formatDateTime(l.timestamp)}
+                                                            {formatDateTime(l.created_at)}
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase tracking-tighter">
-                                                                    {(l.userName || 'AD').substring(0, 2)}
+                                                                    {(l.user_name || 'SY').substring(0, 2)}
                                                                 </div>
-                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{l.userName}</span>
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{l.user_name || 'System'}</span>
                                                             </div>
                                                         </td>
                                                         <td className="px-6 py-4">
-                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${l.action?.includes('Tambah') || l.action?.includes('Simpan') ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
-                                                                l.action?.includes('Update') || l.action?.includes('Edit') ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
-                                                                    l.action?.includes('Hapus') || l.action?.includes('Restore') ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${l.action?.includes('Tambah') || l.action?.includes('Simpan') || l.action?.includes('CREATE') ? 'bg-green-100 text-green-600 dark:bg-green-900/30' :
+                                                                l.action?.includes('Update') || l.action?.includes('Edit') || l.action?.includes('UPDATE') ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30' :
+                                                                    l.action?.includes('Hapus') || l.action?.includes('Restore') || l.action?.includes('DELETE') || l.action?.includes('RESET') ? 'bg-red-100 text-red-600 dark:bg-red-900/30' :
                                                                         'bg-slate-100 text-slate-600 dark:bg-slate-800'
                                                                 }`}>
                                                                 {l.action}
                                                             </span>
                                                         </td>
+                                                        <td className="px-6 py-4 text-[10px] font-bold text-slate-500 italic">
+                                                            {l.target}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-[10px] font-mono text-slate-400">
+                                                            {l.ip_address}
+                                                        </td>
                                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md truncate hover:whitespace-normal transition-all">
-                                                            {l.detail}
+                                                            {l.details}
                                                         </td>
                                                     </tr>
                                                 ))}

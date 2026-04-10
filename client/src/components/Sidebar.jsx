@@ -306,7 +306,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                     className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
                                     ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
                                     ${activePage === 'settings'
-                                            ? 'bg-white text-blue-600 border-blue-600'
+                                            ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500'
                                             : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
                                 >
                                     <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />

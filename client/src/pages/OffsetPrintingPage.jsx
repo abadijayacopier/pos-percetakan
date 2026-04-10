@@ -30,6 +30,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const [customers, setCustomers] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [hourlyRate, setHourlyRate] = useState(0);
 
     // Form/Kalkulator States
     const [selectedProduct, setSelectedProduct] = useState(null);

@@ -29,9 +29,9 @@ router.get('/stats', verifyToken, async (req, res) => {
             "SELECT COUNT(id) as count FROM dp_tasks WHERE status NOT IN ('diambil', 'batal')"
         );
 
-        // 4. Pending Service (Dari service)
+        // 4. Pending Service (Dari service_orders)
         const [pendingService] = await pool.query(
-            "SELECT COUNT(id) as count FROM service WHERE status NOT IN ('diambil', 'batal', 'selesai')"
+            "SELECT COUNT(id) as count FROM service_orders WHERE status NOT IN ('diambil', 'batal', 'selesai')"
         );
 
         // 5. Low Stock
@@ -81,13 +81,16 @@ router.get('/stats', verifyToken, async (req, res) => {
         // 7. Activity Log (Last 10)
         let activityLog = [];
         try {
-            const [logs] = await pool.query("SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 10");
+            const [logs] = await pool.query(`
+                SELECT al.*, u.name as user_name 
+                FROM activity_log al 
+                LEFT JOIN users u ON al.user_id = u.id 
+                ORDER BY al.created_at DESC 
+                LIMIT 10
+            `);
             activityLog = logs;
         } catch (e) {
-            try {
-                const [logs2] = await pool.query("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 10");
-                activityLog = logs2;
-            } catch (err) { }
+            console.error('Dash logs error:', e);
         }
 
         res.json({

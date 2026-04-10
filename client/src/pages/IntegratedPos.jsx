@@ -484,7 +484,28 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             date: new Date().toISOString(),
             customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
             customerName: customerName,
-            type: cart.some(c => c.type === 'fotocopy' || c.type === 'service') ? 'service' : 'sale',
+            type: (() => {
+                const types = cart.map(c => c.type);
+                const uniqueTypes = [...new Set(types)];
+                if (uniqueTypes.length === 1) {
+                    const t = uniqueTypes[0];
+                    if (t === 'atk') return 'ATK';
+                    if (t === 'fotocopy') return 'Fotocopy';
+                    if (t === 'service') return 'Cetak';
+                    if (t === 'digital') return 'Digital Printing';
+                    if (t === 'service_order') return 'Service Mesin';
+                    return t;
+                }
+                // Mixed cart: find dominant type by count
+                const hasFc = types.includes('fotocopy');
+                const hasAtk = types.includes('atk');
+                const hasDigital = types.includes('digital');
+                if (hasFc && hasAtk) return 'ATK + Fotocopy';
+                if (hasDigital) return 'Digital Printing';
+                if (hasFc) return 'Fotocopy';
+                if (hasAtk) return 'ATK';
+                return 'Campuran';
+            })(),
             items: cart.map(item => ({
                 id: item.id,
                 name: item.name,
