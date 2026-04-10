@@ -192,6 +192,7 @@ export default function ServicePage({ onNavigate }) {
             case 'pengerjaan': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50';
             case 'selesai': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50';
             case 'diambil': return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400 border border-slate-200 dark:border-slate-800/50';
+            case 'batal': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200';
             default: return 'bg-slate-100 text-slate-700';
         }
     };
@@ -710,9 +711,9 @@ export default function ServicePage({ onNavigate }) {
                                                 <FiCreditCard className="text-blue-500" />
                                                 <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Financial Settlement Analysis</h3>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-6 relative z-10">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 relative z-10">
                                                 <div className="space-y-3">
-                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Professional Labor Cost (Rp)</label>
+                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Labor Cost (Rp)</label>
                                                     <div className="relative">
                                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-500 italic">IDR</span>
                                                         <input
@@ -724,7 +725,7 @@ export default function ServicePage({ onNavigate }) {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-3">
-                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Down Payment (Commitment)</label>
+                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">DP / Amanah (Rp)</label>
                                                     <div className="relative">
                                                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500 italic">IDR</span>
                                                         <input

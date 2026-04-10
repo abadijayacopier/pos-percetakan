@@ -9,7 +9,7 @@ router.get('/', verifyToken, async (req, res) => {
         const [rows] = await pool.query(`
             SELECT id, service_no AS serviceNo, customer_id AS customerId, customer_name AS customerName, phone, 
                    machine_info AS machineInfo, serial_no AS serialNo, complaint, condition_physic AS conditionPhysic, 
-                   diagnosis, labor_cost AS laborCost, total_cost AS totalCost, status, technician_id AS technicianId, 
+                   diagnosis, labor_cost AS laborCost, dp_amount AS dpAmount, total_cost AS totalCost, status, technician_id AS technicianId, 
                    warranty_end AS warrantyEnd, created_at AS createdAt
             FROM service_orders ORDER BY created_at DESC
         `);
@@ -25,7 +25,7 @@ router.get('/:id', verifyToken, async (req, res) => {
         const [orders] = await pool.query(`
             SELECT id, service_no AS serviceNo, customer_id AS customerId, customer_name AS customerName, phone, 
                    machine_info AS machineInfo, serial_no AS serialNo, complaint, condition_physic AS conditionPhysic, 
-                   diagnosis, labor_cost AS laborCost, total_cost AS totalCost, status, technician_id AS technicianId, 
+                   diagnosis, labor_cost AS laborCost, dp_amount AS dpAmount, total_cost AS totalCost, status, technician_id AS technicianId, 
                    warranty_end AS warrantyEnd, created_at AS createdAt
             FROM service_orders WHERE id = ?
         `, [req.params.id]);
@@ -43,18 +43,18 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
     try {
         const {
             serviceNo, customerId, customerName, phone, machineInfo, serialNo,
-            complaint, conditionPhysic, status
+            complaint, conditionPhysic, status, technicianId, dpAmount
         } = req.body;
 
         const newId = 'so' + Date.now();
 
         await pool.query(`
             INSERT INTO service_orders
-            (id, service_no, customer_id, customer_name, phone, machine_info, serial_no, complaint, condition_physic, status, technician_id)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, service_no, customer_id, customer_name, phone, machine_info, serial_no, complaint, condition_physic, status, technician_id, dp_amount)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
             newId, serviceNo, customerId || null, customerName, phone, machineInfo,
-            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', req.user.id
+            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', technicianId || null, dpAmount || 0
         ]);
 
         if (customerId) {
@@ -68,12 +68,12 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
 });
 
 // 4. PUT Update Diagnosa & Sparepart (Pengerjaan)
-router.put('/:id', verifyToken, requireRole(['teknisi', 'admin']), async (req, res) => {
+router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async (req, res) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
         const {
-            diagnosis, laborCost, status, spareparts, warrantyEnd
+            diagnosis, laborCost, status, spareparts, warrantyEnd, dpAmount, technicianId
         } = req.body;
 
         let totalSparepartCost = 0;
@@ -81,9 +81,9 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin']), async (req, r
         // Update data utama
         await connection.query(`
             UPDATE service_orders 
-            SET diagnosis = ?, labor_cost = ?, status = ?, warranty_end = ?
+            SET diagnosis = ?, labor_cost = ?, status = ?, warranty_end = ?, dp_amount = ?, technician_id = ?
             WHERE id = ?
-                `, [diagnosis, laborCost || 0, status, warrantyEnd || null, req.params.id]);
+                `, [diagnosis, laborCost || 0, status, warrantyEnd || null, dpAmount || 0, technicianId || null, req.params.id]);
 
         // ─── Otomatisasi Stok Sparepart (Opsi A) ──────────────────────
         if (spareparts && Array.isArray(spareparts)) {
