@@ -493,7 +493,12 @@ export default function ReportsPage() {
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
-                                                        {t.type}
+                                                        {(() => {
+                                                            const tLower = (t.type || '').toLowerCase();
+                                                            if (tLower === 'service' || tLower === 'fotocopy') return 'Cetak';
+                                                            if (tLower === 'service_order') return 'Service Mesin';
+                                                            return t.type || t;
+                                                        })()}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-right">

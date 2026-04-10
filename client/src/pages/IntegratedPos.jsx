@@ -485,24 +485,28 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
             customerName: customerName,
             type: (() => {
-                const types = cart.map(c => c.type);
+                const types = cart.map(c => (c.type || '').toLowerCase());
                 const uniqueTypes = [...new Set(types)];
+
                 if (uniqueTypes.length === 1) {
                     const t = uniqueTypes[0];
                     if (t === 'atk') return 'ATK';
-                    if (t === 'fotocopy') return 'Fotocopy';
-                    if (t === 'service') return 'Cetak';
+                    if (t === 'fotocopy' || t === 'service') return 'Cetak';
                     if (t === 'digital') return 'Digital Printing';
                     if (t === 'service_order') return 'Service Mesin';
-                    return t;
+                    return t.charAt(0).toUpperCase() + t.slice(1);
                 }
-                // Mixed cart: find dominant type by count
-                const hasFc = types.includes('fotocopy');
-                const hasAtk = types.includes('atk');
+
+                // Mixed cart: find dominant type by priority
                 const hasDigital = types.includes('digital');
-                if (hasFc && hasAtk) return 'ATK + Fotocopy';
+                const hasServiceOrder = types.includes('service_order');
+                const hasService = types.includes('service') || types.includes('fotocopy');
+                const hasAtk = types.includes('atk');
+
                 if (hasDigital) return 'Digital Printing';
-                if (hasFc) return 'Fotocopy';
+                if (hasServiceOrder) return 'Service Mesin';
+                if (hasService && hasAtk) return 'ATK + Cetak';
+                if (hasService) return 'Cetak';
                 if (hasAtk) return 'ATK';
                 return 'Campuran';
             })(),

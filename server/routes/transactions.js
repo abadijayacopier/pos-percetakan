@@ -104,11 +104,15 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         for (const item of items) {
             const detailId = 'td' + Date.now() + Math.floor(Math.random() * 1000);
 
+            // Ensure product_id is ONLY set for real physical products (ATK) to avoid FK errors with service IDs
+            const productId = (item.source === 'atk' && item.id && !String(item.id).startsWith('fc-') && !String(item.id).startsWith('jilid-') && !String(item.id).startsWith('print-') && !String(item.id).startsWith('dig-') && !String(item.id).startsWith('srv-'))
+                ? item.id : null;
+
             await connection.query(`
         INSERT INTO transaction_details 
         (id, transaction_id, product_id, name, qty, price, subtotal, discount)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [detailId, newTrxId, item.id || null, item.name, item.qty, item.price, item.subtotal, item.discount || 0]);
+      `, [detailId, newTrxId, productId, item.name, item.qty, item.price, item.subtotal, item.discount || 0]);
 
             // Kurangi Stok Jika Tipe Penjualan ATK (Barang Fisik)
             if (item.source === 'atk' && item.id) {
