@@ -115,14 +115,14 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
       `, [detailId, newTrxId, productId, item.name, item.qty, item.price, item.subtotal, item.discount || 0]);
 
             // Kurangi Stok Jika Tipe Penjualan ATK (Barang Fisik)
-            if (item.source === 'atk' && item.id) {
-                await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [item.qty, item.id]);
+            if (item.source === 'atk' && productId) {
+                await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [item.qty, productId]);
 
                 // Catat di Stock Movement
                 await connection.query(`
           INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
           VALUES (?, 'out', ?, ?, 'Penjualan POS')
-        `, [item.id, item.qty, invoiceNo]);
+        `, [productId, item.qty, invoiceNo]);
             }
 
             // ─── Opsi B: Digital Printing Integration ────────────────

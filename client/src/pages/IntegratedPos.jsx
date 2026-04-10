@@ -490,7 +490,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                 if (uniqueTypes.length === 1) {
                     const t = uniqueTypes[0];
-                    if (t === 'atk') return 'ATK';
+                    if (t === 'atk') return 'Kasir';
                     if (t === 'fotocopy' || t === 'service') return 'Cetak';
                     if (t === 'digital') return 'Digital Printing';
                     if (t === 'service_order') return 'Service Mesin';
@@ -505,9 +505,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                 if (hasDigital) return 'Digital Printing';
                 if (hasServiceOrder) return 'Service Mesin';
-                if (hasService && hasAtk) return 'ATK + Cetak';
+                if (hasService && hasAtk) return 'Kasir + Cetak';
                 if (hasService) return 'Cetak';
-                if (hasAtk) return 'ATK';
+                if (hasAtk) return 'Kasir';
                 return 'Campuran';
             })(),
             items: cart.map(item => ({

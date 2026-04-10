@@ -497,6 +497,8 @@ export default function ReportsPage() {
                                                             const tLower = (t.type || '').toLowerCase();
                                                             if (tLower === 'service' || tLower === 'fotocopy') return 'Cetak';
                                                             if (tLower === 'service_order') return 'Service Mesin';
+                                                            if (tLower === 'atk' || tLower === 'kasir') return 'Kasir';
+                                                            if (tLower.includes('atk +')) return t.type.replace(/atk/i, 'Kasir').replace(/ATK/i, 'Kasir');
                                                             return t.type || t;
                                                         })()}
                                                     </span>
