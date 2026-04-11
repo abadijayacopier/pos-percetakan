@@ -186,9 +186,10 @@ export default function ServicePage({ onNavigate }) {
             color: 'var(--sweetalert-color)',
             customClass: {
                 popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800',
-                confirmButton: 'rounded-xl font-black uppercase tracking-widest text-[10px]',
-                cancelButton: 'rounded-xl font-black uppercase tracking-widest text-[10px]'
-            }
+                confirmButton: 'rounded-xl font-black uppercase tracking-widest text-[10px] bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5',
+                cancelButton: 'rounded-xl font-black uppercase tracking-widest text-[10px] bg-slate-500 hover:bg-slate-600 text-white px-6 py-2.5'
+            },
+            buttonsStyling: false // Force use of Tailwind CSS classes
         });
 
         if (result.isConfirmed) {
