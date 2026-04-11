@@ -235,50 +235,56 @@ router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
 });
 
 
-// POST Restore Data (JSON)
+// POST Restore Data (SQL/JSON)
 router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {
     let connection;
     try {
         if (!req.file) return res.status(400).json({ message: 'File backup tidak ditemukan' });
 
-        const data = JSON.parse(fs.readFileSync(req.file.path, 'utf8'));
-        fs.unlinkSync(req.file.path); // Cleanup temp file
+        const rawContent = fs.readFileSync(req.file.path, 'utf8');
+        const isSql = req.file.originalname.endsWith('.sql') || rawContent.trim().startsWith('--') || rawContent.trim().startsWith('SET ');
 
         connection = await pool.getConnection();
-        await connection.beginTransaction();
 
-        const TABLES = Object.keys(data);
+        if (isSql) {
+            // Restore via SQL Script (New Format)
+            // MySQL2 with multipleStatements can execute the whole chunk
+            await connection.query(rawContent);
+        } else {
+            // Restore via JSON (Legacy Format)
+            try {
+                const data = JSON.parse(rawContent);
+                await connection.beginTransaction();
+                await connection.query('SET FOREIGN_KEY_CHECKS = 0');
 
-        // Disable foreign key checks for clean restore
-        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
-
-        for (const table of TABLES) {
-            const rows = data[table];
-            if (!Array.isArray(rows)) continue;
-
-            // Clear table
-            await connection.query(`DELETE FROM \`${table}\``);
-
-            if (rows.length > 0) {
-                const columns = Object.keys(rows[0]);
-                const values = rows.map(r => columns.map(c => r[c]));
-
-                // Use a proper escaped query for bulk insert
-                const query = `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES ?`;
-                await connection.query(query, [values]);
+                const TABLES = Object.keys(data);
+                for (const table of TABLES) {
+                    const rows = data[table];
+                    if (!Array.isArray(rows)) continue;
+                    await connection.query(`DELETE FROM \`${table}\``);
+                    if (rows.length > 0) {
+                        const columns = Object.keys(rows[0]);
+                        const values = rows.map(r => columns.map(c => r[c]));
+                        const query = `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES ?`;
+                        await connection.query(query, [values]);
+                    }
+                }
+                await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+                await connection.commit();
+            } catch (jsonErr) {
+                throw new Error('Format file tidak dikenali atau JSON tidak valid: ' + jsonErr.message);
             }
         }
 
-        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
-        await connection.commit();
+        fs.unlinkSync(req.file.path); // Cleanup temp file
 
         // Log this action
         const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'RESTORE_DATA', 'system', 'Data dipulihkan dari file backup', req.ip);
+        await logActivity(req.user.id, 'RESTORE_DATA', 'system', `Data dipulihkan dari file ${isSql ? 'SQL' : 'JSON'}`, req.ip);
 
         res.json({ message: 'Data berhasil dipulihkan' });
     } catch (e) {
-        if (connection) await connection.rollback();
+        if (connection && !isSql) await connection.rollback();
         console.error('Restore failed:', e);
         res.status(500).json({ message: 'Gagal memulihkan data: ' + e.message });
     } finally {

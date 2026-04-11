@@ -10,8 +10,9 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'pos_abadi',
     waitForConnections: true,
     connectionLimit: 10,
-    maxIdle: 10, // Max idle connections, the default value is the same as `connectionLimit`
-    idleTimeout: 60000, // Idle connections timeout, in milliseconds, the default value is 60000
+    maxIdle: 10,
+    multipleStatements: true,
+    idleTimeout: 60000,
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0
