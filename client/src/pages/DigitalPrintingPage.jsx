@@ -512,6 +512,24 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                 </div>
                             ))}
                         </div>
+
+                        {/* Tips Operasional Tambahan */}
+                        <div className="mt-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 relative overflow-hidden group/tips">
+                            <div className="absolute -right-4 -top-4 text-blue-500/10 transform group-hover/tips:rotate-12 transition-transform">
+                                <FiZap size={80} />
+                            </div>
+                            <div className="flex items-start gap-4">
+                                <div className="p-2 bg-blue-500 text-white rounded-lg shadow-sm">
+                                    <FiCheckCircle size={16} />
+                                </div>
+                                <div>
+                                    <h4 className="text-[11px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-1">Rekomendasi Workflow</h4>
+                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
+                                        Pastikan <strong className="text-blue-600 dark:text-blue-400 font-black">Biaya Desain</strong> selalu diinputkan pada Kalkulator Banner sebelum menerbitkan SPK agar tagihan ke pelanggan terakumulasi dengan benar di modul Kasir.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -604,11 +622,11 @@ export default function DigitalPrintingPage({ onNavigate }) {
                             </div>
 
                             {/* ESTIMASI KOTAK */}
-                            <div className="bg-linear-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-lg shadow-red-500/30 border border-white/20 relative overflow-hidden group">
+                            <div className="bg-gradient-to-br from-red-600 to-rose-700 rounded-2xl p-6 text-white shadow-lg shadow-red-500/30 border border-red-500/50 relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
                                     <FiTag size={64} />
                                 </div>
-                                <p className="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
+                                <p className="text-[10px] font-bold text-white/90 uppercase tracking-[0.2em] mb-1 relative z-10">Estimasi Total Biaya</p>
                                 <p className="text-3xl font-black italic tracking-tight relative z-10 drop-shadow-md">
                                     Rp {calcOrderData.estimatedTotal.toLocaleString('id-ID')}
                                 </p>

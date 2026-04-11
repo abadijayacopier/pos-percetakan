@@ -97,11 +97,14 @@ export default function DesignerManagementPage({ onNavigate }) {
         const result = await Swal.fire({
             title: activate ? 'Aktifkan Operator?' : 'Nonaktifkan Operator?',
             text: `Apakah Anda yakin ingin ${activate ? 'mengaktifkan' : 'menonaktifkan'} ${d.name}?`,
-            icon: 'question',
-            showCancelButton: true,
             confirmButtonText: activate ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
             cancelButtonText: 'Batal',
-            confirmButtonColor: activate ? '#10b981' : '#ef4444'
+            buttonsStyling: false,
+            customClass: {
+                popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800',
+                confirmButton: `rounded-xl font-black uppercase tracking-widest text-[10px] ${activate ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-2.5 mx-2`,
+                cancelButton: 'rounded-xl font-black uppercase tracking-widest text-[10px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-6 py-2.5 mx-2'
+            }
         });
         if (!result.isConfirmed) return;
         try {
@@ -414,8 +417,8 @@ export default function DesignerManagementPage({ onNavigate }) {
                             </div>
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3">
                                 <button type="button" className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-100" onClick={() => setShowForm(false)}>Batal</button>
-                                <button type="submit" className="flex-[1.5] bg-primary text-white font-black py-3 rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-dark disabled:opacity-50" disabled={saving}>
-                                    {saving ? '⏳ Menyimpan...' : '💾 Simpan Data'}
+                                <button type="submit" className="flex-[1.5] bg-blue-600 text-white font-black py-3 rounded-xl shadow-lg shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2" disabled={saving}>
+                                    {saving ? '⏳ Menyimpan...' : <><FiSave size={18} /> Simpan Data</>}
                                 </button>
                             </div>
                         </form>
