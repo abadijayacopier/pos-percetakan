@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import api from '../services/api';
+import Swal from 'sweetalert2';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -327,7 +328,18 @@ export default function SettingsPage() {
     const handleRestore = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!confirm('PERINGATAN: Memulihkan data akan menimpa data saat ini. Lanjutkan?')) return;
+        const result = await Swal.fire({
+            title: 'PERINGATAN!',
+            text: 'Memulihkan data akan menimpa data saat ini. Lanjutkan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'YA, PULIHKAN',
+            cancelButtonText: 'BATAL',
+            confirmButtonColor: '#ef4444',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)'
+        });
+        if (!result.isConfirmed) return;
 
         const formData = new FormData();
         formData.append('backup', file);
@@ -695,8 +707,17 @@ export default function SettingsPage() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-3 text-right">
-                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
-                                                                        if (confirm(`Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`)) {
+                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={async () => {
+                                                                        const result = await Swal.fire({
+                                                                            title: 'Hapus Harga?',
+                                                                            text: `Hapus harga ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'} ${p.side} Sisi?`,
+                                                                            icon: 'warning',
+                                                                            showCancelButton: true,
+                                                                            confirmButtonColor: '#ef4444',
+                                                                            confirmButtonText: 'Ya, Hapus!',
+                                                                            cancelButtonText: 'Batal'
+                                                                        });
+                                                                        if (result.isConfirmed) {
                                                                             setFotocopyPrices(fotocopyPrices.filter((_, i) => i !== realIdx));
                                                                         }
                                                                     }}><FiTrash2 /></button>
@@ -793,8 +814,17 @@ export default function SettingsPage() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-3 text-right">
-                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
-                                                                        if (confirm(`Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`)) {
+                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={async () => {
+                                                                        const result = await Swal.fire({
+                                                                            title: 'Hapus Harga Print?',
+                                                                            text: `Hapus harga Print ${p.paper} ${p.color === 'bw' ? 'B/W' : 'Warna'}?`,
+                                                                            icon: 'warning',
+                                                                            showCancelButton: true,
+                                                                            confirmButtonColor: '#ef4444',
+                                                                            confirmButtonText: 'Ya, Hapus!',
+                                                                            cancelButtonText: 'Batal'
+                                                                        });
+                                                                        if (result.isConfirmed) {
                                                                             setPrintPrices(printPrices.filter((_, i) => i !== realIdx));
                                                                         }
                                                                     }}><FiTrash2 /></button>
@@ -880,8 +910,17 @@ export default function SettingsPage() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-3 text-right">
-                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={() => {
-                                                                        if (confirm(`Hapus jilid "${p.name}"?`)) {
+                                                                    <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all" onClick={async () => {
+                                                                        const result = await Swal.fire({
+                                                                            title: 'Hapus Jilid?',
+                                                                            text: `Hapus jilid "${p.name}"?`,
+                                                                            icon: 'warning',
+                                                                            showCancelButton: true,
+                                                                            confirmButtonColor: '#ef4444',
+                                                                            confirmButtonText: 'Ya, Hapus!',
+                                                                            cancelButtonText: 'Batal'
+                                                                        });
+                                                                        if (result.isConfirmed) {
                                                                             setBindPrices(bindPrices.filter((_, i) => i !== realIdx));
                                                                         }
                                                                     }}><FiTrash2 /></button>

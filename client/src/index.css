@@ -90,6 +90,18 @@
 }
 
 /* ---- Light Theme (Default) ---- */
+/* ---- Input Utilities ---- */
+.no-spinner::-webkit-inner-spin-button,
+.no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.no-spinner {
+  -moz-appearance: textfield;
+}
+
 [data-theme="light"],
 :root {
   --bg-primary: #f6f7f8;

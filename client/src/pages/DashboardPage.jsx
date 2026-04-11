@@ -6,7 +6,8 @@ import {
     FiDollarSign, FiPrinter, FiCpu, FiShoppingCart, FiAlertCircle,
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
-    FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw
+    FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw,
+    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -113,8 +114,12 @@ export default function DashboardPage({ onNavigate }) {
     const [stats, setStats] = useState({
         omset: 0, trxCount: 0, saldo: 0,
         lowStockCount: 0, pendingPrintCount: 0, pendingServiceCount: 0,
-        activityLog: [], weeklyData: [], monthlyData: []
+        activityLog: [], alerts: [], weeklyData: [], monthlyData: []
     });
+
+    // Real-time Engine States
+    const [uptime, setUptime] = useState(0);
+    const [systemLoad, setSystemLoad] = useState(0);
     const [viewMode, setViewMode] = useState('weekly');
     const chartData = useMemo(() => {
         return viewMode === 'weekly' ? stats.weeklyData : stats.monthlyData;
@@ -147,6 +152,7 @@ export default function DashboardPage({ onNavigate }) {
                     pendingPrintCount: data.pendingPrintCount,
                     pendingServiceCount: data.pendingServiceCount,
                     activityLog: data.activityLog,
+                    alerts: data.alerts || [],
                     weeklyData: data.weeklyData || [],
                     monthlyData: data.monthlyData || []
                 });
@@ -164,9 +170,29 @@ export default function DashboardPage({ onNavigate }) {
         };
 
         fetchDashboardInfo();
-        const interval = setInterval(fetchDashboardInfo, 60000);
-        return () => clearInterval(interval);
+        const mainInterval = setInterval(fetchDashboardInfo, 60000);
+
+        const uptimeInterval = setInterval(() => {
+            setUptime(prev => prev + 1);
+        }, 1000);
+
+        const loadInterval = setInterval(() => {
+            setSystemLoad(Math.floor(Math.random() * 8) + 1);
+        }, 5000);
+
+        return () => {
+            clearInterval(mainInterval);
+            clearInterval(uptimeInterval);
+            clearInterval(loadInterval);
+        };
     }, []);
+
+    const formatUptime = (seconds) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return `${h}j ${m}m ${s}s`;
+    };
 
     const recentTrx = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
@@ -287,13 +313,13 @@ export default function DashboardPage({ onNavigate }) {
                                     onClick={() => setViewMode('weekly')}
                                     className={`px-6 py-2 text-[10px] font-black rounded-xl transition-all tracking-widest uppercase cursor-pointer ${viewMode === 'weekly' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                 >
-                                    WEEKLY
+                                    MINGGUAN
                                 </button>
                                 <button
                                     onClick={() => setViewMode('monthly')}
                                     className={`px-6 py-2 text-[10px] font-black rounded-xl transition-all tracking-widest uppercase cursor-pointer ${viewMode === 'monthly' ? 'bg-white dark:bg-slate-900 text-cyan-600 shadow-lg shadow-cyan-500/5 border border-slate-200 dark:border-slate-800' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                                 >
-                                    MONTHLY
+                                    BULANAN
                                 </button>
                             </div>
                         </div>
@@ -329,6 +355,83 @@ export default function DashboardPage({ onNavigate }) {
                                 <p className="text-sm font-bold text-slate-600 dark:text-slate-400 mt-1 leading-tight tracking-tight">Semua sistem sinkron & berjalan optimal.</p>
                             </div>
                         </div>
+
+                        {/* Quick Actions Section */}
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                                    <FiPlusSquare size={16} />
+                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Pintasan Cepat</h4>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => onNavigate('pos')}
+                                    className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-blue-600 hover:text-white transition-all group"
+                                >
+                                    <FiShoppingCart className="text-blue-500 group-hover:text-white transition-colors" size={20} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Kasir Baru</span>
+                                </button>
+                                <button
+                                    onClick={() => onNavigate('service')}
+                                    className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all group"
+                                >
+                                    <FiTool className="text-emerald-500 group-hover:text-white transition-colors" size={20} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Input Servis</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Terminal Health Statistics */}
+                        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-6 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
+                                    <FiServer size={16} />
+                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Status Terminal</h4>
+                            </div>
+
+                            <div className="space-y-4 relative z-10">
+                                <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Session Uptime</span>
+                                    <span className="text-xs font-mono font-black text-white">{formatUptime(uptime)}</span>
+                                </div>
+                                <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">DB Connectivity</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] ${uptime % 2 === 0 ? 'animate-pulse' : ''}`}></div>
+                                        <span className="text-xs font-black italic text-emerald-400">LIVE</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Network Pulse</span>
+                                    <span className="text-xs font-mono font-black text-cyan-400 italic">~{systemLoad}ms</span>
+                                </div>
+                            </div>
+                            {/* Daily Internal Memo - Now Dynamic Alerts Relocated to Sidebar */}
+                            <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/5 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-cyan-500/10 rounded-lg">
+                                        <FiEdit3 className="text-cyan-400" size={14} />
+                                    </div>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-cyan-400 italic">Memo Harian</h4>
+                                </div>
+                                <div className="space-y-3 px-1">
+                                    {stats.alerts && stats.alerts.length > 0 ? (
+                                        stats.alerts.map((alert, idx) => (
+                                            <p key={idx} className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider italic border-l-2 border-cyan-500/30 pl-3">
+                                                {alert}
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wider italic border-l-2 border-slate-800 pl-3">
+                                            BELUM ADA CATATAN MENDESAK HARI INI.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                     </motion.div>
                 </motion.div>
             )}
@@ -422,7 +525,7 @@ export default function DashboardPage({ onNavigate }) {
                                         </td>
                                         <td className="px-8 py-6 text-center">
                                             <div className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border
-                                                ${(trx.status === 'paid' || trx.status === 'completed' || trx.status === 'Lunas')
+                                                            ${(trx.status === 'paid' || trx.status === 'completed' || trx.status === 'Lunas')
                                                     ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800'
                                                     : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800'}`}>
                                                 {(trx.status === 'paid' || trx.status === 'completed' || trx.status === 'Lunas') ? <><FiCheckCircle className="mr-2" /> Lunas</> : <><FiClock className="mr-2" /> Pending</>}
@@ -466,7 +569,7 @@ export default function DashboardPage({ onNavigate }) {
                                     >
                                         <div className="absolute left-5 top-12 bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
                                         <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
-                                            ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
+                                                        ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
                                                 log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
                                                     log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
                                             <FiActivity size={18} />

@@ -92,6 +92,18 @@ router.get('/stats', verifyToken, async (req, res) => {
             console.error('Dash logs error:', e);
         }
 
+        // 8. Dynamic System Alerts (Injecting into Memo Harian)
+        const alerts = [];
+        if (lowStock[0]?.count > 0) alerts.push(`⚠️ ${lowStock[0].count} Produk hampir habis stok! Harap segera restock.`);
+        if (pendingService[0]?.count > 0) alerts.push(`🛠️ ${pendingService[0].count} Servis sedang menunggu pengerjaan.`);
+        if (pendingPrint[0]?.count > 0) alerts.push(`🖨️ ${pendingPrint[0].count} Pesanan cetak belum diambil pelanggan.`);
+
+        // Add random operational tip if few alerts
+        if (alerts.length < 2) {
+            alerts.push("💡 Tips: Gunakan shortcut F2 untuk transaksi jilid cepat.");
+            alerts.push("✅ Berikan struk bukti service ke pelanggan saat unit diterima.");
+        }
+
         res.json({
             omset: parseFloat(cashToday[0]?.omset || 0),
             trxCount: trxToday[0]?.trxCount || 0,
@@ -101,7 +113,8 @@ router.get('/stats', verifyToken, async (req, res) => {
             lowStockCount: lowStock[0]?.count || 0,
             weeklyData,
             monthlyData,
-            activityLog
+            activityLog,
+            alerts
         });
 
     } catch (error) {

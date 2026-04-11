@@ -40,29 +40,64 @@ router.get('/:id', verifyToken, async (req, res) => {
 
 // 3. POST Order Service Baru
 router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async (req, res) => {
+    const connection = await pool.getConnection();
     try {
+        await connection.beginTransaction();
         const {
             serviceNo, customerId, customerName, phone, machineInfo, serialNo,
-            complaint, conditionPhysic, status, technicianId, dpAmount
+            complaint, conditionPhysic, status, technicianId, dpAmount, laborCost, spareparts
         } = req.body;
 
-        const [result] = await pool.query(`
+        // 1. Insert Service Order
+        const [result] = await connection.query(`
             INSERT INTO service_orders
             (service_no, customer_id, customer_name, phone, machine_info, serial_no, complaint, condition_physic, status, technician_id, dp_amount, labor_cost)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
+        `, [
             serviceNo, customerId || null, customerName, phone, machineInfo,
-            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', technicianId || null, dpAmount || 0, 0
+            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', technicianId || null, dpAmount || 0, laborCost || 0
         ]);
 
         const newId = result.insertId;
 
-        if (customerId) {
-            await pool.query('UPDATE customers SET total_trx = total_trx + 1 WHERE id = ?', [customerId]);
+        // 2. Handle Spareparts if any
+        let totalSparepartCost = 0;
+        if (spareparts && Array.isArray(spareparts) && spareparts.length > 0) {
+            for (const sp of spareparts) {
+                await connection.query(`
+                    INSERT INTO service_spareparts(service_order_id, name, qty, price, product_id)
+                    VALUES(?, ?, ?, ?, ?)
+                `, [newId, sp.name, sp.qty, sp.price, sp.productId || null]);
+
+                if (sp.productId) {
+                    await connection.query(
+                        'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?',
+                        [sp.qty, sp.productId]
+                    );
+
+                    await connection.query(
+                        `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+                         VALUES (?, 'out', ?, ?, ?)`,
+                        [sp.productId, sp.qty, `SRV-${newId}`, `Pemakaian sparepart service ${newId}`]
+                    );
+                }
+                totalSparepartCost += (Number(sp.qty) || 0) * (Number(sp.price) || 0);
+            }
         }
 
+        // 3. Update Total Cost
+        const grandTotal = (Number(laborCost) || 0) + totalSparepartCost;
+        await connection.query('UPDATE service_orders SET total_cost = ? WHERE id = ?', [grandTotal, newId]);
+
+        // 4. Update Customer Stats
+        if (customerId) {
+            await connection.query('UPDATE customers SET total_trx = total_trx + 1 WHERE id = ?', [customerId]);
+        }
+
+        await connection.commit();
         res.status(201).json({ message: 'Penerimaan service berhasil dicatat!', id: newId });
     } catch (error) {
+        await connection.rollback();
         console.error('CRITICAL: Gagal simpan Service Ticket:', error);
         res.status(500).json({
             message: 'Gagal membuat order service',
@@ -70,6 +105,8 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
             sqlMessage: error.sqlMessage,
             code: error.code
         });
+    } finally {
+        connection.release();
     }
 });
 

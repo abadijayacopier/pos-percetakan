@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import Swal from 'sweetalert2';
 import { useAuth } from '../contexts/AuthContext';
 import {
     FiUserPlus, FiUsers, FiCheckCircle, FiTrash2, FiEdit2,
@@ -93,7 +94,16 @@ export default function DesignerManagementPage({ onNavigate }) {
     };
 
     const handleToggleActive = async (d, activate) => {
-        if (!window.confirm(`${activate ? 'Aktifkan' : 'Nonaktifkan'} operator desain ini?`)) return;
+        const result = await Swal.fire({
+            title: activate ? 'Aktifkan Operator?' : 'Nonaktifkan Operator?',
+            text: `Apakah Anda yakin ingin ${activate ? 'mengaktifkan' : 'menonaktifkan'} ${d.name}?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: activate ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: activate ? '#10b981' : '#ef4444'
+        });
+        if (!result.isConfirmed) return;
         try {
             if (activate) {
                 await api.put(`/designers/${d.id}`, { name: d.name, username: d.username, is_active: true });

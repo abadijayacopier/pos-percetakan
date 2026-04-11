@@ -29,6 +29,7 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/print-orders', require('./routes/printing'));
 app.use('/api/customers', require('./routes/customers'));
 app.use('/api/service-orders', require('./routes/service'));
+app.use('/api/service', require('./routes/service')); // Alias untuk kecocokan frontend
 app.use('/api/finance', require('./routes/finance'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/print', require('./routes/print'));

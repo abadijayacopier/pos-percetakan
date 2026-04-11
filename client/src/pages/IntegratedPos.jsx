@@ -3,7 +3,7 @@ import api from '../services/api';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft } from 'react-icons/fi';
+import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiCommand } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -94,7 +94,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
     // Mencegah ID invoice terus berubah akibat re-render dari timer
     const draftInvoiceId = useMemo(() => {
-        return 'Order ID: #INV-' + Date.now().toString().slice(-8);
+        return 'ID Pesanan: #INV-' + Date.now().toString().slice(-8);
     }, [cart.length === 0, transactionComplete]);
 
     // Printer Settings
@@ -1062,7 +1062,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         </div>
                         <div className="text-[10px] font-bold tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-900/20 px-2 py-0.5 rounded ml-8 lg:ml-0 inline-flex items-center gap-1">
                             <span className="size-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                            TERMINAL ACTIVE
+                            TERMINAL AKTIF
                         </div>
                         {/* Customer Button Modern */}
                         <div className="mt-2">
@@ -1184,42 +1184,56 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 )
             }
 
-            {/* Footer / Hotkeys Banner */}
-            <footer className="hidden lg:flex h-7 bg-slate-900 border-t border-slate-800 text-slate-300 text-[10px] font-medium items-center justify-between px-4 shrink-0 overflow-auto hide-scrollbar z-45 relative">
-                <div className="flex items-center gap-5 min-w-max">
-                    <div className="flex items-center gap-1.5 text-primary-light font-bold">
-                        <span className="material-symbols-outlined text-[14px]">keyboard</span>
-                        BANTUAN TOMBOL:
+            {/* Premium Footer / Hotkeys Banner */}
+            <footer className="hidden lg:flex h-10 bg-[#0b1120]/95 backdrop-blur-2xl border-t border-cyan-500/10 text-slate-400 text-[10px] font-bold items-center justify-between px-6 shrink-0 z-40 relative shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+                <div className="flex items-center gap-6 min-w-max">
+                    <div className="flex items-center gap-2 text-cyan-500 uppercase tracking-[0.2em] italic">
+                        <FiCommand className="animate-pulse" />
+                        <span className="opacity-80">Bantuan Tombol</span>
                     </div>
-                    {['F1', 'Fotocopy', 'F2', 'Jilid', 'F3', 'Cetak', 'F4', 'Digital/Spanduk', 'F6', 'Service', 'F5', 'Cari ATK / Barcode Auto', 'F8', 'Laci Uang', 'F9', 'Diskon', 'F10', 'Bayar', 'F11', 'Layar Penuh', 'F12', 'Simpan List', 'ESC', 'Batal'].map((key, i) => (
-                        <div key={i} className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity whitespace-nowrap">
-                            {i % 2 === 0 ? (
-                                <span className="px-1.5 py-0.5 rounded border border-slate-700 bg-slate-800 text-[9px] font-bold text-slate-400 capitalize">
-                                    {key}
+
+                    <div className="h-4 w-px bg-white/5 mx-2" />
+
+                    <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar">
+                        {[
+                            { k: 'F1', l: 'Fotocopy' },
+                            { k: 'F2', l: 'Jilid' },
+                            { k: 'F3', l: 'Cetak' },
+                            { k: 'F4', l: 'Logistik' },
+                            { k: 'F6', l: 'Service' },
+                            { k: 'F5', l: 'Cari ATK' },
+                            { k: 'F8', l: 'Laci' },
+                            { k: 'F9', l: 'Diskon' },
+                            { k: 'F10', l: 'Bayar' },
+                            { k: 'F11', l: 'Full' },
+                            { k: 'F12', l: 'Simpan' },
+                            { k: 'ESC', l: 'Batal' }
+                        ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-2 group cursor-help transition-all duration-300 hover:scale-105">
+                                <span className="px-1.5 py-0.5 rounded-md border border-white/10 bg-white/5 text-[9px] font-black text-cyan-400 font-mono shadow-[0_0_10px_rgba(34,211,238,0.1)] group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-400 transition-all">
+                                    {item.k}
                                 </span>
-                            ) : (
-                                <span>{key}</span>
-                            )}
-                        </div>
-                    ))}
+                                <span className="text-slate-500 group-hover:text-slate-300 transition-colors uppercase tracking-widest text-[9px]">
+                                    {item.l}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex items-center gap-6 pl-4 font-mono text-[9px] text-slate-500 font-bold whitespace-nowrap min-w-max">
-                    <span>KASIR TERPADU V2.4</span>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        PRN: EPSON LX-310
+
+                <div className="flex items-center gap-8 pl-6 font-display text-[9px] text-slate-500 font-black whitespace-nowrap min-w-max tracking-widest italic opacity-60">
+                    <div className="flex items-center gap-2">
+                        <span className="text-white/20">/</span>
+                        KASIR TERPADU V2.4
+                    </div>
+                    <div className="flex items-center gap-2 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/10">
+                        <div className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                        <span className="text-emerald-500">PRN: {printerSettings.printerName || 'EPSON LX-310'}</span>
                     </div>
                 </div>
             </footer>
 
-            <footer className="h-8 bg-slate-900 text-slate-400 flex items-center justify-between px-6 text-[10px] uppercase tracking-widest font-bold font-mono">
-                <div className="flex gap-6 shrink-0">
-                    <span>Kasir Terpadu v2.4</span>
-                </div>
-                <div className="flex gap-6 shrink-0 text-right">
-                    <span className="flex items-center gap-1 justify-end"><span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> {printerSettings.printerName ? `PRN: ${printerSettings.printerName}` : 'Ready'}</span>
-                </div>
-            </footer>
+            <footer className="h-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-500 opacity-50 shrink-0"></footer>
 
             {/* Modals from before */}
             <Modal isOpen={isDiscountModalOpen} onClose={toggleDiscountModal} title="Input Diskon / Potongan">

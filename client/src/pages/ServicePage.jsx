@@ -142,25 +142,23 @@ export default function ServicePage({ onNavigate }) {
 
 
         try {
-            let targetId = selectedService?.id;
-
             if (selectedService) {
-                // If it's just a status change without diagnosis/spareparts, PATCH status
-                // But full form uses PUT to update everything
-                await api.put(`/service/${targetId}`, newRecord);
+                await api.put(`/service/${selectedService.id}`, newRecord);
             } else {
-                const res = await api.post('/service', newRecord);
-                targetId = res.data.id;
-
-                // If we have spareparts/diagnosis right at creation, we immediately update it
-                if (newRecord.spareparts?.length > 0 || newRecord.laborCost > 0 || newRecord.diagnosis) {
-                    await api.put(`/service/${targetId}`, newRecord);
-                }
+                await api.post('/service', newRecord);
             }
             setShowForm(false);
             setSelectedService(null);
             resetForm();
             loadData();
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Order service berhasil disimpan!',
+                timer: 1500,
+                showConfirmButton: false,
+                confirmButtonColor: 'var(--primary)'
+            });
         } catch (error) {
             console.error('Save error:', error);
             Swal.fire({
@@ -344,7 +342,7 @@ export default function ServicePage({ onNavigate }) {
                                     <td className="px-6 py-5">
                                         <span className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-1.5 shadow-sm ${getStatusColor(srv.status)}`}>
                                             {srv.status === 'approval' ? <FiClock /> : srv.status === 'pengerjaan' ? <FiSettings className="animate-spin-slow" /> : <FiCheckCircle />}
-                                            {srv.status === 'approval' ? 'Pending' : srv.status}
+                                            {srv.status === 'approval' ? 'Menunggu' : srv.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-5">
@@ -513,7 +511,7 @@ export default function ServicePage({ onNavigate }) {
                                                         setFormData({ ...formData, customerId: e.target.value, customerName: c?.name || '', phone: c?.phone || '' });
                                                     }}
                                                 >
-                                                    <option value="">-- ILIH DATA PELANGGAN --</option>
+                                                    <option value="">-- PILIH DATA PELANGGAN --</option>
                                                     {customers.map(c => <option key={c.id} value={c.id}>{c.name.toUpperCase()} {c.company ? `(${c.company.toUpperCase()})` : ''}</option>)}
                                                 </select>
                                             </div>
@@ -600,7 +598,7 @@ export default function ServicePage({ onNavigate }) {
                                                             value={formData.technicianId}
                                                             onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
                                                         >
-                                                            <option value="">-- ILIH TEKNISI --</option>
+                                                            <option value="">-- PILIH TEKNISI --</option>
                                                             {technicians.map(t => <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>)}
                                                         </select>
                                                     </div>
@@ -618,16 +616,16 @@ export default function ServicePage({ onNavigate }) {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status Operational (Real-time)</label>
+                                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Status Operasional (Real-time)</label>
                                                     <select
                                                         className="w-full bg-slate-900 text-white rounded-2xl py-3.5 px-4 text-[10px] font-black uppercase tracking-widest focus:ring-4 focus:ring-blue-500/20 transition-all cursor-pointer"
                                                         value={formData.status || 'approval'}
                                                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                                     >
-                                                        <option value="approval">Awaiting Approval (New Ticket)</option>
-                                                        <option value="pengerjaan">Under Maintenance (Processing)</option>
-                                                        <option value="selesai">Ready for Pickup (Complete)</option>
-                                                        <option value="diambil">Settled / Taken (Archive)</option>
+                                                        <option value="approval">Menunggu Persetujuan (Tiket Baru)</option>
+                                                        <option value="pengerjaan">Sedang Dikerjakan (Proses)</option>
+                                                        <option value="selesai">Siap Diambil (Selesai)</option>
+                                                        <option value="diambil">Sudah Diambil (Arsip)</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -637,7 +635,7 @@ export default function ServicePage({ onNavigate }) {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <FiSettings className="text-emerald-500" />
-                                                    <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Inventory Assignment</h3>
+                                                    <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Alokasi Suku Cadang</h3>
                                                 </div>
                                                 <button
                                                     type="button"
@@ -705,11 +703,11 @@ export default function ServicePage({ onNavigate }) {
                                                                 />
                                                             </div>
                                                             <div className="flex-2 flex flex-col gap-1">
-                                                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Price (Rp)</span>
+                                                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest ml-1">Harga (Rp)</span>
                                                                 <input
                                                                     type="number"
                                                                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg py-1.5 px-2 text-xs font-black focus:ring-2 focus:ring-emerald-500"
-                                                                    placeholder="Unit Price..."
+                                                                    placeholder="Harga Satuan..."
                                                                     value={part.price}
                                                                     onChange={(e) => updateSparepart(part.id, 'price', e.target.value)}
                                                                 />
@@ -727,7 +725,7 @@ export default function ServicePage({ onNavigate }) {
                                                 {formData.spareparts.length === 0 && (
                                                     <div className="py-10 text-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center gap-2">
                                                         <FiBox size={24} className="text-slate-200" />
-                                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">No components assigned</p>
+                                                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Tidak ada komponen yang ditambahkan</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -735,54 +733,67 @@ export default function ServicePage({ onNavigate }) {
                                     </div>
 
                                     {/* Financial Settlement */}
-                                    <div className="p-8 bg-slate-900 dark:bg-slate-950 rounded-[2.5rem] text-white flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden group">
+                                    <div className="p-8 bg-slate-900 dark:bg-slate-950 rounded-[2.5rem] text-white flex flex-col gap-8 relative overflow-hidden group">
                                         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-600/10 to-transparent pointer-events-none"></div>
                                         <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-600/5 rounded-full -mb-24 -mr-24 blur-3xl group-hover:scale-125 transition-transform duration-700"></div>
 
                                         <div className="space-y-6 flex-1 w-full">
                                             <div className="flex items-center gap-3">
-                                                <FiCreditCard className="text-blue-500" />
-                                                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Financial Settlement Analysis</h3>
+                                                <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500 shadow-lg shadow-blue-500/10">
+                                                    <FiCreditCard size={18} />
+                                                </div>
+                                                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-300 italic">Analisis Penyelesaian Keuangan</h3>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 relative z-10">
-                                                <div className="space-y-3">
-                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Labor Cost (Rp)</label>
+                                            <div className="flex flex-col md:flex-row gap-6 relative z-10 w-full">
+                                                <div className="flex-1 space-y-3">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Biaya Jasa / Service (Rp)</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-blue-500 italic">IDR</span>
+                                                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xs font-black text-blue-500 italic">IDR</span>
                                                         <input
                                                             type="number"
-                                                            className="w-full bg-white/5 dark:bg-slate-800/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-xl font-black text-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all tracking-tighter"
+                                                            className="w-full bg-white/10 dark:bg-slate-800/80 border border-white/10 rounded-2xl py-6 pl-16 pr-6 text-3xl font-black text-white focus:ring-4 focus:ring-blue-500/30 focus:border-blue-500 transition-all tracking-tighter appearance-none no-spinner"
                                                             value={formData.laborCost}
                                                             onChange={(e) => setFormData({ ...formData, laborCost: e.target.value })}
+                                                            placeholder="0"
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="space-y-3">
-                                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">DP / Amanah (Rp)</label>
+                                                <div className="flex-1 space-y-3">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Uang Muka / DP (Rp)</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-emerald-500 italic">IDR</span>
+                                                        <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-500 italic">IDR</span>
                                                         <input
                                                             type="number"
-                                                            className="w-full bg-white/5 dark:bg-slate-800/50 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-xl font-black text-emerald-400 focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all tracking-tighter"
+                                                            className="w-full bg-white/10 dark:bg-slate-800/80 border border-white/10 rounded-2xl py-6 pl-16 pr-6 text-3xl font-black text-emerald-400 focus:ring-4 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all tracking-tighter appearance-none no-spinner"
                                                             value={formData.dpAmount}
                                                             onChange={(e) => setFormData({ ...formData, dpAmount: e.target.value })}
+                                                            placeholder="0"
                                                         />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="w-px h-20 bg-slate-800 hidden md:block"></div>
+                                        <div className="h-px w-full bg-white/5 md:hidden"></div>
+                                        <div className="w-px h-16 bg-white/5 hidden md:block self-center"></div>
 
-                                        <div className="text-center md:text-right min-w-[200px] relative z-10">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Total Estimated Invoice</p>
-                                            <p className="text-5xl font-black text-white italic tracking-tighter flex items-center justify-center md:justify-end gap-2 drop-shadow-2xl">
-                                                <span className="text-2xl not-italic text-blue-500 -mt-2">Rp</span>
-                                                {((Number(formData.laborCost) || 0) + formData.spareparts.reduce((s, i) => s + (Number(i.subtotal) || 0), 0)).toLocaleString('id-ID')}
-                                                <span className="text-[12px] not-italic text-slate-500 uppercase tracking-[0.05em] align-baseline">,-</span>
-                                            </p>
-                                            <div className="flex items-center justify-center md:justify-end gap-2 mt-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                                                <FiActivity className="text-blue-500 animate-pulse" /> Final settlement based on actual usage
+                                        <div className="flex flex-col md:flex-row items-center justify-between gap-6 w-full">
+                                            <div className="hidden lg:block flex-1">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed italic max-w-xs">
+                                                    "Sistem menghitung estimasi berdasarkan alokasi suku cadang & biaya jasa teknisi."
+                                                </p>
+                                            </div>
+
+                                            <div className="text-center md:text-right min-w-[200px] relative z-10">
+                                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">Estimasi Total Tagihan</p>
+                                                <p className="text-5xl font-black text-white italic tracking-tighter flex items-center justify-center md:justify-end gap-2 drop-shadow-2xl">
+                                                    <span className="text-2xl not-italic text-blue-500 -mt-2">Rp</span>
+                                                    {((Number(formData.laborCost) || 0) + formData.spareparts.reduce((s, i) => s + (Number(i.subtotal) || 0), 0)).toLocaleString('id-ID')}
+                                                    <span className="text-[12px] not-italic text-slate-500 uppercase tracking-[0.05em] align-baseline">,-</span>
+                                                </p>
+                                                <div className="flex items-center justify-center md:justify-end gap-2 mt-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                                                    <FiActivity className="text-blue-500 animate-pulse" /> Penyelesaian akhir berdasarkan penggunaan aktual
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -806,7 +817,7 @@ export default function ServicePage({ onNavigate }) {
                                     onClick={() => setShowForm(false)}
                                     className="w-full sm:w-auto px-6 sm:px-10 py-4 sm:py-5 bg-white dark:bg-slate-900 text-slate-500 text-[11px] font-black uppercase tracking-widest rounded-2xl sm:rounded-[1.5rem] hover:bg-slate-100 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-700 active:scale-95 text-center"
                                 >
-                                    Dismiss / Batal
+                                    TUTUP / BATAL
                                 </button>
                                 <button
                                     form="serviceForm"
@@ -814,7 +825,7 @@ export default function ServicePage({ onNavigate }) {
                                     className="w-full sm:w-auto md:flex-none px-8 sm:px-16 py-4 sm:py-5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl sm:rounded-[1.5rem] shadow-2xl shadow-blue-500/40 hover:shadow-blue-500/60 transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-3 group"
                                 >
                                     <FiSave className="text-base sm:text-lg group-hover:bounce" />
-                                    Authorize / Simpan
+                                    OTORISASI & SIMPAN
                                 </button>
                             </div>
                         </div>
