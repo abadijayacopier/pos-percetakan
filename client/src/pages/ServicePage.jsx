@@ -205,11 +205,12 @@ export default function ServicePage({ onNavigate }) {
                 loadData();
             } catch (error) {
                 console.error('Delete error:', error);
+                const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Gagal menghapus tiket';
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: error.response?.data?.message || 'Gagal menghapus tiket',
-                    footer: error.response?.data?.error ? `<div class="text-xs text-red-500 font-code">Error: ${error.response.data.error}</div>` : null
+                    text: errorMsg,
+                    footer: error.response?.data?.error ? `<div class="text-xs text-red-500 font-mono">Error: ${error.response.data.error}</div>` : null
                 });
             }
         }

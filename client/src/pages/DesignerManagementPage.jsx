@@ -123,7 +123,7 @@ export default function DesignerManagementPage({ onNavigate }) {
 
     const openEdit = (d) => {
         setEditItem(d);
-        setForm({ name: d.name, username: d.username, password: '', is_active: d.is_active });
+        setForm({ name: d.name || '', username: d.username || '', password: '', is_active: d.is_active });
         setShowForm(true);
     };
 
@@ -236,7 +236,7 @@ export default function DesignerManagementPage({ onNavigate }) {
                                         <td className="p-4">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-inner ${d.status_kerja === 'sibuk' ? 'bg-rose-500' : 'bg-primary'}`}>
-                                                    {d.name.substring(0, 2).toUpperCase()}
+                                                    {(d.name || 'NN').substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{d.name}</p>
@@ -404,15 +404,15 @@ export default function DesignerManagementPage({ onNavigate }) {
                             <div className="p-6 flex flex-col gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
-                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" placeholder="Andi Saputra" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" placeholder="Andi Saputra" value={form?.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Username Login</label>
-                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" placeholder="andi_desain" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" placeholder="andi_desain" value={form?.username || ''} onChange={e => setForm({ ...form, username: e.target.value })} />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password {editItem ? '(Kosongkan jika tidak diubah)' : ''}</label>
-                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" type="password" placeholder={editItem ? '••••••••' : 'Min. 6 karakter'} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                                    <input className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-primary shadow-inner" type="password" placeholder={editItem ? '••••••••' : 'Min. 6 karakter'} value={form?.password || ''} onChange={e => setForm({ ...form, password: e.target.value })} />
                                 </div>
                             </div>
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3">

@@ -514,19 +514,68 @@ export default function DigitalPrintingPage({ onNavigate }) {
                         </div>
 
                         {/* Tips Operasional Tambahan */}
-                        <div className="mt-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-5 relative overflow-hidden group/tips">
-                            <div className="absolute -right-4 -top-4 text-blue-500/10 transform group-hover/tips:rotate-12 transition-transform">
-                                <FiZap size={80} />
+                        <div className="mt-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-[2.5rem] p-8 relative overflow-hidden group/tips shadow-sm">
+                            <div className="absolute -right-6 -top-6 text-blue-500/10 transform group-hover/tips:rotate-12 transition-transform select-none">
+                                <FiZap size={120} />
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="p-2 bg-blue-500 text-white rounded-lg shadow-sm">
-                                    <FiCheckCircle size={16} />
+                            <div className="flex items-start gap-6 relative z-10">
+                                <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/20">
+                                    <FiCheckCircle size={20} />
                                 </div>
-                                <div>
-                                    <h4 className="text-[11px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest mb-1">Rekomendasi Workflow</h4>
-                                    <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
-                                        Pastikan <strong className="text-blue-600 dark:text-blue-400 font-black">Biaya Desain</strong> selalu diinputkan pada Kalkulator Banner sebelum menerbitkan SPK agar tagihan ke pelanggan terakumulasi dengan benar di modul Kasir.
+                                <div className="space-y-2">
+                                    <h4 className="text-[12px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-[0.2em] mb-1">Rekomendasi Workflow</h4>
+                                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
+                                        Pastikan <strong className="text-blue-600 dark:text-blue-400 font-black underline decoration-blue-500/30 underline-offset-4">Biaya Desain</strong> selalu diinputkan pada Kalkulator Banner sebelum menerbitkan SPK agar tagihan ke pelanggan terakumulasi dengan benar di modul Kasir.
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Space Filler: Price Reference & Machine Status */}
+                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                    <FiTag className="text-blue-500" /> Referensi Harga Bahan
+                                </h5>
+                                <div className="space-y-3">
+                                    {[
+                                        { name: 'Banner Flexi 280gr', price: 'Rp 15.000/m' },
+                                        { name: 'Banner Flexi 340gr', price: 'Rp 20.000/m' },
+                                        { name: 'Banner Flexi Korea 440gr', price: 'Rp 35.000/m' },
+                                        { name: 'Stiker Vinyl Ritrama', price: 'Rp 65.000/m' }
+                                    ].map((p, i) => (
+                                        <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 transition-all">
+                                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">{p.name}</span>
+                                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 italic">{p.price}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                                        <FiActivity className="text-emerald-500" /> Status Mesin Produksi
+                                    </h5>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="size-3 rounded-full bg-emerald-500 animate-pulse border-4 border-emerald-500/20"></div>
+                                            <div>
+                                                <p className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Main Printer (Konica)</p>
+                                                <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Siap Produksi • Optimal</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="size-3 rounded-full bg-emerald-500 animate-pulse border-4 border-emerald-500/20"></div>
+                                            <div>
+                                                <p className="text-[11px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Secondary Printer (XP600)</p>
+                                                <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Siap Produksi • Optimal</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 text-[10px] font-medium text-slate-400 italic leading-relaxed border-l-4 border-emerald-500">
+                                    "Printer optimal meningkatkan akurasi warna dan ketepatan waktu pengiriman."
                                 </div>
                             </div>
                         </div>

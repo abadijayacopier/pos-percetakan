@@ -263,6 +263,7 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
 
 // 7. DELETE Order Service
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    console.log(`[ID REQUESTED] DELETE -> /api/service/${req.params.id}`);
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();

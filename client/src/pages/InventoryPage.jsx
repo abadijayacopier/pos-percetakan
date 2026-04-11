@@ -380,7 +380,7 @@ export default function InventoryPage({ onNavigate }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all">
+                                                <div className="flex justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-x-2 sm:group-hover:translate-x-0 transition-all">
                                                     <button
                                                         onClick={() => onNavigate('stock-history', { product: p })}
                                                         title="History Stok"
