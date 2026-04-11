@@ -116,17 +116,20 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
     try {
         await connection.beginTransaction();
         const {
-            diagnosis, laborCost, status, spareparts, warrantyEnd, dpAmount, technicianId
+            diagnosis, laborCost, status, spareparts, warrantyEnd, dpAmount, technicianId,
+            customerId, customerName, phone, machineInfo, serialNo, complaint, condition // conditionPhysic is sent as condition from frontend or already updated in mapping
         } = req.body;
+
+        const conditionPhysic = req.body.conditionPhysic || req.body.condition;
 
         let totalSparepartCost = 0;
 
         // Update data utama
         await connection.query(`
             UPDATE service_orders 
-            SET diagnosis = ?, labor_cost = ?, status = ?, warranty_end = ?, dp_amount = ?, technician_id = ?
+            SET customer_id = ?, customer_name = ?, phone = ?, machine_info = ?, serial_no = ?, complaint = ?, condition_physic = ?, diagnosis = ?, labor_cost = ?, status = ?, warranty_end = ?, dp_amount = ?, technician_id = ?
             WHERE id = ?
-                `, [diagnosis, laborCost || 0, status, warrantyEnd || null, dpAmount || 0, technicianId || null, req.params.id]);
+                `, [customerId || null, customerName || null, phone || null, machineInfo || null, serialNo || null, complaint || null, conditionPhysic || null, diagnosis || null, laborCost || 0, status, warrantyEnd || null, dpAmount || 0, technicianId || null, req.params.id]);
 
         // ─── Otomatisasi Stok Sparepart (Opsi A) ──────────────────────
         if (spareparts && Array.isArray(spareparts)) {

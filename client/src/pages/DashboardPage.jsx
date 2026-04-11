@@ -383,57 +383,57 @@ export default function DashboardPage({ onNavigate }) {
                         </div>
 
                         {/* Terminal Health Statistics */}
-                        <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-6 relative overflow-hidden group">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] text-slate-800 dark:text-white border border-slate-200 dark:border-slate-800 space-y-6 relative overflow-hidden group shadow-sm dark:shadow-none">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
 
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
+                                <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-500 dark:text-cyan-400">
                                     <FiServer size={16} />
                                 </div>
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Status Terminal</h4>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 italic">Status Terminal</h4>
                             </div>
 
                             <div className="space-y-4 relative z-10">
-                                <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                                <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-4">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Session Uptime</span>
-                                    <span className="text-xs font-mono font-black text-white">{formatUptime(uptime)}</span>
+                                    <span className="text-xs font-mono font-black text-slate-800 dark:text-white">{formatUptime(uptime)}</span>
                                 </div>
-                                <div className="flex justify-between items-end border-b border-white/5 pb-4">
+                                <div className="flex justify-between items-end border-b border-slate-100 dark:border-white/5 pb-4">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">DB Connectivity</span>
                                     <div className="flex items-center gap-2">
                                         <div className={`w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] ${uptime % 2 === 0 ? 'animate-pulse' : ''}`}></div>
-                                        <span className="text-xs font-black italic text-emerald-400">LIVE</span>
+                                        <span className="text-xs font-black italic text-emerald-500 dark:text-emerald-400">LIVE</span>
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end">
                                     <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Network Pulse</span>
-                                    <span className="text-xs font-mono font-black text-cyan-400 italic">~{systemLoad}ms</span>
+                                    <span className="text-xs font-mono font-black text-cyan-600 dark:text-cyan-400 italic">~{systemLoad}ms</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Daily Internal Memo - Now Dynamic Alerts Relocated to Sidebar */}
-                        <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/5 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-cyan-500/10 rounded-lg">
-                                        <FiEdit3 className="text-cyan-400" size={14} />
-                                    </div>
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-cyan-400 italic">Memo Harian</h4>
+                        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-slate-200 dark:border-white/5 space-y-4 shadow-sm dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-cyan-500/10 rounded-lg">
+                                    <FiEdit3 className="text-cyan-600 dark:text-cyan-400" size={14} />
                                 </div>
-                                <div className="space-y-3 px-1">
-                                    {stats.alerts && stats.alerts.length > 0 ? (
-                                        stats.alerts.map((alert, idx) => (
-                                            <p key={idx} className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-wider italic border-l-2 border-cyan-500/30 pl-3">
-                                                {alert}
-                                            </p>
-                                        ))
-                                    ) : (
-                                        <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wider italic border-l-2 border-slate-800 pl-3">
-                                            BELUM ADA CATATAN MENDESAK HARI INI.
-                                        </p>
-                                    )}
-                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-cyan-600 dark:text-cyan-400 italic">Memo Harian</h4>
                             </div>
+                            <div className="space-y-3 px-1">
+                                {stats.alerts && stats.alerts.length > 0 ? (
+                                    stats.alerts.map((alert, idx) => (
+                                        <p key={idx} className="text-[10px] font-bold text-slate-600 dark:text-slate-400 leading-relaxed uppercase tracking-wider italic border-l-2 border-cyan-500/30 pl-3">
+                                            {alert}
+                                        </p>
+                                    ))
+                                ) : (
+                                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wider italic border-l-2 border-slate-200 dark:border-slate-800 pl-3">
+                                        BELUM ADA CATATAN MENDESAK HARI INI.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}
