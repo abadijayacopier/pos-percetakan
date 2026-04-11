@@ -410,8 +410,10 @@ export default function DashboardPage({ onNavigate }) {
                                     <span className="text-xs font-mono font-black text-cyan-400 italic">~{systemLoad}ms</span>
                                 </div>
                             </div>
-                            {/* Daily Internal Memo - Now Dynamic Alerts Relocated to Sidebar */}
-                            <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/5 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
+                        </div>
+
+                        {/* Daily Internal Memo - Now Dynamic Alerts Relocated to Sidebar */}
+                        <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-white/5 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-cyan-500/10 rounded-lg">
                                         <FiEdit3 className="text-cyan-400" size={14} />
