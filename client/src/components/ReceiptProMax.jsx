@@ -31,9 +31,10 @@ const ReceiptProMax = ({
             <div className="p-8 sm:p-10 text-slate-900 relative">
                 {/* Header */}
                 <div className="text-center mb-10 border-b-2 border-slate-900 pb-8">
-                    <div className="bg-slate-900 text-white p-3 rounded-2xl inline-flex mb-6 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                    <div className="bg-slate-900 print:bg-transparent print:border print:border-slate-900 text-white print:text-slate-900 p-3 rounded-2xl inline-flex mb-6 rotate-3 group-hover:rotate-0 transition-transform duration-500">
                         <span className="material-symbols-outlined text-3xl">local_printshop</span>
                     </div>
+
                     <h2 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase mb-2 font-display">{printSettings.storeName || 'FOTOCOPY ABADI JAYA'}</h2>
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed max-w-[80%] mx-auto whitespace-pre-wrap font-display">{printSettings.storeAddress}</p>
                     {printSettings.storePhone && (
@@ -42,9 +43,10 @@ const ReceiptProMax = ({
                 </div>
 
                 {/* Subtitle */}
-                <div className="text-center mb-8 bg-slate-900 text-white py-1.5 px-4 rounded-full inline-block mx-auto left-1/2 -translate-x-1/2 relative text-[10px] font-black tracking-[0.3em] uppercase">
+                <div className="text-center mb-8 bg-slate-900 print:bg-transparent print:border print:border-slate-900 text-white print:text-slate-900 py-1.5 px-4 rounded-full inline-block mx-auto left-1/2 -translate-x-1/2 relative text-[10px] font-black tracking-[0.3em] uppercase">
                     Nota Pembayaran
                 </div>
+
 
                 {/* Metadata */}
                 <div className="flex flex-col gap-2.5 mb-10 text-[11px] font-bold text-slate-600 uppercase tracking-tight border-b border-dashed border-slate-200 pb-8 font-code">
@@ -62,8 +64,9 @@ const ReceiptProMax = ({
                     </div>
                     <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                         <span className="text-slate-400">Pelanggan</span>
-                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px]">{receiptData.customerName || 'UMUM'}</span>
+                        <span className="bg-blue-600 print:bg-transparent print:border print:border-slate-900 text-white print:text-slate-900 px-2 py-0.5 rounded text-[10px]">{receiptData.customerName || 'UMUM'}</span>
                     </div>
+
                 </div>
 
                 {/* Items Table */}
@@ -115,21 +118,23 @@ const ReceiptProMax = ({
                             )}
                         </>
                     )}
-                    <div className="flex justify-between text-xl font-black mt-4 pt-4 border-t-2 border-slate-900">
+                    <div className="flex justify-between items-center text-xl font-black mt-4 pt-4 border-t-2 border-slate-900">
                         <span className="tracking-tighter">TOTAL</span>
-                        <span className="bg-slate-900 text-white px-3 py-1 rounded-lg">Rp {formatCurrency(receiptData.total)}</span>
+                        <span className="bg-slate-900 print:bg-transparent print:border print:border-slate-900 text-white print:text-slate-900 px-3 py-1 rounded-lg">Rp {formatCurrency(receiptData.total)}</span>
                     </div>
+
                 </div>
 
                 {/* Payment Info */}
-                <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-2 text-[10px] font-bold uppercase bg-slate-50 p-4 rounded-2xl border border-slate-100 font-display">
+                <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-2 text-[10px] font-bold uppercase bg-slate-50 print:bg-transparent p-4 rounded-2xl border border-slate-100 print:border-slate-900 font-display">
                     <div className="text-slate-400">Pembayaran</div>
                     <div className="text-right text-slate-800">{receiptData.paymentMethod || receiptData.paymentType || 'Tunai'}</div>
                     <div className="text-slate-400">Diterima</div>
                     <div className="text-right text-slate-800">{formatCurrency(receiptData.paid)}</div>
                     <div className="text-slate-400">Kembalian</div>
-                    <div className="text-right font-black text-blue-600 text-[11px]">{formatCurrency(receiptData.changeAmount || receiptData.change || 0)}</div>
+                    <div className="text-right font-black text-blue-600 print:text-slate-900 text-[11px]">{formatCurrency(receiptData.changeAmount || receiptData.change || 0)}</div>
                 </div>
+
 
                 {/* Footer */}
                 <div className="mt-10 text-center flex flex-col items-center">

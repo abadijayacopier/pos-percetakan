@@ -698,26 +698,26 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6 relative">
                     {/* Services Tabs */}
                     <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-2 sm:p-6 shadow-sm flex-1 flex flex-col">
-                        <div className="flex items-center gap-2 border-b text-sm border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar mb-6 px-1">
-                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F1</span>
-                                <span className="material-symbols-outlined text-[18px]">content_copy</span> FOTOCOPY
+                        <div className="flex items-center gap-1 sm:gap-2 border-b text-sm border-slate-200 dark:border-slate-800 overflow-x-auto no-scrollbar mb-4 sm:mb-6 px-1 py-1">
+                            <button onClick={() => setActiveServiceTab('fotocopy')} className={`min-w-max px-3 sm:px-6 py-2 sm:py-3 pb-3 sm:pb-4 flex items-center justify-center gap-2 sm:gap-3 border-b-2 font-black transition-all ${activeServiceTab === 'fotocopy' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'fotocopy' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F1</span>
+                                <span className="material-symbols-outlined text-[18px]">content_copy</span> <span className="text-[0.7rem] sm:text-xs tracking-tight uppercase">FOTOCOPY</span>
                             </button>
-                            <button onClick={() => setActiveServiceTab('jilid')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'jilid' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F2</span>
-                                <span className="material-symbols-outlined text-[18px]">book</span> JILID
+                            <button onClick={() => setActiveServiceTab('jilid')} className={`min-w-max px-3 sm:px-6 py-2 sm:py-3 pb-3 sm:pb-4 flex items-center justify-center gap-2 sm:gap-3 border-b-2 font-black transition-all ${activeServiceTab === 'jilid' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'jilid' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F2</span>
+                                <span className="material-symbols-outlined text-[18px]">book</span> <span className="text-[0.7rem] sm:text-xs tracking-tight uppercase">JILID</span>
                             </button>
-                            <button onClick={() => setActiveServiceTab('print')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'print' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F3</span>
-                                <span className="material-symbols-outlined text-[18px]">print</span> PRINT
+                            <button onClick={() => setActiveServiceTab('print')} className={`min-w-max px-3 sm:px-6 py-2 sm:py-3 pb-3 sm:pb-4 flex items-center justify-center gap-2 sm:gap-3 border-b-2 font-black transition-all ${activeServiceTab === 'print' ? 'border-primary text-primary bg-primary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'print' ? 'bg-primary text-white shadow-sm shadow-primary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F3</span>
+                                <span className="material-symbols-outlined text-[18px]">print</span> <span className="text-[0.7rem] sm:text-xs tracking-tight uppercase">PRINT</span>
                             </button>
-                            <button onClick={() => setActiveServiceTab('digital')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'digital' ? 'border-secondary text-secondary bg-secondary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'digital' ? 'bg-secondary text-white shadow-sm shadow-secondary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F4</span>
-                                <span className="material-symbols-outlined text-[18px]">wallpaper</span> DIGITAL
+                            <button onClick={() => setActiveServiceTab('digital')} className={`min-w-max px-3 sm:px-6 py-2 sm:py-3 pb-3 sm:pb-4 flex items-center justify-center gap-2 sm:gap-3 border-b-2 font-black transition-all ${activeServiceTab === 'digital' ? 'border-secondary text-secondary bg-secondary/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'digital' ? 'bg-secondary text-white shadow-sm shadow-secondary/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F4</span>
+                                <span className="material-symbols-outlined text-[18px]">wallpaper</span> <span className="text-[0.7rem] sm:text-xs tracking-tight uppercase">DIGITAL</span>
                             </button>
-                            <button onClick={() => setActiveServiceTab('service')} className={`min-w-max px-6 py-3 pb-4 flex items-center justify-center gap-3 border-b-2 font-bold transition-all ${activeServiceTab === 'service' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'service' ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F6</span>
-                                <span className="material-symbols-outlined text-[18px]">build</span> SERVICE
+                            <button onClick={() => setActiveServiceTab('service')} className={`min-w-max px-3 sm:px-6 py-2 sm:py-3 pb-3 sm:pb-4 flex items-center justify-center gap-2 sm:gap-3 border-b-2 font-black transition-all ${activeServiceTab === 'service' ? 'border-emerald-500 text-emerald-500 bg-emerald-500/5 rounded-t-xl' : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}>
+                                <span className={`hidden sm:inline-block px-2 py-0.5 rounded-md text-[9px] font-black tracking-tighter ${activeServiceTab === 'service' ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>F6</span>
+                                <span className="material-symbols-outlined text-[18px]">build</span> <span className="text-[0.7rem] sm:text-xs tracking-tight uppercase">SERVICE</span>
                             </button>
                         </div>
 
@@ -1042,7 +1042,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 </div >
 
                 {/* Right Sidebar: Cart */}
-                <aside className={`fixed inset-y-0 right-0 z-50 lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-full' : 'translate-x-0'}`}>
+                <aside className={`fixed inset-y-0 right-0 z-[110] lg:z-auto lg:relative w-[85vw] sm:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-2xl transition-transform duration-300 ${isMobile && !isCartOpen ? 'translate-x-full' : 'translate-x-0'}`}>
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl leading-none font-bold flex flex-col xl:flex-row xl:items-center gap-1 xl:gap-3">

@@ -1,19 +1,26 @@
-const { pool } = require('./config/database');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 async function checkSchema() {
+    const pool = mysql.createPool({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME,
+    });
+
     try {
-        const [rows] = await pool.query('DESCRIBE service_orders');
-        console.log('--- service_orders columns ---');
-        console.table(rows);
-
-        const [spRows] = await pool.query('DESCRIBE service_spareparts');
-        console.log('--- service_spareparts columns ---');
-        console.table(spRows);
-
-        process.exit(0);
-    } catch (err) {
-        console.error(err);
-        process.exit(1);
+        const tables = ['transactions', 'customers', 'products', 'service_orders'];
+        for (const table of tables) {
+            const [rows] = await pool.query(`DESCRIBE ${table}`);
+            console.log(`--- ${table} schema ---`);
+            rows.forEach(r => console.log(JSON.stringify(r)));
+            console.log('\n');
+        }
+    } catch (error) {
+        console.error('Database Error:', error.message);
+    } finally {
+        await pool.end();
     }
 }
 

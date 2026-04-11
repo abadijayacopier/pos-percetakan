@@ -165,39 +165,75 @@ router.post('/master', verifyToken, requireRole(['admin']), async (req, res) => 
     }
 });
 
-// GET Backup Data (JSON)
+// GET Backup Data (SQL)
 router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const TABLES = [
             'settings', 'users', 'customers', 'products', 'suppliers',
             'orders', 'order_items', 'production_status', 'transactions',
-            'transaction_details', 'pricing_fotocopy', 'stock_movements',
-            'activity_log', 'design_logs', 'purchases'
+            'transaction_details', 'fotocopy_prices', 'stock_movements',
+            'activity_log', 'design_logs', 'purchases', 'service_orders',
+            'service_spareparts', 'cash_flow', 'categories', 'dp_tasks',
+            'materials', 'offset_orders', 'offset_products', 'pricing_logs',
+            'pricing_rules', 'print_orders', 'product_options', 'purchase_items',
+            'spk', 'spk_handovers', 'spk_logs', 'spk_payments', 'tiered_pricing_rules',
+            'wa_config'
         ];
 
-        const backup = {};
+        let sqlDump = `-- POS Abadi Jaya System Backup\n`;
+        sqlDump += `-- Generated on ${new Date().toISOString()}\n\n`;
+        sqlDump += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
+
         for (const table of TABLES) {
             try {
-                const [rows] = await pool.query(`SELECT * FROM ${table}`);
-                backup[table] = rows;
+                const [rows] = await pool.query(`SELECT * FROM \`${table}\``);
+                if (rows.length > 0) {
+                    sqlDump += `-- Dumping data for table \`${table}\`\n`;
+                    const columns = Object.keys(rows[0]);
+
+                    // Break inserts into chunks of 100 rows to avoid huge single statements
+                    const chunkSize = 100;
+                    for (let i = 0; i < rows.length; i += chunkSize) {
+                        const chunk = rows.slice(i, i + chunkSize);
+                        sqlDump += `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES\n`;
+
+                        const valStrings = chunk.map(row => {
+                            const values = columns.map(col => {
+                                const val = row[col];
+                                if (val === null) return 'NULL';
+                                if (typeof val === 'number') return val;
+                                // Handle Date objects correctly for MySQL strings
+                                if (val instanceof Date) return `'${val.toISOString().slice(0, 19).replace('T', ' ')}'`;
+                                // Escape single quotes for strings
+                                return `'${String(val).replace(/'/g, "''")}'`;
+                            });
+                            return `(${values.join(',')})`;
+                        });
+
+                        sqlDump += valStrings.join(',\n') + ';\n';
+                    }
+                    sqlDump += `\n`;
+                }
             } catch (err) {
-                console.warn(`Table ${table} not found or error, skipping...`);
-                backup[table] = [];
+                console.warn(`Table ${table} not found or error, skipping dump...`);
             }
         }
 
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Content-Disposition', `attachment; filename=pos_backup_${new Date().toISOString().slice(0, 10)}.json`);
-        res.send(JSON.stringify(backup, null, 2));
+        sqlDump += `SET FOREIGN_KEY_CHECKS = 1;\n`;
+
+        res.setHeader('Content-Type', 'application/sql');
+        res.setHeader('Content-Disposition', `attachment; filename=pos_backup_${new Date().toISOString().slice(0, 10)}.sql`);
+        res.send(sqlDump);
 
         // Log this action
         const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'BACKUP_DATA', 'system', 'Eksport data ke file JSON', req.ip);
+        await logActivity(req.user.id, 'BACKUP_DATA', 'system', 'Eksport data ke file SQL', req.ip);
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Gagal melakukan backup' });
     }
 });
+
 
 // POST Restore Data (JSON)
 router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {

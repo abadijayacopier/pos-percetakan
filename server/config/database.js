@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Config pool connection ke MySQL
 const pool = mysql.createPool({
@@ -9,7 +10,11 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'pos_abadi',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    maxIdle: 10, // Max idle connections, the default value is the same as `connectionLimit`
+    idleTimeout: 60000, // Idle connections timeout, in milliseconds, the default value is 60000
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
 
 // Function test connection

@@ -107,14 +107,33 @@ export default function ServicePage({ onNavigate }) {
 
         const technician = technicians.find(t => t.id === formData.technicianId);
 
+        const getNextServiceNo = () => {
+            if (selectedService?.serviceNo) return selectedService.serviceNo;
+            const yearMonth = `${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            const prefix = `SRV-${yearMonth}-`;
+            const currentMonthServices = services.filter(s => s.serviceNo?.startsWith(prefix));
+            let nextNum = 1;
+            if (currentMonthServices.length > 0) {
+                const nums = currentMonthServices.map(s => {
+                    const parts = s.serviceNo.split('-');
+                    return parseInt(parts[parts.length - 1], 10) || 0;
+                }).filter(n => !isNaN(n));
+                nextNum = Math.max(0, ...nums) + 1;
+            } else if (services.length > 0) {
+                nextNum = services.length + 1;
+            }
+            return `${prefix}${nextNum.toString().padStart(4, '0')}`;
+        };
+
         const newRecord = {
             ...formData,
-            serviceNo: selectedService?.serviceNo || `SRV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${(services.length + 1).toString().padStart(4, '0')}`,
-            customerName: customers.find(c => c.id === formData.customerId)?.name || formData.customerName,
-            conditionPhysic: formData.condition, // map to backend field
+            serviceNo: getNextServiceNo(),
+            customerName: customers.find(c => c.id === formData.customerId)?.name || formData.customerName || 'Pelanggan Umum',
+            conditionPhysic: formData.condition,
             totalCost,
             status: formData.status || selectedService?.status || 'approval',
         };
+
 
         try {
             let targetId = selectedService?.id;
@@ -433,8 +452,8 @@ export default function ServicePage({ onNavigate }) {
 
             {/* Service Ticket Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-[2rem] sm:rounded-[3rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 slide-in-from-bottom-12 duration-500 scale-95 hover:scale-100 transition-transform">
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-5xl max-h-[96vh] sm:max-h-[90vh] overflow-hidden rounded-[2rem] sm:rounded-[3rem] shadow-2xl flex flex-col border border-slate-200 dark:border-slate-800 slide-in-from-bottom-12 duration-500 transform transition-all">
                         <div className="p-4 sm:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
                             <div className="flex items-center gap-3 sm:gap-6">
                                 <div className={`p-3 sm:p-4 rounded-2xl sm:rounded-3xl text-white shadow-xl ${selectedService ? 'bg-blue-600 shadow-blue-500/20' : 'bg-emerald-600 shadow-emerald-500/20'}`}>
@@ -757,7 +776,7 @@ export default function ServicePage({ onNavigate }) {
                             </form>
                         </div>
 
-                        <div className="p-4 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+                        <div className="p-4 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/20 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 pb-24 sm:pb-8">
                             <div className="flex gap-3 sm:gap-4 items-center p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 max-w-lg shadow-sm w-full md:w-auto">
                                 <div className="size-10 sm:size-12 flex-shrink-0 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-blue-900/10 flex items-center justify-center text-blue-600 border border-blue-50 dark:border-blue-900/30">
                                     <FiInfo size={20} className="sm:w-6 sm:h-6" />

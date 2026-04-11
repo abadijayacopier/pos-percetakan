@@ -41,6 +41,22 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
         fetchSettings();
     }, [spkId]);
 
+    // Force Light Mode for Printing
+    useEffect(() => {
+        const handleBeforePrint = () => {
+            document.documentElement.classList.remove('dark');
+        };
+        const handleAfterPrint = () => {
+            // Restore dark mode if needed, usually handled by ThemeContext
+        };
+        window.addEventListener('beforeprint', handleBeforePrint);
+        window.addEventListener('afterprint', handleAfterPrint);
+        return () => {
+            window.removeEventListener('beforeprint', handleBeforePrint);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+    }, []);
+
     // Tambahkan style cetak format A4
     useEffect(() => {
         const style = document.createElement('style');
@@ -139,7 +155,7 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
 
                 {/* Invoice Container (A4 Proportions) */}
                 <main className="flex-1 flex justify-center py-4 px-4 sm:px-10 print:py-0 print:px-0">
-                    <div className="print-container w-full max-w-[960px] bg-white dark:bg-slate-900 shadow-xl rounded-xl overflow-hidden p-8 sm:p-12 border border-slate-200 dark:border-slate-800">
+                    <div className="print-container w-full max-w-[960px] bg-white dark:bg-slate-900 print:shadow-none print:border-none print:bg-white shadow-xl rounded-xl overflow-hidden p-8 sm:p-12 border border-slate-200 dark:border-slate-800">
 
                         {/* Header Invoice */}
                         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10 pb-8 border-b border-slate-100 dark:border-slate-800">
@@ -309,16 +325,19 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
                                     <span className="text-[#137fec] text-2xl font-black">{formatCurrency(totalAkhir)}</span>
                                 </div>
 
-                                {/* Status Badge Big */}
-                                <div className="mt-8 pt-8 flex flex-col items-center">
-                                    <div className="text-center">
-                                        <p className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-4">Otorisasi</p>
-                                        <div className="mb-4 text-[#137fec] opacity-20">
-                                            <span className="material-symbols-outlined text-7xl">verified</span>
+                                {/* Simplified Signature Area */}
+                                <div className="mt-12 flex justify-between px-8 text-center bg-white print:bg-white">
+                                    <div className="w-56">
+                                        <p className="mb-20 text-slate-500 text-xs font-bold uppercase tracking-widest leading-loose">Admin Keuangan,</p>
+                                        <div className="border-t border-slate-900 pt-2">
+                                            <p className="font-bold text-slate-900">{invoiceData?.admin_name || 'Kasir'}</p>
                                         </div>
-                                        <div className="h-px w-48 bg-slate-200 dark:bg-slate-700 mb-2"></div>
-                                        <p className="font-bold text-slate-800 dark:text-white">Admin Keuangan</p>
-                                        <p className="text-xs text-slate-500">Jakarta, {dateNow}</p>
+                                    </div>
+                                    <div className="w-56">
+                                        <p className="mb-20 text-slate-500 text-xs font-bold uppercase tracking-widest leading-loose">Pemilik / Manager,</p>
+                                        <div className="border-t border-slate-900 pt-2">
+                                            <p className="font-bold text-slate-900">( ............................ )</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

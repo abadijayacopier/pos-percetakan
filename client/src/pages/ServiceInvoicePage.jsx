@@ -42,16 +42,32 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                 .no-print { display: none !important; }
                 .print-container { 
                     box-shadow: none !important; 
-                    border: none !important; 
+                    border: 1px solid #000 !important; 
                     width: 210mm !important; 
-                    min-height: 297mm !important;
+                    height: 148.5mm !important; /* Half A4 / Continuous Form 14cm */
                     margin: 0 auto !important; 
-                    padding: 10mm !important; 
+                    padding: 8mm !important; 
                     max-width: none !important;
+                    background: white !important;
+                    color: black !important;
                 }
                 @page { size: auto; margin: 0; }
                 body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                
+                /* High contrast for thermal/dot-matrix */
+                .print-container * { 
+                    background: transparent !important; 
+                    color: black !important; 
+                    border-color: #000 !important;
+                    box-shadow: none !important;
+                }
+                .bg-blue-600, .bg-emerald-600, .bg-slate-50 { 
+                    background: transparent !important; 
+                    border: 1px solid #000 !important;
+                }
+                .text-white { color: black !important; }
             }
+
         `;
         document.head.appendChild(style);
         return () => {
@@ -259,24 +275,25 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
                                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Subtotal Biaya</span>
-                                    <span className="text-lg font-bold text-slate-700 dark:text-slate-300">{formatCurrency(service.totalCost)}</span>
+                                    <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(service.totalCost)}</span>
                                 </div>
                                 {service.dpAmount > 0 && (
                                     <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                                        <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">Uang Muka (DP)</span>
-                                        <span className="text-lg font-bold text-emerald-600">-{formatCurrency(service.dpAmount)}</span>
+                                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Uang Muka (DP)</span>
+                                        <span className="text-lg font-bold text-slate-800 dark:text-slate-100">-{formatCurrency(service.dpAmount)}</span>
                                     </div>
                                 )}
-                                <div className="bg-blue-600 dark:bg-blue-600 p-6 rounded-3xl text-white shadow-xl shadow-blue-500/20 flex justify-between items-center">
-                                    <div>
+                                <div className="bg-blue-600 print:bg-transparent print:border print:border-black p-6 rounded-3xl text-white print:text-black shadow-xl shadow-blue-500/20 flex justify-between items-center">
+                                    <div className="text-left">
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 leading-none">Total Tagihan</span>
                                         <p className="text-xs mt-1 font-bold opacity-60 italic">Grand Total</p>
                                     </div>
-                                    <span className="text-3xl font-black tracking-tighter italic">
+                                    <span className="text-3xl font-black tracking-tighter italic text-right whitespace-nowrap min-w-[200px]">
                                         {formatCurrency(service.totalCost - (service.dpAmount || 0))}
                                     </span>
                                 </div>
                             </div>
+
                         </div>
 
                         {/* Signatures */}

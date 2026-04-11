@@ -131,7 +131,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                 initial="closed"
                 animate={isOpen || isDesktop ? "open" : "closed"}
                 className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
-                bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50 
+                bg-white/50 dark:bg-slate-950/50 backdrop-blur-2xl border-r border-slate-200/30 dark:border-slate-800/30 
                 flex flex-col overflow-visible shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
             >
                 <div className="flex flex-col h-full relative z-10">
@@ -140,12 +140,12 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                         <div className={`flex items-center gap-3 cursor-default w-full ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
                             <div className="relative shrink-0">
                                 <motion.div
-                                    className="bg-blue-600 size-10 rounded-full flex items-center justify-center text-white"
-                                    whileHover={{ scale: 1.05 }}
+                                    className="bg-blue-600 size-10 rounded-full flex items-center justify-center text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                                    whileHover={{ scale: 1.05, shadow: '0_0_25px_rgba(37,99,235,0.6)' }}
                                 >
                                     <FiPrinter size={20} />
                                 </motion.div>
-                                <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
+                                <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                             </div>
                             {!(isCollapsed && isDesktop) && (
                                 <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300">

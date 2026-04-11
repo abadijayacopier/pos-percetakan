@@ -63,6 +63,22 @@ export default function ReportsPage() {
         loadData();
     }, []);
 
+    // Force Light Mode for Printing
+    useEffect(() => {
+        const handleBeforePrint = () => {
+            document.documentElement.classList.remove('dark');
+        };
+        const handleAfterPrint = () => {
+            // Restore dark mode usually handled by state
+        };
+        window.addEventListener('beforeprint', handleBeforePrint);
+        window.addEventListener('afterprint', handleAfterPrint);
+        return () => {
+            window.removeEventListener('beforeprint', handleBeforePrint);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+    }, []);
+
     // Filter transactions by date range
     const transactions = useMemo(() => {
         return allTransactions.filter(t => {

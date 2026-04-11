@@ -1,0 +1,66 @@
+﻿--- transactions schema ---
+{"Field":"id","Type":"varchar(50)","Null":"NO","Key":"PRI","Default":null,"Extra":""}
+{"Field":"invoice_no","Type":"varchar(50)","Null":"NO","Key":"UNI","Default":null,"Extra":""}
+{"Field":"date","Type":"datetime","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"customer_id","Type":"varchar(50)","Null":"YES","Key":"MUL","Default":null,"Extra":""}
+{"Field":"customer_name","Type":"varchar(100)","Null":"YES","Key":"","Default":"Umum","Extra":""}
+{"Field":"user_id","Type":"varchar(50)","Null":"YES","Key":"MUL","Default":null,"Extra":""}
+{"Field":"user_name","Type":"varchar(100)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"type","Type":"varchar(50)","Null":"YES","Key":"","Default":"sale","Extra":""}
+{"Field":"subtotal","Type":"int(11)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"discount","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"total","Type":"int(11)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"paid","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"change_amount","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"payment_type","Type":"varchar(50)","Null":"YES","Key":"","Default":"tunai","Extra":""}
+{"Field":"status","Type":"varchar(50)","Null":"YES","Key":"","Default":"unpaid","Extra":""}
+
+
+--- customers schema ---
+{"Field":"id","Type":"varchar(50)","Null":"NO","Key":"PRI","Default":null,"Extra":""}
+{"Field":"name","Type":"varchar(100)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"phone","Type":"varchar(20)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"address","Type":"text","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"type","Type":"enum('walkin','corporate','vip','service')","Null":"YES","Key":"","Default":"walkin","Extra":""}
+{"Field":"company","Type":"varchar(100)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"total_trx","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"total_spend","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"created_at","Type":"timestamp","Null":"NO","Key":"","Default":"CURRENT_TIMESTAMP","Extra":""}
+
+
+--- products schema ---
+{"Field":"id","Type":"varchar(50)","Null":"NO","Key":"PRI","Default":null,"Extra":""}
+{"Field":"code","Type":"varchar(50)","Null":"NO","Key":"UNI","Default":null,"Extra":""}
+{"Field":"name","Type":"varchar(100)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"category_id","Type":"varchar(50)","Null":"YES","Key":"MUL","Default":null,"Extra":""}
+{"Field":"buy_price","Type":"int(11)","Null":"NO","Key":"","Default":"0","Extra":""}
+{"Field":"sell_price","Type":"int(11)","Null":"NO","Key":"","Default":"0","Extra":""}
+{"Field":"stock","Type":"int(11)","Null":"NO","Key":"","Default":"0","Extra":""}
+{"Field":"min_stock","Type":"int(11)","Null":"NO","Key":"","Default":"0","Extra":""}
+{"Field":"unit","Type":"varchar(20)","Null":"YES","Key":"","Default":"pcs","Extra":""}
+{"Field":"emoji","Type":"varchar(50)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"updated_at","Type":"timestamp","Null":"NO","Key":"","Default":"CURRENT_TIMESTAMP","Extra":"on update CURRENT_TIMESTAMP"}
+{"Field":"image","Type":"varchar(255)","Null":"YES","Key":"","Default":null,"Extra":""}
+
+
+--- service_orders schema ---
+{"Field":"id","Type":"varchar(50)","Null":"NO","Key":"PRI","Default":null,"Extra":""}
+{"Field":"service_no","Type":"varchar(50)","Null":"NO","Key":"UNI","Default":null,"Extra":""}
+{"Field":"customer_id","Type":"varchar(50)","Null":"YES","Key":"MUL","Default":null,"Extra":""}
+{"Field":"customer_name","Type":"varchar(100)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"phone","Type":"varchar(20)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"machine_info","Type":"varchar(100)","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"serial_no","Type":"varchar(50)","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"complaint","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""}
+{"Field":"condition_physic","Type":"text","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"diagnosis","Type":"text","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"labor_cost","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"dp_amount","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"total_cost","Type":"int(11)","Null":"YES","Key":"","Default":"0","Extra":""}
+{"Field":"status","Type":"enum('diterima','diagnosa','approval','tunggu_part','pengerjaan','testing','selesai','diambil','batal')","Null":"YES","Key":"","Default":"diterima","Extra":""}
+{"Field":"technician_id","Type":"varchar(50)","Null":"YES","Key":"MUL","Default":null,"Extra":""}
+{"Field":"warranty_end","Type":"date","Null":"YES","Key":"","Default":null,"Extra":""}
+{"Field":"created_at","Type":"timestamp","Null":"NO","Key":"","Default":"CURRENT_TIMESTAMP","Extra":""}
+{"Field":"updated_at","Type":"timestamp","Null":"NO","Key":"","Default":"CURRENT_TIMESTAMP","Extra":"on update CURRENT_TIMESTAMP"}
+
+

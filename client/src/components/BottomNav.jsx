@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiHome, FiCreditCard, FiList, FiGrid, FiUser } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function BottomNav({ activePage, onNavigate }) {
@@ -15,7 +16,7 @@ export default function BottomNav({ activePage, onNavigate }) {
     ];
 
     return (
-        <div className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-end px-2 pt-2 pb-safe z-[90] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+        <div className="md:hidden print:hidden fixed bottom-6 left-6 right-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/40 dark:border-slate-800/40 flex justify-around items-end px-2 pt-2 pb-safe z-[90] shadow-premium rounded-[32px]">
             {items.map(item => {
                 const isActive = activePage === item.id;
                 return (
@@ -28,7 +29,10 @@ export default function BottomNav({ activePage, onNavigate }) {
                             }`}
                     >
                         {isActive && (
-                            <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-600 dark:bg-blue-400 rounded-b-full"></span>
+                            <motion.span
+                                layoutId="activeTab"
+                                className="absolute -top-1 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.6)]"
+                            ></motion.span>
                         )}
                         <div className={`mb-1 transition-all duration-300 ${isActive ? '-translate-y-1' : ''}`}>
                             {item.icon}

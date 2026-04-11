@@ -51,6 +51,22 @@ export default function ProfitLossPage() {
         }
     }, [printMode]);
 
+    // Force Light Mode for Printing
+    useEffect(() => {
+        const handleBeforePrint = () => {
+            document.documentElement.classList.remove('dark');
+        };
+        const handleAfterPrint = () => {
+            // Restore dark mode usually handled by state
+        };
+        window.addEventListener('beforeprint', handleBeforePrint);
+        window.addEventListener('afterprint', handleAfterPrint);
+        return () => {
+            window.removeEventListener('beforeprint', handleBeforePrint);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+    }, []);
+
     // Fetch transactions from API
     const [transactions, setTransactions] = useState([]);
     const [cashFlow, setCashFlow] = useState([]);
@@ -367,17 +383,17 @@ export default function ProfitLossPage() {
                 </section>
 
                 {/* Signatures */}
-                <section className="mt-16 grid grid-cols-2 gap-12 text-center">
+                <section className="mt-12 grid grid-cols-2 gap-12 text-center bg-white print:bg-white">
                     <div className="space-y-16">
-                        <p className="font-bold">Dibuat Oleh,</p>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Dibuat Oleh,</p>
                         <div className="border-t border-black mx-auto w-48 pt-2">
-                            <p className="text-xs">Administrasi Keuangan</p>
+                            <p className="text-xs font-black">Administrasi Keuangan</p>
                         </div>
                     </div>
                     <div className="space-y-16">
-                        <p className="font-bold">Disetujui Oleh,</p>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">Disetujui Oleh,</p>
                         <div className="border-t border-black mx-auto w-48 pt-2">
-                            <p className="text-xs">Pemilik / Manager</p>
+                            <p className="text-xs font-black">Pemilik / Manager</p>
                         </div>
                     </div>
                 </section>

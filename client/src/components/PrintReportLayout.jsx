@@ -92,13 +92,13 @@ export default function PrintReportLayout({ id = "print-report-content", title, 
                 {children}
             </main>
 
-            <section className="mt-12 flex justify-between px-16 text-center text-sm break-inside-avoid bg-white">
+            <section className="mt-12 flex justify-between px-16 text-center text-sm break-inside-avoid bg-white print:bg-white">
                 <div className="w-56">
-                    <p className="mb-24 text-gray-500 text-xs font-bold uppercase tracking-wider">Dibuat Oleh,</p>
+                    <p className="mb-16 text-gray-500 text-xs font-bold uppercase tracking-wider">Dibuat Oleh,</p>
                     <div className="border-t border-black font-black text-gray-900 pt-2">{printedBy}</div>
                 </div>
                 <div className="w-56">
-                    <p className="mb-24 text-gray-500 text-xs font-bold uppercase tracking-wider">Mengetahui & Menyetujui,</p>
+                    <p className="mb-16 text-gray-500 text-xs font-bold uppercase tracking-wider">Mengetahui & Menyetujui,</p>
                     <div className="border-t border-black font-black text-gray-900 pt-2">Pemilik / Manager</div>
                 </div>
             </section>

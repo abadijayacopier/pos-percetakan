@@ -143,7 +143,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
             <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
                 {!(activePage === 'pos' || activePage === 'pos-v1') && (
-                    <header className="print:hidden h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
+                    <header className="print:hidden h-16 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 sticky top-0 z-50">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
                             {/* Mobile Menu Button */}
                             <button
@@ -166,10 +166,10 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                         </div>
 
                         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                            <div className="items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hidden lg:flex shrink-0">
-                                <FiDatabase className={`text-sm ${dbStatus === 'connected' ? 'text-green-500' : dbStatus === 'disconnected' ? 'text-red-500 animate-pulse' : 'text-yellow-500 animate-spin'}`} />
-                                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                                    {dbStatus === 'connected' ? 'DB Connected' : dbStatus === 'disconnected' ? 'DB Error' : 'Checking DB...'}
+                            <div className="items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-md hidden lg:flex shrink-0 shadow-sm">
+                                <FiDatabase className={`text-sm ${dbStatus === 'connected' ? 'text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' : dbStatus === 'disconnected' ? 'text-red-500 animate-pulse' : 'text-yellow-500 animate-spin'}`} />
+                                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                    {dbStatus === 'connected' ? 'System Online' : dbStatus === 'disconnected' ? 'DB Error' : 'Checking...'}
                                 </span>
                             </div>
 

@@ -10,6 +10,11 @@
     --color-primary-dark: #0d6bd1;
     --color-background-light: #f6f7f8;
     --color-background-dark: #101922;
+
+    /* Biophilic Accents */
+    --biophilic-green-glow: rgba(34, 197, 94, 0.4);
+    --biophilic-sky-glow: rgba(56, 189, 248, 0.4);
+    --glass-blur: 24px;
   }
 
   /* Tailwind class-based dark mode */
@@ -73,9 +78,15 @@
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
   --shadow-glow: 0 0 20px var(--primary-glow);
+  --shadow-premium: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+
+  /* Premium Glass */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
 /* ---- Light Theme (Default) ---- */
@@ -141,6 +152,54 @@
   animation: spin 1s linear infinite;
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px var(--primary-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 20px var(--primary-glow);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-glow {
+  animation: glow-pulse 2s infinite ease-in-out;
+}
+
 @keyframes subtleFloat {
 
   0%,
@@ -153,15 +212,21 @@
   }
 }
 
-/* ---- ukuran font tampilan ---- */
+/* ---- root font scaling (Fluid Typography) ---- */
 html {
   font-size: 16px;
+  /* Prevent automatic text scaling in browsers */
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
-/* Base font size for mobile */
-@media (max-width: 767px) {
+/* Fluid root font scale between iPhone SE (375px) and Tablet (768px) */
+@media (max-width: 1024px) {
   html {
-    font-size: 17px;
+    /* min: 16px, max: 18px, target: base + scaling factor */
+    /* This ensures XR (414px) has slightly larger font than SE (375px) */
+    font-size: clamp(16px, 1.1rem + 0.4vw, 18px);
   }
 }
 
