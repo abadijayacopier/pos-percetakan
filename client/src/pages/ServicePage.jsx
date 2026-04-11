@@ -172,6 +172,47 @@ export default function ServicePage({ onNavigate }) {
         }
     };
 
+    const handleDeleteService = async (id) => {
+        const result = await Swal.fire({
+            title: 'Hapus Tiket?',
+            text: "Data yang dihapus tidak dapat dikembalikan. Stok sparepart akan dikembalikan otomatis.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'YA, HAPUS',
+            cancelButtonText: 'BATAL',
+            background: 'var(--sweetalert-bg)',
+            color: 'var(--sweetalert-color)',
+            customClass: {
+                popup: 'rounded-[2rem] border border-slate-200 dark:border-slate-800',
+                confirmButton: 'rounded-xl font-black uppercase tracking-widest text-[10px]',
+                cancelButton: 'rounded-xl font-black uppercase tracking-widest text-[10px]'
+            }
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/service/${id}`);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Dihapus!',
+                    text: 'Tiket service berhasil dihapus.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                loadData();
+            } catch (error) {
+                console.error('Delete error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: error.response?.data?.message || 'Gagal menghapus tiket'
+                });
+            }
+        }
+    };
+
     const resetForm = () => {
         setFormData({
             customerId: '',
@@ -386,7 +427,7 @@ export default function ServicePage({ onNavigate }) {
                                                 },
                                                 { icon: <FiPrinter />, label: 'Invoice', color: 'emerald', onClick: () => onNavigate('print-service-invoice', { serviceId: srv.id }) },
                                                 { icon: <FiShield />, label: 'Warranty', color: 'blue', onClick: () => onNavigate('print-warranty-sticker', { serviceId: srv.id }) },
-                                                { icon: <FiTrash2 />, label: 'Hapus', color: 'rose', onClick: () => { } /* Add delete confirmation if needed */ },
+                                                { icon: <FiTrash2 />, label: 'Hapus', color: 'rose', onClick: () => handleDeleteService(srv.id) },
                                             ].map((btn, idx) => (
                                                 <button
                                                     key={idx}

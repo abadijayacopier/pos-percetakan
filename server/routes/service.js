@@ -240,4 +240,43 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
     }
 });
 
+// 7. DELETE Order Service
+router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Ambil data sparepart untuk dikembalikan ke stok (Opsional - sesuai kebijakan bisnis)
+        // Jika ingin mengembalikan stok saat tiket dihapus:
+        const [spareparts] = await connection.query(
+            'SELECT product_id, qty FROM service_spareparts WHERE service_order_id = ? AND product_id IS NOT NULL',
+            [req.params.id]
+        );
+
+        for (const sp of spareparts) {
+            await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [sp.qty, sp.product_id]);
+            await connection.query(
+                `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+                 VALUES (?, 'in', ?, ?, ?)`,
+                [sp.product_id, sp.qty, `DEL-SRV-${req.params.id}`, `Penghapusan tiket service ${req.params.id}`]
+            );
+        }
+
+        // 2. Hapus spareparts
+        await connection.query('DELETE FROM service_spareparts WHERE service_order_id = ?', [req.params.id]);
+
+        // 3. Hapus order service
+        await connection.query('DELETE FROM service_orders WHERE id = ?', [req.params.id]);
+
+        await connection.commit();
+        res.json({ message: 'Tiket service berhasil dihapus dan stok dikembalikan!' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Delete Service Error:', error);
+        res.status(500).json({ message: 'Gagal menghapus tiket service' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;
