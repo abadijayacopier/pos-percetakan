@@ -128,10 +128,16 @@ export default function ServicePage({ onNavigate }) {
         const newRecord = {
             ...formData,
             serviceNo: getNextServiceNo(),
+            customerId: formData.customerId || null,
+            technicianId: formData.technicianId || null,
             customerName: customers.find(c => c.id === formData.customerId)?.name || formData.customerName || 'Pelanggan Umum',
             conditionPhysic: formData.condition,
             totalCost,
             status: formData.status || selectedService?.status || 'approval',
+            spareparts: formData.spareparts.map(sp => ({
+                ...sp,
+                productId: sp.productId || null
+            }))
         };
 
 
@@ -156,7 +162,15 @@ export default function ServicePage({ onNavigate }) {
             resetForm();
             loadData();
         } catch (error) {
-            Swal.fire({ icon: 'error', title: 'Gagal', text: error.response?.data?.message || 'Terjadi kesalahan sistem', timer: 3000 });
+            console.error('Save error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: error.response?.data?.message || 'Terjadi kesalahan sistem',
+                footer: error.response?.data?.error ? `<div class="text-xs text-red-500 font-code">Error: ${error.response.data.error}</div>` : null,
+                confirmButtonText: 'OKE',
+                confirmButtonColor: 'var(--primary)'
+            });
         }
     };
 

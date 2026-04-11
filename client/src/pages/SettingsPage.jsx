@@ -314,10 +314,11 @@ export default function SettingsPage() {
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `pos_backup_${new Date().toISOString().slice(0, 10)}.json`);
+            link.setAttribute('download', `pos_backup_${new Date().toISOString().slice(0, 10)}.sql`);
             document.body.appendChild(link);
             link.click();
-            showToast('Backup berhasil diunduh!', 'success');
+            showToast('Backup SQL berhasil diunduh!', 'success');
+
         } catch (error) {
             showToast('Gagal melakukan backup', 'error');
         }
@@ -1573,10 +1574,11 @@ export default function SettingsPage() {
                                         <FiSave size={28} />
                                     </div>
                                     <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pencadangan Data</h3>
-                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Ekspor seluruh data POS (Harga, Log, Member, Transaksi) ke file JSON yang aman.</p>
+                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Ekspor seluruh data POS (Harga, Log, Member, Transaksi) ke file SQL yang aman.</p>
                                     <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={handleBackup}>
                                         <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
                                     </button>
+
                                 </div>
 
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
@@ -1584,11 +1586,12 @@ export default function SettingsPage() {
                                         <FiUpload size={28} />
                                     </div>
                                     <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pemulihan Data</h3>
-                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup JSON sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
+                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup SQL sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
                                     <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl cursor-pointer transition-all border border-slate-200 dark:border-slate-700">
                                         <FiFolder /> Pilih File Backup
-                                        <input type="file" accept=".json" onChange={handleRestore} className="hidden" />
+                                        <input type="file" accept=".sql,.json" onChange={handleRestore} className="hidden" />
                                     </label>
+
                                 </div>
 
                                 <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-4xl border border-red-100 dark:border-red-900/30 p-8">

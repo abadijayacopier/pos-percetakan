@@ -46,16 +46,16 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
             complaint, conditionPhysic, status, technicianId, dpAmount
         } = req.body;
 
-        const newId = 'so' + Date.now();
-
-        await pool.query(`
+        const [result] = await pool.query(`
             INSERT INTO service_orders
-            (id, service_no, customer_id, customer_name, phone, machine_info, serial_no, complaint, condition_physic, status, technician_id, dp_amount)
+            (service_no, customer_id, customer_name, phone, machine_info, serial_no, complaint, condition_physic, status, technician_id, dp_amount, labor_cost)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
-            newId, serviceNo, customerId || null, customerName, phone, machineInfo,
-            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', technicianId || null, dpAmount || 0
+            serviceNo, customerId || null, customerName, phone, machineInfo,
+            serialNo || null, complaint, conditionPhysic || null, status || 'diterima', technicianId || null, dpAmount || 0, 0
         ]);
+
+        const newId = result.insertId;
 
         if (customerId) {
             await pool.query('UPDATE customers SET total_trx = total_trx + 1 WHERE id = ?', [customerId]);
@@ -63,7 +63,13 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
 
         res.status(201).json({ message: 'Penerimaan service berhasil dicatat!', id: newId });
     } catch (error) {
-        res.status(500).json({ message: 'Gagal membuat order service' });
+        console.error('CRITICAL: Gagal simpan Service Ticket:', error);
+        res.status(500).json({
+            message: 'Gagal membuat order service',
+            error: error.message,
+            sqlMessage: error.sqlMessage,
+            code: error.code
+        });
     }
 });
 

@@ -288,7 +288,7 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 leading-none">Total Tagihan</span>
                                         <p className="text-xs mt-1 font-bold opacity-60 italic">Grand Total</p>
                                     </div>
-                                    <span className="text-3xl font-black tracking-tighter italic text-right whitespace-nowrap min-w-[200px]">
+                                    <span className="text-3xl font-black tracking-tighter italic flex-1 text-right whitespace-nowrap">
                                         {formatCurrency(service.totalCost - (service.dpAmount || 0))}
                                     </span>
                                 </div>
