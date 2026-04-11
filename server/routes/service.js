@@ -129,7 +129,22 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
             UPDATE service_orders 
             SET customer_id = ?, customer_name = ?, phone = ?, machine_info = ?, serial_no = ?, complaint = ?, condition_physic = ?, diagnosis = ?, labor_cost = ?, status = ?, warranty_end = ?, dp_amount = ?, technician_id = ?
             WHERE id = ?
-                `, [customerId || null, customerName || null, phone || null, machineInfo || null, serialNo || null, complaint || null, conditionPhysic || null, diagnosis || null, laborCost || 0, status, warrantyEnd || null, dpAmount || 0, technicianId || null, req.params.id]);
+                `, [
+            customerId || null,
+            customerName ? customerName : 'Pelanggan Umum',
+            phone ? phone : '',
+            machineInfo ? machineInfo : '-',
+            serialNo ? serialNo : '-',
+            complaint ? complaint : '-',
+            conditionPhysic || null,
+            diagnosis || null,
+            laborCost || 0,
+            status || 'diterima',
+            warrantyEnd || null,
+            dpAmount || 0,
+            technicianId || null,
+            req.params.id
+        ]);
 
         // ─── Otomatisasi Stok Sparepart (Opsi A) ──────────────────────
         if (spareparts && Array.isArray(spareparts)) {
@@ -191,8 +206,11 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
         res.json({ message: 'Data pengerjaan berhasil diupdate!' });
     } catch (error) {
         await connection.rollback();
-        console.error(error);
-        res.status(500).json({ message: 'Gagal update service' });
+        console.error('Update Service Error:', error);
+        res.status(500).json({
+            message: 'Gagal mengupdate order service',
+            error: error.message
+        });
     } finally {
         connection.release();
     }
@@ -276,7 +294,10 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     } catch (error) {
         await connection.rollback();
         console.error('Delete Service Error:', error);
-        res.status(500).json({ message: 'Gagal menghapus tiket service' });
+        res.status(500).json({
+            message: 'Gagal menghapus tiket service',
+            error: error.message
+        });
     } finally {
         connection.release();
     }

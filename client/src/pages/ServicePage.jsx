@@ -208,7 +208,8 @@ export default function ServicePage({ onNavigate }) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: error.response?.data?.message || 'Gagal menghapus tiket'
+                    text: error.response?.data?.message || 'Gagal menghapus tiket',
+                    footer: error.response?.data?.error ? `<div class="text-xs text-red-500 font-code">Error: ${error.response.data.error}</div>` : null
                 });
             }
         }
