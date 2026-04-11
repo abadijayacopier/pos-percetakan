@@ -584,7 +584,9 @@ export default function DashboardPage({ onNavigate }) {
                                             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed italic opacity-85">"{log.detail}"</p>
                                             <div className="flex items-center gap-2 mt-3 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
                                                 <FiClock size={10} />
-                                                {new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                                {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
+                                                    ? new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                                                    : 'Baru saja'}
                                             </div>
                                         </div>
                                     </motion.div>

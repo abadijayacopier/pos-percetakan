@@ -77,7 +77,6 @@ export default function InventoryPage({ onNavigate }) {
     const [showModal, setShowModal] = useState(false);
     const [editItem, setEditItem] = useState(null);
     const [form, setForm] = useState(emptyForm);
-    const [confirmDelete, setConfirmDelete] = useState(null);
     const [page, setPage] = useState(1);
     const PER_PAGE = 10;
 
@@ -95,7 +94,10 @@ export default function InventoryPage({ onNavigate }) {
     };
 
     useEffect(() => {
-        reload();
+        const initReload = async () => {
+            await reload();
+        };
+        initReload();
     }, []);
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -216,7 +218,7 @@ export default function InventoryPage({ onNavigate }) {
                 await api.delete(`/products/${p.id}`);
                 Swal.fire({ icon: 'success', title: 'Terhapus!', text: 'Barang berhasil dihapus.', timer: 1500, showConfirmButton: false });
                 reload();
-            } catch (e) {
+            } catch {
                 Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus produk.' });
             }
         }
@@ -380,7 +382,7 @@ export default function InventoryPage({ onNavigate }) {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-x-2 sm:group-hover:translate-x-0 transition-all">
+                                                <div className="flex justify-end gap-1.5 group-hover:opacity-100 transition-all">
                                                     <button
                                                         onClick={() => onNavigate('stock-history', { product: p })}
                                                         title="History Stok"
@@ -660,7 +662,7 @@ export default function InventoryPage({ onNavigate }) {
                                         const newRecord = { id: res.data.id, name: clean };
                                         setCategories([...categories, newRecord]);
                                         set('categoryId', newRecord.id);
-                                    } catch (e) { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menambah kategori', timer: 3000 }); }
+                                    } catch { Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menambah kategori', timer: 3000 }); }
                                 }
                             }
                             setPromptModal({ ...promptModal, isOpen: false });

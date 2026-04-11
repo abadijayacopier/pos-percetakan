@@ -9,7 +9,13 @@ export default function WASettingsPage({ onNavigate }) {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
 
-    // Checkbox states
+    // Template states
+    const [templateReceived, setTemplateReceived] = useState('Halo [NamaPelanggan], pesanan Anda dengan nomor [NomorSPK] telah kami terima dan sedang diverifikasi oleh admin. Terima kasih!');
+    const [templateProcess, setTemplateProcess] = useState('Kabar baik [NamaPelanggan]! Pesanan [NamaProduk] Anda saat ini sudah masuk ke tahap produksi/cetak.');
+    const [templateFinishing, setTemplateFinishing] = useState('Halo [NamaPelanggan], pesanan [NamaProduk] sedang dalam tahap finishing (pemotongan/packing).');
+    const [templateReady, setTemplateReady] = useState('Pesanan Anda ([NamaProduk]) Selesai! Silakan ambil di outlet kami dengan menunjukkan nomor SPK: [NomorSPK].');
+
+    // Toggle states
     const [sendReceived, setSendReceived] = useState(true);
     const [sendProcess, setSendProcess] = useState(true);
     const [sendFinishing, setSendFinishing] = useState(false);
@@ -22,6 +28,15 @@ export default function WASettingsPage({ onNavigate }) {
                 if (res.data) {
                     setApiKey(res.data.api_token || '');
                     setPhoneNumber(res.data.phone_number || '');
+                    if (res.data.template_received) setTemplateReceived(res.data.template_received);
+                    if (res.data.template_process) setTemplateProcess(res.data.template_process);
+                    if (res.data.template_finishing) setTemplateFinishing(res.data.template_finishing);
+                    if (res.data.template_ready) setTemplateReady(res.data.template_ready);
+
+                    if (res.data.send_received !== undefined) setSendReceived(res.data.send_received === 'true' || res.data.send_received === true);
+                    if (res.data.send_process !== undefined) setSendProcess(res.data.send_process === 'true' || res.data.send_process === true);
+                    if (res.data.send_finishing !== undefined) setSendFinishing(res.data.send_finishing === 'true' || res.data.send_finishing === true);
+                    if (res.data.send_ready !== undefined) setSendReady(res.data.send_ready === 'true' || res.data.send_ready === true);
                 }
             } catch (err) { console.error('Gagal fetch WA config:', err); }
         };
@@ -32,7 +47,18 @@ export default function WASettingsPage({ onNavigate }) {
         setSaving(true);
         setSaveMsg('');
         try {
-            await api.put('/wa-config', { api_token: apiKey, phone_number: phoneNumber });
+            await api.put('/wa-config', {
+                api_token: apiKey,
+                phone_number: phoneNumber,
+                template_received: templateReceived,
+                template_process: templateProcess,
+                template_finishing: templateFinishing,
+                template_ready: templateReady,
+                send_received: sendReceived,
+                send_process: sendProcess,
+                send_finishing: sendFinishing,
+                send_ready: sendReady
+            });
             setSaveMsg(<>Konfigurasi berhasil disimpan! <FiCheck /></>);
             setTimeout(() => setSaveMsg(''), 3000);
         } catch (err) {
@@ -48,7 +74,7 @@ export default function WASettingsPage({ onNavigate }) {
             <header className="px-6 py-6 md:px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl">
-                        <span className="material-symbols-outlined">forum</span>
+                        <span className="material-symbols-outlined text-2xl">forum</span>
                     </div>
                     <div>
                         <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Pengaturan Notifikasi WhatsApp</h2>
@@ -58,7 +84,7 @@ export default function WASettingsPage({ onNavigate }) {
                 <div className="flex items-center gap-3 mt-4 sm:mt-0">
                     <button
                         onClick={() => onNavigate('dashboard')}
-                        className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        className="px-5 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     >
                         Beranda
                     </button>
@@ -93,13 +119,13 @@ export default function WASettingsPage({ onNavigate }) {
                                     </div>
                                 </div>
                                 <div className="relative z-10 flex flex-wrap gap-2">
-                                    <button className="text-xs font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50">
+                                    <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
                                         [NamaPelanggan]
                                     </button>
-                                    <button className="text-xs font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50">
+                                    <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
                                         [NamaProduk]
                                     </button>
-                                    <button className="text-xs font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50">
+                                    <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
                                         [NomorSPK]
                                     </button>
                                 </div>
@@ -113,11 +139,16 @@ export default function WASettingsPage({ onNavigate }) {
                                             Pesanan Diterima
                                         </label>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
                                             <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer" checked={sendReceived} onChange={(e) => setSendReceived(e.target.checked)} />
                                         </div>
                                     </div>
-                                    <textarea className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed" rows="3" defaultValue="Halo [NamaPelanggan], pesanan Anda dengan nomor [NomorSPK] telah kami terima dan sedang diverifikasi oleh admin. Terima kasih!"></textarea>
+                                    <textarea
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed"
+                                        rows="3"
+                                        value={templateReceived}
+                                        onChange={(e) => setTemplateReceived(e.target.value)}
+                                    ></textarea>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -126,11 +157,16 @@ export default function WASettingsPage({ onNavigate }) {
                                             Proses Cetak
                                         </label>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
                                             <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer" checked={sendProcess} onChange={(e) => setSendProcess(e.target.checked)} />
                                         </div>
                                     </div>
-                                    <textarea className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed" rows="3" defaultValue="Kabar baik [NamaPelanggan]! Pesanan [NamaProduk] Anda saat ini sudah masuk ke tahap produksi/cetak."></textarea>
+                                    <textarea
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed"
+                                        rows="3"
+                                        value={templateProcess}
+                                        onChange={(e) => setTemplateProcess(e.target.value)}
+                                    ></textarea>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -139,11 +175,16 @@ export default function WASettingsPage({ onNavigate }) {
                                             Finishing
                                         </label>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
                                             <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer" checked={sendFinishing} onChange={(e) => setSendFinishing(e.target.checked)} />
                                         </div>
                                     </div>
-                                    <textarea className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed" rows="3" defaultValue="Halo [NamaPelanggan], pesanan [NamaProduk] sedang dalam tahap finishing (pemotongan/packing)."></textarea>
+                                    <textarea
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed"
+                                        rows="3"
+                                        value={templateFinishing}
+                                        onChange={(e) => setTemplateFinishing(e.target.value)}
+                                    ></textarea>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -152,11 +193,16 @@ export default function WASettingsPage({ onNavigate }) {
                                             Siap Diambil
                                         </label>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
-                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
                                             <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer" checked={sendReady} onChange={(e) => setSendReady(e.target.checked)} />
                                         </div>
                                     </div>
-                                    <textarea className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed" rows="3" defaultValue="Pesanan Anda ([NamaProduk]) Selesai! Silakan ambil di outlet kami dengan menunjukkan nomor SPK: [NomorSPK]."></textarea>
+                                    <textarea
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed"
+                                        rows="3"
+                                        value={templateReady}
+                                        onChange={(e) => setTemplateReady(e.target.value)}
+                                    ></textarea>
                                 </div>
                             </div>
                         </section>

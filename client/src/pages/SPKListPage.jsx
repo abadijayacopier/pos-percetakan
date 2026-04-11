@@ -44,6 +44,7 @@ export default function SPKListPage({ onNavigate }) {
     const [cancelModal, setCancelModal] = useState(null);
     const [showRekapModal, setShowRekapModal] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [systemStatus, setSystemStatus] = useState('connecting');
 
     // Pagination States
     const [currentPage, setCurrentPage] = useState(1);
@@ -61,8 +62,10 @@ export default function SPKListPage({ onNavigate }) {
             const json = res.data;
             setSpkList(json.data || []);
             setSummary(json.summary || { total: 0, byStatus: {} });
+            setSystemStatus('online');
         } catch (err) {
             console.error('Gagal fetch SPK:', err);
+            setSystemStatus('offline');
         } finally {
             setLoading(false);
         }
@@ -71,6 +74,12 @@ export default function SPKListPage({ onNavigate }) {
     useEffect(() => {
         setCurrentPage(1);
         fetchSPK();
+
+        const interval = setInterval(() => {
+            fetchSPK();
+        }, 10000);
+
+        return () => clearInterval(interval);
     }, [fetchSPK]);
 
     const handleCancelSPK = (spkId, spkNumber) => {
@@ -166,6 +175,26 @@ export default function SPKListPage({ onNavigate }) {
                     initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                     className="flex flex-wrap items-center gap-3"
                 >
+                    <div className={`px-4 py-2 rounded-xl flex items-center gap-3 border transition-all duration-500 bg-white dark:bg-slate-900 shadow-sm
+                        ${systemStatus === 'online' ? 'border-emerald-100 dark:border-emerald-500/20' :
+                            systemStatus === 'offline' ? 'border-rose-100 dark:border-rose-500/20' :
+                                'border-slate-100 dark:border-slate-800'}`}>
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mb-1">Status Produksi</p>
+                            <div className="flex items-center gap-2 justify-end">
+                                <span className={`text-[11px] font-black uppercase tracking-wider
+                                    ${systemStatus === 'online' ? 'text-emerald-500' :
+                                        systemStatus === 'offline' ? 'text-rose-500' : 'text-slate-400'}`}>
+                                    {systemStatus === 'online' ? 'Sistem Terhubung' :
+                                        systemStatus === 'offline' ? 'Koneksi Terputus' : 'Menghubungkan...'}
+                                </span>
+                                <div className={`w-2 h-2 rounded-full 
+                                    ${systemStatus === 'online' ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+                                        systemStatus === 'offline' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' :
+                                            'bg-slate-300 animate-bounce'}`}></div>
+                            </div>
+                        </div>
+                    </div>
                     <button
                         onClick={() => setShowRekapModal(true)}
                         className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold shadow-sm hover:shadow-md transition-all active:scale-95"

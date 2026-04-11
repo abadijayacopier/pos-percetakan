@@ -417,10 +417,19 @@ export default function ServicePage({ onNavigate }) {
                                                         api.get(`/service/${srv.id}`).then(res => {
                                                             const detail = res.data;
                                                             setFormData({
-                                                                ...detail,
+                                                                customerId: detail.customerId || '',
+                                                                customerName: detail.customerName || '',
+                                                                phone: detail.phone || '',
+                                                                machineInfo: detail.machineInfo || '',
+                                                                serialNo: detail.serialNo || '',
+                                                                complaint: detail.complaint || '',
                                                                 condition: detail.conditionPhysic || detail.condition || '',
+                                                                priority: detail.priority || 'normal',
+                                                                technicianId: detail.technicianId || '',
+                                                                laborCost: detail.laborCost || 0,
+                                                                dpAmount: detail.dpAmount || 0,
                                                                 spareparts: detail.spareparts || [],
-                                                                laborCost: detail.laborCost || 0
+                                                                status: detail.status || 'approval'
                                                             });
                                                             setShowForm(true);
                                                         }).catch(() => {

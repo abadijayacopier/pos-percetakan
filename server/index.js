@@ -12,6 +12,13 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    next();
+});
+
 app.use('/uploads', express.static('public/uploads'));
 
 // Basic route test
@@ -21,15 +28,13 @@ app.get('/', (req, res) => {
 
 const pricingRouter = require('./routes/pricing');
 
-// Init API Routes
+app.use('/api/service', require('./routes/service'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/transactions', require('./routes/transactions'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/print-orders', require('./routes/printing'));
 app.use('/api/customers', require('./routes/customers'));
-app.use('/api/service-orders', require('./routes/service'));
-app.use('/api/service', require('./routes/service')); // Alias untuk kecocokan frontend
 app.use('/api/finance', require('./routes/finance'));
 app.use('/api/suppliers', require('./routes/suppliers'));
 app.use('/api/print', require('./routes/print'));

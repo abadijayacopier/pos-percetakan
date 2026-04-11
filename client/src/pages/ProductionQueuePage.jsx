@@ -28,11 +28,8 @@ export default function ProductionQueuePage({ onNavigate }) {
     const { user } = useAuth();
     const [autoAssign, setAutoAssign] = useState(true);
     const [tasks, setTasks] = useState([]);
-    const [techStats, setTechStats] = useState({
-        tech1: { name: 'Andi Pratama', count: 0, status: 'emerald' },
-        tech2: { name: 'Siti Aminah', count: 0, status: 'amber' },
-        tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
-    });
+    const [operators, setOperators] = useState([]);
+    const [techStats, setTechStats] = useState({});
     const [viewDesignModal, setViewDesignModal] = useState(null);
     const [assignTaskModal, setAssignTaskModal] = useState(null);
     const [cancelTaskModal, setCancelTaskModal] = useState(null);
@@ -40,6 +37,7 @@ export default function ProductionQueuePage({ onNavigate }) {
     const [activeTab, setActiveTab] = useState('Semua');
     const [toastMsg, setToastMsg] = useState(null);
     const [settleTask, setSettleTask] = useState(null);
+    const [systemStatus, setSystemStatus] = useState('online'); // 'online' or 'offline'
 
     const showToast = useCallback((msg, type = 'info') => setToastMsg({ msg, type }), []);
 
@@ -57,7 +55,7 @@ export default function ProductionQueuePage({ onNavigate }) {
         w.document.write("</style></head><body>");
         w.document.write("<h2>ABADI JAYA COPIER & OFFSET</h2>");
         w.document.write("<p class='subtitle'>NOTA PEMBATALAN PESANAN</p>");
-        w.document.write("<div class='row'><span>No. Antrean:</span> <span>" + task.id + "</span></div>");
+        w.document.write(" <div class='row'><span>No. Antrean:</span> <span>" + task.id + "</span></div>");
         w.document.write("<div class='row'><span>Pelanggan:</span> <span>" + task.customerName + "</span></div>");
         w.document.write("<div class='row'><span>Status Terakhir:</span> <span>" + task.status.toUpperCase() + "</span></div>");
         w.document.write("<div class='row'><span>Waktu Batal:</span> <span>" + new Date().toLocaleString('id-ID') + "</span></div><br/>");
@@ -120,12 +118,16 @@ export default function ProductionQueuePage({ onNavigate }) {
     const loadProductionData = async () => {
         let assignments = [];
         let spkTasks = [];
+        let fetchedDesigners = [];
         try {
-            const { data } = await api.get('/designers/assignments');
-            assignments = data;
+            const [assignRes, spkRes, desRes] = await Promise.all([
+                api.get('/designers/assignments'),
+                api.get('/spk'),
+                api.get('/designers')
+            ]);
 
-            const { data: spkRes } = await api.get('/spk');
-            spkTasks = (spkRes.data || [])
+            assignments = assignRes.data;
+            spkTasks = (spkRes.data.data || [])
                 .filter(s => s.status !== 'Batal' && s.status !== 'batal' && s.status !== 'Diambil')
                 .map(s => ({
                     id: s.spk_number,
@@ -142,8 +144,12 @@ export default function ProductionQueuePage({ onNavigate }) {
                     type: 'offset',
                     updatedAt: s.updated_at
                 }));
+            fetchedDesigners = desRes.data || [];
+            setOperators(fetchedDesigners);
+            setSystemStatus('online');
         } catch (err) {
-            console.error('Failed to fetch spk/assignments data:', err);
+            console.error('Failed to fetch spk/assignments/designers data:', err);
+            setSystemStatus('offline');
         }
 
         let prodTasks = [];
@@ -166,25 +172,34 @@ export default function ProductionQueuePage({ onNavigate }) {
 
         setTasks(enrichedTasks);
 
-        const newStats = {
-            tech1: { name: 'Andi Pratama', count: 0, status: 'emerald' },
-            tech2: { name: 'Siti Aminah', count: 0, status: 'amber' },
-            tech3: { name: 'Bambang K.', count: 0, status: 'rose' }
-        };
+        // Update Tech Stats real-time
+        const newStats = {};
+        fetchedDesigners.forEach(d => {
+            newStats[d.id] = { name: d.name, count: 0, status: 'emerald' };
+        });
+
         combinedTasks.forEach(t => {
             if (t.technician_id && newStats[t.technician_id]) {
                 newStats[t.technician_id].count++;
             }
         });
+
         Object.keys(newStats).forEach(id => {
             const c = newStats[id].count;
-            newStats[id].status = c > 7 ? 'rose' : c > 4 ? 'amber' : 'emerald';
+            newStats[id].status = c > 7 ? 'rose' : c > 3 ? 'amber' : 'emerald';
         });
         setTechStats(newStats);
     };
 
     useEffect(() => {
         loadProductionData();
+
+        // POLL: Check for updates every 10 seconds
+        const pollInterval = setInterval(() => {
+            loadProductionData();
+        }, 10000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     const moveTask = async (taskId, newStatus) => {
@@ -215,6 +230,14 @@ export default function ProductionQueuePage({ onNavigate }) {
                         Antrean Produksi
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75 underline decoration-blue-500/30 underline-offset-4">Production & Workload Management</p>
+                </div>
+
+                {/* Status Sistem */}
+                <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-full border transition-all ${systemStatus === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-800/50' : 'bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-800/50'}`}>
+                    <div className={`size-1.5 rounded-full animate-pulse shadow-sm ${systemStatus === 'online' ? 'bg-emerald-500 shadow-emerald-500/50' : 'bg-rose-500 shadow-rose-500/50'}`} />
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${systemStatus === 'online' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {systemStatus === 'online' ? 'Sistem Terhubung' : 'Sistem Terputus'}
+                    </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
@@ -266,7 +289,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                     <div className={`w-2 h-2 rounded-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`} />
                                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                        {tech.status === 'emerald' ? 'TERSEDIA' : tech.status === 'amber' ? 'SIBUK' : 'PADAT'}
+                                        {tech.active_task ? (tech.active_task.status === 'dikerjakan' ? 'SEDANG KERJA' : 'DITUGASKAN') : 'TERSEDIA'}
                                     </span>
                                 </div>
                             </div>
@@ -274,15 +297,37 @@ export default function ProductionQueuePage({ onNavigate }) {
 
                         <div className="mt-auto">
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-3xl font-black italic tracking-tighter text-slate-900 dark:text-white leading-none">{tech.count}</span>
+                                <span className="text-3xl font-black italic tracking-tighter text-slate-900 dark:text-white leading-none">
+                                    {tech.active_task ? 1 : 0}
+                                </span>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tugas Aktif</span>
                             </div>
                             <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: `${Math.min(100, (tech.count / 10) * 100)}%` }}
-                                    className={`h-full ${tech.status === 'emerald' ? 'bg-emerald-500' : tech.status === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`}
+                                    animate={{ width: tech.active_task ? '100%' : '0%' }}
+                                    className={`h-full ${tech.active_task ? (tech.active_task.status === 'dikerjakan' ? 'bg-orange-500' : 'bg-blue-500') : 'bg-emerald-500'}`}
                                 />
+                            </div>
+
+                            {/* TUGAS Section */}
+                            <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Tugas</p>
+                                {tech.active_task ? (
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 group/task hover:border-blue-200 dark:hover:border-blue-900/50 transition-all">
+                                        <p className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-tight mb-1 flex items-center justify-between">
+                                            #{tech.active_task.task_id}
+                                            <span className="material-symbols-outlined text-[14px] text-blue-500">
+                                                {tech.active_task.status === 'dikerjakan' ? 'bolt' : 'notifications'}
+                                            </span>
+                                        </p>
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 rounded-lg w-fit">
+                                            <span className="text-[8px] font-black uppercase tracking-widest">{tech.active_task.status === 'dikerjakan' ? 'Working' : 'Assigned'}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-[10px] font-bold text-slate-300 dark:text-slate-700 italic">Standby</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -361,95 +406,109 @@ export default function ProductionQueuePage({ onNavigate }) {
                         </div>
 
                         {/* Cards Container */}
-                        <div className="flex flex-col gap-3 min-h-[150px] p-2 -mx-2 bg-slate-100/50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800/50">
+                        <div className="flex flex-col gap-3 min-h-[150px] p-2 -mx-2 bg-slate-200/20 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800/50">
                             <AnimatePresence>
-                                {getTasksByStatus(col.id).map((task) => (
+                                {getTasksByStatus(col.id).length === 0 ? (
                                     <motion.div
-                                        key={task.id}
-                                        layout
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        draggable
-                                        onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
-                                        className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-grab active:cursor-grabbing group"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="h-full min-h-[120px] flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6 text-center bg-slate-50/50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]"
                                     >
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-                                                    {task.id}
-                                                </span>
-                                                {task.priority === 'ekspres' && (
-                                                    <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">
-                                                        <FiZap size={10} /> Express
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => { setCancelTaskModal(task); setCancelFee(0); }}
-                                                className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-all"
-                                                title="Batalkan Pesanan">
-                                                <FiXCircle size={14} />
-                                            </button>
+                                        <div className="size-12 rounded-full border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center mb-3 bg-white dark:bg-slate-900 shadow-sm">
+                                            <span className="material-symbols-outlined text-2xl! text-slate-400 dark:text-slate-500">inbox</span>
                                         </div>
-
-                                        <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium flex items-center gap-1.5"><FiUser size={12} /> {task.customerName}</p>
-
-                                        {task.designData && (
-                                            <button
-                                                onClick={() => setViewDesignModal(task)}
-                                                className="w-full flex items-center justify-center gap-2 py-2 mb-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700"
-                                            >
-                                                <FiPaperclip size={14} /> Lihat File Desain
-                                            </button>
-                                        )}
-
-                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
-                                            <div className="flex items-center text-slate-400 dark:text-slate-500 gap-1.5">
-                                                <FiClock size={12} />
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">Hari ini</span>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">Antrean Kosong</p>
+                                        <p className="text-[9px] font-bold mt-1 text-slate-400 dark:text-slate-500 opacity-80">Belum ada pesanan masuk</p>
+                                    </motion.div>
+                                ) : (
+                                    getTasksByStatus(col.id).map((task) => (
+                                        <motion.div
+                                            key={task.id}
+                                            layout
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            draggable
+                                            onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)}
+                                            className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all cursor-grab active:cursor-grabbing group"
+                                        >
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
+                                                        {task.id}
+                                                    </span>
+                                                    {task.priority === 'ekspres' && (
+                                                        <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black px-2 py-1 rounded-full uppercase tracking-widest animate-pulse">
+                                                            <FiZap size={10} /> Express
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    onClick={() => { setCancelTaskModal(task); setCancelFee(0); }}
+                                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-all"
+                                                    title="Batalkan Pesanan">
+                                                    <FiXCircle size={14} />
+                                                </button>
                                             </div>
 
-                                            <div className="flex items-center gap-2">
+                                            <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium flex items-center gap-1.5"><FiUser size={12} /> {task.customerName}</p>
+
+                                            {task.designData && (
                                                 <button
-                                                    onClick={() => {
-                                                        if (task.type === 'offset') {
-                                                            showToast('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK di panel admin.');
-                                                            return;
-                                                        }
-                                                        setAssignTaskModal(task);
-                                                    }}
-                                                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900 focus:outline-none hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                                    title={`Klik untuk ubah. Operator saat ini: ${task.technician_name || 'Belum Diatur'}`}
+                                                    onClick={() => setViewDesignModal(task)}
+                                                    className="w-full flex items-center justify-center gap-2 py-2 mb-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700"
                                                 >
-                                                    {task.technician_name ? task.technician_name.substring(0, 2).toUpperCase() : '??'}
+                                                    <FiPaperclip size={14} /> Lihat File Desain
                                                 </button>
-                                                {col.id !== 'selesai' && (
+                                            )}
+
+                                            <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
+                                                <div className="flex items-center text-slate-400 dark:text-slate-500 gap-1.5">
+                                                    <FiClock size={12} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Hari ini</span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={() => {
-                                                            const statuses = ['produksi', 'cetak', 'finishing', 'qc', 'selesai'];
-                                                            const nextIdx = statuses.indexOf(col.id) + 1;
-                                                            moveTask(task.id, statuses[nextIdx]);
+                                                            if (task.type === 'offset') {
+                                                                showToast('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK di panel admin.');
+                                                                return;
+                                                            }
+                                                            setAssignTaskModal(task);
                                                         }}
-                                                        className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-all border border-blue-200 dark:border-blue-800/50 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
-                                                        title="Selesaikan tahap ini"
+                                                        className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 dark:text-slate-400 ring-2 ring-white dark:ring-slate-900 focus:outline-none hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                                        title={`Klik untuk ubah. Operator saat ini: ${task.technician_name || 'Belum Diatur'}`}
                                                     >
-                                                        <FiArrowRight size={14} />
+                                                        {task.technician_name ? task.technician_name.substring(0, 2).toUpperCase() : '??'}
                                                     </button>
-                                                )}
-                                                {col.id === 'selesai' && task.is_paid === 0 && (
-                                                    <button
-                                                        onClick={() => setSettleTask(task)}
-                                                        className="px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
-                                                    >
-                                                        <FiDollar size={12} /> Bayar & Ambil
-                                                    </button>
-                                                )}
+                                                    {col.id !== 'selesai' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const statuses = ['produksi', 'cetak', 'finishing', 'qc', 'selesai'];
+                                                                const nextIdx = statuses.indexOf(col.id) + 1;
+                                                                moveTask(task.id, statuses[nextIdx]);
+                                                            }}
+                                                            className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white dark:hover:bg-blue-500 dark:hover:text-white transition-all border border-blue-200 dark:border-blue-800/50 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0"
+                                                            title="Selesaikan tahap ini"
+                                                        >
+                                                            <FiArrowRight size={14} />
+                                                        </button>
+                                                    )}
+                                                    {col.id === 'selesai' && task.is_paid === 0 && (
+                                                        <button
+                                                            onClick={() => setSettleTask(task)}
+                                                            className="px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-500/20"
+                                                        >
+                                                            <FiDollar size={12} /> Bayar & Ambil
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                        </motion.div>
+                                    ))
+                                )}
                             </AnimatePresence>
                         </div>
                     </div>

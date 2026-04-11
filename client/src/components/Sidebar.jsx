@@ -10,7 +10,8 @@ import {
     FiTrendingUp,
     FiPackage,
     FiTruck,
-    FiChevronLeft
+    FiChevronLeft,
+    FiMessageCircle
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
@@ -300,18 +301,33 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                         <div className={`space-y-2 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
                             {((user?.role || '').toLowerCase() === 'admin' || (user?.role || '').toLowerCase() === 'pemilik') && (
-                                <button
-                                    onClick={() => handleNav('settings')}
-                                    title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
-                                    className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
-                                    ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
-                                    ${activePage === 'settings'
-                                            ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500'
-                                            : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
-                                >
-                                    <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
-                                    {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => handleNav('wa-settings')}
+                                        title={isCollapsed && isDesktop ? "WhatsApp Config" : undefined}
+                                        className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                        ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
+                                        ${activePage === 'wa-settings'
+                                                ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-500'
+                                                : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                    >
+                                        <FiMessageCircle size={isCollapsed && isDesktop ? 16 : 14} />
+                                        {!(isCollapsed && isDesktop) && <span>WhatsApp Gateway</span>}
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleNav('settings')}
+                                        title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
+                                        className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                        ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
+                                        ${activePage === 'settings'
+                                                ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500'
+                                                : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                    >
+                                        <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
+                                        {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
+                                    </button>
+                                </>
                             )}
 
                             <div className={`bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center group

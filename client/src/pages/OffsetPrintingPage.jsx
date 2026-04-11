@@ -31,6 +31,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const [activeOrders, setActiveOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [hourlyRate, setHourlyRate] = useState(0);
+    const [systemStatus, setSystemStatus] = useState('connecting');
 
     // Form/Kalkulator States
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -79,8 +80,10 @@ export default function OffsetPrintingPage({ onNavigate }) {
             if (formRes.data.products?.length > 0 && !selectedProduct) {
                 setSelectedProduct(formRes.data.products[0]);
             }
+            setSystemStatus('online');
         } catch (err) {
             console.error('Error fetching offset data:', err);
+            setSystemStatus('offline');
         } finally {
             setLoading(false);
         }
@@ -88,6 +91,13 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
     useEffect(() => {
         fetchOffsetData();
+
+        // POLL: Check for updates every 10 seconds
+        const pollInterval = setInterval(() => {
+            fetchOffsetData();
+        }, 10000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     // Timer States
@@ -206,7 +216,13 @@ export default function OffsetPrintingPage({ onNavigate }) {
                         <span className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-lg shadow-indigo-100 dark:shadow-none"><FiPrinter /></span>
                         Manajemen Cetak Offset
                     </h1>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Large Format Production & SPK Pipeline Manager</p>
+                    <div className="flex items-center gap-3 mt-2">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest ml-1 italic opacity-75">Large Format Production & SPK Pipeline Manager</p>
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${systemStatus === 'online' ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'border-rose-200 bg-rose-50 dark:bg-rose-900/20 text-rose-600'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${systemStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                            <span className="text-[8px] font-black uppercase tracking-widest">{systemStatus === 'online' ? 'Gateway Active' : 'Offline'}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto">

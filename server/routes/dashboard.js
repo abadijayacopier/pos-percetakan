@@ -82,7 +82,7 @@ router.get('/stats', verifyToken, async (req, res) => {
         let activityLog = [];
         try {
             const [logs] = await pool.query(`
-                SELECT al.id, al.user_id, al.user_name, al.action, al.detail
+                SELECT al.id, al.user_id, al.user_name, al.action, al.detail, al.timestamp
                 FROM activity_log al 
                 ORDER BY al.id DESC 
                 LIMIT 10

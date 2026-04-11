@@ -5,7 +5,7 @@ import { formatRupiah, generateInvoice } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { FiCheckCircle, FiClock, FiFileText, FiChevronDown, FiPlus, FiTrash2, FiPrinter, FiEdit, FiEye, FiEdit2, FiSave, FiX, FiZap, FiClipboard, FiUser, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiFileText, FiChevronDown, FiPlus, FiTrash2, FiPrinter, FiEdit, FiEye, FiEdit2, FiSave, FiX, FiZap, FiClipboard, FiUser, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle, FiActivity } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import Swal from 'sweetalert2';
 
@@ -31,8 +31,8 @@ export default function DigitalPrintingPage({ onNavigate }) {
     const [lebar, setLebar] = useState('');
     const [matId, setMatId] = useState('');
     const [customerId, setCustomerId] = useState('');
-    const [pesanDesainer, setPesanDesainer] = useState('');
     const [errors, setErrors] = useState({});
+    const [systemStatus, setSystemStatus] = useState('online');
 
     // Calculator Premium UI
     const [calcOrderData, setCalcOrderData] = useState({
@@ -132,13 +132,22 @@ export default function DigitalPrintingPage({ onNavigate }) {
             } catch (e) { }
 
             setStats({ menunggu, cetak, finishing });
+            setSystemStatus('online');
         } catch (err) {
             console.error(err);
+            setSystemStatus('offline');
         }
     };
 
     useEffect(() => {
         loadData();
+
+        // POLL: Check for updates every 10 seconds
+        const pollInterval = setInterval(() => {
+            loadData();
+        }, 10000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     const fetchDesigners = async () => {
@@ -376,13 +385,16 @@ export default function DigitalPrintingPage({ onNavigate }) {
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Production Monitoring & Real-time Tracking System</p>
                 </div>
-                <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                        <FiCheckCircle />
+                {/* Status Sistem */}
+                <div className={`flex items-center gap-4 bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border transition-all ${systemStatus === 'online' ? 'border-slate-200 dark:border-slate-800 shadow-sm' : 'border-rose-200 dark:border-rose-900/50 shadow-lg shadow-rose-100 dark:shadow-none bg-rose-50/50 dark:bg-rose-900/10'}`}>
+                    <div className={`p-2.5 rounded-xl animate-pulse ${systemStatus === 'online' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-rose-100 dark:bg-rose-900/40 text-rose-600'}`}>
+                        {systemStatus === 'online' ? <FiCheckCircle /> : <FiAlertCircle />}
                     </div>
                     <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Sistem</p>
-                        <p className="text-xs font-black text-emerald-600 uppercase tracking-tighter">Gateway Active</p>
+                        <p className={`text-[9px] font-black uppercase tracking-widest leading-none mb-1 ${systemStatus === 'online' ? 'text-slate-400' : 'text-rose-400'}`}>{systemStatus === 'online' ? 'Status Sistem' : 'Sistem Terputus'}</p>
+                        <p className={`text-xs font-black uppercase tracking-tighter ${systemStatus === 'online' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {systemStatus === 'online' ? 'Gateway Active' : 'Gateway Offline'}
+                        </p>
                     </div>
                 </div>
             </div>
