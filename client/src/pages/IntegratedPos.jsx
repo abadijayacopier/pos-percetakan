@@ -21,9 +21,22 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [products, setProducts] = useState([]);
     const [fotocopyPrices, setFotocopyPrices] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pos_cart');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error('Failed to load cart:', e);
+            return [];
+        }
+    });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
     const [isCartOpen, setIsCartOpen] = useState(false);
+
+    // Persist cart to localStorage
+    useEffect(() => {
+        localStorage.setItem('pos_cart', JSON.stringify(cart));
+    }, [cart]);
     const [bindingPrices, setBindingPrices] = useState([]);
     const [printPrices, setPrintPrices] = useState([]);
     const [currentTime, setCurrentTime] = useState(new Date());
