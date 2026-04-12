@@ -9,8 +9,9 @@ import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
 import Swal from 'sweetalert2';
 import ReceiptProMax from '../components/ReceiptProMax';
+import PosHeader from '../components/pos/PosHeader';
 
-export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange }) {
+export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange, storeSettings }) {
     const { user } = useAuth();
     const { showToast } = useToast();
     const { themeMode: theme, setTheme: toggleTheme } = useTheme();
@@ -91,6 +92,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [isDiscountModalOpen, setDiscountModalOpen] = useState(false);
     const [globalDiscount, setGlobalDiscount] = useState(0);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+    const [customerWa, setCustomerWa] = useState(''); // State untuk WhatsApp
 
     // Mencegah ID invoice terus berubah akibat re-render dari timer
     const draftInvoiceId = useMemo(() => {
@@ -170,8 +172,36 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         };
 
         loadInitialData();
-        initQZ(); // Start QZ connection on POS load
     }, []);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/settings/public');
+                const sMap = {};
+                data.forEach(s => { sMap[s.key] = s.value; });
+                setPrinterSettings({
+                    storeName: sMap.store_name || 'FOTOCOPY ABADI JAYA',
+                    address: sMap.store_address || '',
+                    phone: sMap.store_phone || '',
+                    footer: sMap.store_footer || 'Terima kasih atas kunjungan Anda!'
+                });
+            } catch (e) {
+                console.error('Failed to fetch printer settings:', e);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    // Sync customerWa when customer selected
+    useEffect(() => {
+        if (selectedCustomerId && selectedCustomerId !== 'manual') {
+            const customer = customers.find(c => c.id === selectedCustomerId);
+            if (customer && customer.phone) {
+                setCustomerWa(customer.phone);
+            }
+        }
+    }, [selectedCustomerId, customers]);
 
     // Helper: find price for fotocopy based on selection
     const getFcUnitPrice = (paper, color, side) => {
@@ -264,28 +294,33 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }).filter(item => item.quantity > 0));
     };
 
-    const removeAll = () => {
+    const removeAll = async () => {
         if (cart.length === 0) return;
-        Swal.fire({
-            title: 'Kosongkan Keranjang?',
-            text: 'Semua item akan dihapus dari daftar.',
+        const { isConfirmed } = await Swal.fire({
+            title: 'Batalkan Transaksi?',
+            text: 'Semua item di keranjang akan dihapus.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, Kosongkan',
-            cancelButtonText: 'Batal',
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Lanjut Transaksi',
             customClass: {
                 confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
                 cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
-                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
-                title: 'dark:text-white'
+                popup: 'rounded-[1.5rem] dark:bg-slate-800 dark:text-white',
+                title: 'text-slate-800 dark:text-white font-black',
+                htmlContainer: 'text-slate-600 dark:text-slate-300'
             },
             buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                setCart([]);
-                setGlobalDiscount(0);
-            }
         });
+
+        if (isConfirmed) {
+            setCart([]);
+            setGlobalDiscount(0);
+            setManualDiscount(0);
+            setCustomerName('');
+            setCustomerPhone('');
+            setOrderId('');
+        }
     };
 
     // Services Add logic
@@ -444,7 +479,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             if (isMobile) {
                 printViaBluetooth(receiptText);
             } else if (effectivePrinterSize === 'lx310') {
+                // Double print for LX-310 as requested by user
                 await printViaQZ(receiptText, printerSettings.printerName || 'LX-310');
+                if (printerSettings.printerSize === 'lx310') {
+                    // Slight delay to ensure printer buffer handles both
+                    setTimeout(async () => {
+                        await printViaQZ(receiptText, printerSettings.printerName || 'LX-310');
+                    }, 1000);
+                }
             } else {
                 await api.post('/print/receipt', {
                     text: receiptText,
@@ -527,7 +569,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             paymentType: paymentMethod,
             paid: paid,
             changeAmount: Math.max(0, paid - total),
-            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'completed')
+            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'completed'),
+            customerWa: customerWa // Kirim WA ke backend
         };
 
         try {
@@ -618,10 +661,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         title: 'dark:text-white'
                     },
                     buttonsStyling: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
+                }).then(({ isConfirmed }) => {
+                    if (isConfirmed) {
                         setCart([]);
                         setGlobalDiscount(0);
+                        setManualDiscount(0);
+                        setCustomerName('');
+                        setCustomerPhone('');
+                        setOrderId('');
                     }
                 });
             }
@@ -629,71 +676,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     });
 
     return (
-        <div className="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 flex min-h-screen w-full flex-col overflow-x-hidden">
+        <div className="bg-[#f8fafc] dark:bg-slate-950 font-display text-slate-900 dark:text-slate-100 flex min-h-screen w-full flex-col overflow-x-hidden">
             {/* Header */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-2.5 sticky top-0 z-50 shadow-sm">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => {
-                        window.dispatchEvent(new Event('toggleSidebar'));
-                    }} className="lg:hidden flex items-center justify-center p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
-                        <span className="material-symbols-outlined text-xl">menu</span>
-                    </button>
-                    {!isMobile && (
-                        <div className="flex items-center justify-center size-10 bg-primary rounded-lg text-white font-bold shadow-md shadow-primary/20">
-                            <span className="material-symbols-outlined text-2xl">point_of_sale</span>
-                        </div>
-                    )}
-                    <div className="flex flex-col">
-                        <h1 className="text-xl font-bold leading-none tracking-tight">Kasir <span className="text-primary font-bold">Terpadu</span></h1>
-                    </div>
-                </div>
+            <PosHeader
+                user={user}
+                currentTime={currentTime}
+                onNavigate={onNavigate}
+                isCartOpen={isCartOpen}
+                setIsCartOpen={setIsCartOpen}
+                cartCount={cart.length}
+                onOpenDrawer={openCashDrawer}
+                onToggleFullscreen={toggleFullScreen}
+                storeSettings={storeSettings}
+            />
 
-                <nav className="flex-1 justify-center gap-4 xl:gap-8 hidden md:flex items-center">
-                    <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-primary font-bold border-b-2 border-primary py-2 px-2 transition-colors hover:text-primary-dark">
-                        <span className="material-symbols-outlined text-xl">home_app_logo</span> Beranda
-                    </button>
-                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 px-4 py-1.5 rounded-full border border-slate-100 dark:border-slate-700">
-                        <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-                            <span className="material-symbols-outlined text-lg">calendar_today</span>
-                            <span className="text-xs font-bold uppercase tracking-widest">{currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        </div>
-                        <div className="w-px h-4 bg-slate-300 dark:bg-slate-600"></div>
-                        <div className="flex items-center gap-1.5 text-primary font-bold">
-                            <span className="material-symbols-outlined text-lg">schedule</span>
-                            <span className="text-xs font-bold tracking-widest">{currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-                        </div>
-                    </div>
-                </nav>
-
-                {/* Right: Actions & User (Desktop) */}
-                <div className="hidden md:flex items-center gap-6 justify-end shrink-0">
-                    {/* Action Pills */}
-                    <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1 rounded-full border border-slate-100 dark:border-slate-700">
-                        <button onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Ganti Tema">
-                            <span className="material-symbols-outlined text-[18px]">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
-                        </button>
-                        <button onClick={toggleFullScreen} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Layar Penuh (F11)">
-                            <span className="material-symbols-outlined text-[18px]">fullscreen</span>
-                        </button>
-                        <button onClick={openCashDrawer} className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-700 hover:text-primary hover:shadow-sm transition-all" title="Buka Laci Kasir (F8)">
-                            <span className="material-symbols-outlined text-[18px]">point_of_sale</span>
-                        </button>
-                    </div>
-
-                    {/* User Profile */}
-                    <div className="flex items-center gap-3 pl-6 border-l border-slate-200 dark:border-slate-700">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold ring-2 ring-white dark:ring-slate-900 shadow-sm">
-                            {user?.name?.charAt(0).toUpperCase() || 'A'}
-                        </div>
-                        <div className="hidden lg:block text-sm">
-                            <div className="font-bold text-slate-800 dark:text-white capitalize leading-tight">{user?.name || 'Admin'}</div>
-                            <div className="text-[11px] font-medium text-slate-500 mt-0.5 capitalize">{user?.role || 'Kasir'}</div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main className="flex flex-1 overflow-hidden h-[calc(100vh-64px-28px)] flex-col lg:flex-row">
+            <main className="flex flex-1 overflow-hidden h-[calc(100vh-72px-28px)] flex-col lg:flex-row">
                 {/* Left Content (Services & Products) */}
                 <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 gap-6 relative">
                     {/* Services Tabs */}
@@ -1067,6 +1064,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         {/* Customer Button Modern */}
                         <div className="mt-2">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Pelanggan</label>
+                            <div className="mt-2 text-center text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Klik untuk ganti pelanggan
+                            </div>
                             <button
                                 onClick={() => setCustomerModalOpen(true)}
                                 className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all text-left shadow-sm group"
@@ -1300,6 +1300,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 <span className="text-sm font-bold text-slate-500">Total Tagihan</span>
                                 <span className="text-3xl font-black text-primary">{formatRupiah(subtotal - globalDiscount)}</span>
                             </div>
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                            <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-2">Nomor WhatsApp Nota (Opsional)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-blue-400 text-lg">brand_whatsapp</span>
+                                <input
+                                    type="text"
+                                    value={customerWa}
+                                    onChange={e => setCustomerWa(e.target.value.replace(/[^0-9]/g, ''))}
+                                    placeholder="Contoh: 08123456789"
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 focus:border-blue-500 font-bold outline-none"
+                                />
+                            </div>
+                            <p className="text-[10px] text-slate-500 mt-2 italic">* Nomor ini akan digunakan untuk mengirim nota otomatis.</p>
                         </div>
 
                         <div>

@@ -21,6 +21,7 @@ export default function CashierPaymentPage({ onNavigate }) {
     const [payMethod, setPayMethod] = useState('tunai');
     const [amountPaid, setAmountPaid] = useState('');
     const [page, setPage] = useState(1);
+    const [waNumber, setWaNumber] = useState('');
     const PER_PAGE = 10;
 
     const [selectedEditTrx, setSelectedEditTrx] = useState(null);
@@ -85,6 +86,7 @@ export default function CashierPaymentPage({ onNavigate }) {
     const openSettle = (trx) => {
         setSelectedTrx(trx);
         setAmountPaid(trx.total - (trx.paidAmount || 0));
+        setWaNumber(trx.customer_wa || '');
         setPayMethod('tunai');
     };
 
@@ -94,9 +96,11 @@ export default function CashierPaymentPage({ onNavigate }) {
         try {
             await api.put(`/transactions/${selectedTrx.id}/pay`, {
                 paidAmount: paid,
-                paymentMethod: payMethod
+                paymentMethod: payMethod,
+                customerWa: waNumber
             });
             setSelectedTrx(null);
+            setWaNumber('');
             reload();
         } catch (e) {
             console.error('Gagal melunasi:', e);
@@ -410,6 +414,17 @@ export default function CashierPaymentPage({ onNavigate }) {
                                 autoFocus
                                 value={amountPaid}
                                 onChange={e => setAmountPaid(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nomor WhatsApp Nota (Opsional)</label>
+                            <input
+                                className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-4 px-6 text-lg font-bold tracking-tight text-emerald-600 focus:ring-8 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                type="text"
+                                placeholder="Contoh: 08123456789"
+                                value={waNumber}
+                                onChange={e => setWaNumber(e.target.value)}
                             />
                         </div>
 

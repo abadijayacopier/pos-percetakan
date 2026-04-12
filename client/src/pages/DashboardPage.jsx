@@ -118,7 +118,10 @@ export default function DashboardPage({ onNavigate }) {
     });
 
     // Real-time Engine States
-    const [uptime, setUptime] = useState(0);
+    const [uptime, setUptime] = useState(() => {
+        const start = user?.sessionStartTime || Date.now();
+        return Math.floor((Date.now() - start) / 1000);
+    });
     const [systemLoad, setSystemLoad] = useState(0);
     const [viewMode, setViewMode] = useState('weekly');
     const chartData = useMemo(() => {
@@ -173,7 +176,8 @@ export default function DashboardPage({ onNavigate }) {
         const mainInterval = setInterval(fetchDashboardInfo, 60000);
 
         const uptimeInterval = setInterval(() => {
-            setUptime(prev => prev + 1);
+            const start = user?.sessionStartTime || Date.now();
+            setUptime(Math.floor((Date.now() - start) / 1000));
         }, 1000);
 
         const loadInterval = setInterval(() => {

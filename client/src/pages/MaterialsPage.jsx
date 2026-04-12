@@ -5,7 +5,7 @@ import {
     FiCheck, FiX, FiSave, FiSearch, FiPlus, FiBox,
     FiAlertCircle, FiArrowRight, FiArrowLeft, FiEdit3,
     FiSettings, FiGrid, FiList, FiFilter, FiDownload, FiTruck, FiActivity,
-    FiUpload, FiSliders
+    FiUpload, FiSliders, FiTrash2
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 
@@ -13,6 +13,13 @@ import Swal from 'sweetalert2';
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
 function Toast({ msg, type, onClose }) {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -22,7 +29,10 @@ function Toast({ msg, type, onClose }) {
                 }`}
         >
             {type === 'error' ? <FiAlertCircle /> : type === 'warn' ? <FiAlertCircle /> : <FiCheck />}
-            <span className="text-sm">{msg}</span>
+            <span className="text-sm flex-1">{msg}</span>
+            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                <FiX size={14} />
+            </button>
         </motion.div>
     );
 }
@@ -239,10 +249,16 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                 text: 'Perubahan stok tidak akan disimpan.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#94a3b8',
                 confirmButtonText: 'Ya, Batalkan',
-                cancelButtonText: 'Lanjut'
+                cancelButtonText: 'Lanjut',
+                customClass: {
+                    confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                    cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                    popup: 'rounded-[2rem] dark:bg-slate-800 dark:text-white',
+                    title: 'text-slate-800 dark:text-white font-black',
+                    htmlContainer: 'text-slate-600 dark:text-slate-300'
+                },
+                buttonsStyling: false
             }).then((result) => {
                 if (result.isConfirmed) onClose();
             });
@@ -439,6 +455,37 @@ export default function MaterialsPage({ onNavigate }) {
     const handleSaved = () => {
         setStokItem(null);
         fetchMaterials();
+    };
+
+    const handleDelete = async (m) => {
+        const result = await Swal.fire({
+            title: 'Hapus Bahan?',
+            text: `Apakah Anda yakin ingin menghapus "${m.nama_bahan}"? Data akan dinonaktifkan dari sistem.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
+                popup: 'rounded-[2rem] dark:bg-slate-800 dark:text-white',
+                title: 'text-slate-800 dark:text-white font-black',
+                htmlContainer: 'text-slate-600 dark:text-slate-300'
+            },
+            buttonsStyling: false,
+            background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#fff',
+            color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b',
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/materials/${m.id}`);
+                toast('Bahan berhasil dihapus');
+                fetchMaterials();
+            } catch (err) {
+                Swal.fire('Gagal', err.response?.data?.message || 'Gagal menghapus bahan', 'error');
+            }
+        }
     };
 
     const KATGORI_COLORS = {
@@ -680,6 +727,13 @@ export default function MaterialsPage({ onNavigate }) {
                                                             title="Edit Bahan"
                                                         >
                                                             <FiEdit3 size={16} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(m)}
+                                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/20 hover:text-rose-500 transition-all active:scale-95"
+                                                            title="Hapus Bahan"
+                                                        >
+                                                            <FiTrash2 size={16} />
                                                         </button>
                                                     </div>
                                                 </td>

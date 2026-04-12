@@ -541,7 +541,7 @@ export default function SettingsPage() {
                                                             showToast('Ukuran icon maksimal 5 MB!', 'error');
                                                             return;
                                                         }
-                                                        const compressed = await resizeImage(file, 128, 128, 0.8);
+                                                        const compressed = await resizeImage(file, 512, 512, 0.9);
                                                         showToast('Favicon diganti!', 'success');
                                                         setLandingFavicon(compressed);
                                                     }} />

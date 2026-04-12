@@ -9,6 +9,10 @@ export default function WASettingsPage({ onNavigate }) {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState('');
 
+    // Gateway states
+    const [gateway, setGateway] = useState({ status: 'disconnected', qr: null, info: null });
+    const [loadingGateway, setLoadingGateway] = useState(false);
+
     // Template states
     const [templateReceived, setTemplateReceived] = useState('Halo [NamaPelanggan], pesanan Anda dengan nomor [NomorSPK] telah kami terima dan sedang diverifikasi oleh admin. Terima kasih!');
     const [templateProcess, setTemplateProcess] = useState('Kabar baik [NamaPelanggan]! Pesanan [NamaProduk] Anda saat ini sudah masuk ke tahap produksi/cetak.');
@@ -41,7 +45,56 @@ export default function WASettingsPage({ onNavigate }) {
             } catch (err) { console.error('Gagal fetch WA config:', err); }
         };
         fetchConfig();
-    }, []);
+
+        // Gateway Status Polling
+        const fetchGatewayStatus = async () => {
+            try {
+                const res = await api.get('/wa-gateway/status');
+                setGateway(res.data);
+            } catch (err) { console.error('Gagal fetch status gateway:', err); }
+        };
+
+        fetchGatewayStatus();
+        const interval = setInterval(() => {
+            if (gateway.status !== 'ready') {
+                fetchGatewayStatus();
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [gateway.status]);
+
+    const handleInitGateway = async () => {
+        setLoadingGateway(true);
+        try {
+            await api.post('/wa-gateway/init');
+            // Status akan diupdate oleh polling
+        } catch (err) {
+            Swal.fire('Gagal', 'Gagal inisialisasi gateway', 'error');
+        } finally {
+            setLoadingGateway(false);
+        }
+    };
+
+    const handleLogoutGateway = async () => {
+        const result = await Swal.fire({
+            title: 'Logout WhatsApp?',
+            text: 'Anda harus scan QR code lagi untuk menghubungkan kembali.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Logout',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.post('/wa-gateway/logout');
+                setGateway({ status: 'disconnected', qr: null, info: null });
+            } catch (err) {
+                Swal.fire('Gagal', 'Gagal logout gateway', 'error');
+            }
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -119,7 +172,10 @@ export default function WASettingsPage({ onNavigate }) {
                                     </div>
                                 </div>
                                 <div className="relative z-10 flex flex-wrap gap-2">
-                                    <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
+                                    <button
+                                        onClick={() => templateReady.includes('[NamaProduk]') ? setTemplateReady(t => t + ' [NamaPelanggan]') : null} // Placeholder dummy click handlers if needed, but usually users just copy-paste or we can make them append to active textarea if we track focus. For now just adding UI.
+                                        className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter"
+                                    >
                                         [NamaPelanggan]
                                     </button>
                                     <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
@@ -127,6 +183,18 @@ export default function WASettingsPage({ onNavigate }) {
                                     </button>
                                     <button className="text-[10px] font-bold text-blue-600 dark:text-blue-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors shadow-sm cursor-pointer border border-blue-100 dark:border-blue-800/50 uppercase tracking-tighter">
                                         [NomorSPK]
+                                    </button>
+                                    <button className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors shadow-sm cursor-pointer border border-emerald-100 dark:border-emerald-800/50 uppercase tracking-tighter">
+                                        [NamaToko]
+                                    </button>
+                                    <button className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors shadow-sm cursor-pointer border border-emerald-100 dark:border-emerald-800/50 uppercase tracking-tighter">
+                                        [AlamatToko]
+                                    </button>
+                                    <button className="text-[10px] font-bold text-rose-600 dark:text-rose-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors shadow-sm cursor-pointer border border-rose-100 dark:border-rose-800/50 uppercase tracking-tighter">
+                                        [Tagihan]
+                                    </button>
+                                    <button className="text-[10px] font-bold text-rose-600 dark:text-rose-400 px-3 py-1.5 bg-white dark:bg-slate-800 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors shadow-sm cursor-pointer border border-rose-100 dark:border-rose-800/50 uppercase tracking-tighter">
+                                        [Sisa]
                                     </button>
                                 </div>
                             </div>
@@ -208,58 +276,130 @@ export default function WASettingsPage({ onNavigate }) {
                         </section>
 
                         <section className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800/50 flex items-center justify-between relative overflow-hidden">
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                        <span className="material-symbols-outlined text-xl">qr_code_scanner</span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">WhatsApp Gateway Mandiri</h2>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">Hubungkan WhatsApp Anda tanpa biaya provider tambahan.</p>
+                                    </div>
+                                </div>
+                                <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${gateway.status === 'ready' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                    gateway.status === 'qr' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-100'
+                                    }`}>
+                                    {gateway.status === 'ready' ? 'Terhubung' : gateway.status === 'qr' ? 'Menunggu Scan' : 'Terputus'}
+                                </div>
+                            </div>
+
+                            <div className="p-10 flex flex-col items-center justify-center text-center space-y-6">
+                                {gateway.status === 'disconnected' && (
+                                    <div className="space-y-6 max-w-md">
+                                        <div className="size-20 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                                            <span className="material-symbols-outlined text-4xl text-slate-400">link_off</span>
+                                        </div>
+                                        <h3 className="font-bold text-slate-800 dark:text-white">Gateway Belum Aktif</h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                            Klik tombol di bawah untuk memulai sesi WhatsApp Gateway. Anda perlu melakukan scan QR code satu kali.
+                                        </p>
+                                        <button
+                                            onClick={handleInitGateway}
+                                            disabled={loadingGateway}
+                                            className="px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl disabled:opacity-50"
+                                        >
+                                            {loadingGateway ? 'Menghubungkan...' : 'Inisialisasi Gateway'}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {gateway.status === 'connecting' && (
+                                    <div className="space-y-6">
+                                        <div className="size-20 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+                                            <span className="material-symbols-outlined text-4xl text-blue-500">sync</span>
+                                        </div>
+                                        <h3 className="font-bold text-slate-800 dark:text-white italic">Menyiapkan Browser...</h3>
+                                        <p className="text-xs text-slate-400 italic">Mohon tunggu sebentar selagi sistem menyiapkan sesi aman.</p>
+                                    </div>
+                                )}
+
+                                {gateway.status === 'qr' && gateway.qr && (
+                                    <div className="space-y-6">
+                                        <div className="p-4 bg-white rounded-3xl shadow-2xl border-8 border-slate-50 relative group">
+                                            <img src={gateway.qr} alt="Scan QR" className="size-64" />
+                                            <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                <span className="bg-slate-900/80 text-white text-[10px] font-black px-4 py-2 rounded-full">SCAN DENGAN WHATSAPP</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="font-bold text-slate-800 dark:text-white uppercase tracking-tighter">Scan QR Code</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                                                Buka WhatsApp di HP Anda &gt; Perangkat Tertaut &gt; Tautkan Perangkat.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gateway.status === 'ready' && (
+                                    <div className="space-y-6">
+                                        <div className="size-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mx-auto relative">
+                                            <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-20"></div>
+                                            <span className="material-symbols-outlined text-5xl text-emerald-500 relative z-10">check_circle</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase italic tracking-tighter">Gateway Aktif</h3>
+                                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                                                {gateway.info?.pushname || 'Perangkat Tertaut'} ({gateway.info?.wid?.user || phoneNumber})
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={handleLogoutGateway}
+                                            className="px-6 py-2.5 border border-rose-100 dark:border-rose-900/30 text-rose-500 font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all shadow-sm"
+                                        >
+                                            Keluar / Putus Koneksi
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
+
+                        <section className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden mt-8 transition-all">
                             <div className="p-8 border-b border-slate-100 dark:border-slate-800/50 flex items-center gap-4 relative overflow-hidden">
                                 <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                                     <span className="material-symbols-outlined text-xl">vpn_key</span>
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">Kredensial API WhatsApp</h2>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Konfigurasi token dan nomor penghubung API.</p>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white italic">API Provider (Opsional/Fallback)</h2>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic">Hanya digunakan jika Gateway Mandiri mengalami gangguan.</p>
                                 </div>
                             </div>
                             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                        WhatsApp API Key
-                                        <div className="group relative focus-within:z-10 bg-slate-100 dark:bg-slate-800 w-5 h-5 rounded-full flex items-center justify-center cursor-help">
-                                            <span className="material-symbols-outlined text-[14px] text-slate-500">info</span>
-                                        </div>
-                                    </label>
-                                    <div className="relative flex items-center">
-                                        <span className="absolute left-4 z-10 text-slate-400 material-symbols-outlined text-lg">key</span>
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">WhatsApp API Key</label>
+                                    <div className="relative">
                                         <input
-                                            type={showKey ? "text" : "password"}
-                                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-11 pr-12 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-mono shadow-inner"
+                                            type={showKey ? 'text' : 'password'}
+                                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-mono pr-12"
                                             value={apiKey}
                                             onChange={(e) => setApiKey(e.target.value)}
-                                            placeholder="Masukkan API Key"
                                         />
-                                        <button onClick={() => setShowKey(!showKey)} className="absolute right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer flex items-center justify-center transition-colors">
-                                            <span className="material-symbols-outlined text-lg">{showKey ? 'visibility_off' : 'visibility'}</span>
+                                        <button
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                            onClick={() => setShowKey(!showKey)}
+                                        >
+                                            <span className="material-symbols-outlined text-sm">{showKey ? 'visibility_off' : 'visibility'}</span>
                                         </button>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nomor Telepon Bisnis</label>
-                                    <div className="flex gap-4">
-                                        <div className="w-24 shrink-0 relative">
-                                            <select className="appearance-none w-full py-3 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500/50 shadow-inner cursor-pointer">
-                                                <option>+62</option>
-                                                <option>+1</option>
-                                            </select>
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 pointer-events-none">expand_more</span>
-                                        </div>
-                                        <div className="relative flex-1">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-slate-400 material-symbols-outlined text-lg">call</span>
-                                            <input
-                                                type="text"
-                                                className="w-full h-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 font-bold shadow-inner"
-                                                placeholder="8123456789"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Nomor Telepon (ID Perangkat)</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs"
+                                        placeholder="Contoh: 85655620979"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </section>

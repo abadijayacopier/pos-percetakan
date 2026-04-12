@@ -9,7 +9,7 @@ import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch, FiDatabase } 
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Layout({ activePage, onNavigate, children, isFullscreen }) {
+export default function Layout({ activePage, onNavigate, children, isFullscreen, storeSettings }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('abadi_sidebar_collapsed');
@@ -139,11 +139,21 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
 
     return (
         <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark print:bg-white font-display text-slate-900 dark:text-slate-100 print:text-black">
-            {!(activePage === 'pos-v1' || isFullscreen) && <Sidebar activePage={activePage} onNavigate={onNavigate} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={sidebarCollapsed} toggleCollapse={toggleSidebarCollapse} />}
+            {!(activePage === 'pos-v1' || isFullscreen) && (
+                <Sidebar
+                    activePage={activePage}
+                    onNavigate={onNavigate}
+                    isOpen={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                    isCollapsed={sidebarCollapsed}
+                    toggleCollapse={toggleSidebarCollapse}
+                    storeSettings={storeSettings}
+                />
+            )}
 
             <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
-                {!(activePage === 'pos' || activePage === 'pos-v1') && (
-                    <header className="print:hidden h-16 border-b border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl flex items-center justify-between px-8 shrink-0 sticky top-0 z-50">
+                {!['pos', 'pos-v1'].includes(activePage) && (
+                    <header className="print:hidden h-[72px] border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0 sticky top-0 z-50 shadow-sm">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
                             {/* Mobile Menu Button */}
                             <button
@@ -169,7 +179,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen 
                             <div className="items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-md hidden lg:flex shrink-0 shadow-sm">
                                 <FiDatabase className={`text-sm ${dbStatus === 'connected' ? 'text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]' : dbStatus === 'disconnected' ? 'text-red-500 animate-pulse' : 'text-yellow-500 animate-spin'}`} />
                                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    {dbStatus === 'connected' ? 'System Online' : dbStatus === 'disconnected' ? 'DB Error' : 'Checking...'}
+                                    {dbStatus === 'connected' ? 'Database Terhubung' : dbStatus === 'disconnected' ? 'DB Terputus' : 'Mengecek...'}
                                 </span>
                             </div>
 

@@ -7,13 +7,13 @@ import PelunasanModal from '../components/PelunasanModal';
 import { FiDollarSign as FiDollar } from 'react-icons/fi';
 
 function Toast({ msg, type, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 5000); return () => clearTimeout(t); }, [onClose]);
+    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
     return (
         <div className="fixed top-20 right-6 z-9999 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 px-5 py-4 rounded-2xl shadow-2xl shadow-blue-900/10 flex items-start gap-3 w-full max-w-sm animate-in slide-in-from-top-4 fade-in duration-300">
             <div className="mt-0.5 w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <FiInfo size={16} />
             </div>
-            <div>
+            <div className="flex-1">
                 <h4 className="font-bold text-sm mb-0.5">Informasi Sistem</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs pr-4">{msg}</p>
             </div>

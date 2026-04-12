@@ -45,7 +45,9 @@ export default function LandingPage({ onNavigate }) {
     const [activeCategory, setActiveCategory] = useState('Semua');
 
     const [storeInfo, setStoreInfo] = useState({
-        name: 'ABADI JAYA COPIER',
+        name: 'Our Printing Store',
+        favicon: '/favicon.ico',
+        logo: '/logo.png',
         address: 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur',
         phone: '+62 812 3456 7890',
         mapsUrl: 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7'
@@ -62,14 +64,15 @@ export default function LandingPage({ onNavigate }) {
                 const [settingsRes, fotoRes, projRes] = await Promise.all([
                     api.get('/settings/public').catch(() => ({ data: [] })),
                     api.get('/transactions/fotocopy-prices').catch(() => ({ data: [] })),
-                    api.get('/products/public').catch(() => ({ data: [] }))
+                    api.get('/products/public').catch(() => ({ data: [] })),
+                    api.get('/pricing/public/all').catch(() => ({ data: { binding: [], print: [] } }))
                 ]);
 
                 const allSettings = Array.isArray(settingsRes.data) ? settingsRes.data : [];
                 const getSetting = (key, defaultVal) => allSettings.find(s => s.key === key)?.value || defaultVal;
 
                 setStoreInfo({
-                    name: getSetting('store_name', 'ABADI JAYA COPIER'),
+                    name: getSetting('store_name', 'Our Printing Store'),
                     address: getSetting('store_address', 'Desa Kediren RT 06 RW 01, Kec. Lembeyan, Kab. Magetan, Jawa Timur'),
                     phone: getSetting('store_phone', '+62 812 3456 7890'),
                     mapsUrl: getSetting('store_maps_url', 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7')
@@ -79,10 +82,13 @@ export default function LandingPage({ onNavigate }) {
                     setPrices(prev => ({ ...prev, fotocopy: fotoRes.data.slice(0, 4) }));
                 }
 
-                let printP = DEFAULT_PRINT_PRICES;
-                let bindP = DEFAULT_BINDING_PRICES;
+                let printP = projRes.data && projRes.data.print && projRes.data.print.length > 0 ? projRes.data.print : DEFAULT_PRINT_PRICES;
+                let bindP = projRes.data && projRes.data.binding && projRes.data.binding.length > 0 ? projRes.data.binding : DEFAULT_BINDING_PRICES;
+
+                // Allow settings to override if present
                 try { const sp = getSetting('print_prices'); if (sp) printP = JSON.parse(sp); } catch (e) { }
                 try { const sb = getSetting('binding_prices'); if (sb) bindP = JSON.parse(sb); } catch (e) { }
+
                 setPrices(prev => ({ ...prev, print: printP, binding: bindP }));
 
                 if (projRes.data && projRes.data.length > 0) {
@@ -118,14 +124,30 @@ export default function LandingPage({ onNavigate }) {
         { name: 'Aris Prasetyo', role: 'Pemilik Toko', text: 'Mesin fotocopy saya sering macet, panggil teknisi Abadi Jaya Copier langsung beres di hari yang sama. Mantap!', stars: 5 }
     ];
 
-    const handleApplyService = (e) => {
+    const handleApplyService = async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
-        const data = Object.fromEntries(fd.entries());
-        const message = `Halo ${storeInfo.name}, saya ingin request service mesin:%0A- Nama: ${data.name}%0A- WhatsApp: ${data.phone}%0A- Model: ${data.model}%0A- SN: ${data.sn || '-'}%0A- Alamat: ${data.address}%0A- Keluhan: ${data.issue}`;
-        window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
-        setFormSent(true);
-        setTimeout(() => setFormSent(false), 5000);
+
+        try {
+            const res = await api.post('/service/public', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            if (res.status === 201) {
+                const data = Object.fromEntries(fd.entries());
+                const message = `Halo ${storeInfo.name}, saya telah mengirim tiket service via Landing Page:%0A- No Tiket: ${res.data.serviceNo}%0A- Nama: ${data.customerName}%0A- Model: ${data.model}%0A- Keluhan: ${data.complaint}`;
+
+                // Still allow opening WhatsApp for immediate follow-up if user wants
+                window.open(`https://wa.me/${storeInfo.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+
+                setFormSent(true);
+                setTimeout(() => setFormSent(false), 5000);
+                e.target.reset();
+            }
+        } catch (err) {
+            console.error("Failed to submit service ticket:", err);
+            alert("Gagal mengirim tiket service. Silakan hubungi kami via WhatsApp.");
+        }
     };
 
     const categories = useMemo(() => {
@@ -145,12 +167,12 @@ export default function LandingPage({ onNavigate }) {
             {/* ═══════════ NAVBAR ═══════════ */}
             <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl py-3 border-b border-slate-200 dark:border-white/5' : 'bg-transparent py-5'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                        <div className="size-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/25 group-hover:shadow-sky-500/40 transition-shadow">
-                            {storeLogo ? <img src={storeLogo} className="size-full object-contain p-1.5 rounded-xl" alt="Logo" /> : <FiPrinter className="text-lg" />}
+                    <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                        <div className="size-9 sm:size-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/25 group-hover:shadow-sky-500/40 transition-shadow overflow-hidden">
+                            {storeLogo ? <img src={storeLogo} className="w-full h-full object-cover rounded-xl" alt="Logo" /> : <FiPrinter className="text-lg" />}
                         </div>
-                        <span className="text-base font-bold tracking-tight hidden sm:block">
-                            {storeInfo.name.split(' ')[0]} <span className="text-sky-600 dark:text-sky-400">{storeInfo.name.split(' ').slice(1).join(' ')}</span>
+                        <span className="text-base sm:text-lg font-black tracking-tighter uppercase italic">
+                            {storeInfo.name}
                         </span>
                     </div>
 
@@ -217,9 +239,9 @@ export default function LandingPage({ onNavigate }) {
 
                 <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center relative z-10">
                     <div className="space-y-8">
-                        <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 dark:bg-sky-500/10 border border-sky-500/20 dark:border-sky-500/20 text-sky-600 dark:text-sky-400 text-xs font-semibold">
-                            <span className="size-1.5 bg-sky-500 dark:bg-sky-400 rounded-full animate-pulse" />
-                            Partner Printing Magetan
+                        <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={0} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 dark:bg-sky-500/10 border border-sky-500/20 dark:border-sky-500/20 text-sky-600 dark:text-sky-400 text-[10px] sm:text-xs font-semibold whitespace-nowrap">
+                            <span className="size-1.5 bg-sky-500 dark:bg-sky-400 rounded-full animate-pulse shrink-0" />
+                            {storeInfo.name}
                         </motion.div>
                         <motion.h2 variants={fadeUp} initial="hidden" animate="visible" custom={1} className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.05] text-slate-900 dark:text-white">
                             Solusi <span className="bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent">Cetak &</span><br />
@@ -303,17 +325,17 @@ export default function LandingPage({ onNavigate }) {
             <section id="prices" className="py-24 sm:py-32 relative overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-sky-500/5 dark:bg-sky-500/5 rounded-full blur-[150px]" />
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <div className="flex flex-col lg:flex-row justify-between items-end gap-6 mb-16">
-                        <div className="space-y-3 text-center lg:text-left">
+                    <div className="flex flex-col items-center text-center gap-6 mb-16">
+                        <div className="space-y-3">
                             <span className="text-sky-600 dark:text-sky-400 text-xs font-semibold tracking-widest uppercase">Transparan</span>
-                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">Daftar Harga</h2>
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">Daftar Harga Layanan</h2>
                         </div>
-                        <p className="text-slate-500 dark:text-slate-500 text-xs font-medium flex items-center gap-2">
-                            <FiInfo className="text-sky-500" /> Harga sewaktu-waktu dapat berubah
+                        <p className="text-slate-500 dark:text-slate-500 text-xs font-medium flex items-center justify-center gap-2">
+                            <FiInfo className="text-sky-500" /> Harga sewaktu-waktu dapat berubah tanpa pemberitahuan sebelumnya
                         </p>
                     </div>
 
-                    <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
                         {[
                             { name: 'Fotocopy', icon: <FiFileText />, data: prices.fotocopy, defaults: [{ p: 'A4 B/W', v: 300 }, { p: 'F4 B/W', v: 350 }, { p: 'Warna Standard', v: 2000 }] },
                             { name: 'Print Dokumen', icon: <FiPrinter />, data: prices.print, defaults: [{ p: 'A4 B/W', v: 500 }, { p: 'A4 Warna', v: 2000 }, { p: 'Foto Premium', v: 5000 }] },
@@ -469,14 +491,19 @@ export default function LandingPage({ onNavigate }) {
                                 ) : (
                                     <form onSubmit={handleApplyService} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         {[
-                                            { name: 'name', label: 'Nama / Instansi', type: 'text', required: true, placeholder: 'Nama Toko/Lembaga', colSpan: true },
+                                            { name: 'customerName', label: 'Nama / Instansi', type: 'text', required: true, placeholder: 'Nama Toko/Lembaga', colSpan: true },
                                             { name: 'phone', label: 'WhatsApp Aktif', type: 'tel', required: true, placeholder: '08xx-xxxx-xxxx' },
                                             { name: 'model', label: 'Merk & Model', type: 'text', required: true, placeholder: 'Contoh: Canon iR 3245' },
-                                            { name: 'sn', label: 'Serial Number', type: 'text', placeholder: 'Tertera pada unit' },
+                                            { name: 'serialNo', label: 'Serial Number', type: 'text', placeholder: 'Tertera pada unit' },
+                                            { name: 'photo', label: 'Upload Foto Kendala', type: 'file', placeholder: 'Pilih file...', colSpan: true },
                                         ].map(field => (
                                             <div key={field.name} className={`space-y-2.5 ${field.colSpan ? 'sm:col-span-2' : ''}`}>
                                                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{field.label}</label>
-                                                <input name={field.name} type={field.type} required={field.required} placeholder={field.placeholder} className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                                {field.type === 'file' ? (
+                                                    <input name={field.name} type={field.type} accept="image/*" className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-5 text-slate-900 dark:text-white text-xs font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 shadow-sm dark:shadow-none" />
+                                                ) : (
+                                                    <input name={field.name} type={field.type} required={field.required} placeholder={field.placeholder} className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                                )}
                                             </div>
                                         ))}
                                         <div className="space-y-2.5 sm:col-span-2">
@@ -485,7 +512,7 @@ export default function LandingPage({ onNavigate }) {
                                         </div>
                                         <div className="space-y-2.5 sm:col-span-2">
                                             <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Deskripsi Kerusakan</label>
-                                            <textarea name="issue" required rows="3" placeholder="Jelaskan kendala mesin secara mendetail..." className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                            <textarea name="complaint" required rows="3" placeholder="Jelaskan kendala mesin secara mendetail..." className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
                                         </div>
                                         <button type="submit" className="sm:col-span-2 py-5 bg-slate-900 dark:bg-gradient-to-r dark:from-sky-500 dark:to-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-900/20 dark:shadow-sky-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer">
                                             <FiSend size={18} /> Kirim Tiket Service

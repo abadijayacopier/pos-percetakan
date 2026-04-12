@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FiPrinter, FiAlertCircle, FiLoader, FiLock } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function LoginPage() {
+export default function LoginPage({ storeSettings }) {
     const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -65,16 +65,20 @@ export default function LoginPage() {
 
                     <div className="flex flex-col items-center mb-12 text-center">
                         <motion.div
-                            whileHover={{ scale: 1.08, rotate: 2 }}
-                            whileTap={{ scale: 0.92 }}
+                            whileHover={{ scale: 1.05, rotate: 1 }}
+                            whileTap={{ scale: 0.95 }}
                             animate={{ y: [0, -4, 0] }}
                             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                            className="p-6 bg-blue-600 dark:bg-blue-600 rounded-[2rem] text-white shadow-2xl shadow-blue-500/30 mb-8"
+                            className="p-3 bg-white dark:bg-slate-800 rounded-2xl text-blue-600 shadow-xl mb-6 flex items-center justify-center w-20 h-20 border border-slate-200 dark:border-slate-700"
                         >
-                            <FiPrinter className="text-4xl" />
+                            {storeSettings?.logo ? (
+                                <img src={storeSettings.logo} className="max-w-full max-h-full object-contain" alt="Logo" />
+                            ) : (
+                                <FiPrinter className="text-4xl" />
+                            )}
                         </motion.div>
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">
-                            Abadi Jaya <span className="text-blue-600 dark:text-blue-500">Copier</span>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-tight">
+                            {storeSettings?.name?.split(' ')[0] || 'ABADI'} <span className="text-blue-600 dark:text-blue-500">{storeSettings?.name?.split(' ').slice(1).join(' ') || 'JAYA'}</span>
                         </h1>
                         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mt-4 italic opacity-80">Premium Printing Solutions</p>
                     </div>

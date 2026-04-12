@@ -104,13 +104,14 @@ export default function SPKListPage({ onNavigate }) {
             text: `Data SPK #${spkNumber} akan dihapus secara permanen dari sistem!`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, Hapus Permanen',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
             customClass: {
-                confirmButton: 'bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl ml-3',
+                confirmButton: 'bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl ml-3',
                 cancelButton: 'bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl',
-                popup: 'dark:bg-slate-800 dark:text-white rounded-3xl',
-                title: 'dark:text-white'
+                popup: 'rounded-3xl dark:bg-slate-800 dark:text-white',
+                title: 'text-slate-800 dark:text-white font-black',
+                htmlContainer: 'text-slate-600 dark:text-slate-300'
             },
             buttonsStyling: false
         }).then(async (result) => {

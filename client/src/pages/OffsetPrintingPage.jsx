@@ -28,6 +28,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
     // Backend Data States
     const [products, setProducts] = useState([]);
     const [customers, setCustomers] = useState([]);
+    const [materials, setMaterials] = useState([]);
     const [activeOrders, setActiveOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [hourlyRate, setHourlyRate] = useState(0);
@@ -46,7 +47,6 @@ export default function OffsetPrintingPage({ onNavigate }) {
 
     // UI Styles helpers
     const SIZES = ['A4', 'A5', 'A6', 'Custom'];
-    const MATERIALS = ['HVS 80gr', 'Art Paper 150gr', 'Art Carton 260gr', 'NCR Paper'];
 
     // Result States
     const [subtotal, setSubtotal] = useState(0);
@@ -63,6 +63,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
             ]);
             setProducts(formRes.data.products || []);
             setCustomers(formRes.data.customers || []);
+            setMaterials(formRes.data.materials || []);
 
             const sMap = {};
             settingsRes.data.forEach(s => { sMap[s.key] = s.value; });
@@ -493,7 +494,12 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                     onChange={(e) => setSelectedMaterial(e.target.value)}
                                     className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
                                 >
-                                    {MATERIALS.map(m => <option key={m}>{m}</option>)}
+                                    <option value="">Lainnya / Sesuai Desain</option>
+                                    {materials.map(m => (
+                                        <option key={m.id} value={m.nama_bahan}>
+                                            {m.nama_bahan} (Stok: {m.stok_saat_ini} {m.satuan})
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 

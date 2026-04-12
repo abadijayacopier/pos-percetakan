@@ -66,7 +66,7 @@ const MENU_GROUPS = [
     },
 ];
 
-export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCollapsed, toggleCollapse }) {
+export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCollapsed, toggleCollapse, storeSettings }) {
     const { user, logout } = useAuth();
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -137,21 +137,25 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
-                    <div className={`p-4 pt-6 pb-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
+                    <div className={`h-[72px] px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-center ${isCollapsed && isDesktop ? 'items-center px-0' : ''}`}>
                         <div className={`flex items-center gap-3 cursor-default w-full ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
                             <div className="relative shrink-0">
                                 <motion.div
-                                    className="bg-blue-600 size-10 rounded-full flex items-center justify-center text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]"
+                                    className="bg-blue-600 size-10 rounded-xl flex items-center justify-center text-white shadow-[0_4px_12px_rgba(37,99,235,0.3)] overflow-hidden"
                                     whileHover={{ scale: 1.05, shadow: '0_0_25px_rgba(37,99,235,0.6)' }}
                                 >
-                                    <FiPrinter size={20} />
+                                    {storeSettings?.logo ? (
+                                        <img src={storeSettings.logo} className="w-full h-full object-cover" alt="Logo" />
+                                    ) : (
+                                        <FiPrinter size={20} />
+                                    )}
                                 </motion.div>
                                 <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                             </div>
                             {!(isCollapsed && isDesktop) && (
                                 <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300">
                                     <h1 className="text-slate-900 dark:text-white text-lg font-black tracking-tighter leading-none italic uppercase">
-                                        Abadi <span className="text-blue-600 dark:text-blue-500">Jaya</span>
+                                        {storeSettings?.name?.split(' ')[0] || 'ABADI'} <span className="text-blue-600 dark:text-blue-500">{storeSettings?.name?.split(' ').slice(1).join(' ') || 'JAYA'}</span>
                                     </h1>
                                     <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
                                 </div>
@@ -372,4 +376,3 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
         </>
     );
 }
-

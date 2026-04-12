@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import api from './services/api';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -52,9 +53,15 @@ export default function App() {
     if (user?.role?.toLowerCase() === 'kasir') return 'pos';
     return 'dashboard';
   });
+  const [storeSettings, setStoreSettings] = useState({
+    name: 'POS System',
+    logo: null,
+    favicon: null
+  });
   const [showLoginInPortal, setShowLoginInPortal] = useState(false);
   const [pageState, setPageState] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBrandingSyncing, setIsBrandingSyncing] = useState(true);
 
   // When user finishes loading or logins, auto-redirect based on roles
   useEffect(() => {
@@ -74,6 +81,46 @@ export default function App() {
       setActivePage('dashboard');
     }
   }, [user, activePage]);
+
+  // Sync Favicon & Title with Settings
+  useEffect(() => {
+    const syncBranding = async () => {
+      try {
+        const { data } = await api.get('/settings/public');
+        const sMap = {};
+        data.forEach(s => { sMap[s.key] = s.value; });
+
+        setStoreSettings({
+          name: sMap.store_name || 'POS System',
+          logo: sMap.landing_logo || null,
+        });
+
+        // Update Title
+        if (sMap.store_name) {
+          document.title = sMap.store_name;
+        }
+
+        // Update Favicon
+        const faviconEl = document.getElementById('app-favicon');
+        if (faviconEl && sMap.landing_favicon) {
+          faviconEl.href = sMap.landing_favicon;
+
+          // Detect mime type from base64 if possible
+          const match = sMap.landing_favicon.match(/^data:([^;]+);/);
+          if (match) {
+            faviconEl.type = match[1];
+          } else {
+            faviconEl.type = sMap.landing_favicon.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/x-icon';
+          }
+        }
+      } catch (e) {
+        console.error('Failed to sync branding:', e);
+      } finally {
+        setIsBrandingSyncing(false);
+      }
+    };
+    syncBranding();
+  }, []);
 
   const handleNavigate = (pageId, state = null) => {
     if (pageId === 'logout') {
@@ -271,7 +318,7 @@ export default function App() {
 
   if (!user) {
     if (activePage === 'login' || showLoginInPortal) {
-      return <LoginPage onNavigate={handleNavigate} />;
+      return <LoginPage onNavigate={handleNavigate} storeSettings={storeSettings} />;
     }
     return <LandingPage onNavigate={handleNavigate} />;
   }
@@ -279,7 +326,7 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard': return <DashboardPage onNavigate={handleNavigate} />;
-      case 'pos': return <IntegratedPos onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
+      case 'pos': return <IntegratedPos onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} storeSettings={storeSettings} />;
       case 'pos-v1': return <PosPage onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
       case 'printing': return <PrintingPage onNavigate={handleNavigate} />;
       case 'digital-printing': return <DigitalPrintingPage onNavigate={handleNavigate} />;
@@ -335,7 +382,7 @@ export default function App() {
   );
 
   return (
-    <Layout activePage={activePage} onNavigate={handleNavigate} isFullscreen={isFullscreen}>
+    <Layout activePage={activePage} onNavigate={handleNavigate} isFullscreen={isFullscreen} storeSettings={storeSettings}>
       {renderAnimatedPage()}
     </Layout>
   );

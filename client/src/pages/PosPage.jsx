@@ -4,6 +4,7 @@ import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, i
 import Modal from '../components/Modal';
 import { FiCheckCircle, FiPackage, FiArrowLeft, FiShoppingCart, FiBox, FiCopy, FiTag, FiPrinter, FiFile, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import PosHeader from '../components/pos/PosHeader';
 
 export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     // Running Text State
@@ -78,6 +79,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
     const [paymentMethod, setPaymentMethod] = useState('tunai');
     const [amountPaid, setAmountPaid] = useState('');
     const [transactionComplete, setTransactionComplete] = useState(null);
+    const [customerWa, setCustomerWa] = useState(''); // State baru untuk WhatsApp
     const [printSettings, setPrintSettings] = useState({
         storeName: 'FOTOCOPY ABADI JAYA',
         storeAddress: '',
@@ -206,6 +208,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
         if (cart.length === 0) return;
         setPaymentMethod('tunai');
         setAmountPaid('');
+        setCustomerWa(''); // Reset WA saat buka modal
         setTransactionComplete(null);
         setPaymentModalOpen(true);
     };
@@ -233,7 +236,14 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
             }
 
             if (effectivePrinterSize === 'lx310') {
+                // Double print for LX-310 as requested by user
                 await printViaQZ(receiptText, printSettings.printerName || 'LX-310');
+                if (printSettings.printerSize === 'lx310') {
+                    // Slight delay for printer buffer
+                    setTimeout(async () => {
+                        await printViaQZ(receiptText, printSettings.printerName || 'LX-310');
+                    }, 1000);
+                }
                 console.log('Receipt sent via QZ Tray (LX-310)');
                 return;
             }
@@ -268,6 +278,7 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
             paid: paymentMethod === 'tunai' ? parseFloat(amountPaid) : cartTotal,
             changeAmount: change,
             status: (paymentMethod === 'tunai' && parseFloat(amountPaid) < cartTotal) ? 'pending' : 'paid',
+            customerWa: customerWa, // Kirim nomor WA
             items: cart.map(item => {
                 const itemPrice = item.sellPrice || item.price || 0;
                 return {
@@ -440,6 +451,21 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                     </div>
                 </div>
 
+                <div className="mb-5">
+                    <label htmlFor="customerWa" className="font-semibold block mb-3 text-[0.9rem] text-slate-400 uppercase tracking-tight">Nomor WhatsApp Nota (Opsional)</label>
+                    <div className="relative">
+                        <input
+                            id="customerWa"
+                            type="text"
+                            value={customerWa}
+                            onChange={e => setCustomerWa(e.target.value.replace(/[^0-9]/g, ''))}
+                            placeholder="Contoh: 08123456789"
+                            className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white text-[1rem] font-medium transition-all duration-200 focus:outline-none focus:border-blue-500 focus:bg-white/8"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 text-[0.75rem]">Otomatis Kirim Nota</span>
+                    </div>
+                </div>
+
                 {paymentMethod === 'tunai' && (
                     <div className="mb-5">
                         <label htmlFor="amountPaid" className="font-semibold block mb-3 text-[0.9rem] text-slate-400 uppercase tracking-tight">Jumlah Bayar (Tunai)</label>
@@ -490,12 +516,13 @@ export default function PosPage({ onNavigate, pageState, onFullscreenChange }) {
                 </div>
             )}
 
-            {/* Running Text */}
-            <div className="bg-gradient-to-r from-slate-800 via-slate-950 to-slate-800 border-b border-blue-500/20 py-2.5 overflow-hidden relative">
-                <div className="inline-block whitespace-nowrap animate-marquee font-bold text-lg text-blue-400 tracking-wider uppercase">
-                    {runningText.repeat(5)}
-                </div>
-            </div>
+            <PosHeader
+                onNavigate={onNavigate}
+                onOpenDrawer={() => { }}
+                cartCount={cart.length}
+                storeSettings={storeSettings}
+                currentTime={new Date()}
+            />
 
             <div className="flex flex-1 gap-4 overflow-hidden lg:flex-row flex-col p-3 lg:p-4">
                 {/* Product/Service Area */}

@@ -11,11 +11,14 @@ import {
 const fmt = (n) => 'Rp ' + Math.floor(n || 0).toLocaleString('id-ID');
 
 function Toast({ msg, type, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, [onClose]);
     const bg = type === 'error' ? 'bg-red-500' : type === 'warn' ? 'bg-amber-500' : 'bg-emerald-500';
     return (
-        <div className={`fixed bottom-6 right-6 z-[9999] ${bg} text-white px-5 py-3 rounded-xl font-semibold text-sm shadow-2xl animate-in slide-in-from-bottom-4 duration-300 max-w-sm`}>
-            {msg}
+        <div className={`fixed bottom-6 right-6 z-[9999] ${bg} text-white px-5 py-3 rounded-xl font-semibold text-sm shadow-2xl animate-in slide-in-from-bottom-4 duration-300 max-w-sm flex items-center gap-3`}>
+            <span className="flex-1">{msg}</span>
+            <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                <FiX size={14} />
+            </button>
         </div>
     );
 }

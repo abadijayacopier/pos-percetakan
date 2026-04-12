@@ -10,6 +10,13 @@ import api from '../services/api';
 import { formatRupiah } from '../utils';
 
 function Toast({ msg, type, onClose }) {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onClose();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -18,7 +25,7 @@ function Toast({ msg, type, onClose }) {
             className={`fixed bottom-6 right-6 z-[9999] px-6 py-4 rounded-2xl font-bold shadow-2xl flex items-center gap-3 text-white backdrop-blur-xl border border-white/20 ${type === 'error' ? 'bg-rose-500/90 shadow-rose-500/20' : 'bg-emerald-500/90 shadow-emerald-500/20'}`}
         >
             {type === 'error' ? <FiAlertCircle size={20} /> : <FiCheck size={20} />}
-            <span className="text-sm">{msg}</span>
+            <span className="text-sm flex-1">{msg}</span>
             <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
                 <FiX size={16} />
             </button>

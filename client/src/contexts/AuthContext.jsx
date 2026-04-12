@@ -14,6 +14,11 @@ export const AuthProvider = ({ children }) => {
                 const session = JSON.parse(saved);
                 if (session && session.token) {
                     console.log('AuthContext: Initial state - user found');
+                    // Ensure sessionStartTime exists for legacy sessions
+                    if (!session.sessionStartTime) {
+                        session.sessionStartTime = Date.now();
+                        localStorage.setItem('pos_session', JSON.stringify(session));
+                    }
                     return session;
                 }
             }
@@ -23,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         console.log('AuthContext: Initial state - no user');
         return null;
     });
-    
+
     const [loading, setLoading] = useState(false); // Set to false since we load synchronously
 
     const logout = useCallback(() => {
@@ -38,9 +43,9 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post('/auth/login', { username, password });
             const { token, user: userData } = response.data;
 
-            const session = { ...userData, token };
+            const session = { ...userData, token, sessionStartTime: Date.now() };
             console.log('AuthContext: Login success, saving session');
-            
+
             setUser(session);
             localStorage.setItem('pos_session', JSON.stringify(session));
 
