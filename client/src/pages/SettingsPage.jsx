@@ -168,10 +168,7 @@ export default function SettingsPage() {
 
         if (result.isConfirmed) {
             try {
-                const token = localStorage.getItem('token');
-                await axios.delete(`${import.meta.env.VITE_API_URL}/api/settings/license`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.delete('/settings/license');
                 showToast('Lisensi berhasil direset', 'success');
                 loadLicenseStatus();
             } catch (error) {

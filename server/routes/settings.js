@@ -365,7 +365,9 @@ router.post('/license', verifyToken, requireRole(['admin']), async (req, res) =>
 // DELETE Reset Lisensi (Misal ganti PC)
 router.delete('/license', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        await pool.query('DELETE FROM settings WHERE `key` = ?', ['license_key']);
+        console.log(`[LICENSE_RESET] Requested by user ID: ${req.user.id}`);
+        const [result] = await pool.query('DELETE FROM settings WHERE `key` = ?', ['license_key']);
+        console.log(`[LICENSE_RESET] DB Result:`, result);
 
         // Log Aktivitas
         const { logActivity } = require('../utils/logger');
@@ -373,8 +375,8 @@ router.delete('/license', verifyToken, requireRole(['admin']), async (req, res) 
 
         res.json({ message: 'Lisensi berhasil direset. Aplikasi kembali ke mode belum aktivasi.' });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal mereset lisensi' });
+        console.error('[LICENSE_RESET_ERROR]', e);
+        res.status(500).json({ message: 'Gagal mereset lisensi', error: e.message });
     }
 });
 
