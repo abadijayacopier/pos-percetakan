@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const uploadDir = path.join(__dirname, '../public/uploads/service');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'service-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // 7. DELETE Order Service (Moved to top to prevent route shadowing)
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
@@ -303,5 +320,62 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
 });
 
 
+
+// 8. POST Public Service Order (Landing Page)
+router.post('/public', upload.single('photo'), async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const {
+            customerName, phone, machineInfo, complaint, conditionPhysic
+        } = req.body;
+
+        const photoUrl = req.file ? `/uploads/service/${req.file.filename}` : null;
+
+        // Generate Service No (SRV-YYYYMMDD-XXXX)
+        const date = new Date();
+        const dateStr = date.getFullYear() +
+            String(date.getMonth() + 1).padStart(2, '0') +
+            String(date.getDate()).padStart(2, '0');
+
+        const [lastOrder] = await connection.query(
+            "SELECT service_no FROM service_orders WHERE service_no LIKE ? ORDER BY created_at DESC LIMIT 1",
+            [`SRV-${dateStr}-%`]
+        );
+
+        let nextNum = 1;
+        if (lastOrder.length > 0) {
+            const lastNum = parseInt(lastOrder[0].service_no.split('-')[2]);
+            nextNum = lastNum + 1;
+        }
+        const serviceNo = `SRV-${dateStr}-${String(nextNum).padStart(4, '0')}`;
+
+        // Insert Service Order
+        const [result] = await connection.query(`
+            INSERT INTO service_orders
+            (service_no, customer_name, phone, machine_info, complaint, condition_physic, status, photo)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            serviceNo, customerName, phone, machineInfo,
+            complaint, conditionPhysic || 'Dari Landing Page', 'diterima', photoUrl
+        ]);
+
+        await connection.commit();
+        res.status(201).json({
+            message: 'Tiket service anda telah diterima!',
+            serviceNo: serviceNo,
+            id: result.insertId
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('CRITICAL: Gagal simpan Public Service Ticket:', error);
+        res.status(500).json({
+            message: 'Gagal mengirim tiket service. Silakan coba lagi.',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
 
 module.exports = router;

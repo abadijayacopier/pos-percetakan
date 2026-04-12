@@ -5,7 +5,7 @@ import { formatRupiah, generateInvoice } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { FiCheckCircle, FiClock, FiFileText, FiChevronDown, FiPlus, FiTrash2, FiPrinter, FiEdit, FiEye, FiEdit2, FiSave, FiX, FiZap, FiClipboard, FiUser, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle, FiActivity } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiFileText, FiChevronDown, FiPlus, FiTrash2, FiPrinter, FiEdit, FiEye, FiEdit2, FiSave, FiX, FiZap, FiClipboard, FiUser, FiChevronLeft, FiChevronRight, FiEdit3, FiUserCheck, FiLayers, FiTag, FiMessageSquare, FiPlusCircle, FiActivity, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import Swal from 'sweetalert2';
 
@@ -33,6 +33,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
     const [customerId, setCustomerId] = useState('');
     const [errors, setErrors] = useState({});
     const [systemStatus, setSystemStatus] = useState('online');
+    const [pesanDesainer, setPesanDesainer] = useState('');
 
     // Calculator Premium UI
     const [calcOrderData, setCalcOrderData] = useState({

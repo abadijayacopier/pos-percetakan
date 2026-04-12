@@ -7,7 +7,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { formatDateTime, printViaBluetooth, listQZPrinters } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey } from 'react-icons/fi';
+import ActivationModal from '../components/ActivationModal';
 
 export default function SettingsPage() {
     const { user } = useAuth();
@@ -30,6 +31,10 @@ export default function SettingsPage() {
 
     const [fcDiscounts, setFcDiscounts] = useState([]);
     const [tarifDesainPerJam, setTarifDesainPerJam] = useState(50000);
+
+    // License States
+    const [licenseInfo, setLicenseInfo] = useState({ activated: false });
+    const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
 
     // Branding & Terminal States
     const [storeName, setStoreName] = useState('');
@@ -140,8 +145,44 @@ export default function SettingsPage() {
         }
     };
 
+    const loadLicenseStatus = async () => {
+        try {
+            const res = await api.get('/settings/license');
+            setLicenseInfo(res.data);
+        } catch (error) {
+            console.error('Failed to load license status:', error);
+        }
+    };
+
+    const handleResetLicense = async () => {
+        const result = await Swal.fire({
+            title: 'Reset Lisensi?',
+            text: 'Ini akan menghapus aktivasi di perangkat ini. Anda perlu memasukkan key baru untuk mengaktifkan kembali.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Reset!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const token = localStorage.getItem('token');
+                await axios.delete(`${import.meta.env.VITE_API_URL}/api/settings/license`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                showToast('Lisensi berhasil direset', 'success');
+                loadLicenseStatus();
+            } catch (error) {
+                showToast('Gagal mereset lisensi', 'error');
+            }
+        }
+    };
+
     useEffect(() => {
         loadSettings();
+        loadLicenseStatus();
     }, []);
 
     useEffect(() => {
@@ -369,6 +410,7 @@ export default function SettingsPage() {
         { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
         { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS' },
         { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
+        { id: 'license', icon: <FiShield />, text: 'Lisensi' },
     ];
 
     return (
@@ -1617,7 +1659,6 @@ export default function SettingsPage() {
                                     <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={handleBackup}>
                                         <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
                                     </button>
-
                                 </div>
 
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
@@ -1630,7 +1671,6 @@ export default function SettingsPage() {
                                         <FiFolder /> Pilih File Backup
                                         <input type="file" accept=".sql,.json" onChange={handleRestore} className="hidden" />
                                     </label>
-
                                 </div>
 
                                 <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-4xl border border-red-100 dark:border-red-900/30 p-8">
@@ -1647,6 +1687,105 @@ export default function SettingsPage() {
                                         <button className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 dark:shadow-none" onClick={resetData}>
                                             <FiTrash2 className="inline mr-2" /> Reset Sekarang
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* License Settings */}
+                        {activeTab === 'license' && (
+                            <div className="max-w-4xl mx-auto space-y-6 pb-12">
+                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+
+                                    <div className="p-10 flex flex-col md:flex-row items-center gap-10">
+                                        <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center shrink-0 shadow-2xl ${licenseInfo.activated ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 shadow-slate-500/10'}`}>
+                                            {licenseInfo.activated ? <FiCheckCircle size={64} /> : <FiShield size={64} />}
+                                        </div>
+
+                                        <div className="flex-1 text-center md:text-left">
+                                            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+                                                <h3 className="text-3xl font-black text-slate-800 dark:text-white leading-tight">Status Lisensi</h3>
+                                                {licenseInfo.activated ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0">
+                                                        <FiCheck size={16} /> AKTIF
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0 font-mono">
+                                                        BELUM AKTIVASI
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl mb-4 text-xs font-mono text-slate-400 flex items-center gap-2 w-fit mx-auto md:mx-0 border border-slate-100 dark:border-slate-700">
+                                                <FiShield size={12} /> HWID: {licenseInfo.hardwareId || 'Mencari...'}
+                                            </div>
+
+                                            {licenseInfo.activated ? (
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dilisensikan Kepada</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{licenseInfo.clientName}</p>
+                                                        </div>
+                                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Masa Berlaku Hingga</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{new Date(licenseInfo.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-4 items-center">
+                                                        <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                            <FiInfo className="text-indigo-500" />
+                                                            Terima kasih telah menggunakan software orisinil.
+                                                        </p>
+                                                        <button
+                                                            onClick={handleResetLicense}
+                                                            className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 transition-colors"
+                                                        >
+                                                            Reset Lisensi (Ganti PC)
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-6">
+                                                    <p className="text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg mx-auto md:mx-0">
+                                                        Aplikasi Anda saat ini berjalan dalam mode terbatas. Aktivasi diperlukan untuk memastikan dukungan penuh dan pembaruan sistem di masa mendatang.
+                                                    </p>
+                                                    <button
+                                                        onClick={() => setIsActivationModalOpen(true)}
+                                                        className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-lg rounded-2xl transition-all shadow-xl shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-3 group mx-auto md:mx-0"
+                                                    >
+                                                        <FiKey className="group-hover:rotate-12 transition-transform" />
+                                                        Aktivasi Sekarang
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {licenseInfo.activated && (
+                                        <div className="px-10 py-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                <FiShield size={14} className="text-emerald-500" />
+                                                Data Lisensi terenkripsi secara aman di server lokal.
+                                            </div>
+                                            <button
+                                                onClick={() => setIsActivationModalOpen(true)}
+                                                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                            >
+                                                <FiRefreshCw size={12} /> Perbarui Kode Lisensi
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-8 bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl border border-blue-100/50 dark:border-blue-900/20 flex items-start gap-4">
+                                    <FiAlertCircle className="text-blue-500 shrink-0 mt-1" size={20} />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Informasi Hak Cipta</h4>
+                                        <p className="text-xs text-blue-600/70 dark:text-blue-400/70 leading-relaxed">
+                                            Lisensi ini hanya berlaku untuk 1 instance server. Memindahkan database ke server lain mungkin memerlukan kode aktivasi baru tergantung pada konfigurasi hardware ID. Hubungi dukungan jika Anda melakukan migrasi server.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -1706,9 +1845,16 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                         </Modal>
+
+                        <ActivationModal
+                            isOpen={isActivationModalOpen}
+                            onClose={() => setIsActivationModalOpen(false)}
+                            onActivated={(info) => setLicenseInfo({ activated: true, ...info })}
+                            hardwareId={licenseInfo.hardwareId}
+                        />
                     </motion.div>
                 </AnimatePresence>
             </main>
-        </div>
+        </div >
     );
 }

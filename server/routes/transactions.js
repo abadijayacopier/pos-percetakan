@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const { sendInvoiceNotification } = require('../utils/notificationHelper');
 
 // 1. GET Semua Transaksi
 router.get('/', verifyToken, async (req, res) => {
@@ -84,7 +85,7 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const {
             invoiceNo, date, customerId, customerName, type,
             subtotal, discount, total, paid, changeAmount, paymentType, status,
-            items // Array dari produk ATK atau produk jasa fotocopy
+            items, customerWa // customerWa ditambahkan
         } = req.body;
 
         const newTrxId = 't' + Date.now();
@@ -96,9 +97,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
 
         await connection.query(`
       INSERT INTO transactions 
-      (id, invoice_no, date, customer_id, customer_name, user_id, user_name, type, subtotal, discount, total, paid, change_amount, payment_type, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
+      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, total, paid, change_amount, payment_type, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
 
         // 3b. Insert Transaction Details (Item) & Update Stok
         for (const item of items) {
@@ -183,6 +184,18 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         }
 
         await connection.commit();
+
+        // Kirim Notifikasi WA secara background (tidak perlu tunggu untuk respon ke kasir)
+        const trxData = {
+            id: newTrxId,
+            invoice_no: invoiceNo,
+            customer_name: customerName,
+            customer_wa: customerWa,
+            total,
+            paid
+        };
+        sendInvoiceNotification(trxData, items);
+
         res.status(201).json({ message: 'Transaksi berhasil disimpan!', id: newTrxId });
     } catch (error) {
         await connection.rollback();
@@ -275,7 +288,7 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
     try {
         await connection.beginTransaction();
         const { id } = req.params;
-        const { paidAmount, paymentMethod } = req.body;
+        const { paidAmount, paymentMethod, customerWa } = req.body;
 
         const [trxArr] = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
         if (trxArr.length === 0) throw new Error('Trx not found');
@@ -285,8 +298,8 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         const newStatus = newPaid >= trx.total ? 'paid' : 'debt';
 
         // Update transaction
-        await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ? WHERE id = ?',
-            [newPaid, paymentMethod, newStatus, id]);
+        await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ? WHERE id = ?',
+            [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, id]);
 
         // Insert cash flow
         const cashFlowId = 'cf' + Date.now();
@@ -300,6 +313,11 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
             [req.user.id, req.user.name, 'payment', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`]);
 
         await connection.commit();
+
+        // Trigger notification
+        const [items] = await connection.query('SELECT * FROM transaction_details WHERE transaction_id = ?', [id]);
+        sendInvoiceNotification({ ...trx, paid: newPaid, customer_wa: customerWa || trx.customer_wa }, items);
+
         res.json({ message: 'Pembayaran berhasil dicatat' });
     } catch (e) {
         await connection.rollback();

@@ -13,6 +13,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// License Guard (Melindungi seluruh API kecuali rute aktivasi/auth)
+const licenseGuard = require('./middleware/licenseGuard');
+app.use(licenseGuard);
+
 // Request Logger
 app.use((req, res, next) => {
     console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
@@ -44,6 +48,7 @@ app.use('/api/design-logs', require('./routes/design-logs'));
 app.use('/api/offset-orders', require('./routes/offset_orders'));
 app.use('/api/spk', require('./routes/spk'));
 app.use('/api/wa-config', require('./routes/wa-config'));
+app.use('/api/wa-gateway', require('./routes/wa-gateway'));
 app.use('/api/pricing', pricingRouter);
 app.use('/api/designers', require('./routes/designers'));
 app.use('/api/settings', require('./routes/settings'));
@@ -58,6 +63,10 @@ app.use('/api/activity-logs', require('./routes/activity-logs'));
 const startServer = async () => {
     // Test koneksi database saat start
     await testConnection();
+
+    // Auto-init WhatsApp Service (Optional: bisa juga manual via UI)
+    // const whatsappService = require('./utils/whatsappService');
+    // whatsappService.init();
 
     app.listen(PORT, () => {
         console.log(`🚀 Server backend berjalan di http://localhost:${PORT}`);

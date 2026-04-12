@@ -10,10 +10,10 @@ const verifyToken = (req, res, next) => {
 
     try {
         const verified = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
-        req.user = verified; // { id, name, username, role }
+        req.user = verified;
         next();
     } catch (error) {
-        res.status(400).json({ message: 'Akses Ditolak! Token tidak valid.' });
+        res.status(401).json({ message: 'Akses Ditolak! Token tidak valid.' });
     }
 };
 

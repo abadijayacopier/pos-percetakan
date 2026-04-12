@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
+const LicenseManager = require('../utils/licenseManager');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const multer = require('multer');
 const upload = multer({ dest: 'temp/' });
@@ -289,6 +290,91 @@ router.post('/restore', verifyToken, requireRole(['admin']), upload.single('back
         res.status(500).json({ message: 'Gagal memulihkan data: ' + e.message });
     } finally {
         if (connection) connection.release();
+    }
+});
+
+
+// GET Status Lisensi
+router.get('/license', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
+        if (rows.length === 0 || !rows[0].value) {
+            return res.json({
+                activated: false,
+                hardwareId: LicenseManager.getHardwareId()
+            });
+        }
+
+        const manager = new LicenseManager();
+        const result = manager.verifyLicense(rows[0].value);
+
+        console.log('[LICENSE_DEBUG] Raw Result:', result); // Penting untuk cek isi objek
+
+        res.json({
+            activated: result.isValid,
+            clientName: result.clientName || result.client || '',
+            expiryDate: result.expiryDate || result.expiry || '',
+            features: result.features || {},
+            hardwareId: LicenseManager.getHardwareId(),
+            message: result.message
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memuat status lisensi' });
+    }
+});
+
+// POST Aktivasi Lisensi
+router.post('/license', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { licenseKey } = req.body;
+        if (!licenseKey) return res.status(400).json({ message: 'Kode lisensi harus diisi' });
+
+        const manager = new LicenseManager();
+        const result = manager.verifyLicense(licenseKey);
+
+        if (!result.isValid) {
+            return res.status(400).json({ message: result.message });
+        }
+
+        // Simpan ke database
+        const [existing] = await pool.query('SELECT `key` FROM settings WHERE `key` = ?', ['license_key']);
+        if (existing.length > 0) {
+            await pool.query('UPDATE settings SET `value` = ? WHERE `key` = ?', [licenseKey, 'license_key']);
+        } else {
+            await pool.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['license_key', licenseKey]);
+        }
+
+        // Log Aktivitas
+        const { logActivity } = require('../utils/logger');
+        await logActivity(req.user.id, 'ACTIVATE_LICENSE', 'license', `Aplikasi diaktivasi untuk ${result.clientName}`, req.ip);
+
+        res.json({
+            message: 'Aktivasi Berhasil!',
+            clientName: result.clientName,
+            expiryDate: result.expiryDate,
+            features: result.features,
+            hardwareId: result.hardwareId
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal melakukan aktivasi' });
+    }
+});
+
+// DELETE Reset Lisensi (Misal ganti PC)
+router.delete('/license', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        await pool.query('DELETE FROM settings WHERE `key` = ?', ['license_key']);
+
+        // Log Aktivitas
+        const { logActivity } = require('../utils/logger');
+        await logActivity(req.user.id, 'RESET_LICENSE', 'license', 'Lisensi aplikasi telah dihapus/direset', req.ip);
+
+        res.json({ message: 'Lisensi berhasil direset. Aplikasi kembali ke mode belum aktivasi.' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal mereset lisensi' });
     }
 });
 

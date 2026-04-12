@@ -9,11 +9,9 @@ router.get('/form-data', verifyToken, async (req, res) => {
     try {
         const [customers] = await pool.query('SELECT id, name, phone FROM customers ORDER BY name ASC');
         const [products] = await pool.query('SELECT id, nama_produk, harga_base, satuan, is_best_seller FROM offset_products ORDER BY nama_produk ASC');
+        const [materials] = await pool.query('SELECT id, nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini FROM materials WHERE is_active = TRUE ORDER BY nama_bahan ASC');
 
-        // Sengaja mengirim array kosong jika tabel belum ada isinya untuk opsi
-        // (opsional: ambil product_options dan pricing_rules jika kalkulasi butuh dari server)
-
-        res.json({ customers, products });
+        res.json({ customers, products, materials });
     } catch (error) {
         console.error('Error fetching form data:', error);
         res.status(500).json({ message: 'Gagal memuat data form.' });
@@ -52,9 +50,14 @@ router.post('/', verifyToken, async (req, res) => {
         const hargaSatuan = rules.length > 0 ? rules[0].harga_per_unit_akhir : basePrice;
 
         // 2. Kalkulasi Biaya Tambahan (Material, Finishing, dsb)
-        // Di aplikasi penuh ini dikueri dari DB, disini kita simulasi sesuai frontend 
+        const [matRows] = await conn.query('SELECT harga_jual FROM materials WHERE nama_bahan = ? AND is_active = TRUE', [spesifikasi.material]);
+        const biayaMaterialPerUnit = matRows.length > 0 ? parseFloat(matRows[0].harga_jual) : 75000;
+
         const biayaCetak = hargaSatuan * qty;
-        const biayaMaterial = (spesifikasi.material || '').includes('Carton') ? 125000 : 75000;
+        const biayaMaterial = biayaMaterialPerUnit; // Biaya material total atau per SPK? 
+        // Note: Biasanya material dihitung per qty atau per set. Disini kita ikuti logik sebelumnya yang flat per SPK atau bisa dikali qty.
+        // Berdasarkan logika lama (125k/75k), ini flat per order. Kita pertahankan flat untuk keamanan, tapi gunakan harga dari DB.
+
         const biayaFinishing = (spesifikasi.finishing || []).includes('Laminasi Glossy') ? 75000 : 0;
         const biayaDesain = 50000;
 

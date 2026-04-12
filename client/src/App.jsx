@@ -42,6 +42,7 @@ import LandingPage from './pages/LandingPage';
 import PurchasingPage from './pages/PurchasingPage';
 import SuppliersPage from './pages/SuppliersPage';
 import StockHistoryPage from './pages/StockHistoryPage';
+import ActivationModal from './components/ActivationModal';
 
 export default function App() {
   const { user, loading, logout } = useAuth();
@@ -62,6 +63,23 @@ export default function App() {
   const [pageState, setPageState] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBrandingSyncing, setIsBrandingSyncing] = useState(true);
+  const [licenseInfo, setLicenseInfo] = useState({ activated: true, hardwareId: '' });
+
+  // Global License Check
+  useEffect(() => {
+    const checkLicense = async () => {
+      try {
+        const { data } = await api.get('/settings/license');
+        setLicenseInfo(data);
+
+        // Jika tidak aktif dan bukan di halaman publik, paksa ke dashboard (biar muncul modal di sana)
+        // Atau kita bisa paksa ke settings.
+      } catch (e) {
+        console.error('License check failed:', e);
+      }
+    };
+    checkLicense();
+  }, [activePage]);
 
   // When user finishes loading or logins, auto-redirect based on roles
   useEffect(() => {
@@ -358,7 +376,6 @@ export default function App() {
       case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
-      case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-warranty-sticker': return <ServiceWarrantyStickerPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'stock-history': return <StockHistoryPage onNavigate={handleNavigate} pageState={pageState} />;
