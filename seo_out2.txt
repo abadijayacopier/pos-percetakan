@@ -1,0 +1,33 @@
+
+============================================================
+  SEO CHECKER - Search Engine Optimization Audit
+============================================================
+Project: D:\WEB\pos
+Time: 2026-04-14 14:18:51
+------------------------------------------------------------
+Found 46 page files to analyze
+
+============================================================
+SEO ANALYSIS RESULTS
+============================================================
+
+Issue Summary:
+  [2] Multiple H1 tags (2)
+  [1] Missing meta description
+  [1] Missing Open Graph tags
+  [1] Multiple H1 tags (3)
+
+Affected files (4):
+  - ProductionQueuePage.jsx
+  - ProfitLossPage.jsx
+  - ReportsPage.jsx
+  - SPKListPage.jsx
+
+{
+  "script": "seo_checker",
+  "project": "D:\\WEB\\pos",
+  "files_checked": 46,
+  "files_with_issues": 4,
+  "issues_found": 5,
+  "passed": false
+}

@@ -3,7 +3,7 @@ import api from '../services/api';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiCommand } from 'react-icons/fi';
+import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiCommand, FiMessageCircle } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -624,23 +624,85 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
         const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
 
-        const queueItem = {
+        const total = subtotal - globalDiscount;
+
+        const transaction = {
+            invoiceNo: generateInvoice(),
+            date: new Date().toISOString(),
             customerId: selectedCustomerId === 'manual' ? null : selectedCustomerId,
             customerName: customerName,
-            title: cart.map(i => i.name).join(', ').substring(0, 50) + (cart.length > 1 ? '...' : ''),
-            items: cart,
-            status: 'produksi',
-            type: 'digital',
-            createdAt: new Date().toISOString()
+            type: (() => {
+                const types = cart.map(c => (c.type || '').toLowerCase());
+                const uniqueTypes = [...new Set(types)];
+
+                if (uniqueTypes.length === 1) {
+                    const t = uniqueTypes[0];
+                    if (t === 'atk') return 'Kasir';
+                    if (t === 'fotocopy' || t === 'service') return 'Cetak';
+                    if (t === 'digital') return 'Digital Printing';
+                    if (t === 'service_order') return 'Service Mesin';
+                    return t.charAt(0).toUpperCase() + t.slice(1);
+                }
+
+                const hasDigital = types.includes('digital');
+                const hasServiceOrder = types.includes('service_order');
+                const hasService = types.includes('service') || types.includes('fotocopy');
+                const hasAtk = types.includes('atk');
+
+                if (hasDigital) return 'Digital Printing';
+                if (hasServiceOrder) return 'Service Mesin';
+                if (hasService && hasAtk) return 'Kasir + Cetak';
+                if (hasService) return 'Cetak';
+                if (hasAtk) return 'Kasir';
+                return 'Campuran';
+            })(),
+            items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                qty: item.quantity,
+                price: item.sellPrice,
+                subtotal: item.sellPrice * item.quantity,
+                discount: item.discount || 0,
+                source: item.type === 'atk' ? 'atk' : 'fc',
+                type: item.type,
+                meta: item.meta
+            })),
+            subtotal,
+            discount: globalDiscount,
+            total,
+            paymentType: 'pending',
+            paid: 0,
+            changeAmount: 0,
+            status: 'pending',
+            customerWa: customerWa
         };
 
         try {
-            await api.post('/print-orders', queueItem).catch(() => api.post('/spk', queueItem));
-            showToast('Antrean disimpan.', 'success');
+            await api.post('/transactions', transaction);
+            showToast('Transaksi disimpan sebagai Pending.', 'success');
+
+            // Update local stock for display (physical products only)
+            setProducts(prev => prev.map(p => {
+                const cartItem = cart.find(ci => ci.id === p.id);
+                if (cartItem && p.type !== 'fotocopy' && p.type !== 'service') {
+                    return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) };
+                }
+                return p;
+            }));
+
+            // Clear cart
             setCart([]);
             setGlobalDiscount(0);
+
+            // Cleanup states
+            try { setManualDiscount(0); } catch (e) { }
+            try { setCustomerName(''); } catch (e) { }
+            try { setCustomerPhone(''); } catch (e) { }
+            try { setOrderId(''); } catch (e) { }
+            setSelectedCustomerId('');
         } catch (error) {
-            showToast('Gagal menyimpan antrean: Pastikan endpoint exists.', 'error');
+            console.error('Save Pending Trx Error:', error.response?.data || error.message);
+            showToast('Gagal menyimpan transaksi pending.', 'error');
         }
     };
 
@@ -914,11 +976,35 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div className="flex flex-col gap-1.5">
                                                             <label className="text-[9px] font-black text-slate-400 ml-1">PANJANG (M)</label>
-                                                            <input type="number" step="0.1" value={digitalWidth} onChange={(e) => setDigitalWidth(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base" placeholder="0.0" />
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                value={digitalWidth}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(',', '.');
+                                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                                        setDigitalWidth(val);
+                                                                    }
+                                                                }}
+                                                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base"
+                                                                placeholder="0.0"
+                                                            />
                                                         </div>
                                                         <div className="flex flex-col gap-1.5">
                                                             <label className="text-[9px] font-black text-slate-400 ml-1">LEBAR (M)</label>
-                                                            <input type="number" step="0.1" value={digitalHeight} onChange={(e) => setDigitalHeight(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base" placeholder="0.0" />
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                value={digitalHeight}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(',', '.');
+                                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                                        setDigitalHeight(val);
+                                                                    }
+                                                                }}
+                                                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 px-4 font-bold text-base"
+                                                                placeholder="0.0"
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -938,7 +1024,19 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                                         <label className="text-[9px] font-black text-slate-400 ml-1">BIAYA DESAIN (RP)</label>
                                                         <div className="relative group/fee">
                                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 group-focus-within/fee:text-primary transition-colors">Rp</div>
-                                                            <input type="number" value={digitalDesignFee} onChange={(e) => setDigitalDesignFee(parseFloat(e.target.value) || 0)} className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 font-black text-base text-primary" placeholder="0" />
+                                                            <input
+                                                                type="text"
+                                                                inputMode="decimal"
+                                                                value={digitalDesignFee}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(',', '.');
+                                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                                        setDigitalDesignFee(val);
+                                                                    }
+                                                                }}
+                                                                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 font-black text-base text-primary"
+                                                                placeholder="0"
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1318,7 +1416,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
                             <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-2">Nomor WhatsApp Nota (Opsional)</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-blue-400 text-lg">brand_whatsapp</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500 text-lg flex items-center">
+                                    <FiMessageCircle size={18} />
+                                </span>
                                 <input
                                     type="text"
                                     value={customerWa}

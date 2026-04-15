@@ -111,7 +111,7 @@ export default function LandingPage({ onNavigate }) {
 
     const services = [
         { title: 'ATK & Stationery', desc: 'Kebutuhan alat tulis kantor lengkap dengan kualitas terbaik.', icon: <FiFileText />, gradient: 'from-sky-500 to-blue-600 shadow-sky-500/20' },
-        { title: 'Fotocopy & Jilid', desc: 'Layanan fotocopy cepat, jilid spiral, lakban, hingga hard cover.', icon: <FiLayers />, gradient: 'from-violet-500 to-indigo-600 shadow-violet-500/20' },
+        { title: 'Fotocopy & Jilid', desc: 'Layanan fotocopy cepat, jilid spiral, lakban, hingga hard cover.', icon: <FiLayers />, gradient: 'from-emerald-500 to-indigo-600 shadow-emerald-500/20' },
         { title: 'Digital Printing', desc: 'Cetak kartu nama, brosur, stiker, hingga banner berkualitas tinggi.', icon: <FiImage />, gradient: 'from-emerald-500 to-teal-600 shadow-emerald-500/20' },
         { title: 'Cetak Offset', desc: 'Solusi cetak dalam jumlah besar untuk majalah, undangan, dan form.', icon: <FiCpu />, gradient: 'from-amber-500 to-orange-600 shadow-amber-500/20' },
         { title: 'Service Fotocopy', desc: 'Teknisi berpengalaman siap menangani kendala mesin fotocopy Anda.', icon: <FiSettings />, gradient: 'from-rose-500 to-pink-600 shadow-rose-500/20' },

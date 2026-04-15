@@ -42,9 +42,14 @@ const ReceiptProMax = ({
                     )}
                 </div>
 
-                {/* Subtitle */}
-                <div className="text-center mb-8 bg-slate-900 print:bg-transparent print:border print:border-slate-900 text-white print:text-slate-900 py-1.5 px-4 rounded-full inline-block mx-auto left-1/2 -translate-x-1/2 relative text-[10px] font-black tracking-[0.3em] uppercase">
-                    Nota Pembayaran
+                {/* Subtitle / Status Banner */}
+                <div className={`text-center mb-8 py-2 px-6 rounded-full inline-block mx-auto left-1/2 -translate-x-1/2 relative text-[11px] font-black tracking-[0.2em] uppercase border-2 print:border-2 ${(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending')
+                    ? 'bg-red-50 text-red-600 border-red-200 print:bg-transparent print:text-black print:border-black'
+                    : 'bg-slate-900 text-white border-slate-900 print:bg-transparent print:text-slate-900 print:border-slate-900'
+                    }`}>
+                    {(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending')
+                        ? '*** BELUM LUNAS ***'
+                        : 'NOTA PEMBAYARAN'}
                 </div>
 
 
@@ -130,9 +135,13 @@ const ReceiptProMax = ({
                     <div className="text-slate-400">Pembayaran</div>
                     <div className="text-right text-slate-800">{receiptData.paymentMethod || receiptData.paymentType || 'Tunai'}</div>
                     <div className="text-slate-400">Diterima</div>
-                    <div className="text-right text-slate-800">{formatCurrency(receiptData.paid)}</div>
+                    <div className="text-right text-slate-800">{formatCurrency(receiptData.paid ?? 0)}</div>
                     <div className="text-slate-400">Kembalian</div>
                     <div className="text-right font-black text-blue-600 print:text-slate-900 text-[11px]">{formatCurrency(receiptData.changeAmount || receiptData.change || 0)}</div>
+                    <div className="text-slate-400">Status</div>
+                    <div className={`text-right font-black ${(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending') ? 'text-red-600' : 'text-emerald-600'} print:text-slate-900 text-[11px]`}>
+                        {(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending') ? 'BELUM LUNAS' : 'LUNAS'}
+                    </div>
                 </div>
 
 

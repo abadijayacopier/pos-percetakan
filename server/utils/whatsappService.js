@@ -1,38 +1,51 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const path = require('path');
+const fs = require('fs');
 
 class WhatsappService {
     constructor() {
-        this.client = null;
-        this.qrCodeData = null;
-        this.status = 'disconnected'; // disconnected, connecting, qr, ready, authenticated
-        this.info = null;
+        this.instances = new Map(); // Map of shopId -> { client, status, qr, info }
     }
 
     formatPhoneNumber(number) {
         if (!number) return null;
-        // Hapus karakter non-digit
         let cleaned = number.replace(/\D/g, '');
-        // Jika diawali 0, ganti dengan 62
-        if (cleaned.startsWith('0')) {
-            cleaned = '62' + cleaned.substring(1);
-        }
-        // Pastikan berakhiran @c.us
-        if (!cleaned.endsWith('@c.us')) {
-            cleaned += '@c.us';
-        }
+        if (cleaned.startsWith('0')) cleaned = '62' + cleaned.substring(1);
+        if (!cleaned.endsWith('@c.us')) cleaned += '@c.us';
         return cleaned;
     }
 
-    async init() {
-        if (this.client) return;
+    async init(shopId) {
+        if (!shopId) throw new Error('shopId is required');
 
-        console.log('Initializing WhatsApp Client...');
-        this.status = 'connecting';
+        // If already initializing or ready, skip
+        if (this.instances.has(shopId)) {
+            const instance = this.instances.get(shopId);
+            if (instance.status !== 'disconnected') return;
+        }
 
-        this.client = new Client({
+        console.log(`Initializing WhatsApp Client for Shop: ${shopId}...`);
+
+        const instance = {
+            client: null,
+            qrCodeData: null,
+            status: 'connecting',
+            info: null
+        };
+        this.instances.set(shopId, instance);
+
+        const clientId = `tenant_${shopId}`;
+        const dataPath = path.join(__dirname, `../.wwebjs_auth/${clientId}`);
+
+        // Ensure directory exists
+        if (!fs.existsSync(dataPath)) {
+            fs.mkdirSync(dataPath, { recursive: true });
+        }
+
+        instance.client = new Client({
             authStrategy: new LocalAuth({
+                clientId: clientId,
                 dataPath: path.join(__dirname, '../.wwebjs_auth')
             }),
             puppeteer: {
@@ -49,72 +62,77 @@ class WhatsappService {
             }
         });
 
-        this.client.on('qr', async (qr) => {
-            console.log('QR Received');
-            this.status = 'qr';
-            this.qrCodeData = await qrcode.toDataURL(qr);
+        instance.client.on('qr', async (qr) => {
+            console.log(`QR Received for Shop: ${shopId}`);
+            instance.status = 'qr';
+            instance.qrCodeData = await qrcode.toDataURL(qr);
         });
 
-        this.client.on('ready', () => {
-            console.log('WhatsApp Client is ready!');
-            this.status = 'ready';
-            this.qrCodeData = null;
-            this.info = this.client.info;
+        instance.client.on('ready', () => {
+            console.log(`WhatsApp Client for Shop: ${shopId} is ready!`);
+            instance.status = 'ready';
+            instance.qrCodeData = null;
+            instance.info = instance.client.info;
         });
 
-        this.client.on('authenticated', () => {
-            console.log('WhatsApp Client authenticated');
-            this.status = 'authenticated';
+        instance.client.on('authenticated', () => {
+            console.log(`WhatsApp Client for Shop: ${shopId} authenticated`);
+            instance.status = 'authenticated';
         });
 
-        this.client.on('auth_failure', (msg) => {
-            console.error('WhatsApp Authentication failure:', msg);
-            this.status = 'disconnected';
+        instance.client.on('auth_failure', (msg) => {
+            console.error(`WhatsApp Auth failure for Shop: ${shopId}:`, msg);
+            instance.status = 'disconnected';
         });
 
-        this.client.on('disconnected', (reason) => {
-            console.log('WhatsApp Client was logged out', reason);
-            this.status = 'disconnected';
-            this.qrCodeData = null;
-            this.info = null;
+        instance.client.on('disconnected', (reason) => {
+            console.log(`WhatsApp Client for Shop: ${shopId} logged out`, reason);
+            instance.status = 'disconnected';
+            instance.qrCodeData = null;
+            instance.info = null;
         });
 
         try {
-            await this.client.initialize();
+            await instance.client.initialize();
         } catch (error) {
-            console.error('Failed to initialize WhatsApp client:', error);
-            this.status = 'disconnected';
+            console.error(`Failed to initialize WA for Shop: ${shopId}:`, error);
+            instance.status = 'disconnected';
         }
     }
 
-    getStatus() {
+    getStatus(shopId) {
+        const instance = this.instances.get(shopId);
+        if (!instance) return { status: 'disconnected', qr: null, info: null };
+
         return {
-            status: this.status,
-            qr: this.qrCodeData,
-            info: this.info ? {
-                pushname: this.info.pushname,
-                wid: this.info.wid
+            status: instance.status,
+            qr: instance.qrCodeData,
+            info: instance.info ? {
+                pushname: instance.info.pushname,
+                wid: instance.info.wid
             } : null
         };
     }
 
-    async sendMessage(to, message) {
-        if (this.status !== 'ready') {
-            throw new Error('WhatsApp client is not ready');
+    async sendMessage(shopId, to, message) {
+        const instance = this.instances.get(shopId);
+        if (!instance || instance.status !== 'ready') {
+            throw new Error(`WhatsApp client for shop ${shopId} is not ready`);
         }
 
         const formattedTo = this.formatPhoneNumber(to);
         if (!formattedTo) throw new Error('Nomor tujuan tidak valid');
 
-        return await this.client.sendMessage(formattedTo, message);
+        return await instance.client.sendMessage(formattedTo, message);
     }
 
-    async logout() {
-        if (this.client) {
-            await this.client.logout();
-            this.status = 'disconnected';
-            this.qrCodeData = null;
-            this.info = null;
+    async logout(shopId) {
+        const instance = this.instances.get(shopId);
+        if (instance && instance.client) {
+            await instance.client.logout();
+            instance.status = 'disconnected';
+            instance.qrCodeData = null;
+            instance.info = null;
         }
     }
 }

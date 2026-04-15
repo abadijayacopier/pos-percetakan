@@ -1,22 +1,19 @@
 'use strict';
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
 // 1. GET Semua Task
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM dp_tasks ORDER BY created_at DESC');
-
-        // map db keys to what frontend expects, e.g. material_price to material_price, etc.
+        const [rows] = await req.db.query('SELECT * FROM dp_tasks ORDER BY created_at DESC');
         const mapped = rows.map(r => ({
             ...r,
             dimensions: { width: r.dimensions_w, height: r.dimensions_h },
             createdAt: r.created_at,
             updatedAt: r.updated_at
         }));
-
         res.json(mapped);
     } catch (error) {
         console.error('GET dp_tasks error:', error);
@@ -27,7 +24,7 @@ router.get('/', verifyToken, async (req, res) => {
 // 2. GET Detail Task
 router.get('/:id', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM dp_tasks WHERE id = ?', [req.params.id]);
+        const [rows] = await req.db.query('SELECT * FROM dp_tasks WHERE id = ?', [req.params.id]);
         if (!rows.length) return res.status(404).json({ message: 'Task tidak ditemukan' });
 
         const r = rows[0];
@@ -37,7 +34,6 @@ router.get('/:id', verifyToken, async (req, res) => {
             createdAt: r.created_at,
             updatedAt: r.updated_at
         };
-
         res.json(mapped);
     } catch (error) {
         res.status(500).json({ message: 'Gagal muat detail task' });
@@ -55,7 +51,7 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
 
         const newId = id || ('ORD-' + Math.floor(Math.random() * 9999).toString().padStart(4, '0'));
 
-        await pool.query(`
+        await req.db.query(`
             INSERT INTO dp_tasks
             (id, status, customerName, customerId, title, material_id, material_name, 
             dimensions_w, dimensions_h, material_price, design_price, priority, 
@@ -85,7 +81,7 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desa
             designer_id, designer_name, operator_id, operator_name
         } = req.body;
 
-        await pool.query(`
+        await req.db.query(`
             UPDATE dp_tasks 
             SET status = COALESCE(?, status),
                 customerName = COALESCE(?, customerName),
@@ -124,13 +120,13 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desa
     }
 });
 
-// 5. PATCH Update Status (Kanban Drop)
+// 5. PATCH Update Status (Kanban)
 router.patch('/:id/status', verifyToken, async (req, res) => {
     try {
         const { status } = req.body;
-        await pool.query('UPDATE dp_tasks SET status = ? WHERE id = ?', [status, req.params.id]);
+        await req.db.query('UPDATE dp_tasks SET status = ? WHERE id = ?', [status, req.params.id]);
         if (status === 'batal') {
-            await pool.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+            await req.db.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
         }
         res.json({ message: 'Status task diupdate!' });
     } catch (error) {
@@ -141,24 +137,22 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
 // 6. DELETE Task
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        await pool.query('DELETE FROM dp_tasks WHERE id = ?', [req.params.id]);
+        await req.db.query('DELETE FROM dp_tasks WHERE id = ?', [req.params.id]);
         res.json({ message: 'Task dihapus' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal hapus task' });
     }
 });
 
-// 7. POST Pelunasan Task (Finansial)
+// 7. POST Pelunasan Task
 router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req, res) => {
-    const connection = await pool.getConnection();
+    const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
         const { totalAmount, dpAmount, title } = req.body;
 
-        // 1. Update status task & is_paid
         await connection.query("UPDATE dp_tasks SET is_paid = 1, status = 'diambil' WHERE id = ?", [req.params.id]);
 
-        // 2. Masukkan sisa pembayaran ke Cash Flow
         const sisa = totalAmount - dpAmount;
         if (sisa > 0) {
             const cashFlowId = 'cf' + Date.now();
@@ -169,7 +163,6 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
             `, [cashFlowId, date, sisa, `Pelunasan: ${title} (${req.params.id})`, req.params.id]);
         }
 
-        // 3. Update total spend customer
         const [taskRows] = await connection.query('SELECT customerId FROM dp_tasks WHERE id = ?', [req.params.id]);
         if (taskRows.length > 0 && taskRows[0].customerId) {
             await connection.query('UPDATE customers SET total_spend = total_spend + ? WHERE id = ?', [sisa, taskRows[0].customerId]);
@@ -179,7 +172,6 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
         res.json({ message: 'Pelunasan berhasil diproses!' });
     } catch (error) {
         await connection.rollback();
-        console.error(error);
         res.status(500).json({ message: 'Gagal memproses pelunasan' });
     } finally {
         connection.release();

@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FiPrinter, FiAlertCircle, FiLoader, FiLock } from 'react-icons/fi';
+import { FiPrinter, FiAlertCircle, FiLoader, FiLock, FiCpu } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function LoginPage({ storeSettings }) {
+export default function LoginPage({ storeSettings, onNavigate, systemInfo }) {
     const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [shopId, setShopId] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const isSaaS = systemInfo?.isSaaS;
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -20,7 +23,7 @@ export default function LoginPage({ storeSettings }) {
         setLoading(true);
 
         try {
-            const result = await login(username, password);
+            const result = await login(username, password, shopId);
             if (!result.success) setError(result.message);
         } catch (err) {
             setError('Terjadi kesalahan pada sistem. Silakan coba lagi.');
@@ -98,6 +101,23 @@ export default function LoginPage({ storeSettings }) {
                     </AnimatePresence>
 
                     <form onSubmit={handleLogin} className="space-y-7">
+                        {isSaaS && (
+                            <div className="space-y-2.5">
+                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1.5 flex items-center gap-2">
+                                    <FiCpu size={12} className="text-blue-500" /> Identitas Toko (Shop ID)
+                                </label>
+                                <div className="relative group/input">
+                                    <input
+                                        type="text"
+                                        value={shopId}
+                                        onChange={e => setShopId(e.target.value)}
+                                        placeholder="Contoh: abadi-jaya"
+                                        className="w-full bg-slate-100/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-[1.25rem] py-4.5 px-6 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700 focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 focus:border-blue-500/50 dark:focus:border-blue-500 transition-all outline-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className="space-y-2.5">
                             <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1.5">Identitas Sistem</label>
                             <div className="relative group/input">
@@ -107,7 +127,6 @@ export default function LoginPage({ storeSettings }) {
                                     onChange={e => setUsername(e.target.value)}
                                     placeholder="Username / ID"
                                     className="w-full bg-slate-100/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-[1.25rem] py-4.5 px-6 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-700 focus:ring-4 focus:ring-blue-500/5 dark:focus:ring-blue-500/10 focus:border-blue-500/50 dark:focus:border-blue-500 transition-all outline-none"
-                                    autoFocus
                                 />
                             </div>
                         </div>
@@ -154,6 +173,13 @@ export default function LoginPage({ storeSettings }) {
                     <p className="text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.4em] italic leading-relaxed">
                         Licensed POS Software — Abadi Jaya System V4.2
                     </p>
+                    <button
+                        type="button"
+                        onClick={() => onNavigate('superadmin-login')}
+                        className="text-[9px] font-bold text-slate-500 hover:text-blue-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 mx-auto"
+                    >
+                        <FiCpu size={12} /> Master Portal
+                    </button>
                     <div className="h-0.5 w-6 bg-slate-200 dark:bg-slate-800 mx-auto rounded-full"></div>
                 </div>
             </motion.div>

@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
-
 const { z } = require('zod');
 const crypto = require('crypto');
 
@@ -19,31 +18,31 @@ const cashFlowSchema = z.object({
 // 1. GET Semua Data Arus Kas (Buku Kas)
 router.get('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC');
+        const [rows] = await req.db.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC');
         res.json(rows);
     } catch (error) {
         res.status(500).json({ message: 'Gagal mengambil data arus kas' });
     }
 });
 
-// 2. GET Statistik Ringkasan (Untuk DashboardPage)
+// 2. GET Statistik Ringkasan (Dashboard)
 router.get('/stats', verifyToken, async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
         // Total Kas & Pendapatan Harian
-        const [[cashFlow]] = await pool.query('SELECT SUM(CASE WHEN type="in" THEN amount ELSE 0 END) as totalIn, SUM(CASE WHEN type="out" THEN amount ELSE 0 END) as totalOut FROM cash_flow');
-        const [[todaySales]] = await pool.query('SELECT SUM(total) as val FROM transactions WHERE date LIKE ? AND status = "paid"', [`${today}%`]);
-        const [[todayIn]] = await pool.query('SELECT SUM(amount) as val FROM cash_flow WHERE date = ? AND type = "in"', [today]);
+        const [[cashFlow]] = await req.db.query('SELECT SUM(CASE WHEN type="in" THEN amount ELSE 0 END) as totalIn, SUM(CASE WHEN type="out" THEN amount ELSE 0 END) as totalOut FROM cash_flow');
+        const [[todaySales]] = await req.db.query('SELECT SUM(total) as val FROM transactions WHERE date LIKE ? AND status = "paid"', [`${today}%`]);
+        const [[todayIn]] = await req.db.query('SELECT SUM(amount) as val FROM cash_flow WHERE date = ? AND type = "in"', [today]);
 
         // Count Data
-        const [[trxCount]] = await pool.query('SELECT COUNT(*) as val FROM transactions WHERE date LIKE ?', [`${today}%`]);
-        const [[pendingPrint]] = await pool.query('SELECT COUNT(*) as val FROM print_orders WHERE status NOT IN ("selesai", "diambil", "batal")');
-        const [[pendingService]] = await pool.query('SELECT COUNT(*) as val FROM service_orders WHERE status NOT IN ("selesai", "diambil", "batal")');
-        const [[lowStock]] = await pool.query('SELECT COUNT(*) as val FROM products WHERE stock <= min_stock');
+        const [[trxCount]] = await req.db.query('SELECT COUNT(*) as val FROM transactions WHERE date LIKE ?', [`${today}%`]);
+        const [[pendingPrint]] = await req.db.query('SELECT COUNT(*) as val FROM print_orders WHERE status NOT IN ("selesai", "diambil", "batal")');
+        const [[pendingService]] = await req.db.query('SELECT COUNT(*) as val FROM service_orders WHERE status NOT IN ("selesai", "diambil", "batal")');
+        const [[lowStock]] = await req.db.query('SELECT COUNT(*) as val FROM products WHERE stock <= min_stock');
 
         // Data Grafik Seminggu Terakhir
-        const [chartData] = await pool.query(`
+        const [chartData] = await req.db.query(`
             SELECT DATE(date) as label, SUM(total) as total 
             FROM transactions 
             WHERE date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
@@ -51,8 +50,8 @@ router.get('/stats', verifyToken, async (req, res) => {
             ORDER BY DATE(date) ASC
         `);
 
-        // Transaksi / Modifikasi Paling Baru
-        const [recentActivity] = await pool.query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 10');
+        // Recent activity from tenant's own log
+        const [recentActivity] = await req.db.query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 10');
 
         res.json({
             saldo: (cashFlow.totalIn || 0) - (cashFlow.totalOut || 0),
@@ -74,14 +73,14 @@ router.get('/stats', verifyToken, async (req, res) => {
     }
 });
 
-// 3. POST Entri Kas Baru (Masuk/Keluar)
+// 3. POST Entri Kas Baru
 router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const validatedData = cashFlowSchema.parse(req.body);
         const { date, type, category, amount, description, reference } = validatedData;
 
         const newId = crypto.randomUUID();
-        await pool.query(`
+        await req.db.query(`
             INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [newId, date, type, category, amount, description, reference || '']);
@@ -91,7 +90,6 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
         }
-        console.error(error);
         res.status(500).json({ message: 'Gagal mencatat entri kas' });
     }
 });
@@ -102,7 +100,7 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
         const validatedData = cashFlowSchema.parse(req.body);
         const { date, type, category, amount, description, reference } = validatedData;
 
-        const [result] = await pool.query(`
+        const [result] = await req.db.query(`
             UPDATE cash_flow SET date=?, type=?, category=?, amount=?, description=?, reference_id=?
             WHERE id=?
         `, [date, type, category, amount, description || null, reference || null, req.params.id]);
@@ -116,7 +114,6 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
         }
-        console.error(error);
         res.status(500).json({ message: 'Gagal memperbarui entri kas' });
     }
 });
@@ -124,40 +121,13 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
 // 5. DELETE Entri Kas
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        const [result] = await pool.query('DELETE FROM cash_flow WHERE id=?', [req.params.id]);
+        const [result] = await req.db.query('DELETE FROM cash_flow WHERE id=?', [req.params.id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Entri kas tidak ditemukan' });
         }
         res.json({ message: 'Entri kas berhasil dihapus!' });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Gagal menghapus entri kas' });
-    }
-});
-
-// 1. GET Semua Cash Flow
-router.get('/', verifyToken, async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC LIMIT 500');
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ message: 'Gagal mengambil data cash flow' });
-    }
-});
-
-// 2. POST Manual Cash Flow (Petty Cash)
-router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
-    try {
-        const { date, type, category, amount, description } = req.body;
-        const id = 'cf' + Date.now();
-        await pool.query(`
-            INSERT INTO cash_flow (id, date, type, category, amount, description)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, [id, date || new Date().toISOString().split('T')[0], type, category, amount, description]);
-        res.status(201).json({ message: 'Data cash flow berhasil ditambahkan!' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal menambah data cash flow' });
     }
 });
 

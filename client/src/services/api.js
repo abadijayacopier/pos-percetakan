@@ -1,8 +1,11 @@
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+// Detect if running in Electron
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: isElectron ? 'http://localhost:5001/api' : '/api',
 });
 
 // Otomatis menempelkan token JWT di setiap request HTTP

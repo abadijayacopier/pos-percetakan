@@ -1,66 +1,62 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
 
 router.get('/stats', verifyToken, async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. Omset Hari Ini (Dari Cash Flow IN)
-        const [cashToday] = await pool.query(
+        // 1. Omset Hari Ini (Dari Cash Flow IN - Tenant Scope)
+        const [cashToday] = await req.db.query(
             "SELECT SUM(amount) as omset FROM cash_flow WHERE type = 'in' AND date LIKE ?",
             [`${today}%`]
         );
 
-        // Omset Trx count tetap dari transactions untuk volume
-        const [trxToday] = await pool.query(
+        const [trxToday] = await req.db.query(
             "SELECT COUNT(id) as trxCount FROM transactions WHERE date LIKE ?",
             [`${today}%`]
         );
 
-        // 2. Saldo (Total Cash Flow in - out)
-        const [cashFlow] = await pool.query(
+        // 2. Saldo (Tenant Scope)
+        const [cashFlow] = await req.db.query(
             "SELECT SUM(CASE WHEN type = 'in' THEN amount ELSE -amount END) as saldo FROM cash_flow"
         );
 
-        // 3. Pending Print (Dari dp_tasks)
-        const [pendingPrint] = await pool.query(
+        // 3. Pending Print
+        const [pendingPrint] = await req.db.query(
             "SELECT COUNT(id) as count FROM dp_tasks WHERE status NOT IN ('diambil', 'batal')"
         );
 
-        // 4. Pending Service (Dari service_orders)
-        const [pendingService] = await pool.query(
+        // 4. Pending Service
+        const [pendingService] = await req.db.query(
             "SELECT COUNT(id) as count FROM service_orders WHERE status NOT IN ('diambil', 'batal', 'selesai')"
         );
 
         // 5. Low Stock
-        const [lowStock] = await pool.query(
+        const [lowStock] = await req.db.query(
             "SELECT COUNT(id) as count FROM products WHERE stock <= IFNULL(min_stock, 0)"
         );
 
-        // 6. Weekly Data (Last 7 days dari Cash Flow IN)
-        const weeklyData = [];
-        const monthlyData = [];
-
-        // Single query for last 30 days of data to be efficient
+        // 6. Analytics Data (Last 30 days - Tenant Scope)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const startDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-        const [periodTrx] = await pool.query(
+        const [periodTrx] = await req.db.query(
             "SELECT DATE(date) as date, SUM(amount) as total FROM cash_flow WHERE type = 'in' AND date >= ? GROUP BY DATE(date) ORDER BY DATE(date)",
             [`${startDate} 00:00:00`]
         );
 
-        // Map data for easy lookup
+        // Map data
         const dataMap = {};
         periodTrx.forEach(row => {
             const dateStr = new Date(row.date).toISOString().split('T')[0];
             dataMap[dateStr] = parseFloat(row.total || 0);
         });
 
-        // Generate full arrays with zero-filled gaps
+        const weeklyData = [];
+        const monthlyData = [];
         for (let i = 29; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
@@ -78,31 +74,43 @@ router.get('/stats', verifyToken, async (req, res) => {
             }
         }
 
-        // 7. Activity Log (Last 10)
-        let activityLog = [];
-        try {
-            const [logs] = await pool.query(`
-                SELECT al.id, al.user_id, al.user_name, al.action, al.detail, al.timestamp
-                FROM activity_log al 
-                ORDER BY al.id DESC 
-                LIMIT 10
-            `);
-            activityLog = logs;
-        } catch (e) {
-            console.error('Dash logs error:', e);
-        }
+        // 7. Activity Log (Tenant Specific)
+        const [activityLog] = await req.db.query(`
+            SELECT al.id, al.user_id, al.user_name, al.action, al.detail, al.timestamp
+            FROM activity_log al 
+            ORDER BY al.id DESC 
+            LIMIT 10
+        `);
 
-        // 8. Dynamic System Alerts (Injecting into Memo Harian)
+        // 8. Dynamic System Alerts
         const alerts = [];
         if (lowStock[0]?.count > 0) alerts.push(`⚠️ ${lowStock[0].count} Produk hampir habis stok! Harap segera restock.`);
         if (pendingService[0]?.count > 0) alerts.push(`🛠️ ${pendingService[0].count} Servis sedang menunggu pengerjaan.`);
         if (pendingPrint[0]?.count > 0) alerts.push(`🖨️ ${pendingPrint[0].count} Pesanan cetak belum diambil pelanggan.`);
 
-        // Add random operational tip if few alerts
         if (alerts.length < 2) {
             alerts.push("💡 Tips: Gunakan shortcut F2 untuk transaksi jilid cepat.");
             alerts.push("✅ Berikan struk bukti service ke pelanggan saat unit diterima.");
         }
+
+        // 9. Top Selling Products
+        const [topProducts] = await req.db.query(`
+            SELECT name, SUM(qty) as count, SUM(subtotal) as revenue 
+            FROM transaction_details 
+            GROUP BY product_id, name 
+            ORDER BY count DESC 
+            LIMIT 5
+        `);
+
+        // 10. Category Distribution
+        const [categorySales] = await req.db.query(`
+            SELECT c.name, SUM(td.subtotal) as value
+            FROM transaction_details td
+            JOIN products p ON td.product_id = p.id
+            JOIN categories c ON p.category_id = c.id
+            GROUP BY c.id, c.name
+            ORDER BY value DESC
+        `);
 
         res.json({
             omset: parseFloat(cashToday[0]?.omset || 0),
@@ -114,7 +122,9 @@ router.get('/stats', verifyToken, async (req, res) => {
             weeklyData,
             monthlyData,
             activityLog,
-            alerts
+            alerts,
+            topProducts,
+            categorySales
         });
 
     } catch (error) {

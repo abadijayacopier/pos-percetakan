@@ -408,7 +408,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 {[
                     { step: '1', title: 'Input & Kalkulasi', sub: 'Harga & Bahan', icon: 'calculate', color: 'blue', active: true },
                     { step: '2', title: 'Jasa Desain', sub: 'Kreatif & Revisi', icon: 'palette', color: 'indigo', active: false },
-                    { step: '3', title: 'SPK & Antrean', sub: 'Penerbitan Kerja', icon: 'content_paste', color: 'purple', active: false },
+                    { step: '3', title: 'SPK & Antrean', sub: 'Penerbitan Kerja', icon: 'content_paste', color: 'emerald', active: false },
                     { step: '4', title: 'Produksi', sub: 'Cetak & Finishing', icon: 'print', color: 'emerald', active: false },
                     { step: '5', title: 'Penagihan', sub: 'Pelunasan', icon: 'payments', color: 'amber', active: false },
                 ].map((s, idx) => (
@@ -660,11 +660,15 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                 <div>
                                     <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Lebar (M)</label>
                                     <input
-                                        type="number"
-                                        min="0.1"
-                                        step="0.1"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={calcOrderData.width}
-                                        onChange={(e) => setCalcOrderData({ ...calcOrderData, width: parseFloat(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(',', '.');
+                                            if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                setCalcOrderData({ ...calcOrderData, width: val });
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
                                         placeholder="0.0"
                                     />
@@ -672,11 +676,15 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                 <div>
                                     <label className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest pl-1">Tinggi (M)</label>
                                     <input
-                                        type="number"
-                                        min="0.1"
-                                        step="0.1"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={calcOrderData.height}
-                                        onChange={(e) => setCalcOrderData({ ...calcOrderData, height: parseFloat(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const val = e.target.value.replace(',', '.');
+                                            if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                setCalcOrderData({ ...calcOrderData, height: val });
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm"
                                         placeholder="0.0"
                                     />
@@ -700,9 +708,15 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                     <div className="relative">
                                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 transition-colors">Rp</div>
                                         <input
-                                            type="number"
+                                            type="text"
+                                            inputMode="decimal"
                                             value={calcOrderData.designFee}
-                                            onChange={(e) => setCalcOrderData({ ...calcOrderData, designFee: parseFloat(e.target.value) || 0 })}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(',', '.');
+                                                if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                    setCalcOrderData({ ...calcOrderData, designFee: val });
+                                                }
+                                            }}
                                             className="w-full px-4 py-3 pl-10 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-blue-600 dark:text-blue-400 font-black outline-none text-[14px] shadow-sm"
                                             placeholder="0"
                                         />
@@ -975,18 +989,30 @@ export default function DigitalPrintingPage({ onNavigate }) {
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lebar (m)</label>
                             <input
                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                type="number" step="0.1"
+                                type="text"
+                                inputMode="decimal"
                                 value={editForm.dimensions.width}
-                                onChange={e => setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, width: e.target.value } })}
+                                onChange={e => {
+                                    const val = e.target.value.replace(',', '.');
+                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                        setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, width: val } });
+                                    }
+                                }}
                             />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tinggi (m)</label>
                             <input
                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3 px-4 text-xs font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                type="number" step="0.1"
+                                type="text"
+                                inputMode="decimal"
                                 value={editForm.dimensions.height}
-                                onChange={e => setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, height: e.target.value } })}
+                                onChange={e => {
+                                    const val = e.target.value.replace(',', '.');
+                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                        setEditForm({ ...editForm, dimensions: { ...editForm.dimensions, height: val } });
+                                    }
+                                }}
                             />
                         </div>
                     </div>

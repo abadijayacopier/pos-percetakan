@@ -189,7 +189,7 @@ export default function WhatsAppSettingsPage() {
 
                     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] mb-8 text-slate-900 dark:text-white flex items-center gap-3">
-                            <FiMessageSquare className="text-purple-500" /> Messaging Templates
+                            <FiMessageSquare className="text-emerald-500" /> Messaging Templates
                         </h3>
 
                         <div className="space-y-6">

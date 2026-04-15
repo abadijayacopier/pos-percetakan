@@ -22,6 +22,7 @@ export default function BottomNav({ activePage, onNavigate }) {
                 return (
                     <button
                         key={item.id}
+                        aria-label={item.label}
                         onClick={() => onNavigate(item.id)}
                         className={`relative flex flex-col items-center justify-center w-[20%] h-16 rounded-2xl transition-all duration-300 ${isActive
                             ? 'text-blue-600 dark:text-blue-400'

@@ -5,24 +5,28 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 
 // GET /api/wa-gateway/status
 router.get('/status', verifyToken, requireRole(['admin']), (req, res) => {
-    res.json(whatsappService.getStatus());
+    res.json(whatsappService.getStatus(req.user.shopId));
 });
 
 // POST /api/wa-gateway/init
 router.post('/init', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        await whatsappService.init();
+        let shopId = req.user.shopId;
+        if (!shopId && process.env.APP_MODE === 'standalone') {
+            shopId = 1;
+        }
+        await whatsappService.init(shopId);
         res.json({ message: 'Inisialisasi WhatsApp Gateway dimulai' });
     } catch (error) {
         console.error('Failed to init WA Gateway:', error);
-        res.status(500).json({ message: 'Gagal inisialisasi WA Gateway' });
+        res.status(500).json({ message: 'Gagal inisialisasi WA Gateway, Aplikasi Belum Di Aktivasi Silahkan Hubungi Admin' });
     }
 });
 
 // POST /api/wa-gateway/logout
 router.post('/logout', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        await whatsappService.logout();
+        await whatsappService.logout(req.user.shopId);
         res.json({ message: 'Logout WhatsApp berhasil' });
     } catch (error) {
         console.error('Failed to logout WA Gateway:', error);
@@ -34,7 +38,7 @@ router.post('/logout', verifyToken, requireRole(['admin']), async (req, res) => 
 router.post('/test', verifyToken, requireRole(['admin']), async (req, res) => {
     const { to, message } = req.body;
     try {
-        await whatsappService.sendMessage(to, message);
+        await whatsappService.sendMessage(req.user.shopId, to, message);
         res.json({ success: true, message: 'Pesan tes berhasil dikirim' });
     } catch (error) {
         console.error('Failed to send test message:', error);

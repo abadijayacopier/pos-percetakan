@@ -1,0 +1,36 @@
+
+============================================================
+  SEO CHECKER - Search Engine Optimization Audit
+============================================================
+Project: D:\WEB\pos
+Time: 2026-04-14 14:15:19
+------------------------------------------------------------
+Found 46 page files to analyze
+
+============================================================
+SEO ANALYSIS RESULTS
+============================================================
+
+Issue Summary:
+  [13] Missing meta description
+  [13] Missing Open Graph tags
+  [8] Missing <title> tag
+  [2] Multiple H1 tags (2)
+  [1] Multiple H1 tags (3)
+
+Affected files (15):
+  - Layout.jsx
+  - PrintReportLayout.jsx
+  - AssignmentSettingsPage.jsx
+  - DesignerDashboardPage.jsx
+  - DigitalPrintingCartPage.jsx
+  ... and 10 more
+
+{
+  "script": "seo_checker",
+  "project": "D:\\WEB\\pos",
+  "files_checked": 46,
+  "files_with_issues": 15,
+  "issues_found": 37,
+  "passed": false
+}

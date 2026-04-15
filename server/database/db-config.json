@@ -1,0 +1,8 @@
+{
+  "APP_MODE": "standalone",
+  "DB_TYPE": "mysql",
+  "DB_HOST": "localhost",
+  "DB_USER": "root",
+  "DB_PASS": "admin",
+  "DB_NAME": "pos_abadi"
+}

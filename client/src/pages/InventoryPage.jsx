@@ -62,7 +62,7 @@ const CAT_ICON_SMALL = {
     c9: <FiCpu size={12} />,
 };
 
-export default function InventoryPage({ onNavigate }) {
+export default function InventoryPage({ onNavigate, storeSettings }) {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [opnameTarget, setOpnameTarget] = useState(null);
@@ -339,9 +339,17 @@ export default function InventoryPage({ onNavigate }) {
                                         <tr key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
-                                                    {p.image ? (
-                                                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm shrink-0">
-                                                            <img src={`http://${window.location.hostname}:5001${p.image}`} alt={p.name} className="w-full h-full object-cover" />
+                                                    {(p.image || storeSettings?.logo) ? (
+                                                        <div className="size-10 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 bg-white">
+                                                            <img
+                                                                src={`http://${window.location.hostname}:5001${p.image || storeSettings.logo}`}
+                                                                alt={p.name}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.src = '/logo-fallback.png'; // Global fallback if both fail
+                                                                }}
+                                                            />
                                                         </div>
                                                     ) : (
                                                         <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500 transition-all shadow-sm shrink-0">

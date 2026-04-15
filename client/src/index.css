@@ -51,8 +51,8 @@
   --primary-glow: rgba(19, 127, 236, 0.2);
 
   /* Accent */
-  --accent: #8b5cf6;
-  --accent-light: #a78bfa;
+  --accent: #10b981;
+  --accent-light: #34d399;
 
   /* Status */
   --success: #10b981;
@@ -504,9 +504,9 @@ img {
   color: #eab308;
 }
 
-.premium-page-wrapper .stat-icon.purple {
+.premium-page-wrapper .stat-icon.emerald {
   background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
+  color: #10b981;
 }
 
 .premium-page-wrapper .stat-value {
@@ -1022,8 +1022,8 @@ img {
   color: var(--danger);
 }
 
-.stat-card .stat-icon.purple {
-  background: var(--purple-50);
+.stat-card .stat-icon.emerald {
+  background: var(--emerald-50);
   color: var(--accent);
 }
 
@@ -1256,7 +1256,7 @@ img {
   color: var(--primary);
 }
 
-.badge-purple {
+.badge-emerald {
   background: rgba(99, 102, 241, 0.15);
   color: var(--accent);
 }
@@ -3588,5 +3588,45 @@ img {
   /* Allow text to wrap naturally in cards */
   table tbody tr td * {
     white-space: normal !important;
+  }
+}
+
+/* --- PRINT CLEANUP OVERRIDES --- */
+@media print {
+
+  .rounded-\[2\.5rem\],
+  .rounded-3xl,
+  .rounded-2xl,
+  .rounded-xl,
+  .rounded-lg {
+    border-radius: 0 !important;
+  }
+
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  .border,
+  .border-slate-200,
+  .border-slate-800 {
+    border-color: #eee !important;
+  }
+
+  .bg-slate-50\/30,
+  .bg-slate-50\/50,
+  .bg-slate-50,
+  .bg-amber-50\/30,
+  .bg-emerald-50\/30,
+  .bg-indigo-50\/30 {
+    background-color: transparent !important;
+  }
+
+  .slide-in-from-bottom-4 {
+    animation: none !important;
+    transform: none !important;
   }
 }

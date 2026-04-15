@@ -274,9 +274,33 @@ export default function OrderInputPage() {
                                     </select>
                                     {ukuran === 'Kustom' && (
                                         <div className="flex items-center gap-1">
-                                            <input value={panjang} onChange={e => setPanjang(e.target.value)} type="number" className="form-input w-16 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 text-center" placeholder="L" />
+                                            <input
+                                                value={panjang}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(',', '.');
+                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                        setPanjang(val);
+                                                    }
+                                                }}
+                                                type="text"
+                                                inputMode="decimal"
+                                                className="form-input w-16 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 text-center"
+                                                placeholder="L"
+                                            />
                                             <span className="text-slate-400 text-xs">x</span>
-                                            <input value={lebar} onChange={e => setLebar(e.target.value)} type="number" className="form-input w-16 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 text-center" placeholder="P" />
+                                            <input
+                                                value={lebar}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(',', '.');
+                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                        setLebar(val);
+                                                    }
+                                                }}
+                                                type="text"
+                                                inputMode="decimal"
+                                                className="form-input w-16 rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 text-center"
+                                                placeholder="P"
+                                            />
                                         </div>
                                     )}
                                 </div>

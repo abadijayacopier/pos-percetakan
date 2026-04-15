@@ -7,17 +7,20 @@ import {
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
     FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw,
-    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand
+    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand, FiPieChart
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+    ResponsiveContainer,
     AreaChart as RechartsAreaChart,
     Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer
+    PieChart,
+    Pie,
+    Cell
 } from 'recharts';
 
 // Premium Loading Spinner Component
@@ -114,7 +117,8 @@ export default function DashboardPage({ onNavigate }) {
     const [stats, setStats] = useState({
         omset: 0, trxCount: 0, saldo: 0,
         lowStockCount: 0, pendingPrintCount: 0, pendingServiceCount: 0,
-        activityLog: [], alerts: [], weeklyData: [], monthlyData: []
+        activityLog: [], alerts: [], weeklyData: [], monthlyData: [],
+        topProducts: [], categorySales: []
     });
 
     // Real-time Engine States
@@ -157,7 +161,9 @@ export default function DashboardPage({ onNavigate }) {
                     activityLog: data.activityLog,
                     alerts: data.alerts || [],
                     weeklyData: data.weeklyData || [],
-                    monthlyData: data.monthlyData || []
+                    monthlyData: data.monthlyData || [],
+                    topProducts: data.topProducts || [],
+                    categorySales: data.categorySales || []
                 });
 
                 // Sort transactions by date descending
@@ -553,52 +559,137 @@ export default function DashboardPage({ onNavigate }) {
                     </div>
                 </motion.div>
 
-                {/* Activity Log */}
+                {/* Analytical Breakdown: Top Products & Categories */}
                 {isAdmin && (
                     <motion.div
                         variants={itemVariants}
-                        className="bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-w-0"
+                        className="lg:col-span-1 space-y-8"
                     >
-                        <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/20 dark:bg-slate-800/20">
-                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">Aliran Aktivitas</h3>
-                            <div className="p-2 bg-slate-900 text-white rounded-lg"><FiClock size={16} /></div>
-                        </div>
-                        <div className="p-8 space-y-10 overflow-y-auto max-h-[580px] custom-scrollbar">
-                            <AnimatePresence mode="popLayout">
-                                {stats.activityLog.map((log, i) => (
-                                    <motion.div
-                                        key={log.id}
-                                        initial={{ opacity: 0, x: 20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.05 }}
-                                        className="relative flex gap-5"
-                                    >
-                                        <div className="absolute left-5 top-12 bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
-                                        <div className={`size-11 rounded-2xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
-                                                        ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
-                                                log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
-                                                    log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
-                                            <FiActivity size={18} />
-                                        </div>
-                                        <div className="pt-0.5">
-                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                                <span className="text-cyan-600 italic font-black mr-2 uppercase tracking-tighter">{log.userName}</span>
-                                                {log.action}
-                                            </p>
-                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed italic opacity-85">"{log.detail}"</p>
-                                            <div className="flex items-center gap-2 mt-3 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic">
-                                                <FiClock size={10} />
-                                                {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
-                                                    ? new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                                    : 'Baru saja'}
+                        {/* Top Products Card */}
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] mb-8 flex items-center gap-3 italic">
+                                <div className="p-2 bg-amber-500/10 rounded-lg text-amber-600">
+                                    <FiTag size={16} />
+                                </div>
+                                Produk Terlaris
+                            </h3>
+                            <div className="space-y-6">
+                                {stats.topProducts.map((p, i) => (
+                                    <div key={i} className="flex items-center justify-between group">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-xs font-black text-slate-300 w-4 group-hover:text-amber-500 transition-colors">{i + 1}</span>
+                                            <div>
+                                                <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[120px]">{p.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">{p.count} terjual</p>
                                             </div>
                                         </div>
-                                    </motion.div>
+                                        <div className="text-right">
+                                            <p className="text-[11px] font-black text-emerald-600 italic leading-none">{formatRupiah(p.revenue)}</p>
+                                        </div>
+                                    </div>
                                 ))}
-                            </AnimatePresence>
+                                {stats.topProducts.length === 0 && (
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center py-6 italic opacity-50">Belum ada data penjualan</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Category Sales Pie Chart */}
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3 italic">
+                                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-600">
+                                    <FiPieChart size={16} />
+                                </div>
+                                Kontribusi Kategori
+                            </h3>
+                            <div className="h-56 w-full relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={stats.categorySales}
+                                            innerRadius={60}
+                                            outerRadius={80}
+                                            paddingAngle={5}
+                                            dataKey="value"
+                                        >
+                                            {stats.categorySales.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={['#0891b2', '#0ea5e9', '#3b82f6', '#6366f1', '#10b981'][index % 5]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                                borderRadius: '16px',
+                                                border: '1px solid #e2e8f0',
+                                                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                            }}
+                                            itemStyle={{ color: '#0f172a', fontWeight: '900', fontSize: '10px' }}
+                                            formatter={(value) => formatRupiah(value)}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Share</span>
+                                    <FiLayers className="text-slate-200 mt-1" size={24} />
+                                </div>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                {stats.categorySales.slice(0, 3).map((cat, i) => (
+                                    <div key={i} className="flex justify-between items-center text-[10px] font-bold">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#0891b2', '#0ea5e9', '#3b82f6'][i % 3] }}></div>
+                                            <span className="text-slate-600 dark:text-slate-400 truncate max-w-[100px] uppercase">{cat.name}</span>
+                                        </div>
+                                        <span className="text-slate-900 dark:text-white italic">{Math.round((cat.value / stats.categorySales.reduce((s, c) => s + c.value, 0)) * 100)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Activity Log - Integrated into Sidebar */}
+                        <div className="bg-white dark:bg-slate-900 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-w-0 max-h-[400px]">
+                            <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/20 dark:bg-slate-800/20">
+                                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] italic">Aliran Aktivitas</h3>
+                                <div className="p-2 bg-slate-900 text-white rounded-lg"><FiClock size={16} /></div>
+                            </div>
+                            <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
+                                <AnimatePresence mode="popLayout">
+                                    {(stats.activityLog || []).map((log, i) => (
+                                        <motion.div
+                                            key={log.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                            className="relative flex gap-4"
+                                        >
+                                            <div className="absolute left-4 top-10 bottom-[-30px] w-0.5 bg-slate-100 dark:bg-slate-800/50 last:hidden"></div>
+                                            <div className={`size-9 rounded-xl flex items-center justify-center shrink-0 z-10 shadow-sm border border-white dark:border-slate-800 
+                                                            ${log.action?.includes('Tambah') ? 'bg-emerald-50 text-emerald-600' :
+                                                    log.action?.includes('Edit') || log.action?.includes('Update') ? 'bg-cyan-50 text-cyan-600' :
+                                                        log.action?.includes('Hapus') ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
+                                                <FiActivity size={16} />
+                                            </div>
+                                            <div className="pt-0.5 overflow-hidden">
+                                                <p className="text-[10px] font-black text-cyan-600 uppercase tracking-tighter truncate">{log.userName || 'System'}</p>
+                                                <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                                                    {log.action}
+                                                </p>
+                                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight italic opacity-80">"{log.detail}"</p>
+                                                <div className="flex items-center gap-1.5 mt-2 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic leading-none">
+                                                    <FiClock size={10} />
+                                                    {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
+                                                        ? new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                                                        : 'Baru saja'}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
                         </div>
                     </motion.div>
                 )}
+
             </motion.div>
         </div>
     );

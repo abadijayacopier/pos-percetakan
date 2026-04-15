@@ -126,7 +126,7 @@ export default function FinancePage() {
                     { label: 'Kas Masuk', value: totalIn, icon: <FiTrendingUp />, color: 'emerald', tag: 'Total In' },
                     { label: 'Kas Keluar', value: totalOut, icon: <FiTrendingDown />, color: 'rose', tag: 'Total Out' },
                     { label: 'Saldo Akhir', value: saldo, icon: <FiDollarSign />, color: saldo >= 0 ? 'blue' : 'orange', tag: 'Balance' },
-                    { label: 'Total Entri', value: cashFlow.length, icon: <FiBookOpen />, color: 'purple', tag: 'Journal', isCount: true },
+                    { label: 'Total Entri', value: cashFlow.length, icon: <FiBookOpen />, color: 'emerald', tag: 'Journal', isCount: true },
                 ].map(s => (
                     <div key={s.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">

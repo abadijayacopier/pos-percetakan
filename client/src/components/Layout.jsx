@@ -261,11 +261,11 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                                             <p className="text-xs text-slate-500">{user?.role || 'Administrator'}</p>
                                         </div>
 
-                                        <button onClick={() => { onNavigate('profile'); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-white transition-colors">
+                                        <button onClick={() => { onNavigate('settings', { tab: 'users' }); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-white transition-colors">
                                             <span className="material-symbols-outlined text-lg">person</span>
                                             Profil Saya
                                         </button>
-                                        <button onClick={() => { onNavigate('settings'); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-white transition-colors">
+                                        <button onClick={() => { onNavigate('settings', { tab: 'users', action: 'change-password' }); setProfileOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-white transition-colors">
                                             <span className="material-symbols-outlined text-lg">lock_reset</span>
                                             Ganti Kata Sandi
                                         </button>

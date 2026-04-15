@@ -1,16 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
-const LicenseManager = require('../utils/licenseManager');
+const { masterPool, getTenantPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
-const multer = require('multer');
-const upload = multer({ dest: 'temp/' });
-const fs = require('fs');
+const TenantManager = require('../utils/tenantManager');
+const LicenseManager = require('../utils/licenseManager');
 
-// GET Semua Settings
+// GET Semua Settings (Authenticated)
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT `key`, `value` FROM settings');
+        const [rows] = await req.db.query('SELECT `key`, `value` FROM settings');
         res.json(rows);
     } catch (e) {
         console.error(e);
@@ -18,24 +16,53 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// GET Public Settings (Hanya untuk Landing Page)
+// GET Public Settings (Landing Page - SaaS Aware)
 router.get('/public', async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices', 'tarif_desain_per_jam')");
+        const shopId = req.query.shopId || req.header('X-Shop-Id');
+
+        const isStandalone = (process.env.APP_MODE || '').trim() === 'standalone';
+        const isSqlite = (process.env.DB_TYPE || '').trim() === 'sqlite';
+
+        // Standalone Mode: Bypass TenantManager
+        if (isStandalone) {
+            const { getActivePool } = require('../config/database');
+            const db = await getActivePool();
+            const query = "SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices', 'tarif_desain_per_jam')";
+
+            let rows;
+            if (isSqlite && typeof db.all === 'function') {
+                rows = await db.all(query);
+            } else if (typeof db.query === 'function') {
+                const [dbRows] = await db.query(query);
+                rows = dbRows;
+            } else {
+                throw new Error('Unsupported database object type for mode: ' + (isSqlite ? 'sqlite' : 'mysql'));
+            }
+            return res.json(rows);
+        }
+
+        if (!shopId) return res.status(400).json({ message: 'Shop ID diperlukan (SaaS Mode).' });
+
+        const result = await TenantManager.getShopDBName(shopId);
+        if (!result) return res.status(404).json({ message: 'Toko tidak ditemukan.' });
+
+        const tenantDb = getTenantPool(result.dbName);
+        const [rows] = await tenantDb.query("SELECT `key`, `value` FROM settings WHERE `key` LIKE 'landing_%' OR `key` LIKE 'store_%' OR `key` IN ('print_prices', 'binding_prices', 'tarif_desain_per_jam')");
         res.json(rows);
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal memuat fitur publik' });
+        console.error('Settings Public Error:', e);
+        res.status(500).json({ message: 'Gagal memuat fitur publik: ' + e.message });
     }
 });
 
 // POST Simpan Multiple Settings
 router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        const settings = req.body; // expects array [{key, value}]
+        const settings = req.body;
         if (!Array.isArray(settings)) return res.status(400).json({ message: 'Format data salah' });
 
-        const connection = await pool.getConnection();
+        const connection = await req.db.getConnection();
         try {
             await connection.beginTransaction();
             for (const s of settings) {
@@ -46,13 +73,14 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
                     await connection.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', [s.key, s.value]);
                 }
             }
+
+            // Manual Activity Log to Tenant DB
+            await connection.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'UPDATE_SETTINGS', 'System', `Update ${settings.length} pengaturan sistem`, req.ip || null]
+            );
+
             await connection.commit();
-
-            // Activity Log
-            const { logActivity } = require('../utils/logger');
-            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            await logActivity(req.user.id, 'UPDATE_SETTINGS', 'settings', `Update ${settings.length} pengaturan sistem`, ip);
-
             res.json({ message: 'Pengaturan berhasil disimpan' });
         } catch (dbErr) {
             await connection.rollback();
@@ -66,11 +94,137 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
     }
 });
 
-// GET Activity Logs
+// GET License Status (Dual-Mode Aware)
+router.get('/license', verifyToken, async (req, res) => {
+    try {
+        // --- 1. STANDALONE (OFFLINE) MODE ---
+        if (process.env.APP_MODE === 'standalone') {
+            const [rows] = await req.db.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
+            const manager = new LicenseManager();
+            const result = manager.verifyLicense(rows[0]?.value || '');
+
+            return res.json({
+                activated: result.isValid,
+                message: result.message || 'Status Lisensi Offline',
+                expiryDate: result.expiryDate,
+                clientName: result.clientName,
+                hardwareId: LicenseManager.getHardwareId()
+            });
+        }
+
+        // --- 2. SAAS (ONLINE) MODE ---
+        const [shops] = await masterPool.query(
+            'SELECT shop_name, subscription_status, expiry_date, subscription_plan FROM shops WHERE id = ?',
+            [req.user.shopId]
+        );
+
+        if (shops.length === 0) {
+            return res.json({ activated: false, message: 'Shop not found' });
+        }
+
+        const shop = shops[0];
+        res.json({
+            activated: shop.subscription_status === 'active' || shop.subscription_status === 'trial',
+            status: shop.subscription_status,
+            expiryDate: shop.expiry_date,
+            plan: shop.subscription_plan,
+            clientName: shop.shop_name,
+            hardwareId: 'SaaS-Cloud-ID',
+            isSaaS: true
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memuat info lisensi' });
+    }
+});
+
+/**
+ * POST /api/settings/license
+ * Activate/Save license key
+ */
+router.post('/license', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { licenseKey } = req.body;
+        if (!licenseKey) return res.status(400).json({ message: 'Kode lisensi diperlukan' });
+
+        if (process.env.APP_MODE === 'standalone') {
+            const manager = new LicenseManager();
+            const result = manager.verifyLicense(licenseKey);
+
+            if (!result.isValid) {
+                return res.status(400).json({ message: result.message || 'Lisensi tidak valid' });
+            }
+
+            // Save to DB
+            const [existing] = await req.db.query('SELECT `key` FROM settings WHERE `key` = ?', ['license_key']);
+            if (existing.length > 0) {
+                await req.db.query('UPDATE settings SET `value` = ? WHERE `key` = ?', [licenseKey, 'license_key']);
+            } else {
+                await req.db.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['license_key', licenseKey]);
+            }
+
+            // Log action
+            await req.db.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'ACTIVATE_LICENSE', 'License', `Aktivasi produk untuk ${result.clientName}`, req.ip || null]
+            );
+
+            return res.json({
+                success: true,
+                message: 'Aktivasi berhasil',
+                clientName: result.clientName
+            });
+        }
+
+        res.status(400).json({ message: 'Mode SaaS tidak menggunakan endpoint ini.' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memproses aktivasi: ' + e.message });
+    }
+});
+
+/**
+ * DELETE /api/settings/license
+ * Reset/Remove license key
+ */
+router.delete('/license', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        if (process.env.APP_MODE === 'standalone') {
+            await req.db.query('DELETE FROM settings WHERE `key` = ?', ['license_key']);
+
+            // Log action
+            await req.db.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'RESET_LICENSE', 'License', 'Menghapus lisensi offline (Ganti PC)', req.ip || null]
+            );
+
+            return res.json({ success: true, message: 'Lisensi offline berhasil direset.' });
+        }
+
+        // SaaS Reset logic: Usually just an alert that it's managed by Cloud
+        res.json({
+            success: true,
+            message: 'Mode SaaS: Lisensi dikelola secara terpusat oleh sistem cloud.'
+        });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal mereset lisensi: ' + e.message });
+    }
+});
+
+// GET Activity Logs (Tenant Specific)
 router.get('/logs', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query(`
-            SELECT al.id, al.user_id, al.user_name, al.action, al.detail
+        const [rows] = await req.db.query(`
+            SELECT 
+                al.id, 
+                al.user_id, 
+                al.user_name, 
+                al.action, 
+                al.detail as details, 
+                al.target,
+                al.ip_address,
+                al.timestamp as created_at
             FROM activity_log al
             ORDER BY al.id DESC
             LIMIT 200
@@ -79,304 +233,6 @@ router.get('/logs', verifyToken, async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Gagal memuat log' });
-    }
-});
-
-// GET Master Data for frontend (Kategori & Satuan)
-router.get('/master', verifyToken, async (req, res) => {
-    try {
-        const [kategoriRows] = await pool.query('SELECT value FROM settings WHERE `key` = ?', ['kategori_bahan']);
-        const [satuanRows] = await pool.query('SELECT value FROM settings WHERE `key` = ?', ['satuan_unit']);
-
-        let kategori_bahan = ["digital", "offset", "atk", "finishing"];
-        let satuan_unit = ["lembar", "roll", "m2", "pcs", "box", "rim", "kg", "liter", "set"];
-
-        if (kategoriRows.length > 0) {
-            try {
-                kategori_bahan = JSON.parse(kategoriRows[0].value);
-            } catch (e) {
-                console.error("Error parsing kategori_bahan:", e);
-            }
-        } else {
-            // Seed defaults
-            await pool.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['kategori_bahan', JSON.stringify(kategori_bahan)]);
-        }
-
-        if (satuanRows.length > 0) {
-            try {
-                satuan_unit = JSON.parse(satuanRows[0].value);
-            } catch (e) {
-                console.error("Error parsing satuan_unit:", e);
-            }
-        } else {
-            // Seed defaults
-            await pool.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['satuan_unit', JSON.stringify(satuan_unit)]);
-        }
-
-        res.json({
-            kategori_bahan,
-            satuan_unit
-        });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal mengambil master data' });
-    }
-});
-
-// POST Add new Master Data item
-router.post('/master', verifyToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const { type, value } = req.body; // type = 'kategori_bahan' or 'satuan_unit', value = 'string'
-
-        if (!type || !value) {
-            return res.status(400).json({ message: 'Type dan Value harus diisi' });
-        }
-
-        if (type !== 'kategori_bahan' && type !== 'satuan_unit') {
-            return res.status(400).json({ message: 'Type tidak valid' });
-        }
-
-        const [rows] = await pool.query('SELECT value FROM settings WHERE `key` = ?', [type]);
-        let currentArray = [];
-
-        if (rows.length > 0) {
-            try {
-                currentArray = JSON.parse(rows[0].value);
-            } catch (e) {
-                currentArray = [];
-            }
-        }
-
-        // Avoid duplicates case-insensitively
-        const isDuplicate = currentArray.some(item => item.toLowerCase() === value.toLowerCase());
-        if (!isDuplicate) {
-            currentArray.push(value);
-
-            if (rows.length > 0) {
-                await pool.query('UPDATE settings SET `value` = ? WHERE `key` = ?', [JSON.stringify(currentArray), type]);
-            } else {
-                await pool.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', [type, JSON.stringify(currentArray)]);
-            }
-        }
-
-        res.json({ message: 'Berhasil menambahkan master data', data: currentArray });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal menambahkan master data' });
-    }
-});
-
-// GET Backup Data (SQL)
-router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const TABLES = [
-            'settings', 'users', 'customers', 'products', 'suppliers',
-            'orders', 'order_items', 'production_status', 'transactions',
-            'transaction_details', 'fotocopy_prices', 'stock_movements',
-            'activity_log', 'design_logs', 'purchases', 'service_orders',
-            'service_spareparts', 'cash_flow', 'categories', 'dp_tasks',
-            'materials', 'offset_orders', 'offset_products', 'pricing_logs',
-            'pricing_rules', 'print_orders', 'product_options', 'purchase_items',
-            'spk', 'spk_handovers', 'spk_logs', 'spk_payments', 'tiered_pricing_rules',
-            'wa_config'
-        ];
-
-        let sqlDump = `-- POS Abadi Jaya System Backup\n`;
-        sqlDump += `-- Generated on ${new Date().toISOString()}\n\n`;
-        sqlDump += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
-
-        for (const table of TABLES) {
-            try {
-                const [rows] = await pool.query(`SELECT * FROM \`${table}\``);
-                if (rows.length > 0) {
-                    sqlDump += `-- Dumping data for table \`${table}\`\n`;
-                    const columns = Object.keys(rows[0]);
-
-                    // Break inserts into chunks of 100 rows to avoid huge single statements
-                    const chunkSize = 100;
-                    for (let i = 0; i < rows.length; i += chunkSize) {
-                        const chunk = rows.slice(i, i + chunkSize);
-                        sqlDump += `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES\n`;
-
-                        const valStrings = chunk.map(row => {
-                            const values = columns.map(col => {
-                                const val = row[col];
-                                if (val === null) return 'NULL';
-                                if (typeof val === 'number') return val;
-                                // Handle Date objects correctly for MySQL strings
-                                if (val instanceof Date) return `'${val.toISOString().slice(0, 19).replace('T', ' ')}'`;
-                                // Escape single quotes for strings
-                                return `'${String(val).replace(/'/g, "''")}'`;
-                            });
-                            return `(${values.join(',')})`;
-                        });
-
-                        sqlDump += valStrings.join(',\n') + ';\n';
-                    }
-                    sqlDump += `\n`;
-                }
-            } catch (err) {
-                console.warn(`Table ${table} not found or error, skipping dump...`);
-            }
-        }
-
-        sqlDump += `SET FOREIGN_KEY_CHECKS = 1;\n`;
-
-        res.setHeader('Content-Type', 'application/sql');
-        res.setHeader('Content-Disposition', `attachment; filename=pos_backup_${new Date().toISOString().slice(0, 10)}.sql`);
-        res.send(sqlDump);
-
-        // Log this action
-        const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'BACKUP_DATA', 'system', 'Eksport data ke file SQL', req.ip);
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal melakukan backup' });
-    }
-});
-
-
-// POST Restore Data (SQL/JSON)
-router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {
-    let connection;
-    try {
-        if (!req.file) return res.status(400).json({ message: 'File backup tidak ditemukan' });
-
-        const rawContent = fs.readFileSync(req.file.path, 'utf8');
-        const isSql = req.file.originalname.endsWith('.sql') || rawContent.trim().startsWith('--') || rawContent.trim().startsWith('SET ');
-
-        connection = await pool.getConnection();
-
-        if (isSql) {
-            // Restore via SQL Script (New Format)
-            // MySQL2 with multipleStatements can execute the whole chunk
-            await connection.query(rawContent);
-        } else {
-            // Restore via JSON (Legacy Format)
-            try {
-                const data = JSON.parse(rawContent);
-                await connection.beginTransaction();
-                await connection.query('SET FOREIGN_KEY_CHECKS = 0');
-
-                const TABLES = Object.keys(data);
-                for (const table of TABLES) {
-                    const rows = data[table];
-                    if (!Array.isArray(rows)) continue;
-                    await connection.query(`DELETE FROM \`${table}\``);
-                    if (rows.length > 0) {
-                        const columns = Object.keys(rows[0]);
-                        const values = rows.map(r => columns.map(c => r[c]));
-                        const query = `INSERT INTO \`${table}\` (\`${columns.join('`,`')}\`) VALUES ?`;
-                        await connection.query(query, [values]);
-                    }
-                }
-                await connection.query('SET FOREIGN_KEY_CHECKS = 1');
-                await connection.commit();
-            } catch (jsonErr) {
-                throw new Error('Format file tidak dikenali atau JSON tidak valid: ' + jsonErr.message);
-            }
-        }
-
-        fs.unlinkSync(req.file.path); // Cleanup temp file
-
-        // Log this action
-        const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'RESTORE_DATA', 'system', `Data dipulihkan dari file ${isSql ? 'SQL' : 'JSON'}`, req.ip);
-
-        res.json({ message: 'Data berhasil dipulihkan' });
-    } catch (e) {
-        if (connection && !isSql) await connection.rollback();
-        console.error('Restore failed:', e);
-        res.status(500).json({ message: 'Gagal memulihkan data: ' + e.message });
-    } finally {
-        if (connection) connection.release();
-    }
-});
-
-
-// GET Status Lisensi
-router.get('/license', verifyToken, async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
-        if (rows.length === 0 || !rows[0].value) {
-            return res.json({
-                activated: false,
-                hardwareId: LicenseManager.getHardwareId()
-            });
-        }
-
-        const manager = new LicenseManager();
-        const result = manager.verifyLicense(rows[0].value);
-
-        console.log('[LICENSE_DEBUG] Raw Result:', result); // Penting untuk cek isi objek
-
-        res.json({
-            activated: result.isValid,
-            clientName: result.clientName || result.client || '',
-            expiryDate: result.expiryDate || result.expiry || '',
-            features: result.features || {},
-            hardwareId: LicenseManager.getHardwareId(),
-            message: result.message
-        });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal memuat status lisensi' });
-    }
-});
-
-// POST Aktivasi Lisensi
-router.post('/license', verifyToken, requireRole(['admin']), async (req, res) => {
-    try {
-        const { licenseKey } = req.body;
-        if (!licenseKey) return res.status(400).json({ message: 'Kode lisensi harus diisi' });
-
-        const manager = new LicenseManager();
-        const result = manager.verifyLicense(licenseKey);
-
-        if (!result.isValid) {
-            return res.status(400).json({ message: result.message });
-        }
-
-        // Simpan ke database
-        const [existing] = await pool.query('SELECT `key` FROM settings WHERE `key` = ?', ['license_key']);
-        if (existing.length > 0) {
-            await pool.query('UPDATE settings SET `value` = ? WHERE `key` = ?', [licenseKey, 'license_key']);
-        } else {
-            await pool.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['license_key', licenseKey]);
-        }
-
-        // Log Aktivitas
-        const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'ACTIVATE_LICENSE', 'license', `Aplikasi diaktivasi untuk ${result.clientName}`, req.ip);
-
-        res.json({
-            message: 'Aktivasi Berhasil!',
-            clientName: result.clientName,
-            expiryDate: result.expiryDate,
-            features: result.features,
-            hardwareId: result.hardwareId
-        });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal melakukan aktivasi' });
-    }
-});
-
-// DELETE Reset Lisensi (Misal ganti PC)
-router.delete('/license', verifyToken, requireRole(['admin']), async (req, res) => {
-    try {
-        console.log(`[LICENSE_RESET] Requested by user ID: ${req.user.id}`);
-        const [result] = await pool.query('DELETE FROM settings WHERE `key` = ?', ['license_key']);
-        console.log(`[LICENSE_RESET] DB Result:`, result);
-
-        // Log Aktivitas
-        const { logActivity } = require('../utils/logger');
-        await logActivity(req.user.id, 'RESET_LICENSE', 'license', 'Lisensi aplikasi telah dihapus/direset', req.ip);
-
-        res.json({ message: 'Lisensi berhasil direset. Aplikasi kembali ke mode belum aktivasi.' });
-    } catch (e) {
-        console.error('[LICENSE_RESET_ERROR]', e);
-        res.status(500).json({ message: 'Gagal mereset lisensi', error: e.message });
     }
 });
 

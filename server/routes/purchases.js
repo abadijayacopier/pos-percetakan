@@ -1,12 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
-
 const { z } = require('zod');
 const crypto = require('crypto');
 
-// Validation Schema - coerce numbers from string inputs
 const purchaseSchema = z.object({
     supplier_id: z.preprocess(v => (v === '' || v === undefined) ? null : v, z.string().nullable().optional()),
     supplier_name: z.string().optional().default('Umum'),
@@ -28,74 +26,65 @@ const purchaseSchema = z.object({
 // GET all purchases
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM purchases ORDER BY created_at DESC');
+        const [rows] = await req.db.query('SELECT * FROM purchases ORDER BY created_at DESC');
         res.json(rows);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ message: 'Server Error' });
     }
 });
 
-// GET specific purchase and its items
+// GET specific purchase
 router.get('/:id', verifyToken, async (req, res) => {
     try {
-        const [purchases] = await pool.query('SELECT * FROM purchases WHERE id = ?', [req.params.id]);
+        const [purchases] = await req.db.query('SELECT * FROM purchases WHERE id = ?', [req.params.id]);
         if (purchases.length === 0) return res.status(404).json({ message: 'Not found' });
 
-        const [items] = await pool.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [req.params.id]);
+        const [items] = await req.db.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [req.params.id]);
         res.json({ ...purchases[0], items });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ message: 'Server Error' });
     }
 });
 
 // POST new purchase
 router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
-    const conn = await pool.getConnection();
+    const conn = await req.db.getConnection();
     try {
         const validatedData = purchaseSchema.parse(req.body);
         const { supplier_id, supplier_name, date, total_amount, payment_status, notes, items } = validatedData;
 
         await conn.beginTransaction();
-
         const purchase_id = 'PURC-' + crypto.randomUUID().split('-')[0].toUpperCase() + '-' + Date.now().toString().slice(-4);
         const invoice_no = 'INV-' + Date.now().toString().slice(-6);
-        const user_id = req.user?.id || null;
 
         await conn.query(
             `INSERT INTO purchases (id, invoice_no, supplier_id, supplier_name, date, total_amount, payment_status, notes, user_id) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [purchase_id, invoice_no, supplier_id || null, supplier_name, date || new Date(), total_amount, payment_status, notes || null, user_id]
+            [purchase_id, invoice_no, supplier_id || null, supplier_name, date || new Date(), total_amount, payment_status, notes || null, req.user.id]
         );
 
         for (const item of items) {
-            // Insert into purchase_items
             await conn.query(
                 `INSERT INTO purchase_items (purchase_id, item_type, item_id, item_name, qty, unit_cost, subtotal)
                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [purchase_id, item.type, item.id, item.name, item.qty, item.cost, item.subtotal]
             );
 
-            // Update stock and logs
             if (item.type === 'product') {
-                // Products
                 await conn.query('UPDATE products SET stock = stock + ?, buy_price = ? WHERE id = ?', [item.qty, item.cost, item.id]);
                 await conn.query(
                     `INSERT INTO stock_movements (product_id, type, qty, reference, notes) VALUES (?, 'in', ?, ?, 'Restock Barang Masuk')`,
                     [item.id, item.qty, purchase_id]
                 );
             } else if (item.type === 'material') {
-                // Materials
                 await conn.query('UPDATE materials SET stok_saat_ini = stok_saat_ini + ?, harga_modal = ? WHERE id = ?', [item.qty, item.cost, item.id]);
                 await conn.query(
                     `INSERT INTO material_movements (material_id, tipe, jumlah, satuan, referensi, catatan, user_id) VALUES (?, 'masuk', ?, ?, ?, 'Restock Barang Masuk', ?)`,
-                    [item.id, item.qty, item.unit || 'pcs', purchase_id, user_id]
+                    [item.id, item.qty, item.unit || 'pcs', purchase_id, req.user.id]
                 );
             }
         }
 
-        // Insert cash_flow record for 'lunas' purchases
         if (payment_status === 'lunas' && total_amount > 0) {
             const cfId = 'cf' + Date.now();
             const cfDate = date ? date.split('T')[0] : new Date().toISOString().split('T')[0];
@@ -106,29 +95,24 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) 
             );
         }
 
-        // Activity log
         await conn.query(
             'INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [user_id, req.user?.name || 'System', 'ADD_PURCHASE', `Pembelian ${invoice_no} total Rp ${total_amount.toLocaleString('id-ID')} dari ${supplier_name}`]
+            [req.user.id, req.user.name, 'ADD_PURCHASE', `Pembelian ${invoice_no} total Rp ${total_amount.toLocaleString('id-ID')} dari ${supplier_name}`]
         );
 
         await conn.commit();
         res.status(201).json({ message: 'Pembelian berhasil dicatat', id: purchase_id });
     } catch (err) {
-        if (conn) await conn.rollback();
-        if (err?.issues) {
-            return res.status(400).json({ message: err.issues[0]?.message || 'Validasi gagal' });
-        }
-        console.error('CRITICAL: Gagal mencatat pembelian:', err);
+        await conn.rollback();
         res.status(500).json({ message: 'Gagal mencatat pembelian', error: err.message });
     } finally {
         conn.release();
     }
 });
 
-// DELETE a purchase (reverse stock + remove cash_flow)
+// DELETE a purchase
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
-    const conn = await pool.getConnection();
+    const conn = await req.db.getConnection();
     try {
         const purchaseId = req.params.id;
         const [purchases] = await conn.query('SELECT * FROM purchases WHERE id = ?', [purchaseId]);
@@ -137,7 +121,6 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
         const purchase = purchases[0];
         await conn.beginTransaction();
 
-        // Reverse stock changes
         const [items] = await conn.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [purchaseId]);
         for (const item of items) {
             if (item.item_type === 'product') {
@@ -147,22 +130,19 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
             }
         }
 
-        // Remove related records
         await conn.query('DELETE FROM purchase_items WHERE purchase_id = ?', [purchaseId]);
         await conn.query('DELETE FROM cash_flow WHERE reference_id = ?', [purchaseId]);
         await conn.query('DELETE FROM purchases WHERE id = ?', [purchaseId]);
 
-        // Activity log
         await conn.query(
             'INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [req.user?.id, req.user?.name || 'System', 'DELETE_PURCHASE', `Hapus pembelian ${purchase.invoice_no} (${purchaseId})`]
+            [req.user.id, req.user.name, 'DELETE_PURCHASE', `Hapus pembelian ${purchase.invoice_no}`]
         );
 
         await conn.commit();
-        res.json({ message: 'Pembelian berhasil dihapus dan stok dikembalikan' });
+        res.json({ message: 'Pembelian berhasil dihapus' });
     } catch (err) {
-        if (conn) await conn.rollback();
-        console.error('Error deleting purchase:', err);
+        await conn.rollback();
         res.status(500).json({ message: 'Gagal menghapus pembelian', error: err.message });
     } finally {
         conn.release();

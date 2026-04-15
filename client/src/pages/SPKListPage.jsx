@@ -27,7 +27,7 @@ const STATUS_COLORS = {
     'Menunggu Antrian': { dot: 'bg-slate-400', text: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800/50', label: 'Antrian' },
     'Dalam Proses Cetak': { dot: 'bg-amber-500 animate-pulse', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', label: 'Proses' },
     'Finishing': { dot: 'bg-primary', text: 'text-primary', bg: 'bg-blue-50 dark:bg-primary/10', label: 'Finishing' },
-    'Quality Control': { dot: 'bg-purple-500', text: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10', label: 'QC' },
+    'Quality Control': { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', label: 'QC' },
     'Selesai': { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', label: 'Selesai' },
     'Siap Diambil': { dot: 'bg-emerald-500 animate-pulse outline outline-4 outline-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-500/20', label: 'Siap' },
     'Diambil': { dot: 'bg-blue-500', text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-500/10', label: 'Serah' },
@@ -595,7 +595,7 @@ export default function SPKListPage({ onNavigate }) {
                                     {/* Print Header */}
                                     <div className="flex items-center justify-between border-b-4 border-slate-900 pb-6 mb-8">
                                         <div>
-                                            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Rekapitulasi SPK</h1>
+                                            <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Rekapitulasi SPK</h2>
                                             <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">CV. Abadi Jaya Percetakan & POS</p>
                                         </div>
                                         <div className="text-right">

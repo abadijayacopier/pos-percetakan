@@ -336,11 +336,11 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                             className="p-8 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none"
                         >
                             <div className="flex items-center gap-3 mb-8">
-                                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center text-violet-600">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                                     <FiDollarSign size={18} />
                                 </div>
                                 <div>
-                                    <h2 className="font-black text-slate-800 dark:text-white leading-tight underline decoration-violet-400/30 decoration-4 underline-offset-4">Finansial & Pricing</h2>
+                                    <h2 className="font-black text-slate-800 dark:text-white leading-tight underline decoration-emerald-400/30 decoration-4 underline-offset-4">Finansial & Pricing</h2>
                                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Cost, Profit, and Suppliers</p>
                                 </div>
                             </div>
@@ -354,7 +354,7 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                             type="number"
                                             value={form.harga_modal}
                                             onChange={handleHargaModalChange}
-                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border-2 border-transparent focus:border-violet-400/50 font-black dark:text-white focus:bg-white outline-none"
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 border-2 border-transparent focus:border-emerald-400/50 font-black dark:text-white focus:bg-white outline-none"
                                             placeholder="0"
                                         />
                                     </div>
@@ -374,14 +374,14 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="block text-[10px] font-black uppercase tracking-widest px-1 text-violet-600 dark:text-violet-400">Harga Jual Retail</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest px-1 text-emerald-600 dark:text-emerald-400">Harga Jual Retail</label>
                                     <div className="relative">
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-violet-400">Rp</div>
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-400">Rp</div>
                                         <input
                                             type="number"
                                             value={form.harga_jual}
                                             onChange={handleHargaJualChange}
-                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-violet-50/50 dark:bg-violet-500/[0.08] border-2 border-violet-100/50 dark:border-violet-500/20 focus:border-violet-400/50 font-black dark:text-white outline-none"
+                                            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-500/[0.08] border-2 border-emerald-100/50 dark:border-emerald-500/20 focus:border-emerald-400/50 font-black dark:text-white outline-none"
                                             placeholder="0"
                                         />
                                     </div>
@@ -401,13 +401,13 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                                     set('supplier_id', val);
                                                 }
                                             }}
-                                            className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-violet-400/50 outline-none font-bold dark:text-white appearance-none"
+                                            className="w-full pl-11 pr-4 py-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-transparent focus:border-emerald-400/50 outline-none font-bold dark:text-white appearance-none"
                                         >
                                             <option value="">Pilih Pemasok Utama</option>
                                             {suppliers.map(s => (
                                                 <option key={s.id} value={s.id}>{s.name}</option>
                                             ))}
-                                            <option value="NEW" className="font-bold text-violet-600">+ Tambah Pemasok Baru</option>
+                                            <option value="NEW" className="font-bold text-emerald-600">+ Tambah Pemasok Baru</option>
                                         </select>
                                     </div>
                                 </div>

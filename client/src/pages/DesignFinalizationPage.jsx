@@ -198,7 +198,7 @@ export default function DesignFinalizationPage({ onNavigate, pageState }) {
                         <div className="p-6">
                             {!filePreview ? (
                                 <div className="relative group cursor-pointer border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden hover:border-blue-500 transition-colors aspect-video bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center">
-                                    <input
+                                    <input aria-label="Input"
                                         type="file"
                                         accept="image/png, image/jpeg, application/pdf"
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"

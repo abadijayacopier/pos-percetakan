@@ -142,6 +142,29 @@ This plan addresses two critical UI/UX issues:
 #### [MODIFY] [utils.js](file:///d:/WEB/pos/client/src/utils.js)
 - Enhance the Bluetooth error message to explain the HTTPS requirement more clearly.
 
+### [Component] Authentication & Tenant Security
+Summary: Resolved Shop ID (Subdomain) vs Numerical ID mismatch and ensured correct JWT context.
+
+#### [MODIFY] [tenantManager.js](file:///d:/WEB/pos/server/utils/tenantManager.js)
+- Updated `getShopDBName` to query by `subdomain` OR `id`.
+- Added status check and structured return (dbName, shopId).
+
+#### [MODIFY] [auth.js](file:///d:/WEB/pos/server/routes/auth.js)
+- Now persists the numerical `shopId` in the JWT token for SaaS mode.
+
+---
+
+### [Component] License & SaaS Infrastructure
+Summary: Fixing the "Reset License" failure and improving SaaS license visibility.
+
+#### [MODIFY] [settings.js](file:///d:/WEB/pos/server/routes/settings.js)
+- [NEW] Added `DELETE /license` route to handle license resets gracefully in both modes.
+- Improved `GET /license` to return `clientName` and accurate metadata for SaaS tenants.
+
+#### [MODIFY] [SettingsPage.jsx](file:///d:/WEB/pos/client/src/pages/SettingsPage.jsx)
+- Added defensive check for `expiryDate` formatting to prevent "1970" display.
+- Hiding/Disabling Standalone-only license actions when in SaaS mode.
+
 #### [NEW] [client/src/contexts/AuthContext.jsx](file:///c:/Users/AJ/Videos/pos/client/src/contexts/AuthContext.jsx)
 Auth state, login/logout, JWT token management, RBAC
 

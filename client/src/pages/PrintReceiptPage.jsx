@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
+import { generateRawReceipt, printViaBluetooth, initQZ, printViaQZ, formatDateTime } from '../utils';
 import { FiPrinter, FiArrowLeft, FiPlus, FiCheck } from 'react-icons/fi';
 import ReceiptProMax from '../components/ReceiptProMax';
 
@@ -114,14 +114,9 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                     const res = await api.get('/transactions');
                     if (res.data && res.data.length > 0) {
                         const trx = res.data[0];
-                        const dateObj = new Date(trx.date || new Date());
-                        const isValidDate = !isNaN(dateObj.getTime());
-
                         setReceiptData({
                             invoiceNo: trx.invoiceNo || trx.invoice_no,
-                            date: isValidDate
-                                ? dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                : trx.date || new Date().toLocaleString('id-ID'),
+                            date: formatDateTime(trx.date || new Date().toISOString()),
                             cashier: trx.userName || trx.user_name || user?.name || 'Kasir',
                             customer: trx.customerName || trx.customer_name || 'Umum',
                             items: (trx.items || []).map(i => ({
@@ -243,9 +238,12 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
 
         // Formatted Receipt Text for WhatsApp
         const storeName = (printSettings.storeName || 'Abadi Jaya').toUpperCase();
-        const itemsText = (receiptData.items || []).map(item =>
-            `» ${item.desc} x${item.qty} = Rp ${formatCurrency(item.total)}`
-        ).join('\n');
+        const itemsText = (receiptData.items || []).map(item => {
+            const name = item.desc || item.name || 'Item';
+            const qty = item.qty || item.quantity || 1;
+            const subtotal = item.total || item.subtotal || ((item.price || item.sellPrice || 0) * qty);
+            return `» ${name} x${qty} = Rp ${formatCurrency(subtotal)}`;
+        }).join('\n');
 
         const status = receiptData.paid >= receiptData.total ? '*LUNAS*' : `*SISA BAYAR: Rp ${formatCurrency(receiptData.total - receiptData.paid)}*`;
 
@@ -256,6 +254,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
             `ID Nota  : ${receiptData.invoiceNo}\n` +
             `Tanggal : ${receiptData.date}\n` +
             `Kasir   : ${receiptData.cashier}\n` +
+            `Pelanggan: ${receiptData.customer || receiptData.customerName || 'Umum'}\n` +
             `––––––––––––––––––––––––––\n` +
             `${itemsText}\n` +
             `––––––––––––––––––––––––––\n` +

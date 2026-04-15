@@ -271,7 +271,7 @@ export default function ProfitLossPage() {
             {/* Print Header - Detailed mode - Hanya muncul saat print */}
             <div className="hidden Print:block print-detailed mb-8">
                 <div className="text-center border-b-2 border-slate-800 pb-4 mb-4">
-                    <h1 className="text-2xl font-bold uppercase tracking-wide">Laporan Laba Rugi</h1>
+                    <h2 className="text-2xl font-bold uppercase tracking-wide">Laporan Laba Rugi</h2>
                     <p className="text-lg">{storeInfo.name}</p>
                     <p className="text-sm">{storeInfo.address} {storeInfo.phone ? `| ${storeInfo.phone}` : ''}</p>
                 </div>
@@ -285,7 +285,7 @@ export default function ProfitLossPage() {
             <div className="hidden Print:block print-compact">
                 {/* Compact Header */}
                 <header className="text-center mb-8 border-b-2 border-black pb-4">
-                    <h1 className="text-2xl font-black uppercase tracking-widest mb-1">Laporan Laba Rugi</h1>
+                    <h2 className="text-2xl font-black uppercase tracking-widest mb-1">Laporan Laba Rugi</h2>
                     <p className="text-base font-medium">{storeInfo.name}</p>
                     <div className="mt-3 flex justify-between items-end text-sm">
                         <div className="text-left">
@@ -445,14 +445,14 @@ export default function ProfitLossPage() {
                             ))}
                         </div>
                         <div className="flex items-center gap-2 ml-auto">
-                            <input
+                            <input aria-label="Input"
                                 type="date"
                                 value={dateFrom}
                                 onChange={(e) => { setPeriod('custom'); setDateFrom(e.target.value); }}
                                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm dark:text-white"
                             />
                             <span className="text-slate-400">-</span>
-                            <input
+                            <input aria-label="Input"
                                 type="date"
                                 value={dateTo}
                                 onChange={(e) => { setPeriod('custom'); setDateTo(e.target.value); }}

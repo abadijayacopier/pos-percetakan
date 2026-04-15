@@ -55,7 +55,7 @@ const ActivationModal = ({ isOpen, onClose, onActivated, hardwareId }) => {
             <div className="relative w-full max-w-md overflow-hidden bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 rounded-3xl shadow-2xl animate-in zoom-in-95 duration-300">
 
                 {/* Header Decoration */}
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 pointer-events-none" />
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-indigo-500/20 via-teal-500/20 to-pink-500/20 pointer-events-none" />
 
                 <div className="relative p-8">
                     <button
@@ -83,7 +83,7 @@ const ActivationModal = ({ isOpen, onClose, onActivated, hardwareId }) => {
 
                     <form onSubmit={handleActivate} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 ml-1">
+                            <label htmlFor="licenseKey" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 ml-1">
                                 Kode Lisensi (Serial Key)
                             </label>
                             <div className="relative group">
@@ -91,6 +91,7 @@ const ActivationModal = ({ isOpen, onClose, onActivated, hardwareId }) => {
                                     <ShieldCheck size={18} />
                                 </div>
                                 <input
+                                    id="licenseKey"
                                     type="text"
                                     value={licenseKey}
                                     onChange={(e) => setLicenseKey(e.target.value)}

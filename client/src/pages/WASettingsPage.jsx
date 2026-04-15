@@ -239,7 +239,7 @@ export default function WASettingsPage({ onNavigate }) {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-3">
-                                            <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xs font-black shadow-inner">3</span>
+                                            <span className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black shadow-inner">3</span>
                                             Finishing
                                         </label>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">

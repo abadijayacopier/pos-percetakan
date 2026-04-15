@@ -72,7 +72,7 @@ export default function PrintReportLayout({ id = "print-report-content", title, 
 
             <header className="flex justify-between items-end border-b-4 border-black pb-5 mb-8">
                 <div className="w-2/3 flex items-center gap-5">
-                    <img src="/logo.png" alt="Logo" className="h-[72px] w-auto object-contain" />
+                    <img src="./logo.png" alt="Logo" className="h-[72px] w-auto object-contain" />
                     <div>
                         <h1 className="text-[28px] font-black uppercase tracking-tight text-black mb-1 leading-none">{store.name}</h1>
                         <p className="text-gray-800 text-sm font-bold tracking-widest uppercase">{store.tagline}</p>

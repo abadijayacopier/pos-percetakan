@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const TenantManager = require('../utils/tenantManager');
+const { getTenantPool } = require('../config/database');
 
 const uploadDir = path.join(__dirname, '../public/uploads/products');
 if (!fs.existsSync(uploadDir)) {
@@ -20,10 +22,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-// 1. GET Semua Produk (Publik untuk user yang login)
+// 1. GET Semua Produk (Authenticated)
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query(`
+        const [rows] = await req.db.query(`
       SELECT p.id, p.code, p.name, p.category_id as categoryId, 
              p.buy_price as buyPrice, p.sell_price as sellPrice, 
              p.stock, p.min_stock as minStock, p.unit, p.emoji, p.image,
@@ -39,10 +41,18 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// 1b. GET Produk (Publik tanpa auth untuk Landing Page)
+// 1b. GET Produk (Publik untuk Landing Page - SaaS Aware)
 router.get('/public', async (req, res) => {
     try {
-        const [rows] = await pool.query(`
+        const shopId = req.query.shopId || req.header('X-Shop-Id');
+        if (!shopId) return res.status(400).json({ message: 'Shop ID diperlukan untuk melihat katalog.' });
+
+        const dbName = await TenantManager.getShopDBName(shopId);
+        if (!dbName) return res.status(404).json({ message: 'Toko tidak ditemukan.' });
+
+        const tenantDb = getTenantPool(dbName);
+
+        const [rows] = await tenantDb.query(`
       SELECT p.id, p.code, p.name, p.category_id as categoryId, 
              p.sell_price as sellPrice, 
              p.stock, p.unit, p.emoji,
@@ -63,7 +73,7 @@ router.get('/public', async (req, res) => {
 // 2. GET Kategori Produk
 router.get('/categories', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM categories ORDER BY name ASC');
+        const [rows] = await req.db.query('SELECT * FROM categories ORDER BY name ASC');
         res.json(rows);
     } catch (error) {
         console.error(error);
@@ -79,7 +89,7 @@ router.post('/categories', verifyToken, requireRole(['kasir', 'admin']), async (
 
         const newId = name.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20) + '-' + Date.now().toString().slice(-4);
 
-        await pool.query(
+        await req.db.query(
             'INSERT INTO categories (id, name, emoji) VALUES (?, ?, ?)',
             [newId, name, emoji || '📁']
         );
@@ -90,14 +100,13 @@ router.post('/categories', verifyToken, requireRole(['kasir', 'admin']), async (
     }
 });
 
-// 3. POST Tambah Produk Baru (Kasir & Admin)
+// 3. POST Tambah Produk Baru
 router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('image'), async (req, res) => {
     try {
         const { code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji } = req.body;
         const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
 
-        // Cek apakah kode unik
-        const [existing] = await pool.query('SELECT id FROM products WHERE code = ?', [code]);
+        const [existing] = await req.db.query('SELECT id FROM products WHERE code = ?', [code]);
         if (existing.length > 0) {
             return res.status(400).json({ message: 'Kode produk ini sudah dipakai!' });
         }
@@ -105,7 +114,7 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('im
         const validCategoryId = (categoryId && categoryId !== 'null' && categoryId !== 'undefined' && String(categoryId).trim() !== '') ? categoryId : null;
 
         const newId = 'p' + Date.now();
-        await pool.query(`
+        await req.db.query(`
       INSERT INTO products 
       (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji, image) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -118,15 +127,14 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('im
     }
 });
 
-// 4. PUT Update Produk (Kasir & Admin)
+// 4. PUT Update Produk
 router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { code, name, categoryId, buyPrice, sellPrice, stock, minStock, unit, emoji } = req.body;
         const imageUrl = req.file ? `/uploads/products/${req.file.filename}` : null;
 
-        // Pastikan code tidak nabrak punya orang lain
-        const [existing] = await pool.query('SELECT id FROM products WHERE code = ? AND id != ?', [code, id]);
+        const [existing] = await req.db.query('SELECT id FROM products WHERE code = ? AND id != ?', [code, id]);
         if (existing.length > 0) {
             return res.status(400).json({ message: 'Kode produk sudah dipakai oleh produk lain!' });
         }
@@ -148,7 +156,7 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('
         query += ` WHERE id = ?`;
         params.push(id);
 
-        const [result] = await pool.query(query, params);
+        const [result] = await req.db.query(query, params);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Produk tidak ditemukan' });
@@ -161,11 +169,11 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('
     }
 });
 
-// 5. DELETE Hapus Produk (Hanya Admin)
+// 5. DELETE Hapus Produk
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        const [result] = await pool.query('DELETE FROM products WHERE id = ?', [id]);
+        const [result] = await req.db.query('DELETE FROM products WHERE id = ?', [id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Produk tidak ditemukan' });
@@ -178,7 +186,7 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     }
 });
 
-// 6. POST Stok Opname (Sesuaikan Stok Aktual Fisik)
+// 6. POST Stok Opname (Individual)
 router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
     try {
         const { id } = req.params;
@@ -188,38 +196,35 @@ router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator
             return res.status(400).json({ message: 'Stok aktual harus diisi dengan angka valid' });
         }
 
-        const connection = await pool.getConnection();
+        const connection = await req.db.getConnection();
         try {
             await connection.beginTransaction();
 
-            // Cek stok sistem saat ini
             const [rows] = await connection.query('SELECT stock, name FROM products WHERE id = ?', [id]);
             if (rows.length === 0) throw new Error('Produk tidak ditemukan');
 
             const systemStock = rows[0].stock;
             const diff = actualStock - systemStock;
 
-            // Jika sama, abaikan saja
             if (diff === 0) {
                 await connection.rollback();
                 connection.release();
                 return res.json({ message: 'Stok sudah sesuai, tidak ada selisih.' });
             }
 
-            // Update stok di tabel produk
             await connection.query('UPDATE products SET stock = ? WHERE id = ?', [actualStock, id]);
 
-            // Catat ke stock_movements (tipe 'adjust')
             await connection.query(
                 `INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
                  VALUES (?, 'adjust', ?, 'Opname', ?)`,
                 [id, diff, notes || `Penyesuaian stok opname (${systemStock} -> ${actualStock})`]
             );
 
-            // Jika ada selisih, catat aktivitas kasir yang mengopname
-            const { logActivity } = require('../utils/logger');
-            const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-            await logActivity(req.user.id, 'STOK_OPNAME', rows[0].name, `Opname ${rows[0].name}: Fisik ${actualStock} (Selisih ${diff > 0 ? '+' + diff : diff})`, ip);
+            // Log activity manually or using refined logger
+            await connection.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'STOK_OPNAME', 'Product', `Opname ${rows[0].name}: Fisik ${actualStock} (Selisih ${diff})`, req.ip || null]
+            );
 
             await connection.commit();
             res.json({ message: 'Stok Opname berhasil disimpan', actualStock, diff });
@@ -234,42 +239,10 @@ router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator
     }
 });
 
-// 6. POST Stock Opname (Penyesuaian Stok)
-router.post('/stock-opname', verifyToken, requireRole(['admin', 'operator']), async (req, res) => {
-    const connection = await pool.getConnection();
-    try {
-        await connection.beginTransaction();
-        const { productId, currentStock, actualStock, notes } = req.body;
-
-        const diff = actualStock - currentStock;
-        const type = diff >= 0 ? 'in' : 'out';
-        const absDiff = Math.abs(diff);
-
-        // 1. Update stok produk
-        await connection.query('UPDATE products SET stock = ? WHERE id = ?', [actualStock, productId]);
-
-        // 2. Catat di stock_movements
-        const reference = 'OPNAME-' + Date.now().toString().slice(-6);
-        await connection.query(`
-            INSERT INTO stock_movements (product_id, type, qty, reference, notes)
-            VALUES (?, 'adjust', ?, ?, ?)
-        `, [productId, diff, reference, notes || 'Penyesuaian Stock Opname']);
-
-        await connection.commit();
-        res.json({ message: 'Stock Opname berhasil dicatat!', newStock: actualStock });
-    } catch (error) {
-        await connection.rollback();
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mencatat Stock Opname' });
-    } finally {
-        connection.release();
-    }
-});
-
 // 7. GET Stock History
 router.get('/:id/history', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM stock_movements WHERE product_id = ? ORDER BY date DESC LIMIT 100', [req.params.id]);
+        const [rows] = await req.db.query('SELECT * FROM stock_movements WHERE product_id = ? ORDER BY date DESC LIMIT 100', [req.params.id]);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ message: 'Gagal mengambil history stok' });

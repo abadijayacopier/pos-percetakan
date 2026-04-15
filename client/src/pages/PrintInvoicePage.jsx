@@ -103,14 +103,14 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
     const items = [];
     if (invoiceData) {
         if (invoiceData.biaya_cetak > 0) items.push({ desc: invoiceData.product_name, cat: 'Digital', catColor: 'blue', qty: invoiceData.product_qty + ' ' + invoiceData.product_unit, price: invoiceData.biaya_cetak / invoiceData.product_qty, total: invoiceData.biaya_cetak });
-        if (invoiceData.biaya_finishing > 0) items.push({ desc: 'Finishing ' + (invoiceData.specs_finishing || ''), cat: 'Finishing', catColor: 'purple', qty: '1 Lot', price: invoiceData.biaya_finishing, total: invoiceData.biaya_finishing });
+        if (invoiceData.biaya_finishing > 0) items.push({ desc: 'Finishing ' + (invoiceData.specs_finishing || ''), cat: 'Finishing', catColor: 'emerald', qty: '1 Lot', price: invoiceData.biaya_finishing, total: invoiceData.biaya_finishing });
         if (invoiceData.biaya_desain > 0) items.push({ desc: 'Jasa Desain Grafis', cat: 'Jasa', catColor: 'orange', qty: '1 Paket', price: invoiceData.biaya_desain, total: invoiceData.biaya_desain });
         if (invoiceData.biaya_lainnya > 0) items.push({ desc: 'Lainnya', cat: 'Lainnya', catColor: 'slate', qty: '1', price: invoiceData.biaya_lainnya, total: invoiceData.biaya_lainnya });
         if (invoiceData.biaya_material > 0) items.push({ desc: 'Material ' + (invoiceData.specs_material || ''), cat: 'Bahan', catColor: 'emerald', qty: '1 Kebutuhan', price: invoiceData.biaya_material, total: invoiceData.biaya_material });
     } else {
         // Fallback items
         items.push({ desc: 'Banner Vinyl High-Res', descSub: 'Outdoor 280gr, Mata Ayam, 1x3m', cat: 'Digital', catColor: 'blue', qty: '10 Pcs', price: 75000, total: 750000 });
-        items.push({ desc: 'Cetak Brosur A4 (Lipat 3)', descSub: 'Art Paper 150gr, Full Color, 2 Sisi', cat: 'Offset', catColor: 'purple', qty: '2.000 Pcs', price: 1250, total: 2500000 });
+        items.push({ desc: 'Cetak Brosur A4 (Lipat 3)', descSub: 'Art Paper 150gr, Full Color, 2 Sisi', cat: 'Offset', catColor: 'emerald', qty: '2.000 Pcs', price: 1250, total: 2500000 });
         items.push({ desc: 'Jasa Desain Grafis', descSub: 'Revisi & Layouting (Berdasarkan Timer)', cat: 'Jasa', catColor: 'orange', qty: '4,5 Jam', price: 150000, total: 675000 });
     }
 
@@ -262,7 +262,7 @@ export default function PrintInvoicePage({ onNavigate, pageState }) {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${item.catColor === 'blue' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                                                    item.catColor === 'purple' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' :
+                                                    item.catColor === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
                                                         item.catColor === 'orange' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' :
                                                             item.catColor === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
                                                                 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'

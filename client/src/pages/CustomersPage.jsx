@@ -12,7 +12,7 @@ const TYPE_MAP = {
     walkin: { label: 'Walk-in', color: '#6b7280', bg: '#f3f4f6', icon: <FiUser size={12} /> },
     vip: { label: 'VIP', color: '#f59e0b', bg: '#fef3c7', icon: <FiStar size={12} /> },
     corporate: { label: 'Corporate', color: '#3b82f6', bg: '#dbeafe', icon: <FiBriefcase size={12} /> },
-    service: { label: 'Service', color: '#8b5cf6', bg: '#ede9fe', icon: <FiCpu size={12} /> },
+    service: { label: 'Service', color: '#10b981', bg: '#d1fae5', icon: <FiCpu size={12} /> },
 };
 
 const emptyForm = { name: '', phone: '', address: '', type: 'walkin', company: '' };
@@ -166,7 +166,7 @@ export default function CustomersPage() {
                 {[
                     { label: 'Total Pelanggan', value: customers.length, icon: <FiUsers />, color: 'blue', tag: 'Total Database' },
                     { label: 'VIP Pelanggan', value: typeCount('vip'), icon: <FiStar />, color: 'amber', tag: 'Level VIP' },
-                    { label: 'Kemitraan Corp', value: typeCount('corporate'), icon: <FiBriefcase />, color: 'purple', tag: 'Corporate' },
+                    { label: 'Kemitraan Corp', value: typeCount('corporate'), icon: <FiBriefcase />, color: 'emerald', tag: 'Corporate' },
                     { label: 'Antrean Servis', value: typeCount('service'), icon: <FiCpu />, color: 'emerald', tag: 'Service Only' },
                 ].map(s => (
                     <div key={s.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:shadow-md transition-all">
@@ -252,7 +252,7 @@ export default function CustomersPage() {
                                         walkin: 'emerald',
                                         vip: 'amber',
                                         corporate: 'blue',
-                                        service: 'purple'
+                                        service: 'emerald'
                                     };
                                     const cColor = colorMap[c.type] || 'slate';
 

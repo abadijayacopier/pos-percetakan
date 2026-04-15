@@ -10,13 +10,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey } from 'react-icons/fi';
 import ActivationModal from '../components/ActivationModal';
 
-export default function SettingsPage() {
-    const { user } = useAuth();
+export default function SettingsPage({ onNavigate, pageState }) {
+    const { user, updateUser } = useAuth();
     const { showToast } = useToast();
     const themeCtx = useTheme();
 
     // Core states
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(pageState?.tab || 'general');
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [loading, setLoading] = useState(true);
 
@@ -85,6 +85,24 @@ export default function SettingsPage() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Handle Deep Linking / Navigation State
+    useEffect(() => {
+        if (pageState?.tab) {
+            setActiveTab(pageState.tab);
+        }
+        if (pageState?.action === 'change-password' && user) {
+            setEditUser(user);
+            setUserForm({
+                name: user.name || '',
+                username: user.username || '',
+                password: '',
+                role: user.role || 'kasir',
+                isActive: true
+            });
+            setUserFormOpen(true);
+        }
+    }, [pageState, user]);
 
     const loadSettings = async () => {
         try {
@@ -251,6 +269,8 @@ export default function SettingsPage() {
             await api.post('/settings', payload);
             showToast('Pengaturan berhasil disimpan!', 'success');
             loadSettings();
+            // Dispatch event to sync branding globally
+            window.dispatchEvent(new CustomEvent('sync-branding'));
         } catch (error) {
             console.error(error);
             showToast('Gagal menyimpan pengaturan', 'error');
@@ -338,8 +358,15 @@ export default function SettingsPage() {
             } else {
                 await api.post('/users', userForm);
             }
-            refreshUsers();
+            setEditUser(null);
             setUserFormOpen(false);
+            refreshUsers();
+            loadSettings();
+
+            // Refresh global user state if current user was updated
+            if (editUser && editUser.id === user.id) {
+                updateUser({ name: userForm.name });
+            }
             showToast(editUser ? 'User diupdate!' : 'User baru ditambahkan!', 'success');
         } catch (error) {
             showToast(error.response?.data?.message || 'Gagal menyimpan user', 'error');
@@ -997,7 +1024,7 @@ export default function SettingsPage() {
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
                                     <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 dark:bg-slate-800/30">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
                                                 <FiTag size={20} />
                                             </div>
                                             <h3 className="font-bold text-slate-800 dark:text-white text-lg">Aturan Diskon Grosir Fotocopy</h3>
@@ -1114,7 +1141,7 @@ export default function SettingsPage() {
                                                         </td>
                                                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{u.username}</td>
                                                         <td className="px-6 py-4">
-                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30' :
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
                                                                 u.role === 'desainer' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' :
                                                                     'bg-blue-100 text-blue-600 dark:bg-blue-900/30'
                                                                 }`}>
@@ -1693,7 +1720,7 @@ export default function SettingsPage() {
                         {activeTab === 'license' && (
                             <div className="max-w-4xl mx-auto space-y-6 pb-12">
                                 <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
 
                                     <div className="p-10 flex flex-col md:flex-row items-center gap-10">
                                         <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center shrink-0 shadow-2xl ${licenseInfo.activated ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 shadow-slate-500/10'}`}>
@@ -1727,20 +1754,29 @@ export default function SettingsPage() {
                                                         </div>
                                                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
                                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Masa Berlaku Hingga</p>
-                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{new Date(licenseInfo.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                                                                {licenseInfo.expiryDate
+                                                                    ? new Date(licenseInfo.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                                                    : (licenseInfo.activated ? 'Selamanya / Berlangganan' : 'N/A')
+                                                                }
+                                                            </p>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-wrap gap-4 items-center">
                                                         <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                                             <FiInfo className="text-indigo-500" />
-                                                            Terima kasih telah menggunakan software orisinil.
+                                                            {licenseInfo.isSaaS
+                                                                ? 'Aplikasi dikelola di Cloud. Langganan aktif.'
+                                                                : 'Terima kasih telah menggunakan software orisinil.'}
                                                         </p>
-                                                        <button
-                                                            onClick={handleResetLicense}
-                                                            className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 transition-colors"
-                                                        >
-                                                            Reset Lisensi (Ganti PC)
-                                                        </button>
+                                                        {!licenseInfo.isSaaS && (
+                                                            <button
+                                                                onClick={handleResetLicense}
+                                                                className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 transition-colors"
+                                                            >
+                                                                Reset Lisensi (Ganti PC)
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ) : (

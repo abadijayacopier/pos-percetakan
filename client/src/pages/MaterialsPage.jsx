@@ -335,7 +335,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
                             {[
                                 { val: 'masuk', label: 'Masuk', icon: <FiDownload size={24} />, color: 'emerald' },
                                 { val: 'keluar', label: 'Keluar', icon: <FiUpload size={24} />, color: 'rose' },
-                                { val: 'penyesuaian', label: 'Set', icon: <FiSliders size={24} />, color: 'violet' },
+                                { val: 'penyesuaian', label: 'Set', icon: <FiSliders size={24} />, color: 'emerald' },
                             ].map(opt => (
                                 <button
                                     key={opt.val}
@@ -490,7 +490,7 @@ export default function MaterialsPage({ onNavigate }) {
 
     const KATGORI_COLORS = {
         digital: { color: 'text-blue-600', bg: 'bg-blue-50', darkText: 'dark:text-blue-400', darkBg: 'dark:bg-blue-500/10' },
-        offset: { color: 'text-violet-600', bg: 'bg-violet-50', darkText: 'dark:text-violet-400', darkBg: 'dark:bg-violet-500/10' },
+        offset: { color: 'text-emerald-600', bg: 'bg-emerald-50', darkText: 'dark:text-emerald-400', darkBg: 'dark:bg-emerald-500/10' },
         atk: { color: 'text-amber-600', bg: 'bg-amber-50', darkText: 'dark:text-amber-400', darkBg: 'dark:bg-amber-500/10' },
         lainnya: { color: 'text-slate-600', bg: 'bg-slate-50', darkText: 'dark:text-slate-400', darkBg: 'dark:bg-slate-500/10' },
     };
@@ -547,7 +547,7 @@ export default function MaterialsPage({ onNavigate }) {
                     { label: 'Total Bahan', value: materials.length, icon: FiBox, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
                     { label: 'Aktif', value: materials.filter(m => m.is_active).length, icon: FiCheck, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
                     { label: 'Stok Menipis', value: lowStockCount, icon: FiAlertCircle, color: lowStockCount > 0 ? 'text-rose-600' : 'text-slate-400', bg: lowStockCount > 0 ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-slate-50 dark:bg-slate-800/20' },
-                    { label: 'Kategori', value: [...new Set(materials.map(m => m.kategori))].length, icon: FiGrid, color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+                    { label: 'Kategori', value: [...new Set(materials.map(m => m.kategori))].length, icon: FiGrid, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
                 ].map((s, i) => (
                     <motion.div
                         key={s.label}

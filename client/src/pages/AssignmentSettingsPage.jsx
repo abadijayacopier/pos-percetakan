@@ -80,7 +80,7 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                 <section className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
                                 <span className="material-symbols-outlined">groups</span>
                             </div>
                             <h3 className="font-bold text-slate-800 dark:text-white text-lg">Daftar Teknisi & Keahlian</h3>
@@ -106,7 +106,7 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                                         <tr key={t.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : idx === 1 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg ${idx === 0 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : idx === 1 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
                                                         {t.initials}
                                                     </div>
                                                     <div>

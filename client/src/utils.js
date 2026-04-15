@@ -14,19 +14,27 @@ export const formatRupiah = (num) => {
 
 export const formatDate = (date) => {
   if (!date) return '-';
-  const d = new Date(date);
+  let validDate = date;
+  if (typeof validDate === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(validDate)) {
+    validDate = validDate.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(validDate);
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 export const formatDateTime = (dateStr) => {
   if (!dateStr) return '-';
-  const d = new Date(dateStr);
+  let validDateStr = dateStr;
+  if (typeof validDateStr === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(validDateStr)) {
+    validDateStr = validDateStr.replace(' ', 'T') + 'Z';
+  }
+  const d = new Date(validDateStr);
   if (isNaN(d.getTime())) {
     // Try to clean/extract if it's already a partial string or contains "Invalid Date"
-    if (typeof dateStr === 'string' && !dateStr.includes('Invalid')) return dateStr;
+    if (typeof validDateStr === 'string' && !validDateStr.includes('Invalid')) return validDateStr;
     return new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
 };
 
 export const formatTime = (date) => {
@@ -178,6 +186,8 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
     if ((receipt.change ?? 0) > 0) {
       encoder.line(rightAlign('KEMBALIAN', receipt.change.toLocaleString('id-ID')));
     }
+    const isUnpaid = !receipt.paid || receipt.paid < totalTx || receipt.status === 'pending' || receipt.paymentType === 'pending';
+    encoder.line(rightAlign('STATUS', isUnpaid ? 'BELUM LUNAS' : 'LUNAS'));
     encoder.newline();
 
     // Footer

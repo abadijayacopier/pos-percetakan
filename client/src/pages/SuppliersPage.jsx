@@ -223,7 +223,7 @@ export default function SuppliersPage() {
             {/* Mesh Gradient Background */}
             <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-500/10 dark:from-blue-600/10 to-transparent pointer-events-none" />
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute top-40 -left-40 w-80 h-80 bg-purple-400/20 dark:bg-purple-600/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute top-40 -left-40 w-80 h-80 bg-emerald-400/20 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none" />
 
             <AnimatePresence>
                 {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}

@@ -20,30 +20,32 @@ export default function ReportsPage() {
     const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
 
     // Pagination state per tab
-    const [pages, setPages] = useState({ sales: 1, products: 1, customers: 1 });
+    const [pages, setPages] = useState({ sales: 1, products: 1, customers: 1, movements: 1 });
     const PER_PAGE = 10;
 
     const [allTransactions, setAllTransactions] = useState([]);
     const [allProducts, setAllProducts] = useState([]);
     const [allCustomers, setAllCustomers] = useState([]);
     const [allCashFlow, setAllCashFlow] = useState([]);
+    const [allStockMovements, setAllStockMovements] = useState([]);
     const [storeInfo, setStoreInfo] = useState({ name: 'ABADI JAYA', tagline: 'Percetakan & Fotocopy', footer: 'SISTEM MONITORING & INVENTORI TERPADU | DOKUMEN DIGENERATE SECARA OTOMATIS' });
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [trxRes, prdRes, cstRes, cfRes, setRes] = await Promise.all([
+                const [trxRes, prdRes, cstRes, cfRes, smRes, setRes] = await Promise.all([
                     api.get('/transactions'),
                     api.get('/products'),
                     api.get('/customers').catch(() => ({ data: [] })),
                     api.get('/finance'),
+                    api.get('/reports/stock-movements'),
                     api.get('/settings').catch(() => ({ data: [] }))
                 ]);
                 setAllTransactions(Array.isArray(trxRes.data) ? trxRes.data : []);
                 setAllProducts(Array.isArray(prdRes.data) ? prdRes.data : []);
                 setAllCustomers(Array.isArray(cstRes.data) ? cstRes.data : []);
                 setAllCashFlow(Array.isArray(cfRes.data) ? cfRes.data : []);
+                setAllStockMovements(Array.isArray(smRes.data) ? smRes.data : []);
 
                 const info = {};
                 if (Array.isArray(setRes.data)) {
@@ -57,7 +59,7 @@ export default function ReportsPage() {
             } catch (err) {
                 console.error('Failed to load reports data:', err);
             } finally {
-                setLoading(false);
+                // Done loading
             }
         };
         loadData();
@@ -92,7 +94,7 @@ export default function ReportsPage() {
     const totalTrx = transactions.length;
     const avgTrx = totalTrx > 0 ? Math.round(totalRevenue / totalTrx) : 0;
     const cashIn = allCashFlow.filter(c => c.type === 'in').reduce((s, c) => s + (c.amount || 0), 0);
-    const cashOut = allCashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (c.amount || 0), 0);
+    const _cashOut = allCashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (c.amount || 0), 0);
 
     // Product metrics
     const lowStockProducts = allProducts.filter(p => p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0);
@@ -113,9 +115,17 @@ export default function ReportsPage() {
     }, [transactions]);
 
     // Customer metrics
-    const topCustomers = useMemo(() => {
+    // Top Customer metrics (Internal use)
+    const _topCustomers = useMemo(() => {
         return [...allCustomers].sort((a, b) => (b.totalSpend || 0) - (a.totalSpend || 0)).slice(0, 10);
     }, [allCustomers]);
+
+    const stockMovements = useMemo(() => {
+        return allStockMovements.filter(sm => {
+            const d = sm.date ? sm.date.slice(0, 10) : '';
+            return d >= dateFrom && d <= dateTo;
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, [allStockMovements, dateFrom, dateTo]);
 
     // Payment method breakdown
     const paymentBreakdown = useMemo(() => {
@@ -140,11 +150,15 @@ export default function ReportsPage() {
         return allCustomers.slice((pages.customers - 1) * PER_PAGE, pages.customers * PER_PAGE);
     }, [allCustomers, pages.customers]);
 
+    const paginatedMovements = useMemo(() => {
+        return stockMovements.slice((pages.movements - 1) * PER_PAGE, pages.movements * PER_PAGE);
+    }, [stockMovements, pages.movements]);
+
     const handlePageChange = (tab, p) => {
         setPages(prev => ({ ...prev, [tab]: p }));
     };
 
-    const handlePrint = () => window.print();
+    // window.print() is used directly in buttons
 
     // Excel / CSV Export Helpers
     const exportToExcel = (data, filename, headers) => {
@@ -178,7 +192,7 @@ export default function ReportsPage() {
         link.click();
     };
 
-    const exportCSV = (data, filename, headers) => {
+    const _exportCSV = (data, filename, headers) => {
         const csv = [headers.join(','), ...data.map(row => headers.map(h => {
             const val = row[h] ?? '';
             return typeof val === 'string' && val.includes(',') ? `"${val}"` : val;
@@ -215,6 +229,18 @@ export default function ReportsPage() {
         exportToExcel(data, 'laporan_produk', ['Kode', 'Nama', 'Harga Beli', 'Harga Jual', 'Stok', 'Satuan']);
     };
 
+    const exportMovementsExcel = () => {
+        const data = stockMovements.map(sm => ({
+            'Tanggal': formatDateTime(sm.date),
+            'Produk': sm.product_name,
+            'Tipe': sm.type.toUpperCase(),
+            'Qty': sm.qty,
+            'Referensi': sm.reference || '-',
+            'Catatan': sm.notes || '-'
+        }));
+        exportToExcel(data, 'laporan_mutasi_stok', ['Tanggal', 'Produk', 'Tipe', 'Qty', 'Referensi', 'Catatan']);
+    };
+
     const exportCustomerExcel = () => {
         const data = allCustomers.map(c => ({
             'Nama': c.name,
@@ -246,8 +272,9 @@ export default function ReportsPage() {
                 Swal.showLoading();
                 const reportId = activeTab === 'sales' ? 'print-sales' :
                     activeTab === 'products' ? 'print-products' :
-                        activeTab === 'customers' ? 'print-customers' :
-                            activeTab === 'profit-loss' ? 'print-profit-loss' : 'print-report-content';
+                        activeTab === 'movements' ? 'print-movements' :
+                            activeTab === 'customers' ? 'print-customers' :
+                                activeTab === 'profit-loss' ? 'print-profit-loss' : 'print-report-content';
                 const element = document.getElementById(reportId);
                 if (element) {
                     const wasHidden = element.classList.contains('hidden');
@@ -360,7 +387,11 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={activeTab === 'profit-loss' ? exportProfitLossExcel : activeTab === 'sales' ? exportSalesExcel : activeTab === 'products' ? exportProductExcel : exportCustomerExcel}
+                            onClick={activeTab === 'profit-loss' ? exportProfitLossExcel :
+                                activeTab === 'sales' ? exportSalesExcel :
+                                    activeTab === 'products' ? exportProductExcel :
+                                        activeTab === 'movements' ? exportMovementsExcel :
+                                            exportCustomerExcel}
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 active:scale-95 group"
                         >
                             <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
@@ -370,12 +401,18 @@ export default function ReportsPage() {
                 </div>
             </div>
 
-            {/* Print Only Header */}
-            {activeTab !== 'sales' && (
+            {/* Print Only Header (Only for tabs without their own PrintReportLayout) */}
+            {!['sales', 'profit-loss'].includes(activeTab) && (
                 <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-8">
-                    <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
-                        Laporan {activeTab === 'products' ? 'Stok Produk' : activeTab === 'profit-loss' ? 'Laba Rugi' : 'Analisis Pelanggan'}
-                    </h1>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                        Laporan {
+                            activeTab === 'products' ? 'Stok Produk' :
+                                activeTab === 'profit-loss' ? 'Laba Rugi' :
+                                    activeTab === 'movements' ? 'Mutasi Stok' :
+                                        activeTab === 'customers' ? 'Analisis Pelanggan' :
+                                            'Penjualan'
+                        }
+                    </h2>
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
                         Periode: {formatDate(dateFrom)} - {formatDate(dateTo)} | Dicetak: {formatDateTime(new Date())}
                     </p>
@@ -387,7 +424,8 @@ export default function ReportsPage() {
                 <div className="flex gap-2 overflow-auto pb-2 lg:pb-0 items-center">
                     {[
                         { id: 'sales', label: 'Penjualan', icon: FiShoppingCart },
-                        { id: 'products', label: 'Produk', icon: FiBox },
+                        { id: 'products', label: 'Stok Master', icon: FiBox },
+                        { id: 'movements', label: 'Mutasi Stok', icon: FiActivity },
                         { id: 'customers', label: 'Pelanggan', icon: FiUsers },
                         { id: 'profit-loss', label: 'Laba Rugi', icon: FiTrendingUp },
                     ].map(tab => (
@@ -407,14 +445,14 @@ export default function ReportsPage() {
 
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-100 dark:border-slate-800">
                     <FiCalendar className="text-slate-400 ml-2" />
-                    <input
+                    <input aria-label="Input"
                         type="date"
                         value={dateFrom}
                         onChange={e => setDateFrom(e.target.value)}
                         className="bg-transparent border-none text-[10px] font-black text-slate-900 dark:text-white focus:ring-0 uppercase cursor-pointer"
                     />
                     <div className="w-4 h-0.5 bg-slate-300 dark:bg-slate-700"></div>
-                    <input
+                    <input aria-label="Input"
                         type="date"
                         value={dateTo}
                         onChange={e => setDateTo(e.target.value)}
@@ -678,8 +716,8 @@ export default function ReportsPage() {
                             </div>
 
                             {/* Inventory Pulse */}
-                            <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <div className="p-8 border-b border-slate-100 dark:border-slate-800">
+                            <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:hidden">
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 print:hidden">
                                     <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
                                         <FiActivity className="text-blue-600" />
                                         Database Master SKU ({allProducts.length})
@@ -766,6 +804,119 @@ export default function ReportsPage() {
             )
             }
 
+            {/* ============ STOCK MOVEMENTS REPORT ============ */}
+            {activeTab === 'movements' && (
+                <div className="space-y-8 slide-in-from-bottom-4 duration-500">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:hidden">
+                        <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex justify-between items-center print:hidden">
+                            <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
+                                <div className="size-3 bg-blue-500 rounded-full"></div>
+                                Log Mutasi Stok ({stockMovements.length})
+                            </h3>
+                        </div>
+                        <div className="overflow-auto print:overflow-visible">
+                            <table className="w-full text-left print:text-[11px]">
+                                <thead>
+                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50/50 dark:bg-slate-800/30 print:bg-slate-50 print:text-black">
+                                        <th className="px-8 py-5">Waktu</th>
+                                        <th className="px-8 py-5">Produk</th>
+                                        <th className="px-8 py-5">Tipe</th>
+                                        <th className="px-8 py-5 text-right">Qty</th>
+                                        <th className="px-8 py-5">Referensi</th>
+                                        <th className="px-8 py-5">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                    {paginatedMovements.map((sm, i) => (
+                                        <tr key={sm.id || i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase">{formatDate(sm.date)}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(sm.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black text-slate-900 dark:text-white">{sm.product_name}</span>
+                                                    <span className="text-[9px] font-mono text-slate-400">{sm.product_code}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5">
+                                                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${sm.type === 'in' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                                    sm.type === 'out' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                                                        'bg-blue-50 text-blue-600 border border-blue-100'
+                                                    }`}>
+                                                    {sm.type === 'in' ? 'Masuk' : sm.type === 'out' ? 'Keluar' : 'Penyesuaian'}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <span className="text-[11px] font-black text-slate-900 dark:text-white italic">{sm.qty} {sm.unit}</span>
+                                            </td>
+                                            <td className="px-8 py-5 text-[10px] font-bold text-slate-500">{sm.reference || '-'}</td>
+                                            <td className="px-8 py-5 text-[10px] text-slate-400 italic">{sm.notes || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {stockMovements.length === 0 && (
+                                <div className="py-24 text-center">
+                                    <FiActivity size={48} className="mx-auto mb-4 text-slate-200" />
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Belum ada data mutasi stok</p>
+                                </div>
+                            )}
+                        </div>
+                        {renderPagination('movements', stockMovements.length)}
+                    </div>
+
+                    {/* --- PRINT ONLY MOVEMENTS REPORT (A4 FORMAT) --- */}
+                    <PrintReportLayout
+                        id="print-movements"
+                        title="Laporan Mutasi Stok"
+                        period={dateFrom === dateTo ? formatDate(dateFrom) : `${formatDate(dateFrom)} - ${formatDate(dateTo)}`}
+                        printedBy="Logistik / Gudang"
+                        storeInfo={storeInfo}
+                    >
+                        <section className="mb-10">
+                            <h3 className="font-bold text-gray-800 mb-4 border-l-4 border-black pl-3 uppercase tracking-widest text-sm">Riwayat Mutasi Barang</h3>
+                            <table className="print-table">
+                                <thead>
+                                    <tr>
+                                        <th className="w-1/6">Waktu</th>
+                                        <th>Nama Produk</th>
+                                        <th className="text-center w-1/6">Tipe</th>
+                                        <th className="text-center w-1/6">Qty</th>
+                                        <th className="w-1/4">Referensi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allStockMovements.map((sm, idx) => (
+                                        <tr key={sm.id || idx}>
+                                            <td className="text-gray-600 text-[10px] uppercase font-bold">{formatDateTime(sm.date)}</td>
+                                            <td>
+                                                <p className="font-black text-gray-900 text-sm uppercase">{sm.product_name}</p>
+                                                <p className="text-[10px] text-gray-500 font-mono tracking-tighter uppercase font-bold">{sm.product_code}</p>
+                                            </td>
+                                            <td className="text-center">
+                                                <span className={`font-black uppercase tracking-wider text-[10px] ${sm.type === 'in' ? 'text-emerald-600' : sm.type === 'out' ? 'text-rose-600' : 'text-blue-600'}`}>
+                                                    {sm.type === 'in' ? 'MASUK' : sm.type === 'out' ? 'KELUAR' : 'ADJUST'}
+                                                </span>
+                                            </td>
+                                            <td className="text-center font-black text-gray-900">{sm.qty}</td>
+                                            <td className="text-gray-600 text-[10px] italic font-bold">{sm.reference || '-'}</td>
+                                        </tr>
+                                    ))}
+                                    {allStockMovements.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="py-8 text-center italic text-gray-500 font-bold uppercase tracking-widest">Tidak ada data mutasi pda periode ini.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </section>
+                    </PrintReportLayout>
+                </div>
+            )}
+
             {/* ============ CUSTOMER REPORT ============ */}
             {
                 activeTab === 'customers' && (
@@ -795,8 +946,8 @@ export default function ReportsPage() {
                                 ))}
                             </div>
 
-                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20">
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:hidden">
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 print:hidden">
                                     <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-3">
                                         <div className="size-3 bg-emerald-500 rounded-full"></div>
                                         Strategic Account Analysis ({allCustomers.length})

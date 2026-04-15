@@ -249,9 +249,15 @@ export default function DigitalPrintingCartPage({ onNavigate, pageState }) {
                                             <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">Rp</span>
                                             <input
                                                 className="w-full pl-12 pr-4 py-4 rounded-xl border-slate-200 focus:border-[#137fec] focus:ring-[#137fec] text-2xl font-black text-slate-900 border"
-                                                type="number"
+                                                type="text"
+                                                inputMode="decimal"
                                                 value={transactionType === 'lunas' && amountPaid === '' ? totalTagihan : amountPaid}
-                                                onChange={e => setAmountPaid(e.target.value)}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(',', '.');
+                                                    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                                                        setAmountPaid(val);
+                                                    }
+                                                }}
                                             />
                                         </div>
                                     </label>

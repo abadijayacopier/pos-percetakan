@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const { sendInvoiceNotification } = require('../utils/notificationHelper');
 
 // 1. GET Semua Transaksi
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM transactions ORDER BY date DESC');
-        // Ambil semua detail items sekaligus
+        const [rows] = await req.db.query('SELECT * FROM transactions ORDER BY date DESC');
+
         const trxIds = rows.map(r => r.id);
         let detailsMap = {};
         if (trxIds.length > 0) {
-            const [details] = await pool.query(
+            const [details] = await req.db.query(
                 'SELECT * FROM transaction_details WHERE transaction_id IN (?)',
                 [trxIds]
             );
@@ -28,7 +28,7 @@ router.get('/', verifyToken, async (req, res) => {
                 });
             });
         }
-        // Gabungkan items ke setiap transaksi dan map key database (snake_case) ke frontend (camelCase)
+
         const result = rows.map(t => ({
             ...t,
             invoiceNo: t.invoice_no || t.invoiceNo,
@@ -44,21 +44,21 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// 1b. GET Transaksi Hari Ini (Bisa Dipakai Kasir Piutang / Omset)
+// 1b. GET Transaksi Hari Ini
 router.get('/history/today', verifyToken, async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
-        const [rows] = await pool.query('SELECT * FROM transactions WHERE date LIKE ? ORDER BY date DESC', [`${today}%`]);
+        const [rows] = await req.db.query('SELECT * FROM transactions WHERE date LIKE ? ORDER BY date DESC', [`${today}%`]);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ message: 'Gagal memuat history hari ini' });
     }
 });
 
-// 2. GET Harga Fotocopy (Untuk PosPage kalkulator & Landing Page)
-router.get('/fotocopy-prices', async (req, res) => {
+// 2. GET Harga Fotocopy (SaaS Aware - Fallback to public if no auth? Actually, handled by verifyToken in other routes)
+router.get('/fotocopy-prices', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM fotocopy_prices');
+        const [rows] = await req.db.query('SELECT * FROM fotocopy_prices');
         res.json(rows);
     } catch (error) {
         res.status(500).json({ message: 'Gagal memuat harga' });
@@ -69,7 +69,7 @@ router.get('/fotocopy-prices', async (req, res) => {
 router.put('/fotocopy-prices/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
         const { price } = req.body;
-        await pool.query('UPDATE fotocopy_prices SET price = ? WHERE id = ?', [price, req.params.id]);
+        await req.db.query('UPDATE fotocopy_prices SET price = ? WHERE id = ?', [price, req.params.id]);
         res.json({ message: 'Harga fotocopy diupdate!' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal update harga' });
@@ -78,18 +78,17 @@ router.put('/fotocopy-prices/:id', verifyToken, requireRole(['admin', 'kasir']),
 
 // 3. POST Transaksi Baru (POS Kasir / Checkout)
 router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) => {
-    const connection = await pool.getConnection();
+    const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
 
         const {
             invoiceNo, date, customerId, customerName, type,
             subtotal, discount, total, paid, changeAmount, paymentType, status,
-            items, customerWa // customerWa ditambahkan
+            items, customerWa
         } = req.body;
 
         const newTrxId = 't' + Date.now();
-
         const mysqlDate = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
 
         // 3a. Insert Transaction Header
@@ -101,11 +100,10 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
 
-        // 3b. Insert Transaction Details (Item) & Update Stok
+        // 3b. Insert Transaction Details & Update Stok
         for (const item of items) {
             const detailId = 'td' + Date.now() + Math.floor(Math.random() * 1000);
 
-            // Ensure product_id is ONLY set for real physical products (ATK) to avoid FK errors with service IDs
             const productId = (item.source === 'atk' && item.id && !String(item.id).startsWith('fc-') && !String(item.id).startsWith('jilid-') && !String(item.id).startsWith('print-') && !String(item.id).startsWith('dig-') && !String(item.id).startsWith('srv-'))
                 ? item.id : null;
 
@@ -115,49 +113,35 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [detailId, newTrxId, productId, item.name, item.qty, item.price, item.subtotal, item.discount || 0]);
 
-            // Kurangi Stok Jika Tipe Penjualan ATK (Barang Fisik)
             if (item.source === 'atk' && productId) {
                 await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [item.qty, productId]);
-
-                // Catat di Stock Movement
                 await connection.query(`
           INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
           VALUES (?, 'out', ?, ?, 'Penjualan POS')
         `, [productId, item.qty, invoiceNo]);
             }
 
-            // ─── Opsi B: Digital Printing Integration ────────────────
+            // Digital Printing & Service Integration (Isolated per Tenant)
             if (item.type === 'digital') {
                 const orderId = 'ORD-' + Date.now().toString().slice(-6);
                 await connection.query(`
                     INSERT INTO dp_tasks (id, status, customerName, customerId, title, material_id, material_name, 
                     dimensions_w, dimensions_h, material_price, type, qty, is_paid)
                     VALUES(?, 'produksi', ?, ?, ?, ?, ?, ?, ?, ?, 'digital', ?, 1)
-                `, [
-                    orderId, customerName || 'Umum', validCustomerId, item.name,
-                    item.meta?.materialId || null, item.name,
-                    item.meta?.width || null, item.meta?.height || null,
-                    (item.price / (item.qty || 1)), item.qty || 1
-                ]);
+                `, [orderId, customerName || 'Umum', validCustomerId, item.name, item.meta?.materialId || null, item.name, item.meta?.width || null, item.meta?.height || null, (item.price / (item.qty || 1)), item.qty || 1]);
             }
 
-            // ─── Opsi B: Service Order Integration ────────────────────
             if (item.type === 'service_order') {
                 const soId = 'so' + Date.now();
                 const serviceNo = 'SVC-' + Date.now().toString().slice(-6);
                 await connection.query(`
                     INSERT INTO service_orders (id, service_no, customer_id, customer_name, machine_info, complaint, total_cost, status, technician_id)
                     VALUES(?, ?, ?, ?, ?, ?, ?, 'diterima', ?)
-                `, [
-                    soId, serviceNo, validCustomerId, customerName || 'Umum',
-                    item.meta?.device || 'Unknown Device',
-                    item.meta?.issue || 'No description',
-                    item.price, req.user.id
-                ]);
+                `, [soId, serviceNo, validCustomerId, customerName || 'Umum', item.meta?.device || 'Unknown Device', item.meta?.issue || 'No description', item.price, req.user.id]);
             }
         }
 
-        // 3c. Jika status LUNAS, masukkan ke Cash Flow
+        // 3c. Cash Flow
         if ((status === 'paid' || status === 'completed') && paid > 0) {
             const cashFlowId = 'cf' + Date.now();
             await connection.query(`
@@ -166,63 +150,34 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
       `, [cashFlowId, date.split('T')[0], paid, `Penjualan ${type} - ${invoiceNo}`, newTrxId]);
         }
 
-        // 3d. Sinkronisasi Master Pelanggan (total_trx & total_spend)
+        // 3d. Customer sync
         if (customerId) {
             await connection.query('UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?', [paid, customerId]);
         }
 
-        // 3e. Activity Log & Stock Check
-        const { logActivity, checkStockLevels } = require('../utils/logger');
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        await logActivity(req.user.id, 'ADD_TRANSACTION', invoiceNo, `Invoice ${invoiceNo} total ${total}`, ip);
-
-        // Trigger low stock checks in background
-        for (const item of items) {
-            if (item.source === 'atk' && item.id) {
-                checkStockLevels(item.id, connection);
-            }
-        }
+        // 3e. Manual Activity Log (SaaS Aware)
+        await connection.query(
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'ADD_TRANSACTION', 'Transaction', `Invoice ${invoiceNo} total ${total}`, req.ip || null]
+        );
 
         await connection.commit();
-
-        // Kirim Notifikasi WA secara background (tidak perlu tunggu untuk respon ke kasir)
-        const trxData = {
-            id: newTrxId,
-            invoice_no: invoiceNo,
-            customer_name: customerName,
-            customer_wa: customerWa,
-            total,
-            paid
-        };
-        sendInvoiceNotification(trxData, items);
-
+        sendInvoiceNotification({ id: newTrxId, invoice_no: invoiceNo, customer_name: customerName, customer_wa: customerWa, total, paid }, items);
         res.status(201).json({ message: 'Transaksi berhasil disimpan!', id: newTrxId });
+
     } catch (error) {
         await connection.rollback();
         console.error('Transaksi gagal:', error.message);
-
-        let errorMsg = 'Gagal menyimpan transaksi: ' + error.message;
-
-        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-            if (error.message.includes('user_id')) {
-                // Trigger frontend interceptor logout on user deletion anomaly
-                return res.status(401).json({ message: 'Sesi akun tidak valid (Akun telah dihapus dari sistem). Silakan login ulang.' });
-            } else if (error.message.includes('customer_id')) {
-                errorMsg = 'Gagal: Pelanggan yang dipilih tidak valid atau telah dihapus.';
-            } else if (error.message.includes('product_id')) {
-                errorMsg = 'Gagal: Terdapat Produk di keranjang yang sudah dihapus dari database.';
-            }
-        }
-        res.status(500).json({ message: errorMsg });
+        res.status(500).json({ message: 'Gagal menyimpan transaksi: ' + error.message });
     } finally {
         connection.release();
     }
 });
 
-// 4. GET Detail Transaksi (Untuk Preview Struk)
+// 4. GET Detail Transaksi
 router.get('/:id', verifyToken, async (req, res) => {
     try {
-        const [trx] = await pool.query(`
+        const [trx] = await req.db.query(`
             SELECT id, invoice_no AS invoiceNo, date, customer_id AS customerId, customer_name AS customerName, user_name AS userName,
                    type, subtotal, discount, total, paid, change_amount AS changeAmount, payment_type AS paymentType, status
             FROM transactions WHERE id = ?
@@ -230,7 +185,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 
         if (trx.length === 0) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
 
-        const [items] = await pool.query(`
+        const [items] = await req.db.query(`
             SELECT product_id AS productId, name, qty, price, subtotal, discount, CASE WHEN product_id IS NOT NULL THEN 'atk' ELSE 'fc' END as source
             FROM transaction_details WHERE transaction_id = ?
         `, [req.params.id]);
@@ -241,50 +196,41 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// 5. DELETE Transaksi (Void) - Kembalikan stok & hapus cash flow
+// 5. Void Transaksi
 router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
-    const connection = await pool.getConnection();
+    const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
 
-        // Ambil items untuk kembalikan stok
         const [items] = await connection.query('SELECT product_id, qty FROM transaction_details WHERE transaction_id = ? AND product_id IS NOT NULL', [req.params.id]);
 
         for (const item of items) {
-            // Kembalikan stok
             await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [item.qty, item.product_id]);
-            // Catat void di stock movements
             await connection.query(`
                 INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
                 VALUES (?, 'in', ?, ?, 'Void Transaksi POS')
              `, [item.product_id, item.qty, req.params.id]);
         }
 
-        // Hapus dari cash_flow
         await connection.query('DELETE FROM cash_flow WHERE reference_id = ?', [req.params.id]);
-
-        // Hapus dari details & transaksi utama
         await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
         await connection.query('DELETE FROM transactions WHERE id = ?', [req.params.id]);
-
-        // Catat activity
-        await connection.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'delete_transaction', `Hapus & Void TRX ${req.params.id}`]);
+        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'delete_transaction', 'Transaction', `Hapus & Void TRX ${req.params.id}`, req.ip || null]);
 
         await connection.commit();
         res.json({ message: 'Transaksi berhasil dihapus dan stok dikembalikan!' });
     } catch (error) {
         await connection.rollback();
-        console.error(error);
         res.status(500).json({ message: 'Gagal menghapus transaksi' });
     } finally {
         connection.release();
     }
 });
 
-// 6. PUT Pelunasan Transaksi
+// 6. Pelunasan
 router.put('/:id/pay', verifyToken, async (req, res) => {
-    const connection = await pool.getConnection();
+    const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
         const { id } = req.params;
@@ -297,62 +243,25 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         const newPaid = Number(trx.paid || 0) + Number(paidAmount);
         const newStatus = newPaid >= trx.total ? 'paid' : 'debt';
 
-        // Update transaction
         await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ? WHERE id = ?',
             [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, id]);
 
-        // Insert cash flow
         const cashFlowId = 'cf' + Date.now();
         await connection.query(`
             INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
             VALUES (?, CURDATE(), 'in', 'Penjualan', ?, ?, ?)
         `, [cashFlowId, paidAmount, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
 
-        // Activity log
-        await connection.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'payment', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`]);
+        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'payment', 'Transaction', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`, req.ip || null]);
 
         await connection.commit();
-
-        // Trigger notification
-        const [items] = await connection.query('SELECT * FROM transaction_details WHERE transaction_id = ?', [id]);
-        sendInvoiceNotification({ ...trx, paid: newPaid, customer_wa: customerWa || trx.customer_wa }, items);
-
         res.json({ message: 'Pembayaran berhasil dicatat' });
     } catch (e) {
-        await connection.rollback();
-        console.error(e);
+        if (connection) await connection.rollback();
         res.status(500).json({ message: 'Gagal mencatat pembayaran' });
     } finally {
-        connection.release();
-    }
-});
-
-// 7. PUT Update Transaksi (Edit Header)
-router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { customerName, paymentType, paidAmount } = req.body;
-
-        // Cek total transaksi saat ini
-        const [trxArr] = await pool.query('SELECT total FROM transactions WHERE id = ?', [id]);
-        if (trxArr.length === 0) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
-
-        const total = trxArr[0].total;
-        const newStatus = Number(paidAmount) >= total ? 'paid' : 'unpaid';
-
-        await pool.query(
-            'UPDATE transactions SET customer_name = ?, payment_type = ?, paid = ?, status = ? WHERE id = ?',
-            [customerName, paymentType, paidAmount, newStatus, id]
-        );
-
-        await pool.query('INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'edit_transaction', `Edit Transaksi ${id} `]);
-
-        res.json({ message: 'Transaksi berhasil diperbarui' });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ message: 'Gagal memperbarui transaksi' });
+        if (connection) connection.release();
     }
 });
 

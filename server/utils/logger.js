@@ -3,13 +3,12 @@ const { pool } = require('../config/database');
 /**
  * Log an activity to the database
  */
-async function logActivity(userId, action, target, details, ip) {
+async function logActivity(userId, action, target, details, ip, userName = null) {
     try {
         const detailsStr = typeof details === 'object' ? JSON.stringify(details) : details;
-        const combinedDetail = (target ? `[${target}] ` : '') + (detailsStr || '');
         await pool.query(
-            'INSERT INTO activity_log (user_id, action, detail) VALUES (?, ?, ?)',
-            [userId || null, action, combinedDetail]
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [userId || null, userName, action, target || null, detailsStr || null, ip || null]
         );
     } catch (err) {
         console.error('Failed to log activity:', err);

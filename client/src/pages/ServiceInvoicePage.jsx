@@ -40,32 +40,76 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
         style.innerHTML = `
             @media print {
                 .no-print { display: none !important; }
+                
+                /* Reset background for print */
+                body { 
+                    background: white !important; 
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    -webkit-print-color-adjust: exact !important; 
+                    print-color-adjust: exact !important; 
+                }
+
                 .print-container { 
                     box-shadow: none !important; 
-                    border: 1px solid #000 !important; 
-                    width: 210mm !important; 
-                    height: 148.5mm !important; /* Half A4 / Continuous Form 14cm */
-                    margin: 0 auto !important; 
-                    padding: 8mm !important; 
-                    max-width: none !important;
+                    border: none !important;
+                    width: 100% !important; 
+                    height: auto !important; 
+                    margin: 0 !important; 
+                    padding: 5mm !important; 
                     background: white !important;
-                    color: black !important;
+                    border-radius: 0 !important; 
                 }
-                @page { size: auto; margin: 0; }
-                body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                
-                /* High contrast for thermal/dot-matrix */
-                .print-container * { 
-                    background: transparent !important; 
+
+                /* Standardize Font Contrast for Print */
+                .text-slate-400, .text-slate-500, .text-slate-200, .text-slate-300 { 
+                    color: #475569 !important; /* Darker slate-600 */
+                }
+                .text-slate-900, .text-white { 
                     color: black !important; 
-                    border-color: #000 !important;
-                    box-shadow: none !important;
                 }
-                .bg-blue-600, .bg-emerald-600, .bg-slate-50 { 
-                    background: transparent !important; 
-                    border: 1px solid #000 !important;
+                .bg-blue-600 { 
+                    background-color: #2563eb !important; 
+                    color: white !important;
+                    -webkit-print-color-adjust: exact !important;
                 }
-                .text-white { color: black !important; }
+
+                /* Header Alignment Fixes */
+                .header-grid {
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 10mm !important;
+                    align-items: start !important;
+                }
+
+                @page { 
+                    size: A4; 
+                    margin: 10mm; 
+                }
+
+                /* Deep Design Thinking: Compact Spacing for 1-Page A4 */
+                main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+                .p-10, .md\\:p-14 { padding: 0 !important; }
+                .p-6 { padding: 4mm !important; }
+                .mb-10 { margin-bottom: 5mm !important; }
+                .mt-20 { margin-top: 10mm !important; }
+                .pt-10 { padding-top: 5mm !important; }
+                .gap-8 { gap: 4mm !important; }
+                
+                /* Layout Preservation */
+                .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+                .grid { display: grid !important; }
+                
+                /* Border Adjustments */
+                .rounded-4xl, .rounded-3xl, .rounded-2xl { border-radius: 6px !important; }
+                .border-2 { border-width: 1px !important; border-color: #cbd5e1 !important; }
+                .border-slate-900 { border-color: #0f172a !important; }
+                
+                /* Prevent Page Breaks */
+                .print-container > div, tr, table, .grid > div {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
             }
 
         `;
@@ -122,69 +166,75 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
 
                     {/* Watermark Status */}
                     {service.status === 'selesai' && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none rotate-[-35deg]">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] print:opacity-[0.05] pointer-events-none rotate-[-35deg] z-0">
                             <FiCheckCircle size={500} />
                         </div>
                     )}
 
                     {/* Top Accent Bar */}
-                    <div className="h-4 bg-linear-to-r from-blue-600 via-blue-400 to-emerald-400"></div>
+                    <div className="h-4 bg-linear-to-r from-blue-600 via-blue-400 to-emerald-400 print:h-2"></div>
 
                     <div className="p-10 md:p-14">
                         {/* Header Section */}
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b border-slate-100 dark:border-slate-800 pb-10 mb-10">
+                        <div className="header-grid border-b-2 border-slate-900 pb-10 mb-10">
                             <div className="space-y-5">
                                 <div className="flex items-center gap-5">
-                                    <div className="w-20 h-20 bg-white dark:bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center border-2 border-slate-900 p-2 overflow-hidden">
                                         <img src={storeLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
                                     </div>
                                     <div>
-                                        <h1 className="text-3xl font-black text-slate-900 dark:text-white leading-none italic uppercase tracking-tighter">{storeName}</h1>
-                                        <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-2">Specialist Maintenance & Parts</p>
+                                        <h1 className="text-3xl font-black text-slate-900 leading-none uppercase tracking-tighter">{storeName}</h1>
+                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mt-2">Specialist Maintenance & Parts</p>
                                     </div>
                                 </div>
-                                <div className="space-y-1.5 text-sm text-slate-500 font-medium font-sans">
-                                    <p className="flex items-center gap-2"><FiMapPin className="text-blue-500" size={14} /> {storeAddress}</p>
-                                    <p className="flex items-center gap-2"><FiPhone className="text-blue-500" size={14} /> {storePhone}</p>
-                                    <p className="flex items-center gap-2"><FiGlobe className="text-blue-500" size={14} /> www.abadijayapos.com</p>
+                                <div className="space-y-1.5 text-xs text-slate-700 font-bold font-sans">
+                                    <p className="flex items-center gap-2"><FiMapPin className="text-blue-600" size={14} /> {storeAddress}</p>
+                                    <p className="flex items-center gap-2"><FiPhone className="text-blue-600" size={14} /> {storePhone}</p>
+                                    <p className="flex items-center gap-2"><FiGlobe className="text-blue-600" size={14} /> {settings.store_website || 'www.abadijaya.web.id'}</p>
                                 </div>
                             </div>
 
-                            <div className="text-right">
-                                <h1 className="text-5xl font-black text-slate-200 dark:text-slate-800 italic uppercase leading-none tracking-tighter mb-4 select-none">Invoice</h1>
-                                <div className="inline-block bg-blue-600 text-white px-4 py-2 rounded-xl shadow-md shadow-blue-500/10">
-                                    <p className="text-[10px] font-black text-blue-100 uppercase tracking-widest text-left leading-none mb-1">Service Number</p>
-                                    <p className="text-xl font-black tracking-tight leading-none">#{service.serviceNo}</p>
+                            <div className="text-right flex flex-col items-end">
+                                <h1 className="text-5xl print:text-5xl font-black text-slate-900 print:text-slate-200 uppercase leading-none tracking-tighter mb-4 select-none">Invoice</h1>
+                                <div className="bg-blue-600 text-white px-6 py-3 rounded-xl print:border-2 print:border-blue-600 min-w-[200px]">
+                                    <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em] text-left leading-none mb-2">Service Number</p>
+                                    <p className="text-2xl font-black tracking-tight leading-none">#{service.serviceNo}</p>
                                 </div>
-                                <div className="mt-4 space-y-1">
-                                    <p className="text-xs font-bold text-slate-400">Entry Date: <span className="text-slate-700 dark:text-slate-300 ml-2">{formatDate(service.entryDate)}</span></p>
-                                    <p className="text-xs font-bold text-slate-400">Finish Date: <span className="text-slate-700 dark:text-slate-300 ml-2">{service.finishDate ? formatDate(service.finishDate) : '-'}</span></p>
+                                <div className="mt-6 space-y-2 text-right w-full">
+                                    <div className="flex justify-end gap-4">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Entry Date</span>
+                                        <span className="text-xs font-black text-slate-900">{formatDate(service.entryDate)}</span>
+                                    </div>
+                                    <div className="flex justify-end gap-4">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Finish Date</span>
+                                        <span className="text-xs font-black text-slate-900">{service.finishDate ? formatDate(service.finishDate) : '-'}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Customer & Machine Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Customer Info
+                            <div className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-900">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div> Customer Info
                                 </p>
-                                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{service.customerName}</h3>
-                                <p className="text-sm font-bold text-blue-600 mt-1">{service.phone}</p>
-                                <p className="text-sm text-slate-500 mt-2 font-medium">Pelanggan Setia Abadi Jaya</p>
+                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{service.customerName}</h3>
+                                <p className="text-sm font-black text-blue-600 mt-1">{service.phone}</p>
+                                <p className="text-sm text-slate-700 mt-2 font-bold italic">Pelanggan Setia Abadi Jaya</p>
                             </div>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Machine Details
+                            <div className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-900">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-600"></div> Machine Details
                                 </p>
                                 <div className="space-y-3">
-                                    <div className="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
-                                        <span className="text-xs font-bold text-slate-400">Model :</span>
-                                        <span className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase italic">{service.machineInfo}</span>
+                                    <div className="flex justify-between border-b-2 border-slate-200 pb-2">
+                                        <span className="text-xs font-black text-slate-500 uppercase tracking-tighter">Model :</span>
+                                        <span className="text-sm font-black text-slate-900 uppercase italic">{service.machineInfo}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-xs font-bold text-slate-400">Serial :</span>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{service.serialNo || '-'}</span>
+                                        <span className="text-xs font-black text-slate-500 uppercase tracking-tighter">Serial :</span>
+                                        <span className="text-sm font-black text-slate-900">{service.serialNo || '-'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -193,51 +243,51 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                         {/* Diagnosis Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                             <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Keluhan / Masalah</h4>
-                                <p className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 p-5 rounded-2xl text-sm font-medium text-red-700 dark:text-red-400 italic">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2">Keluhan / Masalah</h4>
+                                <p className="bg-red-50 border-2 border-red-200 p-5 rounded-2xl text-sm font-black text-red-900 italic">
                                     "{service.complaint}"
                                 </p>
                             </div>
                             <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Hasil Analisa / Diagnosis</h4>
-                                <p className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 p-5 rounded-2xl text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-2">Hasil Analisa / Diagnosis</h4>
+                                <p className="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-2xl text-sm font-black text-emerald-900">
                                     {service.diagnosis || 'Sedang dalam pengecekan teknisi.'}
                                 </p>
                             </div>
                         </div>
 
                         {/* Items Table */}
-                        <div className="mb-10 rounded-4xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                        <div className="mb-10 rounded-2xl border-2 border-slate-900 overflow-hidden shadow-sm">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <tr className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em]">
                                         <th className="px-8 py-5 text-left">Deskripsi Pekerjaan / Part</th>
                                         <th className="px-8 py-5 text-center">Qty</th>
                                         <th className="px-8 py-5 text-right">Harga Satuan</th>
                                         <th className="px-8 py-5 text-right">Subtotal</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                <tbody className="divide-y-2 divide-slate-200">
                                     {/* Labor Cost */}
-                                    <tr className="text-sm group">
+                                    <tr className="text-sm">
                                         <td className="px-8 py-6">
-                                            <p className="font-black text-slate-800 dark:text-white uppercase tracking-tight">Biaya Jasa & Pengecekan</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-wider">Maintenance & Labor Fee</p>
+                                            <p className="font-black text-slate-900 uppercase tracking-tight">Biaya Jasa & Pengecekan</p>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-wider">Maintenance & Labor Fee</p>
                                         </td>
-                                        <td className="px-8 py-6 text-center font-bold text-slate-500">1</td>
-                                        <td className="px-8 py-6 text-right font-bold text-slate-500">{formatCurrency(service.laborCost)}</td>
-                                        <td className="px-8 py-6 text-right font-black text-slate-800 dark:text-white italic">{formatCurrency(service.laborCost)}</td>
+                                        <td className="px-8 py-6 text-center font-black text-slate-700">1</td>
+                                        <td className="px-8 py-6 text-right font-black text-slate-700">{formatCurrency(service.laborCost)}</td>
+                                        <td className="px-8 py-6 text-right font-black text-slate-900 italic">{formatCurrency(service.laborCost)}</td>
                                     </tr>
                                     {/* Spareparts */}
                                     {service.spareparts?.map((part, idx) => (
-                                        <tr key={idx} className="text-sm group">
+                                        <tr key={idx} className="text-sm">
                                             <td className="px-8 py-6">
-                                                <p className="font-bold text-slate-700 dark:text-slate-200">{part.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium uppercase mt-1">Ganti Sparepart Baru</p>
+                                                <p className="font-black text-slate-800">{part.name}</p>
+                                                <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Ganti Sparepart Baru</p>
                                             </td>
-                                            <td className="px-8 py-6 text-center font-bold text-slate-500">{part.qty}</td>
-                                            <td className="px-8 py-6 text-right font-bold text-slate-500">{formatCurrency(part.price)}</td>
-                                            <td className="px-8 py-6 text-right font-bold text-slate-700 dark:text-slate-200">{formatCurrency(part.subtotal)}</td>
+                                            <td className="px-8 py-6 text-center font-black text-slate-700">{part.qty}</td>
+                                            <td className="px-8 py-6 text-right font-black text-slate-700">{formatCurrency(part.price)}</td>
+                                            <td className="px-8 py-6 text-right font-black text-slate-800">{formatCurrency(part.subtotal)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -247,24 +297,23 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                         {/* Summary Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-4">
                             <div className="space-y-6">
-                                <div className="p-6 bg-slate-50 dark:bg-slate-800/40 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center gap-6">
-                                    <div className="bg-white p-2 rounded-2xl shadow-inner shrink-0 leading-none">
-                                        <div className="w-24 h-24 bg-slate-100 flex items-center justify-center text-slate-200">
-                                            {/* Placeholder for QRIS */}
+                                <div className="p-6 bg-slate-50 rounded-3xl border-2 border-slate-900 flex items-center gap-6">
+                                    <div className="bg-white p-2 rounded-2xl shadow-inner shrink-0 leading-none border-2 border-slate-900">
+                                        <div className="w-24 h-24 bg-white flex items-center justify-center text-slate-900">
                                             <span className="material-symbols-outlined text-6xl">qr_code_2</span>
                                         </div>
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 mb-1 italic">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div> Scan To Pay
+                                        <h4 className="font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 mb-1 italic">
+                                            <div className="w-2 h-2 rounded-full bg-blue-600"></div> Scan To Pay
                                         </h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mb-1">Abadi Raya Payment Gateway</p>
-                                        <p className="text-[9px] text-slate-500 font-medium leading-none">Menerima GoPay, OVO, Dana, Shopee & M-Banking</p>
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed mb-1">Abadi Raya Payment Gateway</p>
+                                        <p className="text-[9px] text-slate-900 font-black leading-none">Menerima GoPay, OVO, Dana, Shopee & M-Banking</p>
                                     </div>
                                 </div>
-                                <div className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 italic">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 leading-none">Terms & Warranty</p>
-                                    <p className="text-[9px] text-slate-500 leading-relaxed">
+                                <div className="p-4 rounded-2xl border-2 border-slate-200 italic">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 leading-none">Terms & Warranty</p>
+                                    <p className="text-[9px] text-slate-900 font-bold leading-relaxed">
                                         * Garansi servis selama 30 hari untuk kerusakan yang sama.<br />
                                         * Garansi tidak berlaku bila segel rusak atau unit terkena cairan/petir.<br />
                                         * Barang yang sudah diambil tidak dapat dikembalikan.
@@ -273,47 +322,47 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                             </div>
 
                             <div className="space-y-4">
-                                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Subtotal Biaya</span>
-                                    <span className="text-lg font-bold text-slate-800 dark:text-slate-100">{formatCurrency(service.totalCost)}</span>
+                                <div className="flex justify-between items-center py-2 border-b-2 border-slate-900">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Subtotal Biaya</span>
+                                    <span className="text-xl font-black text-slate-900">{formatCurrency(service.totalCost)}</span>
                                 </div>
                                 {service.dpAmount > 0 && (
-                                    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Uang Muka (DP)</span>
-                                        <span className="text-lg font-bold text-slate-800 dark:text-slate-100">-{formatCurrency(service.dpAmount)}</span>
+                                    <div className="flex justify-between items-center py-2 border-b-2 border-slate-900">
+                                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Uang Muka (DP)</span>
+                                        <span className="text-xl font-black text-red-600">-{formatCurrency(service.dpAmount)}</span>
                                     </div>
                                 )}
-                                <div className="bg-blue-600 print:bg-transparent print:border print:border-black p-6 rounded-3xl text-white print:text-black shadow-xl shadow-blue-500/20 flex justify-between items-center">
+                                <div className="bg-slate-900 p-6 rounded-3xl text-white flex justify-between items-center border-2 border-slate-900">
                                     <div className="text-left">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 leading-none">Total Tagihan</span>
-                                        <p className="text-xs mt-1 font-bold opacity-60 italic">Grand Total</p>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 leading-none text-blue-400">Total Tagihan</span>
+                                        <p className="text-xs mt-1 font-bold italic">Grand Total</p>
                                     </div>
-                                    <span className="text-3xl font-black tracking-tighter italic flex-1 text-right whitespace-nowrap">
+                                    <span className="text-4xl font-black tracking-tighter italic flex-1 text-right whitespace-nowrap">
                                         {formatCurrency(service.totalCost - (service.dpAmount || 0))}
                                     </span>
                                 </div>
                             </div>
-
                         </div>
 
                         {/* Signatures */}
-                        <div className="grid grid-cols-2 gap-8 mt-20 pt-10 text-center">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-16">Penerima / Customer</p>
-                                <div className="h-px w-48 bg-slate-200 dark:bg-slate-700 mx-auto"></div>
-                                <p className="mt-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{service.customerName}</p>
+                        <div className="grid grid-cols-2 gap-20 mt-20 pt-10 text-center">
+                            <div className="flex flex-col items-center">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-20">Penerima / Customer</p>
+                                <div className="h-[2px] w-56 bg-slate-900 mx-auto"></div>
+                                <p className="mt-3 text-sm font-black text-slate-900 uppercase tracking-tight italic">{service.customerName}</p>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-16">Hormat Kami, Teknisi</p>
-                                <div className="h-px w-48 bg-slate-200 dark:bg-slate-700 mx-auto"></div>
-                                <p className="mt-2 text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{service.technicianName || 'Teknisi Abadi Jaya'}</p>
+                            <div className="flex flex-col items-center">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-20">Hormat Kami, Teknisi</p>
+                                <div className="h-[2px] w-56 bg-slate-900 mx-auto"></div>
+                                <p className="mt-3 text-sm font-black text-slate-900 uppercase tracking-tight">{service.technicianName || 'Teknisi Abadi Jaya'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Bottom Footer Decor */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 py-4 px-10 text-center border-t border-slate-100 dark:border-slate-800">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Thank you for choosing Abadi Jaya Service Center</p>
+                    <div className="bg-slate-100 py-6 px-10 text-center border-t-2 border-slate-900 mt-auto">
+                        <p className="text-[11px] font-black text-slate-600 uppercase tracking-[0.4em]">Thank you for choosing Abadi Jaya Service Center</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1 italic uppercase tracking-widest">Quality Service Is Our Commitment</p>
                     </div>
                 </div>
 

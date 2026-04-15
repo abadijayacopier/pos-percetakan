@@ -43,7 +43,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
     const printCancelInvoice = (task, fee) => {
         const w = window.open('', '_blank', 'width=800,height=600');
-        w.document.write("<html><head><title>INVOICE PEMBATALAN - " + task.id + "</title>");
+        w.document.write("<html><head" + "><title>INVOICE PEMBATALAN - " + task.id + "</title>");
         w.document.write("<style>");
         w.document.write("body { font-family: monospace; padding: 20px; color: #000; }");
         w.document.write("* { margin: 0; padding: 0; box-sizing: border-box; }");
@@ -52,7 +52,7 @@ export default function ProductionQueuePage({ onNavigate }) {
         w.document.write(".row { display: flex; justify-content: space-between; margin-bottom: 5px; }");
         w.document.write(".total { border-top: 2px dashed #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 1.2em; }");
         w.document.write(".footer { text-align: center; margin-top: 30px; font-size: 0.9em; }");
-        w.document.write("</style></head><body>");
+        w.document.write("</style></head" + "><body>");
         w.document.write("<h2>ABADI JAYA COPIER & OFFSET</h2>");
         w.document.write("<p class='subtitle'>NOTA PEMBATALAN PESANAN</p>");
         w.document.write(" <div class='row'><span>No. Antrean:</span> <span>" + task.id + "</span></div>");

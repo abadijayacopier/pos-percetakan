@@ -293,21 +293,21 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                         <FiEdit size={16} />
                                                     </button>
 
-                                                    {!isLunas ? (
+                                                    {!isLunas && (
                                                         <button
                                                             onClick={() => openSettle(t)}
-                                                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
                                                         >
                                                             <FiDollarSign /> Lunasi
                                                         </button>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handlePrintReceipt(t)}
-                                                            className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                                        >
-                                                            <FiPrinter /> Struk
-                                                        </button>
                                                     )}
+
+                                                    <button
+                                                        onClick={() => handlePrintReceipt(t)}
+                                                        className="px-4 py-2.5 bg-slate-900 hover:bg-black text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                                                    >
+                                                        <FiPrinter /> Struk
+                                                    </button>
 
                                                     <button
                                                         onClick={() => setSelectedDeleteTrx(t)}

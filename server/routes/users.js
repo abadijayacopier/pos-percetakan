@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { pool } = require('../config/database');
+const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
 // GET all users (Admin only)
 router.get('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT id, name, username, role, is_active FROM users');
+        const [rows] = await req.db.query('SELECT id, name, username, role, is_active FROM users');
         res.json(rows.map(r => ({
             ...r,
             isActive: Boolean(r.is_active)
@@ -27,12 +27,13 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
             return res.status(400).json({ message: 'Nama, username, dan role wajib diisi' });
         }
 
-        // Check existing
-        const [existing] = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+        const [existing] = await req.db.query('SELECT id FROM users WHERE username = ?', [username]);
         if (existing.length > 0) return res.status(400).json({ message: 'Username sudah terpakai' });
 
         const hashed = await bcrypt.hash(password || '123456', 10);
-        const [result] = await pool.query(
+
+        // Use req.db to insert into tenant's database
+        const [result] = await req.db.query(
             'INSERT INTO users (name, username, password, role, is_active) VALUES (?, ?, ?, ?, ?)',
             [name, username, hashed, role, isActive]
         );
@@ -50,18 +51,17 @@ router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
         const { name, username, password, role, isActive } = req.body;
         const is_active = isActive ? 1 : 0;
 
-        // Check existing username (not self)
-        const [existing] = await pool.query('SELECT id FROM users WHERE username = ? AND id != ?', [username, id]);
+        const [existing] = await req.db.query('SELECT id FROM users WHERE username = ? AND id != ?', [username, id]);
         if (existing.length > 0) return res.status(400).json({ message: 'Username sudah dipakai' });
 
         if (password && password.trim() !== '') {
             const hashed = await bcrypt.hash(password, 10);
-            await pool.query(
+            await req.db.query(
                 'UPDATE users SET name=?, username=?, password=?, role=?, is_active=? WHERE id=?',
                 [name, username, hashed, role, is_active, id]
             );
         } else {
-            await pool.query(
+            await req.db.query(
                 'UPDATE users SET name=?, username=?, role=?, is_active=? WHERE id=?',
                 [name, username, role, is_active, id]
             );
@@ -77,7 +77,7 @@ router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
-        await pool.query('DELETE FROM users WHERE id = ?', [id]);
+        await req.db.query('DELETE FROM users WHERE id = ?', [id]);
         res.json({ message: 'Pengguna berhasil dihapus' });
     } catch (e) {
         console.error(e);

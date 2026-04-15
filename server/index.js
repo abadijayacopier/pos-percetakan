@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-const { testConnection } = require('./config/database');
+const { testConnection, initSqlite, currentMode, currentDbType } = require('./config/database');
 require('./config/firebase');
+const licenseGuard = require('./middleware/licenseGuard');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -14,7 +16,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // License Guard (Melindungi seluruh API kecuali rute aktivasi/auth)
-const licenseGuard = require('./middleware/licenseGuard');
 app.use(licenseGuard);
 
 // Request Logger
@@ -23,7 +24,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/uploads', express.static('public/uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Basic route test
 app.get('/', (req, res) => {
@@ -57,16 +58,37 @@ app.use('/api/purchases', require('./routes/purchases'));
 app.use('/api/qris', require('./routes/qris'));
 app.use('/api/dp_tasks', require('./routes/dp_tasks'));
 app.use('/api/handovers', require('./routes/handovers'));
+app.use('/api/reports', require('./routes/reports'));
 app.use(process.env.NODE_ENV === 'production' ? '/api/health' : '/api/health', require('./routes/health'));
 app.use('/api/activity-logs', require('./routes/activity-logs'));
 
+// SaaS & Platform Management
+app.use('/api/super-auth', require('./routes/super-auth'));
+app.use('/api/super-admin', require('./routes/super-admin'));
+app.use('/api/subscriptions', require('./routes/subscription'));
+
 const startServer = async () => {
+    // 1. Auto-Initialize SQLite if in Standalone mode and DB file missing
+    if (currentMode === 'standalone' && currentDbType === 'sqlite') {
+        const dbPath = path.join(__dirname, 'database/pos.sqlite');
+        if (!fs.existsSync(dbPath)) {
+            console.log('📦 Database SQLite tidak ditemukan. Menginisialisasi...');
+            try {
+                // We use require to run the init scripts to ensure they use the correct config
+                // but since they are scripts we might need to spawn or just require them if they export a function
+                // For now, let's just use child_process to be safe or refactor them to functions
+                const { execSync } = require('child_process');
+                execSync(`node ${path.join(__dirname, 'database/init_sqlite.js')}`);
+                execSync(`node ${path.join(__dirname, 'database/seed_sqlite.js')}`);
+                console.log('✅ Inisialisasi Database Berhasil.');
+            } catch (err) {
+                console.error('❌ Gagal inisialisasi database otomatis:', err.message);
+            }
+        }
+    }
+
     // Test koneksi database saat start
     await testConnection();
-
-    // Auto-init WhatsApp Service (Optional: bisa juga manual via UI)
-    // const whatsappService = require('./utils/whatsappService');
-    // whatsappService.init();
 
     app.listen(PORT, () => {
         console.log(`🚀 Server backend berjalan di http://localhost:${PORT}`);
