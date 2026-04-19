@@ -128,9 +128,10 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                             subtotal: trx.subtotal || trx.total,
                             tax: trx.tax || 0,
                             total: trx.total,
-                            paymentMethod: trx.paymentType || 'Tunai',
-                            paid: trx.paid || trx.total,
-                            change: trx.changeAmount || 0
+                            paymentType: trx.paymentType || trx.payment_type || 'Tunai',
+                            paid: trx.paid || 0,
+                            changeAmount: trx.changeAmount || trx.change_amount || 0,
+                            status: trx.status || (trx.paid >= trx.total ? 'paid' : 'debt')
                         });
                     }
                 } catch (error) {

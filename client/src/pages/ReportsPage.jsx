@@ -71,7 +71,11 @@ export default function ReportsPage() {
             document.documentElement.classList.remove('dark');
         };
         const handleAfterPrint = () => {
-            // Restore dark mode usually handled by state
+            // Restore dark mode if it was active
+            const savedTheme = localStorage.getItem('pos_theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
         };
         window.addEventListener('beforeprint', handleBeforePrint);
         window.addEventListener('afterprint', handleAfterPrint);

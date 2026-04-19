@@ -43,11 +43,16 @@ const ReceiptProMax = ({
                 </div>
 
                 {/* Subtitle / Status Banner */}
-                <div className={`text-center mb-8 py-2 px-6 rounded-full inline-block mx-auto left-1/2 -translate-x-1/2 relative text-[11px] font-black tracking-[0.2em] uppercase border-2 print:border-2 ${(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending')
+                <div className={`px-4 py-2 mt-4 text-center border-2 border-dashed rounded-xl font-black text-xs relative overflow-hidden ${
+                    (Number(receiptData.paid) < Number(receiptData.total) || 
+                     ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()) || 
+                     ['pending', 'debt'].includes(String(receiptData.paymentType).toLowerCase()))
                     ? 'bg-red-50 text-red-600 border-red-200 print:bg-transparent print:text-black print:border-black'
                     : 'bg-slate-900 text-white border-slate-900 print:bg-transparent print:text-slate-900 print:border-slate-900'
                     }`}>
-                    {(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending')
+                    {(Number(receiptData.paid) < Number(receiptData.total) || 
+                      ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()) || 
+                      ['pending', 'debt'].includes(String(receiptData.paymentType).toLowerCase()))
                         ? '*** BELUM LUNAS ***'
                         : 'NOTA PEMBAYARAN'}
                 </div>
@@ -139,8 +144,12 @@ const ReceiptProMax = ({
                     <div className="text-slate-400">Kembalian</div>
                     <div className="text-right font-black text-blue-600 print:text-slate-900 text-[11px]">{formatCurrency(receiptData.changeAmount || receiptData.change || 0)}</div>
                     <div className="text-slate-400">Status</div>
-                    <div className={`text-right font-black ${(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending') ? 'text-red-600' : 'text-emerald-600'} print:text-slate-900 text-[11px]`}>
-                        {(!receiptData.paid || receiptData.paid < receiptData.total || receiptData.status === 'pending' || receiptData.paymentType === 'pending') ? 'BELUM LUNAS' : 'LUNAS'}
+                    <div className={`text-right font-black ${(Number(receiptData.paid) < Number(receiptData.total) || 
+                        ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()) || 
+                        ['pending', 'debt'].includes(String(receiptData.paymentType).toLowerCase())) ? 'text-red-600' : 'text-emerald-600'} print:text-slate-900 text-[11px]`}>
+                        {(Number(receiptData.paid) < Number(receiptData.total) || 
+                            ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()) || 
+                            ['pending', 'debt'].includes(String(receiptData.paymentType).toLowerCase())) ? 'BELUM LUNAS' : 'LUNAS'}
                     </div>
                 </div>
 

@@ -22,9 +22,15 @@
     --bg-primary: #101922;
     --bg-secondary: #1a2432;
     --bg-card: rgba(26, 36, 50, 0.6);
+    --bg-card-hover: rgba(26, 36, 50, 0.8);
+    --bg-glass: rgba(26, 36, 50, 0.6);
     --bg-input: rgba(255, 255, 255, 0.05);
+    --bg-sidebar: #131d27;
+    --bg-modal: #1a2432;
+    --border: rgba(255, 255, 255, 0.08);
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
+    --text-muted: #64748b;
   }
 
   /* Legacy data-theme dark mode */
