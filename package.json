@@ -2,19 +2,22 @@
   "name": "pos-abadi-jaya",
   "version": "1.0.0",
   "description": "POS Abadi Jaya Desktop Application",
-  "main": "electron-main.js",
+  "main": "dist-main.js",
   "scripts": {
     "dev": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
     "build:client": "cd client && npm run build",
+    "build:db-tool": "electron-builder --config.extraMetadata.main=db-tool/main.js --config.productName=\"Koneksi Database\" --config.directories.output=dist-db-tool",
     "start": "electron .",
+    "start:db-tool": "electron db-tool/main.js",
     "dist": "npm run build:client && electron-builder",
     "postinstall": "cd client && npm install && cd ../server && npm install"
   },
   "dependencies": {
-    "concurrently": "^9.1.2",
     "bcryptjs": "^2.4.3",
+    "concurrently": "^9.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "electron-updater": "^6.3.9",
     "express": "^4.18.3",
     "firebase-admin": "^12.0.0",
     "jsonwebtoken": "^9.0.2",
@@ -29,18 +32,27 @@
   },
   "devDependencies": {
     "electron": "^34.3.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.0"
   },
   "build": {
     "appId": "com.abadijaya.pos",
     "productName": "POS Abadi Jaya",
     "copyright": "Copyright © 2025 Abadi Jaya Copier",
+    "compression": "store",
     "directories": {
-      "output": "dist-installer"
+      "output": "dist-installer",
+      "buildResources": "build"
     },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://pos.abadijaya.com/update"
+      }
+    ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -51,28 +63,33 @@
     },
     "extraResources": [
       {
-        "from": "scripts",
-        "to": "scripts"
+        "from": "build/setup-database.bat",
+        "to": "scripts/setup-database.bat"
       },
       {
-        "from": "assets/database-engine",
+        "from": "build/database-engine",
         "to": "database-engine"
       },
       {
-        "from": "server/database/pos_abadi.sql",
+        "from": "build/pos_abadi.sql",
         "to": "database/pos_abadi.sql"
+      },
+      {
+        "from": "build/db-tool",
+        "to": "db-tool"
       }
     ],
     "files": [
       "client/dist/**/*",
       "server/**/*",
-      "electron-main.js",
+      "dist-main.js",
+      "build/db-tool/**/*",
+      "build/icon.ico",
       "package.json",
-      "!server/node_modules/**/*",
-      "!client/node_modules/**/*",
-      "!server/database/pos.sqlite"
+      "!node_modules"
     ],
     "asar": true,
-    "npmRebuild": true
+    "npmRebuild": true,
+    "electronVersion": "34.5.8"
   }
 }

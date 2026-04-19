@@ -186,7 +186,9 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
     if ((receipt.change ?? 0) > 0) {
       encoder.line(rightAlign('KEMBALIAN', receipt.change.toLocaleString('id-ID')));
     }
-    const isUnpaid = !receipt.paid || receipt.paid < totalTx || receipt.status === 'pending' || receipt.paymentType === 'pending';
+    const isUnpaid = (Number(receipt.paid) < Number(totalTx)) ||
+      ['pending', 'debt'].includes(String(receipt.status || '').toLowerCase()) ||
+      ['pending', 'debt'].includes(String(receipt.paymentType || '').toLowerCase());
     encoder.line(rightAlign('STATUS', isUnpaid ? 'BELUM LUNAS' : 'LUNAS'));
     encoder.newline();
 
@@ -204,22 +206,33 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   const BOLD_OFF = ESC + 'F';
   const boldText = (t) => (printerType === 'lx310' ? BOLD_ON + t + BOLD_OFF : t);
 
+  // Strip ESC codes for accurate length calculation
+  const visibleLength = (str) => str.replace(/\x1b[A-Za-z@]/g, '').length;
+
   const MARGIN = printerType === 'lx310' ? '  ' : '';
   const rightAlignText = (left, right) => {
-    const sp = W - left.length - right.length;
+    const sp = W - visibleLength(left) - visibleLength(right);
     return left + ' '.repeat(sp > 0 ? sp : 1) + right;
   };
 
-  const lines = [];
-  lines.push(centerText(boldText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())));
-  const addressLinesRaw = wrapText(storeInfo.address || '', W);
-  addressLinesRaw.forEach(l => lines.push(centerText(l)));
+  const centerTextExact = (str) => {
+    const vLen = visibleLength(str);
+    const pad = Math.max(0, Math.floor((W - vLen) / 2));
+    return ' '.repeat(pad) + str;
+  };
 
-  if (storeInfo.phone) lines.push(centerText('Telp: ' + storeInfo.phone));
+  const lines = [];
+  lines.push(centerTextExact(boldText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())));
+  // Wrap address at half width for centered multi-line header
+  const addrWrapWidth = Math.min(W, Math.floor(W * 0.7));
+  const addressLinesRaw = wrapText(storeInfo.address || '', addrWrapWidth);
+  addressLinesRaw.forEach(l => lines.push(centerTextExact(l)));
+
+  if (storeInfo.phone) lines.push(centerTextExact('Telp: ' + storeInfo.phone));
 
   if (printerType === 'lx310' || printerType === 'inkjet') {
     lines.push('='.repeat(W));
-    lines.push(centerText(boldText('NOTA PEMBAYARAN')));
+    lines.push(centerTextExact(boldText('NOTA PEMBAYARAN')));
     lines.push('='.repeat(W));
   } else {
     lines.push('-'.repeat(W));
@@ -262,17 +275,21 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   if ((receipt.change ?? 0) > 0) {
     lines.push(rightAlignText('KEMBALI  :', formatRupiah(receipt.change)));
   }
-  lines.push(rightAlignText('STATUS   :', receipt.status === 'completed' ? boldText('LUNAS') : boldText('BELUM LUNAS')));
+  const isUnpaidRaw = (Number(receipt.paid) < Number(totalTx)) ||
+    ['pending', 'debt'].includes(String(receipt.status || '').toLowerCase()) ||
+    ['pending', 'debt'].includes(String(receipt.paymentType || '').toLowerCase());
+  lines.push(rightAlignText('STATUS   :', isUnpaidRaw ? boldText('BELUM LUNAS') : boldText('LUNAS')));
 
   lines.push('-'.repeat(W));
-  lines.push(centerText(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
+  lines.push(centerTextExact(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
   lines.push('');
   lines.push(`Dicetak: ${new Date().toLocaleString('id-ID')}`);
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
   if (printerType === 'lx310') {
     // For Dot Matrix LX-310, we feed just enough to reach the tear-off point without skipping pages
-    // Usually 5-6 lines is better for fanfold paper if not wanting to eject a full page
+    // ESC/P init: ESC @ (reset) + ESC P (10 CPI Pica = standard LX-310 font for 12cm paper)
+    textResult = '\x1b@\x1bP' + textResult;
     textResult += '\n\n\n\n\n';
   } else {
     // For Thermal, usually 6-8 lines is enough to reach the cutter
@@ -388,6 +405,9 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   text += `\n`;
   text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
   text += `\n\n\n\n\n`;
+  if (printerType === 'lx310') {
+    text = text.split('\n').map(l => '  ' + l).join('\n');
+  }
   return text;
 };
 
@@ -575,13 +595,18 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
 
     // Find the printer
     const printer = await qz.printers.find(printerName);
-    const config = qz.configs.create(printer);
+    const config = qz.configs.create(printer, {
+      size: { width: 4.72, height: 5.51 },
+      units: 'in',
+      margins: { top: 0.1, right: 0.1, bottom: 0.1, left: 0.1 }
+    });
 
-    // Send raw data (ESC/P or Text)
-    // Wrap text in array as required by QZ
-    const printData = [
-      data
-    ];
+    // Send raw data (ESC/P or Text) directly to the printer
+    const printData = [{
+      type: 'raw',
+      format: 'plain',
+      data: data
+    }];
 
     await qz.print(config, printData);
 

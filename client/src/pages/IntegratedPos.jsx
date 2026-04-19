@@ -193,12 +193,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 const { data } = await api.get('/settings/public');
                 const sMap = {};
                 data.forEach(s => { sMap[s.key] = s.value; });
-                setPrinterSettings({
-                    storeName: sMap.store_name || 'FOTOCOPY ABADI JAYA',
-                    address: sMap.store_address || '',
-                    phone: sMap.store_phone || '',
-                    footer: sMap.store_footer || 'Terima kasih atas kunjungan Anda!'
-                });
+                setPrinterSettings(prev => ({
+                    ...prev,
+                    storeName: sMap.store_name || prev.storeName,
+                    storeAddress: sMap.store_address || prev.storeAddress,
+                    storePhone: sMap.store_phone || prev.storePhone,
+                    receiptFooter: sMap.store_footer || prev.receiptFooter
+                }));
             } catch (e) {
                 console.error('Failed to fetch printer settings:', e);
             }
@@ -582,7 +583,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             paymentType: paymentMethod,
             paid: paid,
             changeAmount: Math.max(0, paid - total),
-            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'completed'),
+            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'paid'),
             customerWa: customerWa // Kirim WA ke backend
         };
 
