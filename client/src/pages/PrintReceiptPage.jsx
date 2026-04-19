@@ -211,6 +211,11 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                 return;
             }
 
+            if (effectivePrinterSize === 'inkjet') {
+                window.print();
+                return;
+            }
+
             const payload = {
                 text: receiptText,
                 printerName: printSettings.printerName,
