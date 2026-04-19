@@ -34,7 +34,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     {printSettings.storePhone && <p className="text-[11px] font-bold text-slate-700 mt-3 tracking-widest leading-none uppercase">TELP: {printSettings.storePhone}</p>}
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-black print:!text-white border-0">FAKTUR PENJUALAN</div>
+                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-white print:text-black print:border-2 print:border-black">FAKTUR PENJUALAN</div>
                     <div className="flex flex-col gap-1.5 text-[12px] font-bold text-slate-600">
                         <div className="flex justify-between gap-10">
                             <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">No. Invoice</span>
@@ -114,7 +114,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     <div className="mt-2 flex flex-col gap-2 p-4 bg-slate-50 print:bg-transparent rounded-xl border border-slate-200 print:border-slate-900 text-[10px] font-bold uppercase text-slate-500 tracking-widest">
                         <div className="flex justify-between">
                             <span>Metode / Kasir</span>
-                            <span className="text-slate-900">{receiptData.paymentType || 'Tunai'} / {receiptData.userName || 'Staf'}</span>
+                            <span className="text-slate-900">{receiptData.paymentType || receiptData.paymentMethod || 'Tunai'} / {receiptData.userName || receiptData.cashier || 'Staf'}</span>
                         </div>
                         <div className="flex justify-between">
                             <span>Jumlah Dibayar</span>
