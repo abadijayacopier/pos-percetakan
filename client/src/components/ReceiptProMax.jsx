@@ -1,9 +1,16 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {/* Print Margin Reset */}
-            <style dangerouslySetInnerHTML={{ __html: `@page { size: auto; margin: 5mm 5mm 5mm 10mm !important; }` }} />
+        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            {/* Print Style Injector */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @page { size: auto; margin: 5mm 5mm 5mm 10mm !important; }
+                @media print {
+                    body, html { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    #root { background-color: white !important; }
+                }
+            ` }} />
 
             <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-8">
                 <div>
