@@ -1,7 +1,9 @@
+import React, { useMemo } from 'react';
+
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     // Use a unique ID to prevent double-printing when multiple receipt components are in the DOM
-    const printId = React.useMemo(() => `invoice-print-${Math.random().toString(36).substr(2, 9)}`, []);
+    const printId = useMemo(() => `invoice-print-${Math.random().toString(36).substr(2, 9)}`, []);
 
     return (
         <div id={printId} className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-0 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
