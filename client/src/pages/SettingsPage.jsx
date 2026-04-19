@@ -1226,7 +1226,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
 
                                             {printerSize === 'lx310' && (
                                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
-                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 text-orange-600">Ukuran Continuous Form</label>
+                                                    <label className="block text-xs font-bold uppercase tracking-wider mb-3 text-orange-600">Ukuran Continuous Form</label>
                                                     <div className="flex flex-wrap gap-3">
                                                         {[
                                                             { id: 'standard', label: '9.5 x 11" (Standard)', desc: 'Faktur/Slip' },

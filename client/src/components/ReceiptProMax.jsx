@@ -1,36 +1,39 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div className="bg-white p-12 text-slate-900 w-full min-h-[1120px] font-sans border border-slate-100 shadow-sm relative leading-normal">
-            <div className="flex justify-between items-start border-b-4 border-slate-900 pb-10 mb-10">
+        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0">
+            {/* Print Margin Reset */}
+            <style dangerouslySetInnerHTML={{ __html: `@page { size: auto; margin: 5mm 5mm 5mm 10mm !important; }` }} />
+
+            <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-8">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tight mb-2">{printSettings.storeName}</h1>
-                    <p className="text-sm font-medium text-slate-500 max-w-[400px] leading-relaxed uppercase tracking-wider">{printSettings.storeAddress}</p>
-                    {printSettings.storePhone && <p className="text-sm font-bold text-slate-700 mt-4 tracking-widest leading-none">TELP: {printSettings.storePhone}</p>}
+                    <h1 className="text-3xl font-black tracking-tight mb-2">{printSettings.storeName}</h1>
+                    <p className="text-[11px] font-medium text-slate-500 max-w-[400px] leading-relaxed uppercase tracking-wider">{printSettings.storeAddress}</p>
+                    {printSettings.storePhone && <p className="text-[11px] font-bold text-slate-700 mt-3 tracking-widest leading-none uppercase">TELP: {printSettings.storePhone}</p>}
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-sm font-black mb-6 uppercase tracking-[0.2em] print:bg-black print:text-white">FAKTUR PENJUALAN</div>
-                    <div className="flex flex-col gap-2 text-[13px] font-bold text-slate-600">
+                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-black print:text-white">FAKTUR PENJUALAN</div>
+                    <div className="flex flex-col gap-1.5 text-[12px] font-bold text-slate-600">
                         <div className="flex justify-between gap-10">
-                            <span className="text-slate-400 uppercase tracking-widest text-[10px] font-black">No. Invoice</span>
+                            <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">No. Invoice</span>
                             <span className="text-slate-900"># {receiptData.invoiceNo}</span>
                         </div>
                         <div className="flex justify-between gap-10">
-                            <span className="text-slate-400 uppercase tracking-widest text-[10px] font-black">Tanggal</span>
+                            <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">Tanggal</span>
                             <span className="text-slate-900">{safeDate}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex justify-between mb-12 text-[13px] bg-slate-50 print:bg-transparent p-8 rounded-2xl border border-slate-100 print:border-slate-900">
+            <div className="flex justify-between mb-8 text-[12px] bg-slate-50 print:bg-transparent p-6 rounded-2xl border border-slate-100 print:border-slate-900">
                 <div className="flex flex-col gap-1">
-                    <span className="text-slate-400 uppercase tracking-widest text-[10px] mb-1 font-black">Tagihan Untuk:</span>
-                    <span className="text-xl font-black text-slate-900 uppercase">{receiptData.customerName || 'UMUM'}</span>
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px] mb-1 font-black">Tagihan Untuk:</span>
+                    <span className="text-lg font-black text-slate-900 uppercase">{receiptData.customerName || 'UMUM'}</span>
                 </div>
                 <div className="text-right flex flex-col gap-1">
-                    <span className="text-slate-400 uppercase tracking-widest text-[10px] mb-1 font-black">Status Pembayaran:</span>
-                    <span className={`text-xl font-black px-6 py-1.5 rounded-full border border-current ${(Number(receiptData.paid) < Number(receiptData.total) ||
+                    <span className="text-slate-400 uppercase tracking-widest text-[9px] mb-1 font-black">Status Pembayaran:</span>
+                    <span className={`text-lg font-black px-5 py-1 rounded-full border border-current ${(Number(receiptData.paid) < Number(receiptData.total) ||
                         ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()))
                         ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
                         }`}>
@@ -40,53 +43,53 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                 </div>
             </div>
 
-            <table className="w-full text-left mb-16 border-collapse">
+            <table className="w-full text-left mb-10 border-collapse">
                 <thead>
-                    <tr className="border-b-2 border-slate-900 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
-                        <th className="py-5 pr-4 w-12 text-center">NO</th>
-                        <th className="py-5 pr-4">DESKRIPSI ITEM</th>
-                        <th className="py-5 px-4 text-center">QTY</th>
-                        <th className="py-5 px-4 text-right">HARGA</th>
-                        <th className="py-5 pl-4 text-right">SUBTOTAL</th>
+                    <tr className="border-b-2 border-slate-900 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        <th className="py-4 pr-4 w-12 text-center">NO</th>
+                        <th className="py-4 pr-4">DESKRIPSI ITEM</th>
+                        <th className="py-4 px-4 text-center">QTY</th>
+                        <th className="py-4 px-4 text-right">HARGA</th>
+                        <th className="py-4 pl-4 text-right">SUBTOTAL</th>
                     </tr>
                 </thead>
-                <tbody className="text-[13px] font-medium text-slate-800">
+                <tbody className="text-[12px] font-medium text-slate-800">
                     {items.map((item, idx) => {
                         const qty = item.qty || item.quantity || 1;
                         const price = item.price || item.sellPrice || 0;
                         const itemSubtotal = item.subtotal || (qty * price);
                         return (
                             <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                                <td className="py-6 pr-4 text-center font-bold text-slate-400">{idx + 1}</td>
-                                <td className="py-6 pr-4">
-                                    <p className="font-black text-slate-900 text-sm mb-1 uppercase tracking-tight">{item.name}</p>
+                                <td className="py-4 pr-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                                <td className="py-4 pr-4">
+                                    <p className="font-black text-slate-900 text-[13px] mb-0.5 uppercase tracking-tight">{item.name}</p>
                                 </td>
-                                <td className="py-6 px-4 text-center font-black text-lg">{qty}</td>
-                                <td className="py-6 px-4 text-right font-code">{formatCurrency(price)}</td>
-                                <td className="py-6 pl-4 text-right font-black text-slate-900 text-lg font-code">{formatCurrency(itemSubtotal)}</td>
+                                <td className="py-4 px-4 text-center font-black text-base">{qty}</td>
+                                <td className="py-4 px-4 text-right font-code">{formatCurrency(price)}</td>
+                                <td className="py-4 pl-4 text-right font-black text-slate-900 text-base font-code">{formatCurrency(itemSubtotal)}</td>
                             </tr>
                         );
                     })}
                 </tbody>
             </table>
 
-            <div className="flex justify-end mb-24">
-                <div className="w-[350px] flex flex-col gap-4">
-                    <div className="flex justify-between text-[11px] font-black text-slate-400 uppercase tracking-widest">
+            <div className="flex justify-end mb-16 break-inside-avoid">
+                <div className="w-[320px] flex flex-col gap-3">
+                    <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         <span>Subtotal Pesanan</span>
                         <span className="text-slate-900">{formatCurrency(receiptData.subtotal)}</span>
                     </div>
                     {receiptData.discount > 0 && (
-                        <div className="flex justify-between text-[11px] font-black text-red-500 uppercase tracking-widest">
+                        <div className="flex justify-between text-[10px] font-black text-red-500 uppercase tracking-widest">
                             <span>Total Potongan</span>
                             <span>- {formatCurrency(receiptData.discount)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between items-center text-3xl font-black bg-slate-900 text-white p-6 rounded-3xl shadow-2xl shadow-slate-900/10 print:bg-transparent print:border-4 print:border-slate-900 print:text-slate-900">
+                    <div className="flex justify-between items-center text-2xl font-black bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-900/10 print:bg-transparent print:border-4 print:border-slate-900 print:text-slate-900">
                         <span className="tracking-tighter">TOTAL</span>
                         <span className="font-code">Rp {formatCurrency(receiptData.total)}</span>
                     </div>
-                    <div className="mt-4 flex flex-col gap-3 p-6 bg-slate-50 print:bg-transparent rounded-2xl border border-slate-200 print:border-slate-900 text-[11px] font-bold uppercase text-slate-500 tracking-widest">
+                    <div className="mt-2 flex flex-col gap-2 p-4 bg-slate-50 print:bg-transparent rounded-xl border border-slate-200 print:border-slate-900 text-[10px] font-bold uppercase text-slate-500 tracking-widest">
                         <div className="flex justify-between">
                             <span>Metode / Kasir</span>
                             <span className="text-slate-900">{receiptData.paymentType || 'Tunai'} / {receiptData.userName || 'Staf'}</span>
@@ -97,27 +100,27 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                         </div>
                         <div className="flex justify-between">
                             <span>Kembalian</span>
-                            <span className="text-blue-600 font-black text-[12px]">{formatCurrency(receiptData.changeAmount)}</span>
+                            <span className="text-blue-600 font-black text-[11px]">{formatCurrency(receiptData.changeAmount)}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-40 mb-20 px-20">
+            <div className="grid grid-cols-2 gap-40 mb-12 px-10 break-inside-avoid">
                 <div className="text-center flex flex-col items-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-24">Penerima / Pelanggan</p>
-                    <div className="w-56 h-[2px] bg-slate-200 mb-3" />
-                    <p className="font-black text-slate-900 text-sm uppercase">( {receiptData.customerName || '....................'} )</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20">Penerima / Pelanggan</p>
+                    <div className="w-48 h-[2px] bg-slate-200 mb-2" />
+                    <p className="font-black text-slate-900 text-xs uppercase">( {receiptData.customerName || '....................'} )</p>
                 </div>
                 <div className="text-center flex flex-col items-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-24">Hormat Kami,</p>
-                    <div className="w-56 h-[2px] bg-slate-200 mb-3" />
-                    <p className="font-black text-slate-900 text-sm uppercase">{printSettings.storeName}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20">Hormat Kami,</p>
+                    <div className="w-48 h-[2px] bg-slate-200 mb-2" />
+                    <p className="font-black text-slate-900 text-xs uppercase">{printSettings.storeName}</p>
                 </div>
             </div>
 
-            <div className="text-center pt-12 border-t border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-relaxed">
-                <p className="mb-3 text-slate-900">{printSettings.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
+            <div className="text-center pt-8 border-t border-slate-100 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-relaxed break-inside-avoid">
+                <p className="mb-2 text-slate-900">{printSettings.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
                 <p className="max-w-2xl mx-auto font-medium normal-case italic">Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan tanpa perjanjian sebelumnya.</p>
             </div>
         </div>
