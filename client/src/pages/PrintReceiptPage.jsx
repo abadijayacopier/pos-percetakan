@@ -324,7 +324,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
             <div className={`no-print sticky top-6 z-50 mb-10 flex flex-wrap sm:flex-nowrap gap-3 w-full ${getPrinterWidthClass()} bg-white/70 dark:bg-slate-800/70 backdrop-blur-2xl p-4 rounded-[2rem] shadow-2xl shadow-blue-500/10 border border-white/40 dark:border-slate-700/50 transition-all duration-500`}>
                 <button
                     className="flex-none flex items-center justify-center p-3.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl hover:bg-slate-200 transition-all shadow-sm active:scale-95"
-                    onClick={() => onNavigate('integrated-pos')}
+                    onClick={() => onNavigate('pos')}
                     title="Kembali ke POS"
                 >
                     <FiArrowLeft className="text-xl" />

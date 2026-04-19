@@ -1,22 +1,24 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
+    // Use a unique ID to prevent double-printing when multiple receipt components are in the DOM
+    const printId = React.useMemo(() => `invoice-print-${Math.random().toString(36).substr(2, 9)}`, []);
+
     return (
-        <div id="invoice-print-area" className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-0 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {/* Print Style Injector - BULLETPROOF ISOLATION */}
+        <div id={printId} className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-0 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            {/* Print Style Injector - UNIQUE ISOLATION */}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @page { size: auto; margin: 10mm !important; }
                 @media print {
                     /* Hide everything in the page body */
                     body * { visibility: hidden !important; border: none !important; }
-                    /* Style the specific print area */
-                    #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
-                    #invoice-print-area { 
-                        position: fixed !important;
+                    /* Target only this SPECIFIC invoice to be visible */
+                    #${printId}, #${printId} * { visibility: visible !important; }
+                    #${printId} { 
+                        position: absolute !important;
                         left: 0 !important;
                         top: 0 !important;
-                        width: 100vw !important;
-                        height: 100vh !important;
+                        width: 100% !important;
                         display: block !important;
                         background: white !important;
                         padding: 10mm !important;
