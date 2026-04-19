@@ -197,7 +197,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                 }))
             };
 
-            const receiptText = generateRawReceipt(txForPrint, storeInfo, effectivePrinterSize, isMobile);
+            const receiptText = generateRawReceipt(txForPrint, storeInfo, effectivePrinterSize, isMobile, printSettings.paperSize);
 
             if (isMobile) {
                 await printViaBluetooth(receiptText);
@@ -206,7 +206,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
             }
 
             if (effectivePrinterSize === 'lx310') {
-                await printViaQZ(receiptText, printSettings.printerName || 'LX-310');
+                await printViaQZ({ data: receiptText, paperSize: printSettings.paperSize }, printSettings.printerName || 'LX-310');
                 console.log('Receipt sent via QZ Tray (LX-310)');
                 return;
             }

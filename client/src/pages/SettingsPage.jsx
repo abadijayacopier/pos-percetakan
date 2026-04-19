@@ -1224,6 +1224,27 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                                 </div>
                                             )}
 
+                                            {printerSize === 'lx310' && (
+                                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2">
+                                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 text-orange-600">Ukuran Continuous Form</label>
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {[
+                                                            { id: 'standard', label: '9.5 x 11" (Standard)', desc: 'Faktur/Slip' },
+                                                            { id: 'half', label: '9.5 x 5.5" (Half)', desc: 'Kuintasi/Nota' },
+                                                            { id: 'wartel', label: '12 x 14 cm (Wartel)', desc: 'Nota Kecil' },
+                                                        ].map(sz => (
+                                                            <button key={sz.id} className={`flex flex-col items-start px-5 py-3 rounded-2xl border-2 transition-all min-w-[160px] ${paperSize === sz.id
+                                                                ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                                                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-200 dark:hover:border-slate-700 border-slate-100 dark:border-slate-800'
+                                                                }`} onClick={() => setPaperSize(sz.id)}>
+                                                                <span className="text-sm font-bold">{sz.label}</span>
+                                                                <span className="text-[10px] opacity-60 font-medium">{sz.desc}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
                                                 <div className="max-w-[80%]">
                                                     <h4 className="text-sm font-bold text-slate-700 dark:text-white">Cetak Struk Otomatis</h4>
@@ -1337,59 +1358,49 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons */}
                                     <div className="flex gap-4">
                                         <button className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={saveSettings}>
                                             <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Perubahan Printer
                                         </button>
                                         <button className="flex items-center justify-center gap-2 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-sm" onClick={async () => {
-                                            // Test print logic (same as before)
-                                            const W = printerSize === 'lx310' ? 36 : printerSize === 'inkjet' ? 60 : printerSize === '80mm' ? 42 : 32;
-                                            const M = printerSize === 'lx310' ? '  ' : '';
-                                            const pad = (label, val) => { const sp = W - label.length - val.length; return label + ' '.repeat(sp > 0 ? sp : 1) + val; };
-                                            const center = (str) => { const p = Math.max(0, Math.floor((W - str.length) / 2)); return ' '.repeat(p) + str; };
+                                            const dummyReceipt = {
+                                                invoiceNo: 'TEST-001',
+                                                date: new Date(),
+                                                items: [
+                                                    { name: 'TEST PRINT SERVICE', qty: 1, price: 5000, subtotal: 5000 },
+                                                    { name: 'KERTAS HVS A4', qty: 10, price: 500, subtotal: 5000 }
+                                                ],
+                                                subtotal: 10000,
+                                                discount: 0,
+                                                total: 10000,
+                                                paid: 10000,
+                                                change: 0,
+                                                paymentType: 'Tunai',
+                                                status: 'Lunas',
+                                                userName: 'TEST ADMIN'
+                                            };
+                                            const storeInfo = {
+                                                name: storeName,
+                                                address: storeAddress,
+                                                phone: storePhone,
+                                                footer: receiptFooter,
+                                                userName: 'TEST ADMIN'
+                                            };
 
-                                            const lines = [
-                                                center(storeName || 'NAMA TOKO'),
-                                                center(storeAddress || 'Alamat toko'),
-                                                center('Telp: ' + (storePhone || '-')),
-                                                '-'.repeat(W),
-                                                center('TEST PRINT RECEIPT'),
-                                                '-'.repeat(W),
-                                                `No      : TEST-${Date.now().toString(36).toUpperCase()}`,
-                                                `Tanggal : ${new Date().toLocaleString('id-ID')}`,
-                                                '-'.repeat(W),
-                                                pad('  ITEM TEST 1', 'Rp 10.000'),
-                                                pad('  ITEM TEST 2', 'Rp 5.000'),
-                                                '-'.repeat(W),
-                                                pad('TOTAL    :', 'Rp 15.000'),
-                                                '-'.repeat(W),
-                                                center('TEST BERHASIL'),
-                                                '',
-                                                `Dicetak: ${new Date().toLocaleString('id-ID')}`,
-                                            ];
-                                            let testText = lines.map(l => M + l).join('\n') + '\n\n\n';
+                                            const receiptText = generateRawReceipt(dummyReceipt, storeInfo, printerSize, false, paperSize);
 
-                                            if (window.innerWidth < 1024) {
-                                                printViaBluetooth(testText);
-                                                showToast('Draft dikirim ke Bluetooth Printer', 'success');
-                                                return;
-                                            }
-
-                                            if (printerName) {
-                                                try {
-                                                    const payload = { text: testText, printerName };
-                                                    if (printerSize === 'lx310') payload.raw = true;
-                                                    await api.post('/print/receipt', payload);
-                                                    showToast(`Test print dikirim ke ${printerName}`, 'success');
-                                                } catch (err) {
-                                                    showToast('Gagal mengirim test print', 'error');
-                                                }
+                                            if (printerSize === 'lx310') {
+                                                await printViaQZ({ data: receiptText, paperSize: paperSize }, printerName || 'LX-310');
                                             } else {
-                                                showToast('Pilih printer dulu', 'error');
+                                                await api.post('/print/receipt', {
+                                                    text: receiptText,
+                                                    printerName: printerName,
+                                                    mode: printerSize === 'inkjet' ? 'inkjet' : 'normal'
+                                                });
                                             }
+                                            showToast('Percobaan cetak dikirim!', 'info');
                                         }}>
-                                            <FiActivity /> Test Print
+                                            <FiActivity /> Tes Cetak
                                         </button>
                                     </div>
                                 </div>

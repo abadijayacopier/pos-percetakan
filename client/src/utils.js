@@ -79,9 +79,18 @@ export const isToday = (dateStr) => {
   return new Date(dateStr).toDateString() === new Date().toDateString();
 };
 
-export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', forceBinary = false) => {
+export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', forceBinary = false, paperSize = 'standard') => {
   const isBluetooth = forceBinary || printerType === 'bluetooth';
-  const W = printerType === '80mm' ? 42 : printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : 32;
+
+  // W calculation based on printer type and paper size
+  let W = 32; // Default for 58mm
+  if (printerType === '80mm') W = 42;
+  else if (printerType === 'inkjet') W = 80;
+  else if (printerType === 'lx310') {
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 36;
+    else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
+    else W = 85; // Standard 9.5x11
+  }
 
   const wrapText = (text, maxWidth) => {
     if (!text) return [];
@@ -299,9 +308,16 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   return textResult;
 };
 
-export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', forceBinary = false) => {
+export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', forceBinary = false, paperSize = 'standard') => {
   const isBluetooth = forceBinary || printerType === 'bluetooth';
-  const W = printerType === '80mm' ? 42 : printerType === 'lx310' ? 36 : printerType === 'inkjet' ? 60 : 32;
+
+  let W = 32;
+  if (printerType === '80mm') W = 42;
+  else if (printerType === 'inkjet') W = 80;
+  else if (printerType === 'lx310') {
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 36;
+    else W = 85; // Standard & Half use full width
+  }
 
   const rightAlign = (left, right) => {
     const sp = W - left.length - right.length;
@@ -595,8 +611,17 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
 
     // Find the printer
     const printer = await qz.printers.find(printerName);
+
+    // Determine paper dimensions based on paperSize
+    let paperSizeConfig = { width: 4.72, height: 5.51 }; // Wartel default
+    const pSize = (data && data.paperSize) || 'wartel';
+
+    if (pSize === 'standard' || pSize === '9.5x11') paperSizeConfig = { width: 9.5, height: 11 };
+    else if (pSize === 'half' || pSize === '9.5x5.5') paperSizeConfig = { width: 9.5, height: 5.5 };
+    else if (pSize === 'wartel' || pSize === '12x14') paperSizeConfig = { width: 4.72, height: 5.51 };
+
     const config = qz.configs.create(printer, {
-      size: { width: 4.72, height: 5.51 },
+      size: paperSizeConfig,
       units: 'in',
       margins: { top: 0.1, right: 0.1, bottom: 0.1, left: 0.1 }
     });

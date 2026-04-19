@@ -488,17 +488,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 phone: printerSettings.storePhone || '',
                 footer: printerSettings.receiptFooter || '',
                 userName: user?.name || 'Kasir'
-            }, effectivePrinterSize, isMobile);
+            }, effectivePrinterSize, isMobile, printerSettings.paperSize);
 
             if (isMobile) {
                 printViaBluetooth(receiptText);
             } else if (effectivePrinterSize === 'lx310') {
                 // Double print for LX-310 as requested by user
-                await printViaQZ(receiptText, printerSettings.printerName || 'LX-310');
+                await printViaQZ({ data: receiptText, paperSize: printerSettings.paperSize }, printerSettings.printerName || 'LX-310');
                 if (printerSettings.printerSize === 'lx310') {
                     // Slight delay to ensure printer buffer handles both
                     setTimeout(async () => {
-                        await printViaQZ(receiptText, printerSettings.printerName || 'LX-310');
+                        await printViaQZ({ data: receiptText, paperSize: printerSettings.paperSize }, printerSettings.printerName || 'LX-310');
                     }, 1000);
                 }
             } else {
