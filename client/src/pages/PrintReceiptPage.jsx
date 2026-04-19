@@ -272,42 +272,77 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         const encodedText = encodeURIComponent(waText);
         const waUrl = `https://wa.me/?text=${encodedText}`;
 
-        // Action sheet for sharing
+        // Action sheet for sharing using custom HTML for better visibility and UX
         Swal.fire({
             title: 'Bagikan Nota',
-            text: 'Pilih metode pengiriman:',
-            icon: 'info',
-            showCancelButton: true,
-            confirmButtonText: 'WhatsApp',
-            cancelButtonText: 'Lainnya (System Share)',
-            confirmButtonColor: '#25D366', // WhatsApp Green
-            denyButtonText: 'Salin Teks',
-            showDenyButton: true,
-            reverseButtons: true,
+            html: `
+                <div class="flex flex-col gap-3 mt-4">
+                    <button id="swal-wa" class="flex items-center justify-between p-4 bg-[#25D366] text-white rounded-2xl font-bold hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-whatsapp text-xl"></i>
+                            <span>WhatsApp</span>
+                        </div>
+                        <i class="fas fa-chevron-right opacity-50"></i>
+                    </button>
+                    
+                    <button id="swal-copy" class="flex items-center justify-between p-4 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-copy text-xl"></i>
+                            <span>Salin Teks Nota</span>
+                        </div>
+                        <i class="fas fa-chevron-right opacity-30"></i>
+                    </button>
+                    
+                    <button id="swal-share" class="flex items-center justify-between p-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-share-alt text-xl"></i>
+                            <span>Lainnya (System Share)</span>
+                        </div>
+                        <i class="fas fa-chevron-right opacity-50"></i>
+                    </button>
+                </div>
+            `,
+            showConfirmButton: false,
+            showCloseButton: true,
             customClass: {
-                confirmButton: 'rounded-xl font-bold px-6 py-3',
-                cancelButton: 'rounded-xl font-bold px-6 py-3',
-                denyButton: 'rounded-xl font-bold px-6 py-3'
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Open WhatsApp
-                window.open(waUrl, '_blank');
-            } else if (result.isDenied) {
-                // Clipboard
-                navigator.clipboard.writeText(waText);
-                Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Teks nota telah disalin!', timer: 2000, showConfirmButton: false });
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                // Native Share
-                if (navigator.share) {
-                    navigator.share({
-                        title: `Nota ${receiptData.invoiceNo}`,
-                        text: waText,
-                    }).catch(() => { });
-                } else {
+                popup: 'rounded-[1.5rem] dark:bg-slate-800 p-6',
+                title: 'text-2xl font-black text-slate-800 dark:text-white mb-2'
+            },
+            didOpen: () => {
+                const waBtn = document.getElementById('swal-wa');
+                const copyBtn = document.getElementById('swal-copy');
+                const shareBtn = document.getElementById('swal-share');
+
+                waBtn.addEventListener('click', () => {
+                    window.open(waUrl, '_blank');
+                    Swal.close();
+                });
+
+                copyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(waText);
-                    Swal.fire({ icon: 'info', title: 'Clipboard', text: 'Browser tidak mendukung Share API. Teks disalin ke clipboard.', timer: 2000 });
-                }
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: 'Teks nota telah disalin!',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        customClass: { popup: 'rounded-2xl' }
+                    });
+                });
+
+                shareBtn.addEventListener('click', () => {
+                    if (navigator.share) {
+                        navigator.share({
+                            title: `Nota ${receiptData.invoiceNo}`,
+                            text: waText,
+                        }).catch(() => { });
+                    } else {
+                        navigator.clipboard.writeText(waText);
+                        Swal.fire({ icon: 'info', title: 'Clipboard', text: 'Teks disalin ke clipboard.', timer: 1500, showConfirmButton: false });
+                    }
+                    Swal.close();
+                });
             }
         });
     };

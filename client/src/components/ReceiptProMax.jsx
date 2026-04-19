@@ -15,7 +15,11 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     /* Hide everything in the page body */
                     body * { visibility: hidden !important; border: none !important; }
                     /* Target only this SPECIFIC invoice to be visible */
-                    #${printId}, #${printId} * { visibility: visible !important; }
+                    #${printId}, #${printId} * { 
+                        visibility: visible !important; 
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                     #${printId} { 
                         position: absolute !important;
                         left: 0 !important;
@@ -27,7 +31,20 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                         z-index: 99999 !important;
                     }
                     /* Ensure no other backgrounds interfere */
-                    html, body { background: white !important; }
+                    html, body { 
+                        background: white !important; 
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    
+                    /* Force borders for specific colors that might fade */
+                    .border-slate-900, .border-b-4, .border-b-2 { 
+                        border-color: #000000 !important; 
+                        border-style: solid !important;
+                        border-bottom-width: 2pt !important;
+                    }
+                    .bg-slate-900 { background-color: #000000 !important; }
+                    table tr { border-bottom: 1pt solid #000000 !important; }
                 }
             ` }} />
 
@@ -38,7 +55,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     {printSettings.storePhone && <p className="text-[11px] font-bold text-slate-700 mt-3 tracking-widest leading-none uppercase">TELP: {printSettings.storePhone}</p>}
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-white print:text-black print:border-2 print:border-black">FAKTUR PENJUALAN</div>
+                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em]">FAKTUR PENJUALAN</div>
                     <div className="flex flex-col gap-1.5 text-[12px] font-bold text-slate-600">
                         <div className="flex justify-between gap-10">
                             <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">No. Invoice</span>
@@ -52,7 +69,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                 </div>
             </div>
 
-            <div className="flex justify-between mb-8 text-[12px] bg-slate-50 print:bg-transparent p-6 rounded-2xl border border-slate-100 print:border-slate-900">
+            <div className="flex justify-between mb-8 text-[12px] bg-slate-50 p-6 rounded-2xl border border-slate-100">
                 <div className="flex flex-col gap-1">
                     <span className="text-slate-400 uppercase tracking-widest text-[9px] mb-1 font-black">Tagihan Untuk:</span>
                     <span className="text-lg font-black text-slate-900 uppercase">{receiptData.customerName || 'UMUM'}</span>
@@ -111,22 +128,22 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                             <span>- {formatCurrency(receiptData.discount)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between items-center text-2xl font-black bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-900/10 print:bg-transparent print:border-4 print:border-slate-900 print:text-slate-900">
+                    <div className="flex justify-between items-center text-2xl font-black bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-900/10">
                         <span className="tracking-tighter">TOTAL</span>
                         <span className="font-code">Rp {formatCurrency(receiptData.total)}</span>
                     </div>
-                    <div className="mt-2 flex flex-col gap-2 p-4 bg-slate-50 print:bg-transparent rounded-xl border border-slate-200 print:border-slate-900 text-[10px] font-bold uppercase text-slate-500 tracking-widest">
-                        <div className="flex justify-between">
+                    <div className="mt-2 flex flex-col gap-3 p-6 bg-slate-50 rounded-2xl border border-slate-200 text-[11px] font-bold uppercase text-slate-500 tracking-widest">
+                        <div className="flex justify-between border-b border-slate-200 pb-2 print:border-black">
                             <span>Metode / Kasir</span>
                             <span className="text-slate-900">{receiptData.paymentType || receiptData.paymentMethod || 'Tunai'} / {receiptData.userName || receiptData.cashier || 'Staf'}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between border-b border-slate-200 pb-2 print:border-black">
                             <span>Jumlah Dibayar</span>
-                            <span className="text-slate-900 font-black">{formatCurrency(receiptData.paid)}</span>
+                            <span className="text-slate-900 font-black text-xs">{formatCurrency(receiptData.paid)}</span>
                         </div>
                         <div className="flex justify-between">
                             <span>Kembalian</span>
-                            <span className="text-blue-600 font-black text-[11px]">{formatCurrency(receiptData.changeAmount)}</span>
+                            <span className="text-blue-600 font-black text-xs print:text-black">{formatCurrency(receiptData.changeAmount)}</span>
                         </div>
                     </div>
                 </div>
