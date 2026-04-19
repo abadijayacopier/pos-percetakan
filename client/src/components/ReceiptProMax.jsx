@@ -1,7 +1,7 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0">
+        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             {/* Print Margin Reset */}
             <style dangerouslySetInnerHTML={{ __html: `@page { size: auto; margin: 5mm 5mm 5mm 10mm !important; }` }} />
 
@@ -12,7 +12,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     {printSettings.storePhone && <p className="text-[11px] font-bold text-slate-700 mt-3 tracking-widest leading-none uppercase">TELP: {printSettings.storePhone}</p>}
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-black print:text-white">FAKTUR PENJUALAN</div>
+                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print:bg-black print:!text-white border-0">FAKTUR PENJUALAN</div>
                     <div className="flex flex-col gap-1.5 text-[12px] font-bold text-slate-600">
                         <div className="flex justify-between gap-10">
                             <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">No. Invoice</span>
