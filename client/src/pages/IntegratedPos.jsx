@@ -467,8 +467,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         if (transactionComplete) {
             setCart([]);
             setGlobalDiscount(0);
-            setTransactionComplete(null);
             setAmountPaid('');
+            setSelectedCustomerId(null);
+            setManualCustomerName('');
         }
     };
 
@@ -1189,7 +1190,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     <div className="flex flex-col truncate">
                                         <span className="text-sm font-bold text-slate-800 dark:text-white truncate">
                                             {selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru (Manual)') :
-                                                (customers.find(c => c.id === selectedCustomerId)?.name || 'Umum / Tanpa Nama')}
+                                                (customers.find(c => String(c.id) === String(selectedCustomerId))?.name || 'Umum / Tanpa Nama')}
                                         </span>
                                         <span className="text-[10px] font-medium text-slate-500">
                                             {selectedCustomerId ? 'Klik untuk mengubah pelanggan' : 'Pilih data pelanggan'}

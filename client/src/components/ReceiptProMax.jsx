@@ -1,28 +1,29 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div id="invoice-print-area" className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {/* Print Style Injector - RELIABLE ISOLATION */}
+        <div id="invoice-print-area" className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-0 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            {/* Print Style Injector - BULLETPROOF ISOLATION */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @page { size: auto; margin: 5mm !important; }
+                @page { size: auto; margin: 10mm !important; }
                 @media print {
-                    /* Hide overall body contents */
-                    body { visibility: hidden !important; background: white !important; }
-                    /* Target only this invoice to be visible */
+                    /* Hide everything in the page body */
+                    body * { visibility: hidden !important; border: none !important; }
+                    /* Style the specific print area */
                     #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
-                    /* Position invoice correctly on the paper */
                     #invoice-print-area { 
-                        position: absolute !important; 
-                        left: 0 !important; 
-                        top: 0 !important; 
-                        width: 100% !important; 
-                        margin: 0 !important; 
-                        padding: 15mm !important;
+                        position: fixed !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        display: block !important;
                         background: white !important;
+                        padding: 10mm !important;
+                        z-index: 99999 !important;
                     }
-                    /* Ensure no dark backgrounds/modals leak through */
-                    #root, .Modal, [class*="backdrop"], [class*="bg-slate"] { background: transparent !important; border: none !important; box-shadow: none !important; }
+                    /* Ensure no other backgrounds interfere */
+                    html, body { background: white !important; }
                 }
             ` }} />
 
