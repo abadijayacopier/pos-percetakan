@@ -1,30 +1,28 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white print:fixed print:inset-0 print:z-[99999] print:m-0 print:overflow-visible" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {/* Print Style Injector - SUPER EXCLUSIVE MODE */}
+        <div id="invoice-print-area" className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            {/* Print Style Injector - RELIABLE ISOLATION */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @page { size: auto; margin: 0mm !important; }
+                @page { size: auto; margin: 5mm !important; }
                 @media print {
-                    /* Hide EVERYTHING in the app */
-                    body * { visibility: hidden !important; background: transparent !important; }
-                    /* Force white paper background */
-                    body, html { background-color: white !important; visibility: visible !important; }
-                    /* Show ONLY the invoice and its children */
-                    .print\\:fixed, .print\\:fixed * { visibility: visible !important; }
-                    .print\\:fixed { 
-                        position: fixed !important; 
-                        top: 0 !important; 
+                    /* Hide overall body contents */
+                    body { visibility: hidden !important; background: white !important; }
+                    /* Target only this invoice to be visible */
+                    #invoice-print-area, #invoice-print-area * { visibility: visible !important; }
+                    /* Position invoice correctly on the paper */
+                    #invoice-print-area { 
+                        position: absolute !important; 
                         left: 0 !important; 
-                        width: 100vw !important; 
-                        height: 100vh !important; 
-                        background: white !important; 
-                        padding: 10mm !important; 
-                        overflow: visible !important;
+                        top: 0 !important; 
+                        width: 100% !important; 
+                        margin: 0 !important; 
+                        padding: 15mm !important;
+                        background: white !important;
                     }
-                    /* Remove any potential modal overlays/shadows */
-                    div[class*="backdrop"], div[class*="Modal"], div[class*="bg-slate"] { display: none !important; }
+                    /* Ensure no dark backgrounds/modals leak through */
+                    #root, .Modal, [class*="backdrop"], [class*="bg-slate"] { background: transparent !important; border: none !important; box-shadow: none !important; }
                 }
             ` }} />
 
