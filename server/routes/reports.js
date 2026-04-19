@@ -60,7 +60,82 @@ router.get('/stock-summary', verifyToken, async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Report Stock Summary Error:', error);
-        res.status(500).json({ message: 'Gagal memuat ringkasan stok' });
+        res.status(500).json({ message: 'Gagal memuat laporan stok' });
+    }
+});
+
+// 3. GET Tax Report (Laporan Pajak PPN)
+router.get('/tax', verifyToken, async (req, res) => {
+    try {
+        const { dateFrom, dateTo } = req.query;
+        let query = `
+            SELECT date, invoice_no, customer_name, subtotal, discount, tax_amount, total
+            FROM transactions
+            WHERE tax_amount > 0
+        `;
+        const params = [];
+
+        if (dateFrom) {
+            query += " AND date >= ?";
+            params.push(`${dateFrom} 00:00:00`);
+        }
+        if (dateTo) {
+            query += " AND date <= ?";
+            params.push(`${dateTo} 23:59:59`);
+        }
+
+        query += " ORDER BY date DESC";
+
+        const [rows] = await req.db.query(query, params);
+
+        const summary = {
+            total_subtotal: rows.reduce((s, r) => s + r.subtotal, 0),
+            total_tax: rows.reduce((s, r) => s + r.tax_amount, 0),
+            total_transactions: rows.length
+        };
+
+        res.json({ summary, details: rows });
+    } catch (error) {
+        console.error('Report Tax Error:', error);
+        res.status(500).json({ message: 'Gagal memuat laporan pajak' });
+    }
+});
+
+// 4. GET Salary Report (Laporan Penggajian)
+router.get('/payroll', verifyToken, async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        let query = `
+            SELECT s.*, e.name as employee_name, e.position
+            FROM salaries s
+            JOIN employees e ON s.employee_id = e.id
+            WHERE s.status = 'paid'
+        `;
+        const params = [];
+
+        if (month) {
+            query += " AND s.period_month = ?";
+            params.push(month);
+        }
+        if (year) {
+            query += " AND s.period_year = ?";
+            params.push(year);
+        }
+
+        query += " ORDER BY s.paid_at DESC";
+
+        const [rows] = await req.db.query(query, params);
+
+        const summary = {
+            total_net_salary: rows.reduce((s, r) => s + r.net_salary, 0),
+            total_loan_deductions: rows.reduce((s, r) => s + r.loan_deduction, 0),
+            total_employees_paid: rows.length
+        };
+
+        res.json({ summary, details: rows });
+    } catch (error) {
+        console.error('Report Payroll Error:', error);
+        res.status(500).json({ message: 'Gagal memuat laporan penggajian' });
     }
 });
 

@@ -19,6 +19,7 @@ import CustomersPage from './pages/CustomersPage';
 import FinancePage from './pages/FinancePage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import PayrollPage from './pages/PayrollPage';
 import SPKListPage from './pages/SPKListPage';
 import SPKDetailPage from './pages/SPKDetailPage';
 import SPKSettlementPage from './pages/SPKSettlementPage';
@@ -400,6 +401,7 @@ export default function App() {
       case 'finance': return <FinancePage onNavigate={handleNavigate} />;
       case 'reports': return <ReportsPage onNavigate={handleNavigate} />;
       case 'settings': return <SettingsPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'payroll': return <PayrollPage onNavigate={handleNavigate} />;
       case 'spk-list': return <SPKListPage onNavigate={handleNavigate} />;
       case 'spk-detail': return <SPKDetailPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'spk-settlement': return <SPKSettlementPage onNavigate={handleNavigate} pageState={pageState} />;

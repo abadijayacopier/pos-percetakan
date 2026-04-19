@@ -79,6 +79,7 @@ const initSchema = async () => {
                 paid INTEGER DEFAULT 0,
                 change_amount INTEGER DEFAULT 0,
                 payment_type TEXT DEFAULT 'tunai',
+                tax_amount INTEGER DEFAULT 0,
                 status TEXT DEFAULT 'unpaid',
                 FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -427,8 +428,77 @@ const initSchema = async () => {
             )
         `);
 
+        // 26. Employees
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS employees (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                name TEXT NOT NULL,
+                nik TEXT,
+                phone TEXT,
+                address TEXT,
+                position TEXT,
+                salary_type TEXT CHECK(salary_type IN ('monthly', 'hourly', 'daily')) NOT NULL DEFAULT 'monthly',
+                base_salary INTEGER DEFAULT 0,
+                hourly_rate INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        `);
+
+        // 27. Attendance
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS attendance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                employee_id TEXT NOT NULL,
+                date DATE NOT NULL,
+                clock_in DATETIME,
+                clock_out DATETIME,
+                work_hours REAL DEFAULT 0,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+            )
+        `);
+
+        // 28. Employee Loans (Kasbon)
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS employee_loans (
+                id TEXT PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                remaining_amount INTEGER NOT NULL,
+                date DATE NOT NULL,
+                description TEXT,
+                status TEXT CHECK(status IN ('unpaid', 'partially_paid', 'paid')) DEFAULT 'unpaid',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+            )
+        `);
+
+        // 29. Salaries (Salary Slips)
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS salaries (
+                id TEXT PRIMARY KEY,
+                employee_id TEXT NOT NULL,
+                period_month INTEGER NOT NULL,
+                period_year INTEGER NOT NULL,
+                base_processing_salary INTEGER DEFAULT 0,
+                attendance_bonus INTEGER DEFAULT 0,
+                overtime_pay INTEGER DEFAULT 0,
+                loan_deduction INTEGER DEFAULT 0,
+                other_deductions INTEGER DEFAULT 0,
+                net_salary INTEGER NOT NULL,
+                status TEXT CHECK(status IN ('draft', 'paid')) DEFAULT 'draft',
+                paid_at DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+            )
+        `);
+
         // Triggers for updated_at (Not natively supported with DEFAULT, so we use triggers)
-        const tablesWithUpdatedAt = ['products', 'print_orders', 'service_orders', 'purchases', 'materials', 'spk', 'wa_config'];
+        const tablesWithUpdatedAt = ['products', 'print_orders', 'service_orders', 'purchases', 'materials', 'spk', 'wa_config', 'employees', 'salaries'];
         for (const table of tablesWithUpdatedAt) {
             await db.exec(`
                 CREATE TRIGGER IF NOT EXISTS trg_update_at_${table}
@@ -452,7 +522,16 @@ const initSchema = async () => {
             `);
         }
 
-        console.log('✅ SQLite Schema Initialized Successfully (25 Tables)');
+        // Add default settings
+        const defaultSettings = [
+            { key: 'tax_enabled', value: 'false' },
+            { key: 'tax_percentage', value: '11' }
+        ];
+        for (const s of defaultSettings) {
+            await db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', [s.key, s.value]);
+        }
+
+        console.log('✅ SQLite Schema Initialized Successfully (29 Tables)');
         process.exit(0);
     } catch (error) {
         console.error('❌ Gagal Inisialisasi SQLite:', error);

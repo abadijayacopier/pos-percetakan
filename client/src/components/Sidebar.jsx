@@ -59,6 +59,7 @@ const MENU_GROUPS = [
         title: 'Keuangan',
         items: [
             { id: 'finance', label: 'Kas & Keuangan', icon: <FiCreditCard />, roles: ['admin'] },
+            { id: 'payroll', label: 'Gaji & Karyawan', icon: <FiUsers />, roles: ['admin'] },
             { id: 'kasir-payment', label: 'Pembayaran', icon: <FiDollarSign />, roles: ['admin', 'kasir'] },
             { id: 'qris-monitor', label: 'Monitoring QRIS', icon: <FiSmartphone />, roles: ['admin'] },
             { id: 'reports', label: 'Laporan', icon: <HiOutlineDocumentReport />, roles: ['admin'] },

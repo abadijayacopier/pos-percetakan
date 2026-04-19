@@ -106,6 +106,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [globalDiscount, setGlobalDiscount] = useState(0);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [customerWa, setCustomerWa] = useState(''); // State untuk WhatsApp
+    const [taxEnabled, setTaxEnabled] = useState(false);
+    const [taxPercentage, setTaxPercentage] = useState(11);
 
     // Mencegah ID invoice terus berubah akibat re-render dari timer
     const draftInvoiceId = useMemo(() => {
@@ -179,6 +181,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 if (sMap.fc_discounts) {
                     try { setFcDiscounts(JSON.parse(sMap.fc_discounts)); } catch (e) { }
                 }
+
+                setTaxEnabled(sMap.tax_enabled === 'true' || sMap.tax_enabled === true);
+                setTaxPercentage(parseFloat(sMap.tax_percentage) || 11);
             } catch (error) {
                 console.error('Failed to load initial data:', error);
             }
@@ -231,6 +236,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         return priceObj ? priceObj.price : 0;
     };
     const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.sellPrice * item.quantity), 0), [cart]);
+    const taxAmount = useMemo(() => taxEnabled ? Math.round((subtotal - globalDiscount) * (taxPercentage / 100)) : 0, [subtotal, globalDiscount, taxEnabled, taxPercentage]);
+    const total = useMemo(() => subtotal - globalDiscount + taxAmount, [subtotal, globalDiscount, taxAmount]);
 
     // Barcode Listener
     useEffect(() => {
@@ -536,8 +543,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         if (isProcessingPayment) return;
         setIsProcessingPayment(true);
 
-        const total = subtotal - globalDiscount;
-        const paid = paymentMethod === 'tunai' ? (parseFloat(amountPaid) || 0) : paymentMethod === 'pending' ? 0 : total;
+        const finalTotal = total; // Already includes tax from useMemo
+        const paid = paymentMethod === 'tunai' ? (parseFloat(amountPaid) || 0) : paymentMethod === 'pending' ? 0 : finalTotal;
         const customerName = getSelectedCustomerName();
 
         const transaction = {
@@ -583,12 +590,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 meta: item.meta
             })),
             subtotal,
+            taxAmount,
             discount: globalDiscount,
-            total,
+            total: finalTotal,
             paymentType: paymentMethod,
             paid: paid,
-            changeAmount: Math.max(0, paid - total),
-            status: paymentMethod === 'pending' ? 'pending' : (paid < total ? 'pending' : 'paid'),
+            changeAmount: Math.max(0, paid - finalTotal),
+            status: paymentMethod === 'pending' ? 'pending' : (paid < finalTotal ? 'pending' : 'paid'),
             customerWa: customerWa // Kirim WA ke backend
         };
 
@@ -1253,12 +1261,18 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     <span>{globalDiscount > 0 ? `-${formatRupiah(globalDiscount)}` : 'Tambah Diskon'}</span>
                                 </button>
                             </div>
+                            {taxEnabled && (
+                                <div className="flex justify-between text-sm py-1 border-t border-slate-100 dark:border-slate-800">
+                                    <span className="text-slate-500 font-medium">Pajak (PPN {taxPercentage}%)</span>
+                                    <span className="font-semibold text-emerald-600">+{formatRupiah(taxAmount)}</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
                             <div className="flex justify-between items-end mb-4">
                                 <span className="font-bold text-slate-600 dark:text-slate-400">Total Tagihan</span>
-                                <span className="text-[1.7rem] md:text-3xl leading-none font-black text-primary drop-shadow-sm">{formatRupiah(subtotal - globalDiscount)}</span>
+                                <span className="text-[1.7rem] md:text-3xl leading-none font-black text-primary drop-shadow-sm">{formatRupiah(total)}</span>
                             </div>
                             <div className="grid grid-cols-2 gap-3 mb-3">
                                 <button onClick={saveQueue} className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-[11px] lg:text-sm hover:bg-slate-100 transition-colors bg-white shadow-sm text-slate-700">
@@ -1412,8 +1426,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     <div className="space-y-6 pt-4">
                         <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm font-bold text-slate-500">Total Tagihan</span>
-                                <span className="text-3xl font-black text-primary">{formatRupiah(subtotal - globalDiscount)}</span>
+                                <span className="text-sm font-bold text-slate-500">Total Tagihan {taxEnabled ? '(Inc. Pajak)' : ''}</span>
+                                <span className="text-3xl font-black text-primary">{formatRupiah(total)}</span>
                             </div>
                         </div>
 

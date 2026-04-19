@@ -58,6 +58,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const [bankName, setBankName] = useState('');
     const [bankAccount, setBankAccount] = useState('');
     const [bankAccountName, setBankAccountName] = useState('');
+    const [taxEnabled, setTaxEnabled] = useState(false);
+    const [taxPercentage, setTaxPercentage] = useState(11);
 
     // UI/Form States
     const [userFormOpen, setUserFormOpen] = useState(false);
@@ -152,6 +154,9 @@ export default function SettingsPage({ onNavigate, pageState }) {
             setBankName(sMap.bank_name || 'BANK BCA');
             setBankAccount(sMap.bank_account || '');
             setBankAccountName(sMap.bank_account_name || 'SUPRIYANTO');
+
+            setTaxEnabled(sMap.tax_enabled === 'true' || sMap.tax_enabled === true);
+            setTaxPercentage(parseFloat(sMap.tax_percentage) || 11);
 
             setTarifDesainPerJam(parseInt(sMap.tarif_desain_per_jam) || 50000);
 
@@ -264,7 +269,9 @@ export default function SettingsPage({ onNavigate, pageState }) {
                 { key: 'bank_account_name', value: bankAccountName },
                 { key: 'print_prices', value: JSON.stringify(printPrices) },
                 { key: 'binding_prices', value: JSON.stringify(bindPrices) },
-                { key: 'tarif_desain_per_jam', value: tarifDesainPerJam.toString() }
+                { key: 'tarif_desain_per_jam', value: tarifDesainPerJam.toString() },
+                { key: 'tax_enabled', value: taxEnabled ? 'true' : 'false' },
+                { key: 'tax_percentage', value: taxPercentage.toString() }
             ];
             await api.post('/settings', payload);
             showToast('Pengaturan berhasil disimpan!', 'success');
@@ -525,6 +532,46 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                             <span className="text-sm font-medium">{t.label}</span>
                                         </button>
                                     ))}
+                                </div>
+
+                                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-4 mb-8">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                            <FiDollarSign size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Pajak Pertambahan Nilai (PPN)</h3>
+                                            <p className="text-sm text-slate-500">Aktifkan untuk menambahkan pajak otomatis pada setiap transaksi.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer ${taxEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`} onClick={() => setTaxEnabled(!taxEnabled)}>
+                                                    <motion.div
+                                                        animate={{ x: taxEnabled ? 24 : 4 }}
+                                                        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                                                    />
+                                                </div>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-200">{taxEnabled ? 'Pajak Aktif' : 'Pajak Nonaktif'}</span>
+                                            </div>
+                                            {taxEnabled && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-slate-500">Persentase:</span>
+                                                    <div className="relative w-24">
+                                                        <input
+                                                            type="number"
+                                                            className="w-full pl-3 pr-8 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-right font-bold outline-none focus:ring-2 focus:ring-blue-500"
+                                                            value={taxPercentage}
+                                                            onChange={e => setTaxPercentage(e.target.value)}
+                                                        />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <button

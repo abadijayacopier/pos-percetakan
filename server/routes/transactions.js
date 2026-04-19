@@ -91,14 +91,25 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const newTrxId = 't' + Date.now();
         const mysqlDate = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
 
+        // Fetch Tax Settings
+        const [settingsRows] = await connection.query('SELECT value FROM settings WHERE key = "tax_enabled"');
+        const [percentRows] = await connection.query('SELECT value FROM settings WHERE key = "tax_percentage"');
+        const taxEnabled = settingsRows.length > 0 ? settingsRows[0].value === 'true' : false;
+        const taxPercent = percentRows.length > 0 ? parseFloat(percentRows[0].value) : 11;
+
+        let calculatedTax = 0;
+        if (taxEnabled) {
+            calculatedTax = Math.round((subtotal - (discount || 0)) * (taxPercent / 100));
+        }
+
         // 3a. Insert Transaction Header
         const validCustomerId = (customerId && customerId !== 'null' && customerId !== 'undefined' && String(customerId).trim() !== '') ? customerId : null;
 
         await connection.query(`
       INSERT INTO transactions 
-      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, total, paid, change_amount, payment_type, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, total, paid, changeAmount, paymentType, status]);
+      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status]);
 
         // 3b. Insert Transaction Details & Update Stok
         for (const item of items) {
@@ -179,7 +190,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     try {
         const [trx] = await req.db.query(`
             SELECT id, invoice_no AS invoiceNo, date, customer_id AS customerId, customer_name AS customerName, user_name AS userName,
-                   type, subtotal, discount, total, paid, change_amount AS changeAmount, payment_type AS paymentType, status
+                   type, subtotal, discount, tax_amount as taxAmount, total, paid, change_amount AS changeAmount, payment_type AS paymentType, status
             FROM transactions WHERE id = ?
         `, [req.params.id]);
 

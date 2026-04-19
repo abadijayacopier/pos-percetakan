@@ -59,6 +59,8 @@ app.use('/api/qris', require('./routes/qris'));
 app.use('/api/dp_tasks', require('./routes/dp_tasks'));
 app.use('/api/handovers', require('./routes/handovers'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/employees', require('./routes/employees'));
+app.use('/api/payroll', require('./routes/payroll'));
 app.use(process.env.NODE_ENV === 'production' ? '/api/health' : '/api/health', require('./routes/health'));
 app.use('/api/activity-logs', require('./routes/activity-logs'));
 
