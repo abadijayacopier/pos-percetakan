@@ -141,9 +141,21 @@ const ReceiptProMax = ({
         hour: '2-digit', minute: '2-digit'
     }) : '-';
 
+    // Ensure formatCurrency is robust
+    const safeFormatCurrency = (num) => {
+        const value = Number(num);
+        if (isNaN(value)) return '0';
+        return value.toLocaleString('id-ID');
+    };
+
     // Inject InvoiceLayout for Inkjet printers
     if (printSettings.printerSize === 'inkjet') {
-        return <InvoiceLayout receiptData={receiptData} printSettings={printSettings} formatCurrency={formatCurrency} safeDate={safeDate} />;
+        const safeReceiptData = {
+            ...receiptData,
+            customerName: receiptData.customerName || 'UMUM',
+            changeAmount: receiptData.changeAmount ?? receiptData.change ?? 0
+        };
+        return <InvoiceLayout receiptData={safeReceiptData} printSettings={printSettings} formatCurrency={safeFormatCurrency} safeDate={safeDate} />;
     }
 
     return (

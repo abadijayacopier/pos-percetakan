@@ -210,7 +210,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     // Sync customerWa when customer selected
     useEffect(() => {
         if (selectedCustomerId && selectedCustomerId !== 'manual') {
-            const customer = customers.find(c => c.id === selectedCustomerId);
+            const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
             if (customer && customer.phone) {
                 setCustomerWa(customer.phone);
             }
@@ -530,9 +530,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setIsProcessingPayment(true);
 
         const total = subtotal - globalDiscount;
-        const paid = paymentMethod === 'tunai' ? parseFloat(amountPaid) : paymentMethod === 'pending' ? 0 : total;
-
-        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+        const paid = paymentMethod === 'tunai' ? (parseFloat(amountPaid) || 0) : paymentMethod === 'pending' ? 0 : total;
+        const selectedCustomer = customers.find(c => String(c.id) === String(selectedCustomerId));
         const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
 
         const transaction = {
