@@ -1,14 +1,30 @@
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     return (
-        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
-            {/* Print Style Injector */}
+        <div className="bg-white p-12 text-slate-900 w-full font-sans border border-slate-100 shadow-sm relative leading-normal print:p-8 print:border-0 print:shadow-none min-h-0 print:bg-white print:fixed print:inset-0 print:z-[99999] print:m-0 print:overflow-visible" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            {/* Print Style Injector - SUPER EXCLUSIVE MODE */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @page { size: auto; margin: 5mm 5mm 5mm 10mm !important; }
+                @page { size: auto; margin: 0mm !important; }
                 @media print {
-                    body, html { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    #root { background-color: white !important; }
+                    /* Hide EVERYTHING in the app */
+                    body * { visibility: hidden !important; background: transparent !important; }
+                    /* Force white paper background */
+                    body, html { background-color: white !important; visibility: visible !important; }
+                    /* Show ONLY the invoice and its children */
+                    .print\\:fixed, .print\\:fixed * { visibility: visible !important; }
+                    .print\\:fixed { 
+                        position: fixed !important; 
+                        top: 0 !important; 
+                        left: 0 !important; 
+                        width: 100vw !important; 
+                        height: 100vh !important; 
+                        background: white !important; 
+                        padding: 10mm !important; 
+                        overflow: visible !important;
+                    }
+                    /* Remove any potential modal overlays/shadows */
+                    div[class*="backdrop"], div[class*="Modal"], div[class*="bg-slate"] { display: none !important; }
                 }
             ` }} />
 
