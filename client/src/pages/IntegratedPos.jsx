@@ -217,13 +217,19 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
     }, [selectedCustomerId, customers]);
 
+    // Unified customer name resolver
+    const getSelectedCustomerName = () => {
+        if (selectedCustomerId === 'manual') return manualCustomerName || 'Pelanggan Baru';
+        if (!selectedCustomerId || selectedCustomerId === '') return 'Umum';
+        const customer = customers.find(c => String(c.id) === String(selectedCustomerId));
+        return customer?.name || 'Umum';
+    };
+
     // Helper: find price for fotocopy based on selection
     const getFcUnitPrice = (paper, color, side) => {
         const priceObj = fotocopyPrices.find(p => p.paper === paper && p.color === color && p.side === side);
         return priceObj ? priceObj.price : 0;
     };
-
-    // Calculate subtotal
     const subtotal = useMemo(() => cart.reduce((acc, item) => acc + (item.sellPrice * item.quantity), 0), [cart]);
 
     // Barcode Listener
@@ -532,8 +538,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
         const total = subtotal - globalDiscount;
         const paid = paymentMethod === 'tunai' ? (parseFloat(amountPaid) || 0) : paymentMethod === 'pending' ? 0 : total;
-        const selectedCustomer = customers.find(c => String(c.id) === String(selectedCustomerId));
-        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+        const customerName = getSelectedCustomerName();
 
         const transaction = {
             invoiceNo: generateInvoice(),
@@ -622,8 +627,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const saveQueue = async () => {
         if (cart.length === 0) return;
 
-        const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-        const customerName = selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru') : (selectedCustomer?.name || 'Umum');
+        const customerName = getSelectedCustomerName();
 
         const total = subtotal - globalDiscount;
 
@@ -1189,8 +1193,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     </div>
                                     <div className="flex flex-col truncate">
                                         <span className="text-sm font-bold text-slate-800 dark:text-white truncate">
-                                            {selectedCustomerId === 'manual' ? (manualCustomerName || 'Pelanggan Baru (Manual)') :
-                                                (customers.find(c => String(c.id) === String(selectedCustomerId))?.name || 'Umum / Tanpa Nama')}
+                                            {getSelectedCustomerName()}
                                         </span>
                                         <span className="text-[10px] font-medium text-slate-500">
                                             {selectedCustomerId ? 'Klik untuk mengubah pelanggan' : 'Pilih data pelanggan'}
