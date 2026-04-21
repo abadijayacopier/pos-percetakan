@@ -327,6 +327,19 @@ router.post('/restore', verifyToken, requireRole(['admin']), upload.single('back
             
             try {
                 await connection.query('SET FOREIGN_KEY_CHECKS=0');
+                
+                // Extract and drop existing tables to prevent duplicate key errors during restore
+                const tableNames = [];
+                const regex = /CREATE TABLE IF NOT EXISTS `([^`]+)`/g;
+                let match;
+                while ((match = regex.exec(sqlContent)) !== null) {
+                    tableNames.push(match[1]);
+                }
+                
+                for (const tableName of tableNames) {
+                    await connection.query(`DROP TABLE IF EXISTS \`${tableName}\``);
+                }
+
                 await connection.query(sqlContent);
                 await connection.query('SET FOREIGN_KEY_CHECKS=1');
                 

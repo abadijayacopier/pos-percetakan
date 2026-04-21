@@ -1751,7 +1751,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                     <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup SQL sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
                                     <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl cursor-pointer transition-all border border-slate-200 dark:border-slate-700">
                                         <FiFolder /> Pilih File Backup
-                                        <input type="file" accept=".sql,.json" onChange={handleRestore} className="hidden" />
+                                        <input type="file" accept=".sql,.json,.backup" onChange={handleRestore} className="hidden" />
                                     </label>
                                 </div>
 
