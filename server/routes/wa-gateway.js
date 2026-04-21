@@ -19,7 +19,7 @@ router.post('/init', verifyToken, requireRole(['admin']), async (req, res) => {
         res.json({ message: 'Inisialisasi WhatsApp Gateway dimulai' });
     } catch (error) {
         console.error('Failed to init WA Gateway:', error);
-        res.status(500).json({ message: 'Gagal inisialisasi WA Gateway, Aplikasi Belum Di Aktivasi Silahkan Hubungi Admin' });
+        res.status(500).json({ message: error.message || 'Gagal inisialisasi WA Gateway' });
     }
 });
 
@@ -31,6 +31,17 @@ router.post('/logout', verifyToken, requireRole(['admin']), async (req, res) => 
     } catch (error) {
         console.error('Failed to logout WA Gateway:', error);
         res.status(500).json({ message: 'Gagal logout WA Gateway' });
+    }
+});
+
+// POST /api/wa-gateway/reset
+router.post('/reset', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        await whatsappService.reset(req.user.shopId);
+        res.json({ message: 'Sesi WhatsApp berhasil direset' });
+    } catch (error) {
+        console.error('Failed to reset WA Gateway:', error);
+        res.status(500).json({ message: 'Gagal reset WA Gateway' });
     }
 });
 

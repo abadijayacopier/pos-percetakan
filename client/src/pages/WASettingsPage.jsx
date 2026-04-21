@@ -96,6 +96,31 @@ export default function WASettingsPage({ onNavigate }) {
         }
     };
 
+    const handleResetGateway = async () => {
+        const result = await Swal.fire({
+            title: 'Reset Sesi WhatsApp?',
+            text: 'Semua data sesi lokal akan dihapus. Gunakan ini jika gateway macet atau tidak bisa diinisialisasi.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Reset',
+            confirmButtonColor: '#ef4444',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            setLoadingGateway(true);
+            try {
+                await api.post('/wa-gateway/reset');
+                setGateway({ status: 'disconnected', qr: null, info: null });
+                Swal.fire('Berhasil', 'Sesi telah direset. Silakan inisialisasi ulang.', 'success');
+            } catch (err) {
+                Swal.fire('Gagal', 'Gagal reset gateway', 'error');
+            } finally {
+                setLoadingGateway(false);
+            }
+        }
+    };
+
     const handleSave = async () => {
         setSaving(true);
         setSaveMsg('');
@@ -303,13 +328,22 @@ export default function WASettingsPage({ onNavigate }) {
                                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                                             Klik tombol di bawah untuk memulai sesi WhatsApp Gateway. Anda perlu melakukan scan QR code satu kali.
                                         </p>
-                                        <button
-                                            onClick={handleInitGateway}
-                                            disabled={loadingGateway}
-                                            className="px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl disabled:opacity-50"
-                                        >
-                                            {loadingGateway ? 'Menghubungkan...' : 'Inisialisasi Gateway'}
-                                        </button>
+                                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                            <button
+                                                onClick={handleInitGateway}
+                                                disabled={loadingGateway}
+                                                className="px-8 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-xl disabled:opacity-50"
+                                            >
+                                                {loadingGateway ? 'Menghubungkan...' : 'Inisialisasi Gateway'}
+                                            </button>
+                                            <button
+                                                onClick={handleResetGateway}
+                                                disabled={loadingGateway}
+                                                className="px-8 py-3.5 border border-rose-200 dark:border-rose-900/30 text-rose-500 font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all disabled:opacity-50"
+                                            >
+                                                Reset Sesi
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
 

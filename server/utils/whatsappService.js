@@ -19,13 +19,35 @@ class WhatsappService {
     async init(shopId) {
         if (!shopId) throw new Error('shopId is required');
 
-        // If already initializing or ready, skip
+        // Force cleanup if instance exists but stuck
         if (this.instances.has(shopId)) {
-            const instance = this.instances.get(shopId);
-            if (instance.status !== 'disconnected') return;
+            const existing = this.instances.get(shopId);
+            if (existing.status !== 'disconnected' && existing.status !== 'ready') {
+                console.log(`Cleaning up existing stuck WA instance for shop ${shopId}...`);
+                try {
+                    if (existing.client) await existing.client.destroy();
+                } catch (e) {
+                    console.error('Error destroying stuck instance:', e);
+                }
+                this.instances.delete(shopId);
+            } else if (existing.status === 'ready') {
+                return; // Already good
+            }
         }
 
         console.log(`Initializing WhatsApp Client for Shop: ${shopId}...`);
+
+        const clientId = `tenant_${shopId}`;
+        const sessionPath = path.join(__dirname, `../.wwebjs_auth/session-${clientId}`);
+
+        // FIX: Remove lock files if they exist (prevents stuck initialization on Windows)
+        try {
+            const lockFile = path.join(sessionPath, 'Default/parent.lock');
+            if (fs.existsSync(lockFile)) {
+                fs.unlinkSync(lockFile);
+                console.log(`Removed stale lock file for shop ${shopId}`);
+            }
+        } catch (e) {}
 
         const instance = {
             client: null,
@@ -34,14 +56,6 @@ class WhatsappService {
             info: null
         };
         this.instances.set(shopId, instance);
-
-        const clientId = `tenant_${shopId}`;
-        const dataPath = path.join(__dirname, `../.wwebjs_auth/${clientId}`);
-
-        // Ensure directory exists
-        if (!fs.existsSync(dataPath)) {
-            fs.mkdirSync(dataPath, { recursive: true });
-        }
 
         instance.client = new Client({
             authStrategy: new LocalAuth({
@@ -57,7 +71,9 @@ class WhatsappService {
                     '--disable-accelerated-2d-canvas',
                     '--no-first-run',
                     '--no-zygote',
-                    '--disable-gpu'
+                    '--disable-gpu',
+                    '--remote-debugging-port=9222', // Stability
+                    '--disable-extensions'
                 ],
             }
         });
@@ -83,6 +99,7 @@ class WhatsappService {
         instance.client.on('auth_failure', (msg) => {
             console.error(`WhatsApp Auth failure for Shop: ${shopId}:`, msg);
             instance.status = 'disconnected';
+            this.instances.delete(shopId);
         });
 
         instance.client.on('disconnected', (reason) => {
@@ -90,6 +107,7 @@ class WhatsappService {
             instance.status = 'disconnected';
             instance.qrCodeData = null;
             instance.info = null;
+            this.instances.delete(shopId);
         });
 
         try {
@@ -97,7 +115,32 @@ class WhatsappService {
         } catch (error) {
             console.error(`Failed to initialize WA for Shop: ${shopId}:`, error);
             instance.status = 'disconnected';
+            this.instances.delete(shopId);
         }
+    }
+
+    async reset(shopId) {
+        console.log(`Resetting WhatsApp for Shop: ${shopId}...`);
+        const instance = this.instances.get(shopId);
+        if (instance && instance.client) {
+            try {
+                await instance.client.destroy();
+            } catch (e) {}
+        }
+        this.instances.delete(shopId);
+
+        const clientId = `tenant_${shopId}`;
+        const sessionPath = path.join(__dirname, `../.wwebjs_auth/session-${clientId}`);
+        
+        if (fs.existsSync(sessionPath)) {
+            try {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                console.log(`Cleared session data for shop ${shopId}`);
+            } catch (e) {
+                console.error(`Failed to clear session data for shop ${shopId}:`, e);
+            }
+        }
+        return { success: true };
     }
 
     getStatus(shopId) {
