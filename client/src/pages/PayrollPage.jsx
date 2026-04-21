@@ -36,6 +36,9 @@ export default function PayrollPage() {
     const [isLoanModalOpen, setIsLoanModalOpen] = useState(false);
     const [loanForm, setLoanForm] = useState({ employee_id: '', amount: 0, date: new Date().toISOString().split('T')[0], description: '' });
 
+    const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+    const [attendanceForm, setAttendanceForm] = useState({ employee_id: '', date: new Date().toISOString().split('T')[0], clock_in: '08:00', clock_out: '17:00', work_hours: 8, notes: '' });
+
     // Filter States
     const [searchTerm, setSearchTerm] = useState('');
     const [period, setPeriod] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
@@ -127,6 +130,22 @@ export default function PayrollPage() {
         } catch (e) { showToast('Gagal mencatat pinjaman', 'error'); }
     };
 
+    const handleSaveAttendance = async () => {
+        if (!attendanceForm.employee_id) return showToast('Pilih karyawan', 'error');
+        try {
+            await api.post('/payroll/attendance', {
+                records: [{
+                    ...attendanceForm,
+                    clock_in: `${attendanceForm.date} ${attendanceForm.clock_in}:00`,
+                    clock_out: `${attendanceForm.date} ${attendanceForm.clock_out}:00`
+                }]
+            });
+            showToast('Absensi berhasil dicatat', 'success');
+            setIsAttendanceModalOpen(false);
+            loadAttendance();
+        } catch (e) { showToast('Gagal mencatat absensi', 'error'); }
+    };
+
     const handleGenerateSalaries = async () => {
         try {
             await api.post('/payroll/salaries/generate', period);
@@ -188,6 +207,14 @@ export default function PayrollPage() {
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-95"
                         >
                             <FiUserPlus size={18} /> Tambah Karyawan
+                        </button>
+                    )}
+                    {subTab === 'attendance' && (
+                        <button
+                            onClick={() => setIsAttendanceModalOpen(true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-95"
+                        >
+                            <FiPlus size={18} /> Tambah Absensi
                         </button>
                     )}
                     {subTab === 'loans' && (
@@ -266,15 +293,36 @@ export default function PayrollPage() {
                             </div>
                         )}
 
-                        {/* 2. ATTENDANCE LIST (Simplified) */}
+                        {/* 2. ATTENDANCE LIST */}
                         {subTab === 'attendance' && (
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-                                {/* Filters for attendance could go here */}
-                                <div className="p-12 text-center text-slate-500">
-                                    <FiClock size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p className="font-medium">Data Absensi Masih Kosong</p>
-                                    <p className="text-sm mt-1">Gunakan mesin sidik jari atau input manual di rilis mendatang.</p>
-                                </div>
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50">
+                                        <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                            <th className="px-6 py-4">Karyawan</th>
+                                            <th className="px-6 py-4">Tanggal</th>
+                                            <th className="px-6 py-4">Jam Kerja</th>
+                                            <th className="px-6 py-4">Durasi</th>
+                                            <th className="px-6 py-4">Catatan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {attendance.map((att) => (
+                                            <tr key={att.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                                <td className="px-6 py-4 font-bold">{att.employee_name}</td>
+                                                <td className="px-6 py-4 text-sm">{new Date(att.date).toLocaleDateString('id-ID')}</td>
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    {att.clock_in ? new Date(att.clock_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-'} s/d {att.clock_out ? new Date(att.clock_out).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : '-'}
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-emerald-600">{att.work_hours} Jam</td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">{att.notes || '-'}</td>
+                                            </tr>
+                                        ))}
+                                        {attendance.length === 0 && (
+                                            <tr><td colSpan="5" className="py-20 text-center text-slate-400">Tidak ada data absensi</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 
@@ -436,6 +484,42 @@ export default function PayrollPage() {
                         <textarea className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-amber-500" value={loanForm.description} onChange={e => setLoanForm({ ...loanForm, description: e.target.value })} />
                     </div>
                     <button onClick={handleSaveLoan} className="w-full bg-amber-600 text-white p-3 rounded-xl font-bold mt-4">Simpan Pinjaman</button>
+                </div>
+            </Modal>
+
+            {/* ATTENDANCE MODAL */}
+            <Modal isOpen={isAttendanceModalOpen} onClose={() => setIsAttendanceModalOpen(false)} title="Input Absensi Manual">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Pilih Karyawan</label>
+                        <select className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.employee_id} onChange={e => setAttendanceForm({ ...attendanceForm, employee_id: e.target.value })}>
+                            <option value="">-- Pilih Karyawan --</option>
+                            {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Tanggal</label>
+                        <input type="date" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.date} onChange={e => setAttendanceForm({ ...attendanceForm, date: e.target.value })} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Jam Masuk</label>
+                            <input type="time" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.clock_in} onChange={e => setAttendanceForm({ ...attendanceForm, clock_in: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-1">Jam Pulang</label>
+                            <input type="time" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.clock_out} onChange={e => setAttendanceForm({ ...attendanceForm, clock_out: e.target.value })} />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Total Jam Kerja (Durasi)</label>
+                        <input type="number" step="0.5" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.work_hours} onChange={e => setAttendanceForm({ ...attendanceForm, work_hours: parseFloat(e.target.value) })} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Catatan</label>
+                        <input type="text" placeholder="Hadir / Sakit / Izin / Lembur" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-emerald-500" value={attendanceForm.notes} onChange={e => setAttendanceForm({ ...attendanceForm, notes: e.target.value })} />
+                    </div>
+                    <button onClick={handleSaveAttendance} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white p-3 rounded-xl font-bold mt-4 transition-colors">Simpan Absensi</button>
                 </div>
             </Modal>
 
