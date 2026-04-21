@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, requireRole } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const ZKLib = require('node-zklib');
 
 // --- ATTENDANCE ---
 
@@ -53,6 +54,93 @@ router.post('/attendance', verifyToken, requireRole(['admin', 'operator']), asyn
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Gagal menyimpan data absensi' });
+    }
+});
+
+// POST Sync from Fingerprint Machine
+router.post('/attendance/sync-machine', verifyToken, requireRole(['admin']), async (req, res) => {
+    let zkInstance = null;
+    try {
+        // 1. Get settings
+        const [settings] = await req.db.query('SELECT `key`, `value` FROM settings WHERE `key` IN ("fingerprint_ip", "fingerprint_port")');
+        const config = {};
+        settings.forEach(s => config[s.key] = s.value);
+
+        const ip = config.fingerprint_ip || '192.168.1.201';
+        const port = parseInt(config.fingerprint_port) || 4370;
+
+        console.log(`Connecting to Fingerprint Machine at ${ip}:${port}...`);
+        
+        zkInstance = new ZKLib(ip, port, 10000, 4000);
+        await zkInstance.createSocket();
+        
+        const logs = await zkInstance.getAttendances();
+        console.log(`Fetched ${logs.data.length} logs from machine.`);
+
+        // 2. Get all employees with NIK
+        const [employees] = await req.db.query('SELECT id, nik FROM employees WHERE nik IS NOT NULL AND is_active = 1');
+        const nikMap = {};
+        employees.forEach(e => nikMap[e.nik] = e.id);
+
+        let syncCount = 0;
+        
+        // 3. Process logs
+        // Group by date and employee
+        const dailyLogs = {}; // { "employeeId_date": { clock_in, clock_out } }
+
+        for (const log of logs.data) {
+            const employeeId = nikMap[log.deviceUserId];
+            if (!employeeId) continue;
+
+            const fullDate = new Date(log.recordTime);
+            const dateStr = fullDate.toISOString().split('T')[0];
+            const key = `${employeeId}_${dateStr}`;
+
+            if (!dailyLogs[key]) {
+                dailyLogs[key] = {
+                    employee_id: employeeId,
+                    date: dateStr,
+                    clock_in: fullDate,
+                    clock_out: fullDate
+                };
+            } else {
+                if (fullDate < dailyLogs[key].clock_in) dailyLogs[key].clock_in = fullDate;
+                if (fullDate > dailyLogs[key].clock_out) dailyLogs[key].clock_out = fullDate;
+            }
+        }
+
+        // 4. Save to Database
+        for (const key in dailyLogs) {
+            const data = dailyLogs[key];
+            
+            // Calculate work hours (simplified: diff in hours)
+            const diffMs = data.clock_out - data.clock_in;
+            const workHours = Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
+
+            // Check if exists
+            const [existing] = await req.db.query('SELECT id FROM attendance WHERE employee_id = ? AND date = ?', [data.employee_id, data.date]);
+            
+            if (existing.length > 0) {
+                await req.db.query(`
+                    UPDATE attendance 
+                    SET clock_in = ?, clock_out = ?, work_hours = ?, notes = 'Synced from Machine'
+                    WHERE employee_id = ? AND date = ?
+                `, [data.clock_in, data.clock_out, workHours, data.employee_id, data.date]);
+            } else {
+                await req.db.query(`
+                    INSERT INTO attendance (employee_id, date, clock_in, clock_out, work_hours, notes)
+                    VALUES (?, ?, ?, ?, ?, 'Synced from Machine')
+                `, [data.employee_id, data.date, data.clock_in, data.clock_out, workHours]);
+            }
+            syncCount++;
+        }
+
+        await zkInstance.disconnect();
+        res.json({ message: `Berhasil sinkronisasi ${syncCount} data absensi dari mesin.` });
+    } catch (e) {
+        console.error('Fingerprint Sync Error:', e);
+        if (zkInstance) try { await zkInstance.disconnect(); } catch(err) {}
+        res.status(500).json({ message: 'Gagal terhubung ke mesin sidik jari: ' + e.message });
     }
 });
 

@@ -60,6 +60,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const [bankAccountName, setBankAccountName] = useState('');
     const [taxEnabled, setTaxEnabled] = useState(false);
     const [taxPercentage, setTaxPercentage] = useState(11);
+    const [fingerprintIp, setFingerprintIp] = useState('192.168.1.201');
+    const [fingerprintPort, setFingerprintPort] = useState(4370);
 
     // UI/Form States
     const [userFormOpen, setUserFormOpen] = useState(false);
@@ -159,6 +161,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
             setTaxPercentage(parseFloat(sMap.tax_percentage) || 11);
 
             setTarifDesainPerJam(parseInt(sMap.tarif_desain_per_jam) || 50000);
+            setFingerprintIp(sMap.fingerprint_ip || '192.168.1.201');
+            setFingerprintPort(parseInt(sMap.fingerprint_port) || 4370);
 
         } catch (error) {
             console.error(error);
@@ -271,7 +275,9 @@ export default function SettingsPage({ onNavigate, pageState }) {
                 { key: 'binding_prices', value: JSON.stringify(bindPrices) },
                 { key: 'tarif_desain_per_jam', value: tarifDesainPerJam.toString() },
                 { key: 'tax_enabled', value: taxEnabled ? 'true' : 'false' },
-                { key: 'tax_percentage', value: taxPercentage.toString() }
+                { key: 'tax_percentage', value: taxPercentage.toString() },
+                { key: 'fingerprint_ip', value: fingerprintIp },
+                { key: 'fingerprint_port', value: fingerprintPort.toString() }
             ];
             await api.post('/settings', payload);
             showToast('Pengaturan berhasil disimpan!', 'success');
@@ -440,6 +446,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
         { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
         { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
         { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS' },
+        { id: 'hardware', icon: <FiCpu />, text: 'Perangkat Keras' },
         { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
         { id: 'license', icon: <FiShield />, text: 'Lisensi' },
     ];
@@ -1876,6 +1883,73 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                         <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Informasi Hak Cipta</h4>
                                         <p className="text-xs text-blue-600/70 dark:text-blue-400/70 leading-relaxed">
                                             Lisensi ini hanya berlaku untuk 1 instance server. Memindahkan database ke server lain mungkin memerlukan kode aktivasi baru tergantung pada konfigurasi hardware ID. Hubungi dukungan jika Anda melakukan migrasi server.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Hardware Settings */}
+                        {activeTab === 'hardware' && (
+                            <div className="max-w-4xl mx-auto space-y-6 pb-12">
+                                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 p-10">
+                                    <div className="flex items-center gap-6 mb-10">
+                                        <div className="w-20 h-20 rounded-3xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                            <FiCpu size={40} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Mesin Absensi Sidik Jari</h3>
+                                            <p className="text-slate-500 dark:text-slate-400 font-medium">Konfigurasi koneksi ke mesin absensi Iware / ZKTeco.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">IP Address Mesin</label>
+                                            <div className="relative">
+                                                <FiMonitor className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Contoh: 192.168.1.201"
+                                                    className="w-full pl-12 pr-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-mono font-bold dark:text-white"
+                                                    value={fingerprintIp}
+                                                    onChange={e => setFingerprintIp(e.target.value)}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-slate-400 ml-1">Pastikan komputer dan mesin dalam satu jaringan WiFi/LAN.</p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Port (Default: 4370)</label>
+                                            <div className="relative">
+                                                <FiActivity className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                <input 
+                                                    type="number" 
+                                                    className="w-full pl-12 pr-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold dark:text-white"
+                                                    value={fingerprintPort}
+                                                    onChange={e => setFingerprintPort(parseInt(e.target.value))}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-12 pt-10 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                                        <button 
+                                            onClick={saveSettings}
+                                            className="flex items-center gap-3 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-indigo-200 dark:shadow-none group"
+                                        >
+                                            <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Konfigurasi Perangkat
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-3xl p-8 flex gap-6">
+                                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 shrink-0">
+                                        <FiAlertCircle size={24} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-amber-800 dark:text-amber-400 text-lg">Penting: Pencocokan Data</h4>
+                                        <p className="text-sm text-amber-700/80 dark:text-amber-500/80 mt-2 leading-relaxed">
+                                            Agar data bisa ditarik secara otomatis, pastikan **NIK** di data karyawan pada aplikasi ini (SDM & Penggajian) diisi **sama persis** dengan **User ID** (Nomor Jari) yang terdaftar di mesin sidik jari Iware Anda.
                                         </p>
                                     </div>
                                 </div>

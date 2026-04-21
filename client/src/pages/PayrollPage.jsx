@@ -186,6 +186,21 @@ export default function PayrollPage() {
         }
     };
 
+    const handleSyncMachine = async () => {
+        try {
+            setLoading(true);
+            showToast('Menghubungkan ke mesin sidik jari...', 'info');
+            const { data } = await api.post('/payroll/attendance/sync-machine');
+            showToast(data.message, 'success');
+            loadAttendance();
+        } catch (e) {
+            const msg = e.response?.data?.message || 'Gagal terhubung ke mesin sidik jari. Pastikan IP benar dan satu jaringan.';
+            showToast(msg, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 font-display transition-colors pb-10">
             {/* Header */}
@@ -210,12 +225,20 @@ export default function PayrollPage() {
                         </button>
                     )}
                     {subTab === 'attendance' && (
-                        <button
-                            onClick={() => setIsAttendanceModalOpen(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-95"
-                        >
-                            <FiPlus size={18} /> Tambah Absensi
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSyncMachine}
+                                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 hover:bg-slate-50"
+                            >
+                                <FiRefreshCw size={18} className={loading ? 'animate-spin' : ''} /> Tarik Data Mesin
+                            </button>
+                            <button
+                                onClick={() => setIsAttendanceModalOpen(true)}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-95"
+                            >
+                                <FiPlus size={18} /> Tambah Absensi
+                            </button>
+                        </div>
                     )}
                     {subTab === 'loans' && (
                         <button
