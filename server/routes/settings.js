@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { masterPool, getTenantPool } = require('../config/database');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const mysqldump = require('mysqldump');
+const { masterPool, getTenantPool, currentMode, currentDbType } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const TenantManager = require('../utils/tenantManager');
 const LicenseManager = require('../utils/licenseManager');
+
+const upload = multer({ dest: path.join(__dirname, '../temp/') });
 
 // GET Semua Settings (Authenticated)
 router.get('/', verifyToken, async (req, res) => {
@@ -233,6 +239,117 @@ router.get('/logs', verifyToken, async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ message: 'Gagal memuat log' });
+    }
+});
+
+// GET Backup
+router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const isSqlite = currentMode === 'standalone' && currentDbType === 'sqlite';
+        const isMysqlStandalone = currentMode === 'standalone' && currentDbType === 'mysql';
+        const isSaas = currentMode === 'saas';
+
+        if (isSqlite) {
+            const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '../database/pos.sqlite');
+            if (fs.existsSync(dbPath)) {
+                res.download(dbPath, `pos_backup_${new Date().toISOString().slice(0, 10)}.sqlite`);
+                return;
+            } else {
+                return res.status(404).json({ message: 'Database file not found' });
+            }
+        } else if (isMysqlStandalone || isSaas) {
+            let dbName;
+            
+            const configPath = path.join(__dirname, '../database/db-config.json');
+            let externalConfig = {};
+            if (fs.existsSync(configPath)) {
+                try { externalConfig = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (e) {}
+            }
+
+            if (isSaas) {
+                const result = await TenantManager.getShopDBName(req.user.shopId);
+                if (!result) return res.status(404).json({ message: 'Toko tidak ditemukan.' });
+                dbName = result.dbName;
+            } else {
+                dbName = externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi';
+            }
+
+            if (!fs.existsSync(path.join(__dirname, '../temp'))) {
+                fs.mkdirSync(path.join(__dirname, '../temp'), { recursive: true });
+            }
+            
+            const dumpPath = path.join(__dirname, `../temp/backup_${Date.now()}.sql`);
+
+            await mysqldump({
+                connection: {
+                    host: externalConfig.DB_HOST || process.env.DB_HOST || '127.0.0.1',
+                    user: externalConfig.DB_USER || process.env.DB_USER || 'root',
+                    password: externalConfig.DB_PASS || process.env.DB_PASS || '',
+                    database: dbName,
+                },
+                dumpToFile: dumpPath,
+            });
+
+            res.download(dumpPath, `pos_backup_${new Date().toISOString().slice(0, 10)}.sql`, (err) => {
+                if (fs.existsSync(dumpPath)) fs.unlinkSync(dumpPath);
+            });
+            return;
+        }
+        res.status(400).json({ message: 'Mode backup tidak didukung' });
+    } catch (e) {
+        console.error('Backup error:', e);
+        res.status(500).json({ message: 'Gagal melakukan backup: ' + e.message });
+    }
+});
+
+// POST Restore
+router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ message: 'File backup diperlukan' });
+
+        const isSqlite = currentMode === 'standalone' && currentDbType === 'sqlite';
+        const isMysqlStandalone = currentMode === 'standalone' && currentDbType === 'mysql';
+        const isSaas = currentMode === 'saas';
+
+        if (isSqlite) {
+            const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '../database/pos.sqlite');
+            fs.copyFileSync(req.file.path, dbPath);
+            fs.unlinkSync(req.file.path);
+            
+            await req.db.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'RESTORE_DB', 'System', 'Memulihkan database SQLite', req.ip || null]
+            );
+            return res.json({ message: 'Database berhasil dipulihkan' });
+        } else if (isMysqlStandalone || isSaas) {
+            const sqlContent = fs.readFileSync(req.file.path, 'utf8');
+            const connection = await req.db.getConnection();
+            
+            try {
+                await connection.query('SET FOREIGN_KEY_CHECKS=0');
+                await connection.query(sqlContent);
+                await connection.query('SET FOREIGN_KEY_CHECKS=1');
+                
+                await connection.query(
+                    'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                    [req.user.id, req.user.name, 'RESTORE_DB', 'System', 'Memulihkan database MySQL', req.ip || null]
+                );
+
+                res.json({ message: 'Database berhasil dipulihkan' });
+            } catch (dbErr) {
+                await connection.query('SET FOREIGN_KEY_CHECKS=1');
+                throw dbErr;
+            } finally {
+                connection.release();
+                if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            }
+            return;
+        }
+        res.status(400).json({ message: 'Mode restore tidak didukung' });
+    } catch (e) {
+        console.error('Restore error:', e);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: 'Gagal memulihkan database: ' + e.message });
     }
 });
 

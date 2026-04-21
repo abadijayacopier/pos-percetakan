@@ -387,10 +387,10 @@ export default function SettingsPage({ onNavigate, pageState }) {
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `pos_backup_${new Date().toISOString().slice(0, 10)}.sql`);
+            link.setAttribute('download', `pos_backup_${new Date().toISOString().slice(0, 10)}.backup`);
             document.body.appendChild(link);
             link.click();
-            showToast('Backup SQL berhasil diunduh!', 'success');
+            showToast('Backup berhasil diunduh!', 'success');
 
         } catch (error) {
             showToast('Gagal melakukan backup', 'error');
