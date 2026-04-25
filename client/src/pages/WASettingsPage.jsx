@@ -152,7 +152,8 @@ export default function WASettingsPage({ onNavigate }) {
             setSaveMsg(<>Konfigurasi berhasil disimpan! <FiCheck /></>);
             setTimeout(() => setSaveMsg(''), 3000);
         } catch (err) {
-            setSaveMsg(<>Gagal menyimpan <FiX /></>);
+            const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+            setSaveMsg(<span className="flex items-center gap-2">Gagal: {errorMsg} <FiX /></span>);
         } finally {
             setSaving(false);
         }

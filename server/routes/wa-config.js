@@ -17,25 +17,67 @@ router.get('/', verifyToken, requireRole(['admin']), async (req, res) => {
 
 // PUT /api/wa-config
 router.put('/', verifyToken, requireRole(['admin']), async (req, res) => {
-    const conn = await req.db.getConnection();
+    let conn;
     try {
-        await conn.beginTransaction();
+        conn = await req.db.getConnection();
         const configEntries = Object.entries(req.body);
 
-        for (const [key, value] of configEntries) {
-            await conn.query(
-                'INSERT INTO wa_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?',
-                [key, value, value]
-            );
+        const { currentDbType } = require('../config/database');
+
+        // Use transaction if supported
+        if (conn.beginTransaction) {
+            await conn.beginTransaction();
         }
 
-        await conn.commit();
+        for (const [key, value] of configEntries) {
+            // Convert everything to string for config_value
+            const val = (value === null || value === undefined) ? null : String(value);
+
+            if (currentDbType === 'sqlite') {
+                await conn.query(
+                    'INSERT INTO wa_config (config_key, config_value) VALUES (?, ?) ON CONFLICT(config_key) DO UPDATE SET config_value = excluded.config_value',
+                    [key, val]
+                );
+            } else {
+                await conn.query(
+                    'INSERT INTO wa_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?',
+                    [key, val, val]
+                );
+            }
+        }
+
+        if (conn.commit) {
+            await conn.commit();
+        }
         res.json({ message: 'Konfigurasi WA berhasil disimpan' });
     } catch (error) {
-        await conn.rollback();
-        res.status(500).json({ message: 'Gagal menyimpan konfigurasi WA' });
+        console.error('Save WA Config Error:', error);
+        if (conn && conn.rollback) {
+            try { await conn.rollback(); } catch (e) { }
+        }
+
+        // Auto-fix for MySQL Emoji support (Incorrect string value error)
+        if (error.errno === 1366 || (error.message && error.message.includes('Incorrect string value'))) {
+            try {
+                const fixConn = await req.db.getConnection();
+                await fixConn.query('ALTER TABLE wa_config CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+                await fixConn.query('ALTER TABLE wa_config MODIFY config_value TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+                fixConn.release();
+                return res.status(500).json({ 
+                    message: 'Emoji terdeteksi. Sistem telah mengaktifkan dukungan emoji di database secara otomatis. Silakan klik "Simpan Perubahan" sekali lagi.',
+                    error: 'Charset Updated'
+                });
+            } catch (fixErr) {
+                console.error('Failed to auto-fix charset:', fixErr);
+            }
+        }
+
+        res.status(500).json({ 
+            message: 'Gagal menyimpan konfigurasi WA', 
+            error: error.message 
+        });
     } finally {
-        conn.release();
+        if (conn && conn.release) conn.release();
     }
 });
 

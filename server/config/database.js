@@ -25,7 +25,8 @@ const dbConfig = {
     host: externalConfig.DB_HOST || process.env.DB_HOST || '127.0.0.1',
     user: externalConfig.DB_USER || process.env.DB_USER || 'root',
     password: externalConfig.DB_PASS || process.env.DB_PASS || '',
-    multipleStatements: true
+    multipleStatements: true,
+    charset: 'utf8mb4'
 };
 
 // Mode Logic: Prioritize external config (Switcher) over .env
@@ -57,9 +58,21 @@ const initSqlite = async () => {
     // Add MySQL-compatible query shim
     sqliteDb.query = async (sql, params) => {
         try {
-            // mysql2 uses ? for params, SQLite also uses ?
-            const rows = await sqliteDb.all(sql, params);
-            return [rows, []]; // Return [rows, fields] format
+            const trimmedSql = sql.trim().toLowerCase();
+            const isSelect = trimmedSql.startsWith('select') || trimmedSql.startsWith('show') || trimmedSql.startsWith('describe');
+            
+            if (isSelect) {
+                const rows = await sqliteDb.all(sql, params);
+                return [rows, []];
+            } else {
+                const result = await sqliteDb.run(sql, params);
+                // mysql2 returns [ResultSetHeader, fields] for DML
+                return [{
+                    affectedRows: result.changes,
+                    insertId: result.lastID,
+                    warningStatus: 0
+                }, []];
+            }
         } catch (error) {
             console.error('SQLite Query Error:', error.message, 'SQL:', sql);
             throw error;
@@ -70,6 +83,15 @@ const initSqlite = async () => {
     sqliteDb.getConnection = async () => {
         return {
             query: sqliteDb.query,
+            beginTransaction: async () => {
+                try { await sqliteDb.run('BEGIN TRANSACTION'); } catch (e) { }
+            },
+            commit: async () => {
+                try { await sqliteDb.run('COMMIT'); } catch (e) { }
+            },
+            rollback: async () => {
+                try { await sqliteDb.run('ROLLBACK'); } catch (e) { }
+            },
             release: () => { }
         };
     };
