@@ -138,7 +138,7 @@ export default function DesignerDashboardPage() {
                 <div className="lg:col-span-8 space-y-8">
 
                     <AnimatePresence mode="wait">
-                        {activeTask ? (
+                        {(activeTask && user?.role === 'desainer') ? (
                             <motion.section
                                 key="active-work"
                                 initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}
@@ -220,41 +220,54 @@ export default function DesignerDashboardPage() {
                                 </div>
                             </motion.section>
                         ) : (
-                            <motion.section
-                                key="idle-work"
-                                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="py-24 px-8 rounded-4xl bg-white dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center shadow-sm"
-                            >
-                                <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 mb-6 drop-shadow-sm">
-                                    <FiPenTool size={40} />
-                                </div>
-                                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Belum Ada Desain Berjalan</h2>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm">Klik tombol "Mulai Kerjakan" pada daftar antrean SPK di bawah untuk mulai mencatat durasi kerja Anda.</p>
-                            </motion.section>
+                            user?.role === 'desainer' ? (
+                                <motion.section
+                                    key="idle-work"
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                    className="py-24 px-8 rounded-4xl bg-white dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-center shadow-sm"
+                                >
+                                    <div className="w-24 h-24 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 mb-6 drop-shadow-sm">
+                                        <FiPenTool size={40} />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Belum Ada Desain Berjalan</h2>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm">Klik tombol "Mulai Kerjakan" pada daftar antrean SPK di bawah untuk mulai mencatat durasi kerja Anda.</p>
+                                </motion.section>
+                            ) : null
                         )}
                     </AnimatePresence>
 
-                    {/* Pending Queue */}
+                    {/* Pending Queue / Monitoring List */}
                     <section>
                         <div className="flex items-center gap-3 mb-6">
                             <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                                 <div className="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"><FiList size={20} /></div>
-                                Pemintaan Desain Baru
+                                {user?.role === 'desainer' ? 'Permintaan Desain Baru' : 'Monitoring Tugas Desain'}
                             </h3>
-                            <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-sm font-bold border border-amber-200 dark:border-amber-800/50 shadow-sm">{pendingTasks.length} Antrean</span>
+                            <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-sm font-bold border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                                {user?.role === 'desainer' ? pendingTasks.length : tasks.filter(t => ['ditugaskan', 'dikerjakan'].includes(t.status)).length} Tugas
+                            </span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            {pendingTasks.map((t, idx) => (
+                            {tasks.filter(t => user?.role === 'desainer' ? t.status === 'ditugaskan' : ['ditugaskan', 'dikerjakan'].includes(t.status)).map((t, idx) => (
                                 <motion.div
                                     key={t.id}
                                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
                                     className="p-6 rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group flex flex-col h-full"
                                 >
                                     <div className="flex justify-between items-start mb-5">
-                                        <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/40">Tugas #{t.task_id}</span>
-                                        <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-xs font-bold bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-800/30">
-                                            <FiClock /> Menunggu
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800/40 w-max">Tugas #{t.task_id}</span>
+                                            {user?.role !== 'desainer' && t.designer_name && (
+                                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Desainer: {t.designer_name}</span>
+                                            )}
+                                        </div>
+                                        <div className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border ${
+                                            t.status === 'dikerjakan' 
+                                            ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/30'
+                                            : 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800/30'
+                                        }`}>
+                                            {t.status === 'dikerjakan' ? <><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Proses</> : <><FiClock /> Menunggu</>}
                                         </div>
                                     </div>
                                     <p className="text-lg font-bold text-slate-800 dark:text-white mb-1.5 line-clamp-2 leading-tight">{t.dpTask?.title || 'Objek Desain Gagal Dimuat'}</p>
@@ -302,6 +315,9 @@ export default function DesignerDashboardPage() {
                                                 <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{t.dpTask?.title || `Pesanan #${t.task_id}`}</p>
                                                 <div className="flex items-center gap-2 mt-1.5">
                                                     <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900">SPK #{t.task_id}</span>
+                                                    {user?.role !== 'desainer' && t.designer_name && (
+                                                        <span className="text-[10px] font-bold text-indigo-500 truncate max-w-[80px]">By: {t.designer_name}</span>
+                                                    )}
                                                     <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><FiCheckCircle size={12} /> Selesai</span>
                                                 </div>
                                             </div>

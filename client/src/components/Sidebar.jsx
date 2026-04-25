@@ -39,6 +39,7 @@ const MENU_GROUPS = [
                     { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'kasir', 'operator'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: <FiBox />, roles: ['admin', 'operator'] },
                     { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'dashboard-desainer', label: 'Dashboard Desain', icon: <FiActivity />, roles: ['admin', 'teknisi'] },
                     { id: 'manajemen-desainer', label: 'Manajemen Desain', icon: <FiCpu />, roles: ['admin'] },
                 ],
             },

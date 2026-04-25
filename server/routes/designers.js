@@ -160,11 +160,23 @@ router.post('/assign', verifyToken, requireRole(['admin', 'operator']), async (r
     }
 });
 
-// ── GET tugas saya ────────────────────────────────────────
+// ── GET tugas saya (atau semua jika admin/teknisi) ────────────────────────
 router.get('/my-tasks', verifyToken, async (req, res) => {
     try {
-        const [rows] = await req.db.query(`
-            SELECT da.* FROM design_assignments da WHERE da.designer_id = ?
+        const role = (req.user.role || '').toLowerCase();
+        let query = `
+            SELECT da.*, u.name as designer_name 
+            FROM design_assignments da
+            LEFT JOIN users u ON da.designer_id = u.id
+        `;
+        let params = [];
+
+        if (role === 'desainer') {
+            query += ' WHERE da.designer_id = ?';
+            params.push(req.user.id);
+        }
+
+        query += `
             ORDER BY
                 CASE da.status
                     WHEN 'dikerjakan' THEN 1
@@ -173,8 +185,10 @@ router.get('/my-tasks', verifyToken, async (req, res) => {
                     WHEN 'dibatalkan' THEN 4
                 END,
                 da.created_at DESC
-            LIMIT 20
-        `, [req.user.id]);
+            LIMIT 50
+        `;
+
+        const [rows] = await req.db.query(query, params);
         res.json(rows);
     } catch (e) {
         res.status(500).json({ message: e.message });
