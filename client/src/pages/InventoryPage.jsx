@@ -31,7 +31,9 @@ import {
     FiRefreshCw,
     FiClock,
     FiBarChart2,
-    FiCheck
+    FiCheck,
+    FiUpload,
+    FiDownload
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import StockOpnameModal from '../components/StockOpnameModal';
@@ -165,6 +167,72 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
         }
     };
 
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            // Ensure XLSX is loaded
+            if (!window.XLSX) {
+                Swal.fire({ title: 'Menyiapkan modul...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const script = document.createElement('script');
+                script.src = 'https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js';
+                document.head.appendChild(script);
+                await new Promise(resolve => script.onload = resolve);
+                Swal.close();
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const bstr = evt.target.result;
+                    const wb = window.XLSX.read(bstr, { type: 'binary' });
+                    const wsname = wb.SheetNames[0];
+                    const ws = wb.Sheets[wsname];
+                    const data = window.XLSX.utils.sheet_to_json(ws);
+
+                    if (data.length === 0) return Swal.fire('Gagal', 'File Excel kosong atau format tidak sesuai', 'error');
+
+                    // Map Excel columns to our fields
+                    const items = data.map(row => ({
+                        code: row.Kode || row.kode || row.Code || row.code || '',
+                        name: row.Nama || row.nama || row.Name || row.name || '',
+                        category: row.Kategori || row.kategori || row.Category || row.category || '',
+                        buyPrice: row['Harga Beli'] || row.harga_beli || row.buyPrice || 0,
+                        sellPrice: row['Harga Jual'] || row.harga_jual || row.sellPrice || 0,
+                        stock: row.Stok || row.stok || row.Stock || row.stock || 0,
+                        minStock: row['Stok Minimum'] || row.min_stock || row.minStock || 0,
+                        unit: row.Satuan || row.satuan || row.Unit || row.unit || 'pcs'
+                    })).filter(item => item.name);
+
+                    if (items.length === 0) return Swal.fire('Gagal', 'Tidak ada data produk yang valid (Nama wajib diisi)', 'error');
+
+                    const result = await Swal.fire({
+                        title: 'Konfirmasi Import',
+                        html: `Ditemukan <b>${items.length}</b> produk dalam file.<br/><small class="text-slate-500">Produk dengan kode yang sama akan diperbarui.</small>`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, Impor Sekarang',
+                        cancelButtonText: 'Batal'
+                    });
+
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Mengimpor Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        await api.post('/products/import', { items });
+                        Swal.fire({ icon: 'success', title: 'Berhasil!', text: `${items.length} produk telah berhasil diimpor.`, timer: 2000 });
+                        reload();
+                    }
+                } catch (err) {
+                    Swal.fire('Gagal', 'Gagal memproses file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        } catch (err) {
+            Swal.fire('Gagal', 'Gagal memuat sistem impor: ' + err.message, 'error');
+        }
+        e.target.value = ''; // Reset input
+    };
+
     const handleCancel = () => {
         const isDirty = form.name.trim() !== '' || String(form.buyPrice) !== '' || String(form.sellPrice) !== '';
         if (isDirty) {
@@ -239,12 +307,27 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Retail Stationery & Products Management</p>
                 </div>
-                <button
-                    onClick={openAdd}
-                    className="flex items-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
-                >
-                    <FiPlus /> Tambah ATK
-                </button>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <input
+                        type="file"
+                        id="excel-import-input"
+                        className="hidden"
+                        accept=".xlsx, .xls"
+                        onChange={handleImportExcel}
+                    />
+                    <button
+                        onClick={() => document.getElementById('excel-import-input').click()}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm active:scale-95"
+                    >
+                        <FiUpload /> Impor Excel
+                    </button>
+                    <button
+                        onClick={openAdd}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+                    >
+                        <FiPlus /> Tambah ATK
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}

@@ -249,4 +249,69 @@ router.get('/:id/history', verifyToken, async (req, res) => {
     }
 });
 
+// 8. POST Import Produk (Bulk)
+router.post('/import', verifyToken, requireRole(['admin']), async (req, res) => {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ message: 'Data produk tidak valid' });
+    }
+
+    const connection = await req.db.getConnection();
+    try {
+        await connection.beginTransaction();
+        
+        for (const item of items) {
+            const { code, name, category, buyPrice, sellPrice, stock, minStock, unit } = item;
+            
+            if (!name) continue; // Skip items without names
+            
+            const productCode = code || ('PRD-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+
+            // Category lookup
+            let finalCategoryId = null;
+            if (category) {
+                const [cats] = await connection.query('SELECT id FROM categories WHERE name = ? OR id = ?', [category, category]);
+                if (cats.length > 0) {
+                    finalCategoryId = cats[0].id;
+                } else {
+                    // Auto-create category if it doesn't exist
+                    const newCatId = category.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20) + '-' + Date.now().toString().slice(-4);
+                    await connection.query('INSERT INTO categories (id, name, emoji) VALUES (?, ?, ?)', [newCatId, category, '📦']);
+                    finalCategoryId = newCatId;
+                }
+            }
+
+            // Check if exists by code
+            const [existing] = await connection.query('SELECT id FROM products WHERE code = ?', [productCode]);
+            
+            if (existing.length > 0) {
+                // Update
+                await connection.query(`
+                    UPDATE products 
+                    SET name = ?, category_id = ?, buy_price = ?, sell_price = ?, 
+                        stock = ?, min_stock = ?, unit = ?
+                    WHERE code = ?
+                `, [name, finalCategoryId, buyPrice || 0, sellPrice || 0, stock || 0, minStock || 0, unit || 'pcs', productCode]);
+            } else {
+                // Insert
+                const newId = 'p' + Date.now() + Math.random().toString(36).substr(2, 5);
+                await connection.query(`
+                    INSERT INTO products 
+                    (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [newId, productCode, name, finalCategoryId, buyPrice || 0, sellPrice || 0, stock || 0, minStock || 0, unit || 'pcs', '📦']);
+            }
+        }
+
+        await connection.commit();
+        res.json({ message: `Berhasil mengimpor ${items.length} produk` });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Import error:', error);
+        res.status(500).json({ message: 'Gagal mengimpor data produk' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;
