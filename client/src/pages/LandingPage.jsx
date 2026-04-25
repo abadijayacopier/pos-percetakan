@@ -455,10 +455,11 @@ export default function LandingPage({ onNavigate }) {
 
             {/* ═══════════ SERVICE MACHINE ═══════════ */}
             <section id="service-machine" className="py-24 sm:py-32 relative">
-                <div className="absolute inset-0 bg-slate-100/30 dark:bg-slate-900/20 transition-colors duration-500" />
+                <div className="absolute inset-0 bg-slate-100/30 dark:bg-slate-950 transition-colors duration-500" />
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <div className="bg-white dark:bg-gradient-to-br dark:from-slate-800/50 dark:to-slate-900/50 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/[0.06] shadow-2xl dark:shadow-none relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 dark:bg-sky-500/5 rounded-full -mr-32 -mt-32 blur-[100px]" />
+                    <div className="bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden border border-slate-200 dark:border-white/[0.08] shadow-2xl dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] relative">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 dark:bg-sky-500/10 rounded-full -mr-48 -mt-48 blur-[120px]" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/5 dark:bg-blue-600/5 rounded-full -ml-48 -mb-48 blur-[120px]" />
 
                         <div className="flex flex-col lg:flex-row">
                             <div className="lg:w-1/2 p-10 lg:p-20 space-y-10 relative z-10">
@@ -472,14 +473,14 @@ export default function LandingPage({ onNavigate }) {
                                 <div className="space-y-4">
                                     {['Teknisi Berpengalaman & Profesional', 'Sparepart Grade A / Original', 'Support Area Karisidenan Madiun'].map((txt, i) => (
                                         <div key={i} className="flex items-center gap-4 text-sm font-bold text-slate-700 dark:text-slate-300">
-                                            <div className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center border border-emerald-500/20 shadow-sm"><FiCheck size={16} /></div>
+                                            <div className="size-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 dark:border-emerald-500/10 shadow-sm"><FiCheck size={16} /></div>
                                             {txt}
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="lg:w-1/2 p-10 lg:p-14 bg-slate-50/50 dark:bg-white/[0.02] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.06]">
+                            <div className="lg:w-1/2 p-10 lg:p-14 bg-slate-50/50 dark:bg-white/[0.03] border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-white/[0.1]">
                                 {formSent ? (
                                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="h-full flex flex-col items-center justify-center text-center space-y-6 py-20">
                                         <div className="size-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-600 text-4xl shadow-lg border border-emerald-500/20"><FiCheckCircle /></div>
@@ -498,21 +499,21 @@ export default function LandingPage({ onNavigate }) {
                                             { name: 'photo', label: 'Upload Foto Kendala', type: 'file', placeholder: 'Pilih file...', colSpan: true },
                                         ].map(field => (
                                             <div key={field.name} className={`space-y-2.5 ${field.colSpan ? 'sm:col-span-2' : ''}`}>
-                                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{field.label}</label>
+                                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">{field.label}</label>
                                                 {field.type === 'file' ? (
-                                                    <input name={field.name} type={field.type} accept="image/*" className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-5 text-slate-900 dark:text-white text-xs font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 shadow-sm dark:shadow-none" />
+                                                    <input name={field.name} type={field.type} accept="image/*" className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-5 text-slate-900 dark:text-white text-xs font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 shadow-sm" />
                                                 ) : (
-                                                    <input name={field.name} type={field.type} required={field.required} placeholder={field.placeholder} className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                                    <input name={field.name} type={field.type} required={field.required} placeholder={field.placeholder} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 shadow-sm" />
                                                 )}
                                             </div>
                                         ))}
                                         <div className="space-y-2.5 sm:col-span-2">
-                                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Alamat Lengkap Unit</label>
-                                            <textarea name="address" required rows="2" placeholder="Wajib menyertakan RT/RW dan Kelurahan..." className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Alamat Lengkap Unit</label>
+                                            <textarea name="address" required rows="2" placeholder="Wajib menyertakan RT/RW dan Kelurahan..." className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600 shadow-sm" />
                                         </div>
                                         <div className="space-y-2.5 sm:col-span-2">
-                                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">Deskripsi Kerusakan</label>
-                                            <textarea name="complaint" required rows="3" placeholder="Jelaskan kendala mesin secara mendetail..." className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-sm dark:shadow-none" />
+                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Deskripsi Kerusakan</label>
+                                            <textarea name="complaint" required rows="3" placeholder="Jelaskan kendala mesin secara mendetail..." className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-2xl py-4 px-5 text-slate-900 dark:text-white text-sm font-bold focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/50 transition-all outline-none resize-none placeholder:text-slate-300 dark:placeholder:text-slate-600 shadow-sm" />
                                         </div>
                                         <button type="submit" className="sm:col-span-2 py-5 bg-slate-900 dark:bg-gradient-to-r dark:from-sky-500 dark:to-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-slate-900/20 dark:shadow-sky-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer">
                                             <FiSend size={18} /> Kirim Tiket Service
