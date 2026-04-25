@@ -39,12 +39,18 @@ const MENU_GROUPS = [
                     { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'kasir', 'operator'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: <FiBox />, roles: ['admin', 'operator'] },
                     { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'kasir', 'operator'] },
-                    { id: 'dashboard-desainer', label: 'Dashboard Desain', icon: <FiActivity />, roles: ['admin', 'teknisi'] },
                     { id: 'manajemen-desainer', label: 'Manajemen Desain', icon: <FiCpu />, roles: ['admin'] },
                 ],
             },
             { id: 'service', label: 'Service Fotocopy', icon: <FiCpu />, roles: ['admin', 'kasir', 'teknisi'] },
             { id: 'handover', label: 'Serah Terima', icon: <FiHash />, roles: ['admin', 'kasir'] },
+        ]
+    },
+    {
+        title: 'Monitoring & Dashboard',
+        items: [
+            { id: 'dashboard-desainer', label: 'Dashboard Desain', icon: <FiActivity />, roles: ['admin', 'desainer', 'teknisi'] },
+            { id: 'dashboard-teknisi', label: 'Dashboard Teknisi', icon: <FiCpu />, roles: ['admin', 'teknisi'] },
         ]
     },
     {
@@ -93,8 +99,9 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
 
     const handleNav = (id) => {
         let targetId = id;
-        if (targetId === 'dashboard' && user?.role === 'desainer') {
-            targetId = 'dashboard-desainer';
+        if (targetId === 'dashboard') {
+            if (user?.role === 'desainer') targetId = 'dashboard-desainer';
+            if (user?.role === 'teknisi') targetId = 'dashboard-teknisi';
         }
         onNavigate(targetId);
         if (window.innerWidth < 1024) onClose();

@@ -37,6 +37,7 @@ import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
 import PrintReceiptPage from './pages/PrintReceiptPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
+import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
 import ServiceInvoicePage from './pages/ServiceInvoicePage';
 import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
 import LandingPage from './pages/LandingPage';
@@ -55,6 +56,7 @@ export default function App() {
     if (!user) return 'landing';
     // Auto-redirect desainer to their dashboard
     if (user?.role?.toLowerCase() === 'desainer') return 'dashboard-desainer';
+    if (user?.role?.toLowerCase() === 'teknisi') return 'dashboard-teknisi';
     if (user?.role?.toLowerCase() === 'kasir') return 'pos';
     return 'dashboard';
   });
@@ -419,6 +421,7 @@ export default function App() {
       case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
+      case 'dashboard-teknisi': return <TechnicianDashboardPage onNavigate={handleNavigate} />;
       case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-warranty-sticker': return <ServiceWarrantyStickerPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'stock-history': return <StockHistoryPage onNavigate={handleNavigate} pageState={pageState} />;
