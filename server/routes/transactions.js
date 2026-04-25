@@ -92,8 +92,8 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const mysqlDate = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
 
         // Fetch Tax Settings
-        const [settingsRows] = await connection.query('SELECT value FROM settings WHERE key = "tax_enabled"');
-        const [percentRows] = await connection.query('SELECT value FROM settings WHERE key = "tax_percentage"');
+        const [settingsRows] = await connection.query('SELECT value FROM settings WHERE `key` = "tax_enabled"');
+        const [percentRows] = await connection.query('SELECT value FROM settings WHERE `key` = "tax_percentage"');
         const taxEnabled = settingsRows.length > 0 ? settingsRows[0].value === 'true' : false;
         const taxPercent = percentRows.length > 0 ? parseFloat(percentRows[0].value) : 11;
 

@@ -8,6 +8,26 @@ class WhatsappService {
         this.instances = new Map(); // Map of shopId -> { client, status, qr, info }
     }
 
+    getChromePath() {
+        if (process.platform !== 'win32') return null;
+        
+        const paths = [
+            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+            path.join(process.env.USERPROFILE || '', 'AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'),
+            path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
+        ];
+        
+        for (const p of paths) {
+            if (fs.existsSync(p)) {
+                console.log(`[WA] Found Chrome at: ${p}`);
+                return p;
+            }
+        }
+        console.warn('[WA] Chrome not found in standard Windows paths');
+        return null;
+    }
+
     formatPhoneNumber(number) {
         if (!number) return null;
         let cleaned = number.replace(/\D/g, '');
@@ -35,10 +55,12 @@ class WhatsappService {
             }
         }
 
-        console.log(`Initializing WhatsApp Client for Shop: ${shopId}...`);
-
+        console.log(`[WA] Initializing WhatsApp Client for Shop: ${shopId}...`);
+        
         const clientId = `tenant_${shopId}`;
         const sessionPath = path.join(__dirname, `../.wwebjs_auth/session-${clientId}`);
+        
+        console.log(`[WA] Session path: ${sessionPath}`);
 
         // FIX: Remove lock files if they exist (prevents stuck initialization on Windows)
         try {
@@ -72,9 +94,14 @@ class WhatsappService {
                     '--no-first-run',
                     '--no-zygote',
                     '--disable-gpu',
-                    '--remote-debugging-port=9222', // Stability
-                    '--disable-extensions'
+                    '--disable-extensions',
+                    '--disable-software-rasterizer'
                 ],
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || this.getChromePath() || undefined
+            },
+            webVersionCache: {
+                type: 'remote',
+                remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
             }
         });
 

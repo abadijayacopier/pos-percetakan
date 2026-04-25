@@ -10,17 +10,17 @@ router.get('/status', verifyToken, requireRole(['admin']), (req, res) => {
 
 // POST /api/wa-gateway/init
 router.post('/init', verifyToken, requireRole(['admin']), async (req, res) => {
-    try {
         let shopId = req.user.shopId;
         if (!shopId && process.env.APP_MODE === 'standalone') {
             shopId = 1;
         }
-        await whatsappService.init(shopId);
-        res.json({ message: 'Inisialisasi WhatsApp Gateway dimulai' });
-    } catch (error) {
-        console.error('Failed to init WA Gateway:', error);
-        res.status(500).json({ message: error.message || 'Gagal inisialisasi WA Gateway' });
-    }
+        
+        // Mulai inisialisasi di background agar tidak memblock request
+        whatsappService.init(shopId).catch(err => {
+            console.error(`[WA Background Init Error] Shop ${shopId}:`, err);
+        });
+
+        res.json({ message: 'Inisialisasi WhatsApp Gateway dimulai di background' });
 });
 
 // POST /api/wa-gateway/logout

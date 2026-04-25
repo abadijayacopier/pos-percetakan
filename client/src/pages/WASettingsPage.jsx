@@ -24,6 +24,14 @@ export default function WASettingsPage({ onNavigate }) {
     const [sendProcess, setSendProcess] = useState(true);
     const [sendFinishing, setSendFinishing] = useState(false);
     const [sendReady, setSendReady] = useState(true);
+    const [sendReceipt, setSendReceipt] = useState(true);
+
+    // Test states
+    const [testNumber, setTestNumber] = useState('');
+    const [sendingTest, setSendingTest] = useState(false);
+
+    // Receipt Template
+    const [templateReceipt, setTemplateReceipt] = useState('Terima kasih *[NamaPelanggan]* telah berbelanja di *[NamaToko]*.\n\n*Detail Transaksi:*\nNo. Transaksi: [NomorInvoice]\nTotal: [TotalBelanja]\n\nCek struk digital Anda di sini:\n[LinkStruk]\n\nSemoga hari Anda menyenangkan! 🙏');
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -41,6 +49,8 @@ export default function WASettingsPage({ onNavigate }) {
                     if (res.data.send_process !== undefined) setSendProcess(res.data.send_process === 'true' || res.data.send_process === true);
                     if (res.data.send_finishing !== undefined) setSendFinishing(res.data.send_finishing === 'true' || res.data.send_finishing === true);
                     if (res.data.send_ready !== undefined) setSendReady(res.data.send_ready === 'true' || res.data.send_ready === true);
+                    if (res.data.send_receipt !== undefined) setSendReceipt(res.data.send_receipt === 'true' || res.data.send_receipt === true);
+                    if (res.data.template_receipt) setTemplateReceipt(res.data.template_receipt);
                 }
             } catch (err) { console.error('Gagal fetch WA config:', err); }
         };
@@ -135,7 +145,9 @@ export default function WASettingsPage({ onNavigate }) {
                 send_received: sendReceived,
                 send_process: sendProcess,
                 send_finishing: sendFinishing,
-                send_ready: sendReady
+                send_ready: sendReady,
+                send_receipt: sendReceipt,
+                template_receipt: templateReceipt
             });
             setSaveMsg(<>Konfigurasi berhasil disimpan! <FiCheck /></>);
             setTimeout(() => setSaveMsg(''), 3000);
@@ -143,6 +155,24 @@ export default function WASettingsPage({ onNavigate }) {
             setSaveMsg(<>Gagal menyimpan <FiX /></>);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleTestMessage = async () => {
+        if (!testNumber) return Swal.fire('Gagal', 'Masukkan nomor tujuan tes', 'error');
+        if (gateway.status !== 'ready') return Swal.fire('Gagal', 'WhatsApp Gateway belum terhubung', 'error');
+
+        setSendingTest(true);
+        try {
+            await api.post('/wa-gateway/test', {
+                to: testNumber,
+                message: 'Halo! Ini adalah pesan uji coba dari sistem POS Abadi Jaya. Integrasi WhatsApp Anda sudah berhasil! 🚀'
+            });
+            Swal.fire('Berhasil', 'Pesan tes telah dikirim', 'success');
+        } catch (err) {
+            Swal.fire('Gagal', 'Gagal mengirim pesan tes: ' + (err.response?.data?.message || err.message), 'error');
+        } finally {
+            setSendingTest(false);
         }
     };
 
@@ -166,15 +196,31 @@ export default function WASettingsPage({ onNavigate }) {
                     >
                         Beranda
                     </button>
-                    <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl px-4 py-2 flex items-center gap-3 shadow-inner">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shrink-0">
-                            <span className="material-symbols-outlined text-sm">check_circle</span>
+                    <div className={`${gateway.status === 'ready' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20' : 
+                        gateway.status === 'qr' ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20' : 
+                        'bg-slate-50 dark:bg-slate-500/10 border-slate-200 dark:border-slate-800'} border rounded-xl px-4 py-2 flex items-center gap-3 shadow-inner transition-all duration-300`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 transition-colors ${
+                            gateway.status === 'ready' ? 'bg-emerald-500' : gateway.status === 'qr' ? 'bg-amber-500' : 'bg-slate-400'
+                        }`}>
+                            <span className="material-symbols-outlined text-sm">
+                                {gateway.status === 'ready' ? 'check_circle' : gateway.status === 'qr' ? 'qr_code_2' : 'link_off'}
+                            </span>
                         </div>
                         <div className="pr-2">
-                            <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Status API</p>
+                            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${
+                                gateway.status === 'ready' ? 'text-emerald-600 dark:text-emerald-400' : 
+                                gateway.status === 'qr' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'
+                            }`}>Status Gateway</p>
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xs font-bold text-slate-900 dark:text-white leading-none">Terhubung</h3>
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <h3 className="text-xs font-bold text-slate-900 dark:text-white leading-none">
+                                    {gateway.status === 'ready' ? 'Terhubung' : gateway.status === 'qr' ? 'Menunggu Scan' : 
+                                     gateway.status === 'connecting' ? 'Menghubungkan...' : 'Terputus'}
+                                </h3>
+                                <span className={`w-2 h-2 rounded-full transition-colors ${
+                                    gateway.status === 'ready' ? 'bg-emerald-500 animate-pulse' : 
+                                    gateway.status === 'qr' ? 'bg-amber-500 animate-bounce' : 
+                                    gateway.status === 'connecting' ? 'bg-blue-500 animate-spin' : 'bg-slate-300'
+                                }`}></span>
                             </div>
                         </div>
                     </div>
@@ -295,6 +341,24 @@ export default function WASettingsPage({ onNavigate }) {
                                         rows="3"
                                         value={templateReady}
                                         onChange={(e) => setTemplateReady(e.target.value)}
+                                    ></textarea>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-3">
+                                            <span className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-black shadow-inner">5</span>
+                                            Struk Kasir
+                                        </label>
+                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Otomatis kirim</span>
+                                            <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer" checked={sendReceipt} onChange={(e) => setSendReceipt(e.target.checked)} />
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all resize-none font-medium leading-relaxed"
+                                        rows="4"
+                                        value={templateReceipt}
+                                        onChange={(e) => setTemplateReceipt(e.target.value)}
                                     ></textarea>
                                 </div>
                             </div>
@@ -548,12 +612,21 @@ export default function WASettingsPage({ onNavigate }) {
                             <div className="space-y-4">
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined">call</span>
-                                    <input type="text" className="w-full text-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 px-12 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 font-bold tracking-wider shadow-inner" placeholder="+62 812 3456 7890" />
+                                    <input 
+                                        type="text" 
+                                        className="w-full text-center bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-4 px-12 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 font-bold tracking-wider shadow-inner" 
+                                        placeholder="628123456789" 
+                                        value={testNumber}
+                                        onChange={(e) => setTestNumber(e.target.value)}
+                                    />
                                 </div>
-                                <button className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl text-sm transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group">
+                                <button 
+                                    onClick={handleTestMessage}
+                                    disabled={sendingTest || !testNumber}
+                                    className="w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl text-sm transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden group disabled:opacity-50">
                                     <span className="absolute inset-0 bg-white/20 dark:bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
-                                    <span className="material-symbols-outlined text-lg relative z-10">bolt</span>
-                                    <span className="relative z-10">Kirim Pesan Uji Coba</span>
+                                    <span className="material-symbols-outlined text-lg relative z-10">{sendingTest ? 'refresh' : 'bolt'}</span>
+                                    <span className="relative z-10">{sendingTest ? 'Mengirim...' : 'Kirim Pesan Uji Coba'}</span>
                                 </button>
                             </div>
                         </div>

@@ -133,12 +133,12 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                 initial="closed"
                 animate={isOpen || isDesktop ? "open" : "closed"}
                 className={`shrink-0 fixed lg:relative inset-y-0 left-0 z-[100] ${isCollapsed && isDesktop ? 'w-[88px]' : 'w-[280px]'} 
-                bg-white/50 dark:bg-slate-950/50 backdrop-blur-2xl border-r border-slate-200/30 dark:border-slate-800/30 
-                flex flex-col overflow-visible shadow-[4px_0_24px_rgba(0,0,0,0.02)] print:hidden`}
+                bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 
+                flex flex-col overflow-visible shadow-[0_0_20px_rgba(0,0,0,0.03)] dark:shadow-none print:hidden`}
             >
                 <div className="flex flex-col h-full relative z-10">
                     {/* Clean Simple Header */}
-                    <div className={`h-[72px] px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-center ${isCollapsed && isDesktop ? 'items-center px-0' : ''}`}>
+                    <div className={`h-[72px] px-6 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-center ${isCollapsed && isDesktop ? 'items-center px-0' : ''}`}>
                         <div className={`flex items-center gap-3 cursor-default w-full ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
                             <div className="relative shrink-0">
                                 <motion.div
@@ -154,16 +154,16 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                 <div className="absolute top-0 right-0 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                             </div>
                             {!(isCollapsed && isDesktop) && (
-                                <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300">
-                                    <h1 className="text-slate-900 dark:text-white text-lg font-black tracking-tighter leading-none italic uppercase">
+                                <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300 mr-2">
+                                    <h1 className="text-slate-900 dark:text-white text-[14px] sm:text-[16px] font-black tracking-tight leading-none uppercase truncate">
                                         {storeSettings?.name?.split(' ')[0] || 'ABADI'} <span className="text-blue-600 dark:text-blue-500">{storeSettings?.name?.split(' ').slice(1).join(' ') || 'JAYA'}</span>
                                     </h1>
-                                    <span className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Percetakan & POS</span>
+                                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Percetakan & POS</span>
                                 </div>
                             )}
 
-                            <button onClick={onClose} className="lg:hidden ml-auto p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                                <span className="material-symbols-outlined text-2xl flex items-center justify-center relative -right-1">close</span>
+                            <button onClick={onClose} className="lg:hidden ml-auto p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0">
+                                <span className="material-symbols-outlined text-2xl flex items-center justify-center">close</span>
                             </button>
                         </div>
 
@@ -303,57 +303,57 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                     </nav>
 
                     {/* Footer / User Info */}
-                    <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                        <div className={`space-y-2 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+                        <div className={`space-y-3 flex flex-col ${isCollapsed && isDesktop ? 'items-center' : ''}`}>
                             {((user?.role || '').toLowerCase() === 'admin' || (user?.role || '').toLowerCase() === 'pemilik') && (
-                                <>
+                                <div className="grid grid-cols-1 gap-2">
                                     <button
                                         onClick={() => handleNav('wa-settings')}
                                         title={isCollapsed && isDesktop ? "WhatsApp Config" : undefined}
-                                        className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all
                                         ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
                                         ${activePage === 'wa-settings'
-                                                ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-500'
-                                                : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200 dark:shadow-none'
+                                                : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                                     >
-                                        <FiMessageCircle size={isCollapsed && isDesktop ? 16 : 14} />
+                                        <FiMessageCircle size={isCollapsed && isDesktop ? 18 : 14} />
                                         {!(isCollapsed && isDesktop) && <span>WhatsApp Gateway</span>}
                                     </button>
 
                                     <button
                                         onClick={() => handleNav('settings')}
                                         title={isCollapsed && isDesktop ? "Pengaturan Sistem" : undefined}
-                                        className={`flex items-center justify-center gap-2 py-2 rounded-full font-bold text-[10px] uppercase tracking-wider transition-all border-2
+                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all
                                         ${isCollapsed && isDesktop ? 'w-10 h-10 px-0' : 'w-full px-4 text-center'}
                                         ${activePage === 'settings'
-                                                ? 'bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-500'
-                                                : 'bg-white dark:bg-slate-900 text-[#475569] dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:text-slate-900 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 dark:shadow-none'
+                                                : 'bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}`}
                                     >
-                                        <FiSettings size={isCollapsed && isDesktop ? 16 : 14} />
+                                        <FiSettings size={isCollapsed && isDesktop ? 18 : 14} />
                                         {!(isCollapsed && isDesktop) && <span>Pengaturan Sistem</span>}
                                     </button>
-                                </>
+                                </div>
                             )}
 
-                            <div className={`bg-white dark:bg-slate-950 px-3 py-2 rounded-full border-2 border-slate-200 dark:border-slate-800 flex items-center group
+                            <div className={`bg-slate-50 dark:bg-slate-900/50 px-3 py-2.5 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center group
                                 ${isCollapsed && isDesktop ? 'justify-center p-1 border-none bg-transparent dark:bg-transparent px-1' : 'justify-between'}`}>
-                                <div className={`flex items-center gap-3 min-w-0 ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
-                                    <div className={`size-8 bg-[#f1f5f9] dark:bg-slate-800 rounded-full flex items-center justify-center text-[#334155] dark:text-slate-300 font-black text-[10px] border border-slate-200 dark:border-slate-700 shrink-0
-                                        ${isCollapsed && isDesktop && 'ring-2 ring-transparent hover:ring-blue-500 transition-all cursor-pointer'}`}
+                                <div className={`flex items-center gap-2.5 min-w-0 ${isCollapsed && isDesktop ? 'justify-center' : ''}`}>
+                                    <div className={`size-8 bg-white dark:bg-slate-800 rounded-xl flex items-center justify-center text-[#334155] dark:text-slate-300 font-black text-[10px] border border-slate-200/50 dark:border-slate-700 shrink-0
+                                        ${isCollapsed && isDesktop && 'ring-2 ring-transparent hover:ring-blue-500 transition-all cursor-pointer shadow-sm'}`}
                                         title={isCollapsed && isDesktop ? user?.username || 'ADMIN' : undefined}>
                                         {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
                                     </div>
                                     {!(isCollapsed && isDesktop) && (
-                                        <div className="flex-1 min-w-0 overflow-hidden">
-                                            <p className="text-[11px] font-black text-slate-900 dark:text-white truncate uppercase tracking-tight italic">{user?.username || 'ADMIN'}</p>
-                                            <p className="text-[9px] font-bold text-[#64748b] uppercase tracking-widest mt-0.5 truncate">{user?.role || 'ADMIN'}</p>
+                                        <div className="flex-1 min-w-0 overflow-hidden pr-2">
+                                            <p className="text-[11px] font-bold text-slate-900 dark:text-white truncate uppercase tracking-wide leading-tight">{user?.username || 'ADMIN'}</p>
+                                            <p className="text-[9px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5 truncate">{user?.role || 'ADMIN'}</p>
                                         </div>
                                     )}
                                 </div>
                                 {!(isCollapsed && isDesktop) && (
                                     <button
                                         onClick={() => setShowLogoutConfirm(true)}
-                                        className="size-8 flex items-center justify-center text-slate-400 hover:text-blue-600 rounded-full transition-colors shrink-0"
+                                        className="size-7 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all shrink-0"
                                     >
                                         <FiLogOut size={14} />
                                     </button>

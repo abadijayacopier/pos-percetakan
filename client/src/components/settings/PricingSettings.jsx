@@ -16,31 +16,32 @@ export default function PricingSettings({
         <div className="space-y-8 pb-12">
             {/* Tarif Desain (Standalone Section) */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-blue-50/50 dark:bg-blue-900/10">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold">
-                            <FiEdit size={20} />
+                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-blue-50/50 dark:bg-blue-900/10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold shrink-0">
+                            <FiEdit size={24} />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 dark:text-white text-base">Tarif Desain per Jam</h4>
-                            <p className="text-xs text-slate-500">Biaya kerja desain per jam (digunakan di modul Desain & Offset)</p>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-lg leading-tight">Tarif Desain per Jam</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Biaya kerja desain per jam (digunakan di modul Desain & Offset)</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="relative w-full max-w-[240px]">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">Rp</span>
                             <input
                                 type="number"
-                                className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-800 rounded-2xl text-lg font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all shadow-inner"
                                 value={tarifDesainPerJam}
                                 onChange={(e) => setTarifDesainPerJam(e.target.value)}
                             />
                         </div>
                         <button
                             onClick={saveSettings}
-                            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md shadow-blue-200 dark:shadow-none flex items-center gap-2 shrink-0 active:scale-95"
+                            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-200 dark:shadow-none flex items-center gap-2 shrink-0 active:scale-95 group"
                         >
-                            <FiSave size={16} /> Simpan
+                            <FiSave size={18} className="group-hover:rotate-12 transition-transform" /> 
+                            <span className="hidden sm:inline">Simpan</span>
                         </button>
                     </div>
                 </div>
