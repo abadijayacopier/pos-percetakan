@@ -48,31 +48,43 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         const style = document.createElement('style');
         style.innerHTML = `
             @media print {
-                body {
-                    background: white !important;
-                    margin: 0;
-                    padding: 0;
-                }
-                .no-print {
+                /* Hide global Layout elements during print */
+                header, aside, .sidebar, .no-print, nav, .action-bar {
                     display: none !important;
                 }
+                
+                body {
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                }
+                
+                main {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    display: block !important;
+                    width: 100% !important;
+                }
+
                 .thermal-width {
                     width: ${getPrintWidth()} !important;
                     max-width: 100% !important;
                     margin: 0 auto !important;
                     box-shadow: none !important;
                     border: none !important;
+                    padding: 0 !important;
                 }
+
                 @page {
                     margin: 0; 
+                    size: auto;
                 }
-                /* Hide global Layout elements during print */
-                header, aside, .sidebar {
-                    display: none !important;
-                }
-                main {
-                    margin: 0 !important;
-                    padding: 0 !important;
+
+                /* Force color adjust */
+                * {
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
                 }
             }
         `;

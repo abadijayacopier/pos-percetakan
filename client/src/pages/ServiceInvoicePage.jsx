@@ -56,57 +56,56 @@ export default function ServiceInvoicePage({ onNavigate, pageState }) {
                     width: 100% !important; 
                     height: auto !important; 
                     margin: 0 !important; 
-                    padding: 5mm !important; 
+                    padding: 0 !important; 
                     background: white !important;
                     border-radius: 0 !important; 
                 }
 
-                /* Standardize Font Contrast for Print */
-                .text-slate-400, .text-slate-500, .text-slate-200, .text-slate-300 { 
-                    color: #475569 !important; /* Darker slate-600 */
+                /* Clean UI: Standardize Contrast */
+                .text-slate-400, .text-slate-500, .text-slate-200, .text-slate-300 { color: #475569 !important; }
+                .text-slate-900, .text-white { color: black !important; }
+                
+                /* Remove heavy backgrounds */
+                .bg-slate-900, .bg-blue-600 { 
+                    background-color: transparent !important; 
+                    border: 1pt solid black !important;
+                    color: black !important;
                 }
-                .text-slate-900, .text-white { 
-                    color: black !important; 
-                }
-                .bg-blue-600 { 
-                    background-color: #2563eb !important; 
-                    color: white !important;
-                    -webkit-print-color-adjust: exact !important;
+                .bg-slate-50, .bg-red-50, .bg-emerald-50 {
+                    background-color: transparent !important;
+                    border: 0.5pt solid #cbd5e1 !important;
                 }
 
                 /* Header Alignment Fixes */
                 .header-grid {
                     display: grid !important;
-                    grid-template-columns: 1fr 1fr !important;
+                    grid-template-columns: 1.2fr 0.8fr !important;
                     gap: 10mm !important;
                     align-items: start !important;
                 }
 
                 @page { 
                     size: A4; 
-                    margin: 10mm; 
+                    margin: 15mm; 
                 }
 
-                /* Deep Design Thinking: Compact Spacing for 1-Page A4 */
+                /* Layout Preservation */
                 main { margin: 0 !important; padding: 0 !important; max-width: none !important; }
-                .p-10, .md\\:p-14 { padding: 0 !important; }
+                .p-10, .md\\:p-14 { padding: 5mm 0 !important; }
                 .p-6 { padding: 4mm !important; }
                 .mb-10 { margin-bottom: 5mm !important; }
                 .mt-20 { margin-top: 10mm !important; }
                 .pt-10 { padding-top: 5mm !important; }
-                .gap-8 { gap: 4mm !important; }
                 
-                /* Layout Preservation */
                 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
                 .grid { display: grid !important; }
                 
                 /* Border Adjustments */
-                .rounded-4xl, .rounded-3xl, .rounded-2xl { border-radius: 6px !important; }
-                .border-2 { border-width: 1px !important; border-color: #cbd5e1 !important; }
-                .border-slate-900 { border-color: #0f172a !important; }
+                .rounded-4xl, .rounded-3xl, .rounded-2xl { border-radius: 4px !important; }
+                .border-2 { border-width: 0.5pt !important; border-color: black !important; }
                 
                 /* Prevent Page Breaks */
-                .print-container > div, tr, table, .grid > div {
+                tr, table, .grid > div {
                     page-break-inside: avoid !important;
                     break-inside: avoid !important;
                 }
