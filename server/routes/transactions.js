@@ -143,12 +143,11 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             }
 
             if (item.type === 'service_order') {
-                const soId = 'so' + Date.now();
                 const serviceNo = 'SVC-' + Date.now().toString().slice(-6);
                 await connection.query(`
-                    INSERT INTO service_orders (id, service_no, customer_id, customer_name, machine_info, complaint, total_cost, status, technician_id)
-                    VALUES(?, ?, ?, ?, ?, ?, ?, 'diterima', ?)
-                `, [soId, serviceNo, validCustomerId, customerName || 'Umum', item.meta?.device || 'Unknown Device', item.meta?.issue || 'No description', item.price, req.user.id]);
+                    INSERT INTO service_orders (service_no, customer_id, customer_name, machine_info, complaint, total_cost, status, technician_id)
+                    VALUES(?, ?, ?, ?, ?, ?, 'diterima', ?)
+                `, [serviceNo, validCustomerId, customerName || 'Umum', item.meta?.device || 'Unknown Device', item.meta?.issue || 'No description', item.price, req.user.id]);
             }
         }
 
@@ -166,11 +165,15 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             await connection.query('UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?', [paid, customerId]);
         }
 
-        // 3e. Manual Activity Log (SaaS Aware)
-        await connection.query(
-            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'ADD_TRANSACTION', 'Transaction', `Invoice ${invoiceNo} total ${total}`, req.ip || null]
-        );
+        // 3e. Manual Activity Log (Robust Insertion)
+        try {
+            await connection.query(
+                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+                [req.user.id, req.user.name, 'ADD_TRANSACTION', 'Transaction', `Invoice ${invoiceNo} total ${total}`, req.ip || null]
+            );
+        } catch (logError) {
+            console.error('⚠️ Failed to write activity log (transaction was still saved):', logError.message);
+        }
 
         await connection.commit();
         sendInvoiceNotification({ id: newTrxId, invoice_no: invoiceNo, customer_name: customerName, customer_wa: customerWa, total, paid }, items);

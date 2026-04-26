@@ -94,6 +94,52 @@ const sendInvoiceNotification = async (trx, items) => {
     }
 };
 
+const sendServiceNotification = async (service, type = 'received') => {
+    if (!service.phone) return;
+
+    try {
+        const [configRows] = await pool.query('SELECT config_key, config_value FROM wa_config');
+        const config = configRows.reduce((acc, r) => { acc[r.config_key] = r.config_value; return acc; }, {});
+
+        const [settingsRows] = await pool.query('SELECT `key`, `value` FROM settings WHERE `key` IN ("store_name", "store_address")');
+        const settings = settingsRows.reduce((acc, r) => { acc[r.key] = r.value; return acc; }, {});
+
+        const templateKey = type === 'received' ? 'template_service_received' : 'template_service_done';
+        const sendToggleKey = type === 'received' ? 'send_service_received' : 'send_service_done';
+
+        if (config[sendToggleKey] === 'false' || config[sendToggleKey] === false) return;
+        if (!config[templateKey]) return;
+
+        const storeName = settings.store_name || 'Abadi Jaya Copier';
+        const storeAddress = settings.store_address || 'Jl. Raya Kediren No. 1';
+
+        let message = config[templateKey]
+            .replace(/\[NamaPelanggan\]/g, service.customerName || 'Pelanggan')
+            .replace(/\[NomorService\]/g, service.serviceNo)
+            .replace(/\[InfoMesin\]/g, service.machineInfo || '-')
+            .replace(/\[NamaToko\]/g, storeName)
+            .replace(/\[AlamatToko\]/g, storeAddress);
+
+        // Send Message logic (reused from invoice)
+        if (whatsappService.getStatus().status === 'ready') {
+            await whatsappService.sendMessage(service.phone, message);
+            console.log(`✅ Service WA (${type}) terkirim via Gateway ke ${service.phone}`);
+        } else if (config.api_token && config.phone_number) {
+            const axios = require('axios');
+            await axios.post('https://api.watzap.id/v1/send_message', {
+                api_key: config.api_token,
+                number_key: config.phone_number,
+                phone_no: service.phone,
+                message: message
+            });
+            console.log(`✅ Service WA (${type}) terkirim via API Fallback ke ${service.phone}`);
+        }
+    } catch (error) {
+        console.error('❌ Error in sendServiceNotification:', error);
+    }
+};
+
 module.exports = {
-    sendInvoiceNotification
+    sendInvoiceNotification,
+    sendServiceNotification
 };

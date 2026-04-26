@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const TenantManager = require('../utils/tenantManager');
+const { sendServiceNotification } = require('../utils/notificationHelper');
 
 const uploadDir = path.join(__dirname, '../public/uploads/service');
 if (!fs.existsSync(uploadDir)) {
@@ -134,6 +135,14 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
         }
 
         await connection.commit();
+
+        // Send WhatsApp Notification
+        try {
+            await sendServiceNotification({ serviceNo, customerName, phone, machineInfo }, 'received');
+        } catch (waErr) {
+            console.error('Gagal kirim notifikasi WA service:', waErr);
+        }
+
         res.status(201).json({ message: 'Penerimaan service berhasil dicatat!', id: newId });
     } catch (error) {
         await connection.rollback();
@@ -202,6 +211,19 @@ router.patch('/:id/status', verifyToken, requireRole(['teknisi', 'admin', 'kasir
     try {
         const { status } = req.body;
         await req.db.query('UPDATE service_orders SET status = ? WHERE id = ?', [status, req.params.id]);
+
+        // Send WhatsApp Notification if finished
+        if (status === 'selesai' || status === 'Selesai') {
+            try {
+                const [rows] = await req.db.query('SELECT service_no as serviceNo, customer_name as customerName, phone, machine_info as machineInfo FROM service_orders WHERE id = ?', [req.params.id]);
+                if (rows.length > 0) {
+                    await sendServiceNotification(rows[0], 'done');
+                }
+            } catch (waErr) {
+                console.error('Gagal kirim notifikasi WA service selesai:', waErr);
+            }
+        }
+
         res.json({ message: 'Status service diupdate!' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal memindah status' });

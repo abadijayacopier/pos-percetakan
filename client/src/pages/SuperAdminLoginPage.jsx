@@ -43,7 +43,7 @@ export default function SuperAdminLoginPage({ onNavigate }) {
                 </div>
 
                 <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-600 to-emerald-400"></div>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-400"></div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">

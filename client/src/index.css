@@ -95,6 +95,40 @@
   --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pro-max-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.12);
+}
+
+.dark .pro-max-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.pattern-wa {
+  background-color: #e5ddd5;
+  background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+  background-blend-mode: overlay;
+  background-repeat: repeat;
+}
+
+.dark .pattern-wa-dark {
+  background-color: #0b141a;
+  background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+  background-blend-mode: multiply;
+  opacity: 0.4;
+}
+
 /* ---- Light Theme (Default) ---- */
 /* ---- Input Utilities ---- */
 .no-spinner::-webkit-inner-spin-button,
@@ -3636,3 +3670,56 @@ img {
     transform: none !important;
   }
 }
+
+/* ============================================
+   PRO MAX DESIGN TOKENS & UTILITIES
+   ============================================ */
+
+/* ---- WhatsApp Chat Pattern ---- */
+.pattern-wa {
+  background-color: #e5ddd5;
+  background-image: url("https://web.whatsapp.com/img/bg-chat-tile-light_6860bc0e960359850c9053359d99723a.png");
+  background-repeat: repeat;
+}
+
+.dark .pattern-wa-dark {
+  background-color: #0b141a;
+  background-image: url("https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b4012a025.png");
+  background-repeat: repeat;
+  opacity: 0.4;
+}
+
+/* ---- Pro Max Aesthetics ---- */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #137fec 0%, #4aa3ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pro-max-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.12);
+}
+
+.dark .pro-max-shadow {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.animate-float {
+  animation: proFloat 6s ease-in-out infinite;
+}
+
+@keyframes proFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}

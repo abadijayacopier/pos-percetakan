@@ -204,7 +204,7 @@ export default function AssignmentSettingsPage({ onNavigate }) {
                 </section>
 
                 {/* Advanced Algorithm Toggle Card */}
-                <div className="bg-linear-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/50 rounded-4xl p-8 shadow-sm">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/10 border border-blue-100 dark:border-blue-800/50 rounded-4xl p-8 shadow-sm">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex gap-5">
                             <div className="w-16 h-16 rounded-2xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-200 dark:shadow-none">

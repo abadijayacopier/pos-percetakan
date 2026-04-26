@@ -261,7 +261,7 @@ export default function PrinterSettings({
                     </div>
                     <div className="p-8 flex justify-center bg-slate-100/50 dark:bg-slate-950/50">
                         <div className="bg-white dark:bg-white text-slate-800 w-full max-w-[280px] min-h-[400px] shadow-2xl p-6 relative">
-                            <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-slate-100 dark:from-slate-900 to-transparent pointer-events-none z-10" />
+                            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-100 dark:from-slate-900 to-transparent pointer-events-none z-10" />
                             <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-size-[16px_16px] opacity-30 pointer-events-none" />
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 no-scrollbar -mx-2 px-2 relative z-20">
                                 <div className="flex justify-center mb-4">

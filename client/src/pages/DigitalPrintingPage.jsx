@@ -741,7 +741,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                 className={`w-full py-4 rounded-xl font-bold text-sm tracking-widest transition-all shadow-md flex justify-center items-center gap-2 uppercase
                             ${(!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0 || loading)
                                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                                        : 'bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-blue-500/30 hover:shadow-lg hover:-translate-y-0.5'}`}
+                                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-blue-500/30 hover:shadow-lg hover:-translate-y-0.5'}`}
                             >
                                 <FiPlusCircle size={18} />
                                 {loading ? 'Memproses...' : 'Buat Pesanan & SPK'}

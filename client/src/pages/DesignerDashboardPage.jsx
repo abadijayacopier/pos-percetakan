@@ -364,7 +364,7 @@ export default function DesignerDashboardPage() {
                     </div>
 
                     {/* Designer Insight Box (Lighter Theme) */}
-                    <div className="p-8 rounded-4xl bg-linear-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border border-blue-100 dark:border-slate-700 shadow-inner relative overflow-hidden">
+                    <div className="p-8 rounded-4xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border border-blue-100 dark:border-slate-700 shadow-inner relative overflow-hidden">
                         <FiTarget className="text-blue-500/10 dark:text-blue-500/5 absolute -top-4 -right-4" size={120} />
                         <div className="relative z-10">
                             <h4 className="flex items-center gap-2 text-sm font-bold text-blue-700 dark:text-blue-400 mb-3">

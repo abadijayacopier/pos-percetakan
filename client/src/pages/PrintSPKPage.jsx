@@ -154,7 +154,7 @@ export default function PrintSPKPage({ onNavigate, pageState }) {
                         <div className="bg-white p-2 rounded-lg">
                             <div className="w-32 h-12 bg-slate-900 flex items-center justify-center text-[8px] text-white overflow-hidden relative">
                                 || ||| || |||| ||| || ||||
-                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                             </div>
                         </div>
                         <p className="text-xs opacity-80 uppercase font-bold tracking-widest">Scan Status Produksi</p>
