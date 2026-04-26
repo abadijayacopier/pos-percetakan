@@ -579,8 +579,8 @@ export default function DashboardPage({ onNavigate }) {
                                         <div className="flex items-center gap-4">
                                             <span className="text-xs font-black text-slate-300 w-4 group-hover:text-amber-500 transition-colors">{i + 1}</span>
                                             <div>
-                                                <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[120px]">{p.name}</p>
-                                                <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">{p.count} terjual</p>
+                                                <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[160px] group-hover:text-amber-600 transition-colors">{p.name}</p>
+                                                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{p.count} unit terjual</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
@@ -595,54 +595,73 @@ export default function DashboardPage({ onNavigate }) {
                         </div>
 
                         {/* Category Sales Pie Chart */}
-                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[3.5rem] border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col">
                             <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-3 italic">
                                 <div className="p-2 bg-blue-500/10 rounded-lg text-blue-600">
                                     <FiPieChart size={16} />
                                 </div>
                                 Kontribusi Kategori
                             </h3>
-                            <div className="h-56 w-full relative">
+                            <div className="h-64 w-full relative">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={stats.categorySales}
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            paddingAngle={5}
+                                            innerRadius={65}
+                                            outerRadius={85}
+                                            paddingAngle={8}
                                             dataKey="value"
+                                            stroke="none"
                                         >
                                             {stats.categorySales.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={['#0891b2', '#0ea5e9', '#3b82f6', '#6366f1', '#10b981'][index % 5]} />
+                                                <Cell 
+                                                    key={`cell-${index}`} 
+                                                    fill={[
+                                                        '#0ea5e9', // Blue
+                                                        '#10b981', // Emerald
+                                                        '#f59e0b', // Amber
+                                                        '#6366f1', // Indigo
+                                                        '#f43f5e', // Rose
+                                                        '#8b5cf6'  // Violet
+                                                    ][index % 6]} 
+                                                />
                                             ))}
                                         </Pie>
                                         <Tooltip
                                             contentStyle={{
                                                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                borderRadius: '16px',
+                                                borderRadius: '20px',
                                                 border: '1px solid #e2e8f0',
-                                                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                                boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                                                padding: '12px 16px'
                                             }}
-                                            itemStyle={{ color: '#0f172a', fontWeight: '900', fontSize: '10px' }}
+                                            itemStyle={{ color: '#0f172a', fontWeight: '900', fontSize: '12px' }}
                                             formatter={(value) => formatRupiah(value)}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Share</span>
-                                    <FiLayers className="text-slate-200 mt-1" size={24} />
+                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Market</span>
+                                    <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-[0.1em]">Share</span>
                                 </div>
                             </div>
-                            <div className="mt-4 space-y-2">
-                                {stats.categorySales.slice(0, 3).map((cat, i) => (
-                                    <div key={i} className="flex justify-between items-center text-[10px] font-bold">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#0891b2', '#0ea5e9', '#3b82f6'][i % 3] }}></div>
-                                            <span className="text-slate-600 dark:text-slate-400 truncate max-w-[100px] uppercase">{cat.name}</span>
+                            <div className="mt-6 space-y-3 px-2">
+                                {stats.categorySales.slice(0, 5).map((cat, i) => (
+                                    <div key={i} className="flex justify-between items-center group">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ backgroundColor: ['#0ea5e9', '#10b981', '#f59e0b', '#6366f1', '#f43f5e'][i % 5] }}></div>
+                                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 truncate max-w-[140px] uppercase tracking-tight group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{cat.name}</span>
                                         </div>
-                                        <span className="text-slate-900 dark:text-white italic">{Math.round((cat.value / stats.categorySales.reduce((s, c) => s + c.value, 0)) * 100)}%</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-code font-black text-slate-900 dark:text-white italic">
+                                                {Math.round((cat.value / (stats.categorySales.reduce((s, c) => s + (c.value || 0), 0) || 1)) * 100)}%
+                                            </span>
+                                        </div>
                                     </div>
                                 ))}
+                                {stats.categorySales.length === 0 && (
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center py-4 italic opacity-50">Data kategori kosong</p>
+                                )}
                             </div>
                         </div>
 

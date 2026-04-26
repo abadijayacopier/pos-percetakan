@@ -102,15 +102,22 @@ router.get('/stats', verifyToken, async (req, res) => {
             LIMIT 5
         `);
 
-        // 10. Category Distribution
-        const [categorySales] = await req.db.query(`
-            SELECT c.name, SUM(td.subtotal) as value
+        // 10. Category Distribution (Improved with LEFT JOIN and Fallback)
+        const [categorySalesRaw] = await req.db.query(`
+            SELECT 
+                COALESCE(c.name, 'Jasa & Lainnya') as name, 
+                SUM(td.subtotal) as value
             FROM transaction_details td
-            JOIN products p ON td.product_id = p.id
-            JOIN categories c ON p.category_id = c.id
-            GROUP BY c.id, c.name
+            LEFT JOIN products p ON td.product_id = p.id
+            LEFT JOIN categories c ON p.category_id = c.id
+            GROUP BY name
             ORDER BY value DESC
         `);
+
+        const categorySales = categorySalesRaw.map(item => ({
+            name: item.name,
+            value: parseFloat(item.value || 0)
+        }));
 
         res.json({
             omset: parseFloat(cashToday[0]?.omset || 0),
