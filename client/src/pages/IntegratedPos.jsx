@@ -117,6 +117,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [globalDiscount, setGlobalDiscount] = useState(0);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [customerWa, setCustomerWa] = useState(''); // State untuk WhatsApp
+    const [transactionNotes, setTransactionNotes] = useState(''); // State untuk Catatan/Keterangan
     const [taxEnabled, setTaxEnabled] = useState(false);
     const [taxPercentage, setTaxPercentage] = useState(11);
 
@@ -559,16 +560,57 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
     };
 
-    const openCashDrawer = async () => {
-        if (!printerSettings.printerName) {
-            showToast('Printer belum dikonfigurasi di Pengaturan', 'warning');
+    const handleSendWhatsApp = async (trx) => {
+        const number = customerWa || trx?.customerWa || '';
+        if (!number) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nomor WA Kosong',
+                text: 'Silakan masukkan nomor WhatsApp pelanggan terlebih dahulu.',
+                confirmButtonColor: '#3b82f6'
+            });
             return;
         }
+
+        // Clean number for formatting
+        let formattedNumber = number.replace(/[^0-9]/g, '');
+        if (formattedNumber.startsWith('0')) {
+            formattedNumber = '62' + formattedNumber.slice(1);
+        } else if (!formattedNumber.startsWith('62') && formattedNumber.length > 5) {
+            formattedNumber = '62' + formattedNumber;
+        }
+
+        const storeName = printerSettings.storeName || 'Abadi Jaya POS';
+        const itemsList = (trx.items || []).map(item => `- ${item.name} (x${item.qty})`).join('\n');
+        
+        const messageText = `Halo *${trx.customerName || 'Pelanggan'}*,\n\nTerima kasih telah berbelanja di *${storeName}*.\n\nBerikut detail transaksi Anda:\n--------------------------\nNo. Invoice: *${trx.invoiceNo}*\nTanggal: ${new Date(trx.date).toLocaleString('id-ID')}\n\n*Item:*\n${itemsList}\n\n*Total: ${formatRupiah(trx.total)}*\n*Status: ${trx.status.toUpperCase()}*\n--------------------------\n\nSimpan link nota digital Anda jika diperlukan. Terimakasih!`;
+
         try {
-            await api.post('/print/open-drawer', { printerName: printerSettings.printerName });
-            showToast('Membuka laci kasir...', 'success');
-        } catch (err) {
-            showToast('Gagal membuka laci kasir', 'error');
+            // Coba kirim via Gateway dulu
+            showToast('Mengirim via Gateway...', 'info');
+            const res = await api.post('/wa-gateway/test', {
+                to: formattedNumber,
+                message: messageText
+            });
+
+            if (res.data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Nota berhasil dikirim otomatis via WhatsApp Gateway.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                throw new Error('Gateway response not success');
+            }
+        } catch (error) {
+            console.warn('Gateway WA failed, falling back to manual link:', error);
+            // Fallback ke link manual jika gateway gagal/tidak aktif
+            const encodedMessage = encodeURIComponent(messageText);
+            const waUrl = `https://wa.me/${formattedNumber}?text=${encodedMessage}`;
+            window.open(waUrl, '_blank');
+            showToast('Gateway tidak aktif, membuka link manual...', 'warning');
         }
     };
 
@@ -577,7 +619,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setIsProcessingPayment(true);
 
         const finalTotal = total; // Already includes tax from useMemo
-        const paid = paymentMethod === 'tunai' ? (parseFloat(amountPaid) || 0) : paymentMethod === 'pending' ? 0 : finalTotal;
+        const paid = (paymentMethod === 'tunai' || paymentMethod === 'cicilan') 
+            ? (parseFloat(amountPaid) || 0) 
+            : paymentMethod === 'pending' ? 0 : finalTotal;
         const customerName = getSelectedCustomerName();
 
         const transaction = {
@@ -630,7 +674,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             paid: paid,
             changeAmount: Math.max(0, paid - finalTotal),
             status: paymentMethod === 'pending' ? 'pending' : (paid < finalTotal ? 'pending' : 'paid'),
-            customerWa: customerWa // Kirim WA ke backend
+            customerWa: customerWa, // Kirim WA ke backend
+            notes: transactionNotes // Simpan catatan transaksi
         };
 
         try {
@@ -658,6 +703,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             // Re-fetch transactions or just clear
             setCart([]);
             setGlobalDiscount(0);
+            setTransactionNotes('');
         } catch (error) {
             showToast('Gagal memproses transaksi: ' + (error.response?.data?.message || error.message), 'error');
         } finally {
@@ -720,7 +766,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             paid: 0,
             changeAmount: 0,
             status: 'pending',
-            customerWa: customerWa
+            customerWa: customerWa,
+            notes: transactionNotes
         };
 
         try {
@@ -739,6 +786,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             // Clear cart
             setCart([]);
             setGlobalDiscount(0);
+            setTransactionNotes('');
 
             // Cleanup states
             setManualCustomerName('');
@@ -753,7 +801,6 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     useKeyboardShortcuts({
         'F1': () => setActiveServiceTab('fotocopy'),
         'F2': () => setActiveServiceTab('jilid'),
-        'F3': () => setActiveServiceTab('print'),
         'F3': () => setActiveServiceTab('print'),
         'F5': () => searchInputRef.current?.focus(),
         'F8': () => openCashDrawer(),
@@ -1207,7 +1254,19 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         >
                                             {item.name}
                                         </h4>
-                                        <p className="text-[10px] font-bold text-slate-400 mt-1">{formatRupiah(item.sellPrice)} x {item.quantity}</p>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <span className="text-[10px] font-bold text-slate-400">{formatRupiah(item.sellPrice)} x</span>
+                                            <input 
+                                                type="number" 
+                                                min="1"
+                                                value={item.quantity}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    updateQty(item.id, val, true);
+                                                }}
+                                                className="w-20 px-3 py-1.5 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl text-xs font-black text-center focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all pro-max-shadow"
+                                            />
+                                        </div>
                                     </div>
                                     <button onClick={() => removeFromCart(idx)} className="text-slate-300 hover:text-red-500 transition-all">
                                         <X size={20} />
@@ -1325,16 +1384,22 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             />
                         </div>
 
-                        <div className="w-full p-8 bg-slate-50/80 dark:bg-slate-900/80 border-t border-white dark:border-slate-800 flex gap-4">
+                        <div className="w-full p-8 bg-slate-50/80 dark:bg-slate-900/80 border-t border-white dark:border-slate-800 flex flex-wrap gap-4">
                             <button
                                 onClick={() => handleDirectPrint(transactionComplete)}
-                                className="flex-1 py-5 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-white border-2 border-white dark:border-slate-700 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-[0.97] pro-max-shadow"
+                                className="flex-1 min-w-[140px] py-5 bg-white/50 dark:bg-slate-800/50 text-slate-700 dark:text-white border-2 border-white dark:border-slate-700 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-white transition-all active:scale-[0.97] pro-max-shadow"
                             >
                                 <FiPrinter size={18} /> Cetak Nota
                             </button>
                             <button
+                                onClick={() => handleSendWhatsApp(transactionComplete)}
+                                className="flex-1 min-w-[140px] py-5 bg-emerald-500 text-white border-none rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 hover:brightness-110 transition-all active:scale-[0.97]"
+                            >
+                                <FiMessageCircle size={18} /> Kirim WA
+                            </button>
+                            <button
                                 onClick={closePaymentModal}
-                                className="flex-1 py-5 bg-primary text-white border-none rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl shadow-primary/30 hover:brightness-110 transition-all active:scale-[0.97]"
+                                className="w-full py-5 bg-primary text-white border-none rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-2xl shadow-primary/30 hover:brightness-110 transition-all active:scale-[0.97]"
                             >
                                 <FiPlus size={18} /> Transaksi Baru
                             </button>
@@ -1349,17 +1414,33 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                         <div className="bg-blue-500/[0.03] dark:bg-blue-500/[0.02] p-6 rounded-[2rem] border-2 border-blue-500/10 pro-max-shadow">
                             <label className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] block mb-4 ml-1">Kirim Nota via WhatsApp (Opsional)</label>
-                            <div className="relative group">
-                                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500 text-xl flex items-center group-focus-within:scale-110 transition-transform">
-                                    <FiMessageCircle size={22} />
-                                </span>
-                                <input
-                                    type="text"
-                                    value={customerWa}
-                                    onChange={e => setCustomerWa(e.target.value.replace(/[^0-9]/g, ''))}
-                                    placeholder="Contoh: 08123456789"
-                                    className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-white dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-lg font-black transition-all outline-none pro-max-shadow"
-                                />
+                            <div className="flex gap-3">
+                                <div className="relative group flex-1">
+                                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500 text-xl flex items-center group-focus-within:scale-110 transition-transform">
+                                        <FiMessageCircle size={22} />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={customerWa}
+                                        onChange={e => setCustomerWa(e.target.value.replace(/[^0-9]/g, ''))}
+                                        placeholder="Contoh: 08123456789"
+                                        className="w-full pl-14 pr-6 py-4 rounded-2xl border-2 border-white dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-lg font-black transition-all outline-none pro-max-shadow"
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => handleSendWhatsApp({
+                                        customerName: getSelectedCustomerName(),
+                                        invoiceNo: 'DRAFT-' + Date.now().toString().slice(-4),
+                                        date: new Date().toISOString(),
+                                        total: total,
+                                        status: 'Estimasi',
+                                        items: cart
+                                    })}
+                                    className="px-6 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:brightness-110"
+                                    title="Kirim Pesan Sekarang"
+                                >
+                                    <FiMessageCircle size={20} />
+                                </button>
                             </div>
                             <p className="text-[10px] text-slate-400 mt-3 italic font-bold ml-1 flex items-center gap-2">
                                 <span className="size-1 bg-blue-400 rounded-full animate-pulse"></span>
@@ -1374,12 +1455,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     { id: 'tunai', icon: 'payments', label: 'Tunai' },
                                     { id: 'transfer', icon: 'account_balance', label: 'Transfer' },
                                     { id: 'qris', icon: 'qr_code_scanner', label: 'QRIS' },
+                                    { id: 'cicilan', icon: 'handshake', label: 'Cicilan' },
                                     { id: 'pending', icon: 'schedule', label: 'Tunda' }
                                 ].map(m => (
                                     <button
                                         key={m.id}
                                         onClick={() => setPaymentMethod(m.id)}
-                                        className={`py-5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all pro-max-shadow ${paymentMethod === m.id ? (m.id === 'pending' ? 'bg-amber-500 text-white border-amber-500 shadow-xl shadow-amber-500/30' : 'bg-primary text-white border-primary shadow-xl shadow-primary/30') : 'bg-white/50 dark:bg-slate-900/50 border-white dark:border-slate-800 text-slate-500 hover:border-slate-300'}`}
+                                        className={`py-5 rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all pro-max-shadow ${paymentMethod === m.id ? (m.id === 'pending' || m.id === 'cicilan' ? 'bg-amber-500 text-white border-amber-500 shadow-xl shadow-amber-500/30' : 'bg-primary text-white border-primary shadow-xl shadow-primary/30') : 'bg-white/50 dark:bg-slate-900/50 border-white dark:border-slate-800 text-slate-500 hover:border-slate-300'}`}
                                     >
                                         <span className="material-symbols-outlined text-2xl">{m.icon}</span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">{m.label}</span>
@@ -1387,6 +1469,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 ))}
                             </div>
                         </div>
+
+                        {paymentMethod === 'cicilan' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-emerald-500/[0.05] border-2 border-emerald-500/20 rounded-[2rem] p-6 flex gap-4 items-start pro-max-shadow">
+                                <span className="material-symbols-outlined text-emerald-500 text-3xl">handshake</span>
+                                <div>
+                                    <p className="text-sm font-black text-emerald-600 uppercase tracking-tight">Metode Pembayaran Cicilan</p>
+                                    <p className="text-[11px] text-emerald-600/70 font-bold mt-1 leading-relaxed">Masukkan jumlah <b className="text-emerald-700">DP / Setoran Awal</b> di bawah. Sisa tagihan akan tercatat sebagai hutang pelanggan.</p>
+                                </div>
+                            </div>
+                        )}
 
                         {paymentMethod === 'pending' && (
                             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-amber-500/[0.05] border-2 border-amber-500/20 rounded-[2rem] p-6 flex gap-4 items-start pro-max-shadow">
@@ -1398,9 +1490,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             </div>
                         )}
 
-                        {paymentMethod === 'tunai' && (
+                        {(paymentMethod === 'tunai' || paymentMethod === 'cicilan') && (
                             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Uang Diterima (Rp)</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">
+                                    {paymentMethod === 'cicilan' ? 'Setoran Awal / DP (Rp)' : 'Uang Diterima (Rp)'}
+                                </label>
                                 <div className="relative group">
                                     <div className="absolute left-8 top-1/2 -translate-y-1/2 text-primary font-black text-3xl pointer-events-none group-focus-within:scale-110 transition-transform">Rp</div>
                                     <input
@@ -1414,7 +1508,9 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         placeholder="0"
                                         autoFocus
                                     />
-                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-black italic text-xl uppercase tracking-widest pointer-events-none opacity-20">Cash Amount</div>
+                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 font-black italic text-xl uppercase tracking-widest pointer-events-none opacity-20">
+                                        {paymentMethod === 'cicilan' ? 'DP Amount' : 'Cash Amount'}
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-4 gap-3">
                                     {[50000, 100000, 150000, total].map((v, i) => (
@@ -1436,6 +1532,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 )}
                             </div>
                         )}
+
+                        {/* Transaction Notes Form */}
+                        <div className="bg-slate-500/[0.03] dark:bg-slate-500/[0.02] p-6 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 pro-max-shadow mt-4">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] block mb-4 ml-1">Keterangan / Catatan Transaksi</label>
+                            <textarea
+                                value={transactionNotes}
+                                onChange={e => setTransactionNotes(e.target.value)}
+                                placeholder="Contoh: Ambil besok, Kertas doff, dll..."
+                                className="w-full px-6 py-4 rounded-2xl border-2 border-white dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-4 focus:ring-primary/20 focus:border-primary text-sm font-bold transition-all outline-none pro-max-shadow min-h-[100px] resize-none"
+                            />
+                        </div>
 
                         <button
                             onClick={handleConfirmPayment}

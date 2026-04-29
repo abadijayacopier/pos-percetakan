@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatRupiah, formatDate } from '../utils';
 import { useToast } from '../contexts/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiUsers, FiPlus, FiEdit, FiTrash2, FiClock, FiDollarSign,
     FiSearch, FiFilter, FiDownload, FiCheckCircle, FiAlertCircle,
     FiUserPlus, FiCreditCard, FiCalendar, FiChevronRight, FiFileText,
-    FiRefreshCw
+    FiRefreshCw, FiPrinter, FiTrash
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import Modal from '../components/Modal';
+import SalarySlipProMax from '../components/SalarySlipProMax';
 
-export default function PayrollPage() {
+export default function PayrollPage({ onNavigate }) {
     const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
     const [subTab, setSubTab] = useState('employees'); // employees, attendance, loans, salaries
@@ -42,6 +44,12 @@ export default function PayrollPage() {
     // Filter States
     const [searchTerm, setSearchTerm] = useState('');
     const [period, setPeriod] = useState({ month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+    const [storeSettings, setStoreSettings] = useState(null);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('abadi_store_settings');
+        if (saved) setStoreSettings(JSON.parse(saved));
+    }, []);
 
     useEffect(() => {
         loadEmployees();
@@ -165,6 +173,10 @@ export default function PayrollPage() {
                     <input id="attendance_bonus" type="number" class="swal2-input w-full m-0" value="0">
                     <label class="block text-sm font-bold">Lembur</label>
                     <input id="overtime_pay" type="number" class="swal2-input w-full m-0" value="0">
+                    <label class="block text-sm font-bold">Potongan Lainnya</label>
+                    <input id="other_deductions" type="number" class="swal2-input w-full m-0" value="0">
+                    <label class="block text-sm font-bold">Keterangan (Otomatis & Bisa Diedit)</label>
+                    <textarea id="notes" class="swal2-textarea w-full m-0" style="height: 80px;">GAJI ${salary.employee_name.toUpperCase()} PERIODE ${period.month}/${period.year}</textarea>
                 </div>
             `,
             focusConfirm: false,
@@ -172,7 +184,9 @@ export default function PayrollPage() {
                 return {
                     loan_deduction: document.getElementById('loan_deduction').value,
                     attendance_bonus: document.getElementById('attendance_bonus').value,
-                    overtime_pay: document.getElementById('overtime_pay').value
+                    overtime_pay: document.getElementById('overtime_pay').value,
+                    other_deductions: document.getElementById('other_deductions').value,
+                    notes: document.getElementById('notes').value
                 }
             }
         });
@@ -184,6 +198,75 @@ export default function PayrollPage() {
                 loadSalaries();
             } catch (e) { showToast('Gagal memproses pembayaran', 'error'); }
         }
+    };
+
+    const handleEditSalarySlip = async (salary) => {
+        const { value: formValues } = await Swal.fire({
+            title: `Edit Draft Gaji: ${salary.employee_name}`,
+            html: `
+                <div class="space-y-4 text-left p-2">
+                    <label class="block text-sm font-bold">Gaji Pokok (Proses)</label>
+                    <input id="edit_base" type="number" class="swal2-input w-full m-0" value="${salary.base_processing_salary}">
+                    <label class="block text-sm font-bold">Bonus Absensi</label>
+                    <input id="edit_bonus" type="number" class="swal2-input w-full m-0" value="${salary.attendance_bonus || 0}">
+                    <label class="block text-sm font-bold">Lembur</label>
+                    <input id="edit_overtime" type="number" class="swal2-input w-full m-0" value="${salary.overtime_pay || 0}">
+                    <label class="block text-sm font-bold">Potongan Kasbon</label>
+                    <input id="edit_loan" type="number" class="swal2-input w-full m-0" value="${salary.loan_deduction || 0}">
+                    <label class="block text-sm font-bold">Potongan Lainnya</label>
+                    <input id="edit_other" type="number" class="swal2-input w-full m-0" value="${salary.other_deductions || 0}">
+                </div>
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+                return {
+                    base_processing_salary: document.getElementById('edit_base').value,
+                    attendance_bonus: document.getElementById('edit_bonus').value,
+                    overtime_pay: document.getElementById('edit_overtime').value,
+                    loan_deduction: document.getElementById('edit_loan').value,
+                    other_deductions: document.getElementById('edit_other').value
+                }
+            }
+        });
+
+        if (formValues) {
+            try {
+                await api.put(`/payroll/salaries/${salary.id}`, formValues);
+                showToast('Draft gaji berhasil diperbarui', 'success');
+                loadSalaries();
+            } catch (e) { showToast('Gagal memperbarui gaji', 'error'); }
+        }
+    };
+
+    const handleDeleteSalarySlip = (salary) => {
+        if (salary.status === 'paid') {
+            return Swal.fire({
+                title: 'Data Terkunci',
+                text: 'Slip gaji yang sudah berstatus PAID tidak dapat dihapus untuk menjaga integritas laporan keuangan.',
+                icon: 'warning',
+                confirmButtonColor: '#4f46e5',
+                confirmButtonText: 'Mengerti'
+            });
+        }
+
+        Swal.fire({
+            title: 'Hapus Slip Gaji?',
+            text: `Apakah Anda yakin ingin menghapus slip gaji ${salary.employee_name}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Ya, Hapus'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await api.delete(`/payroll/salaries/${salary.id}`);
+                    showToast('Slip gaji telah dihapus', 'success');
+                    loadSalaries();
+                } catch (e) {
+                    showToast('Gagal menghapus slip gaji', 'error');
+                }
+            }
+        });
     };
 
     const handleSyncMachine = async () => {
@@ -302,7 +385,7 @@ export default function PayrollPage() {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-500">Gaji Pokok</span>
-                                                <span className="font-bold">Rp {emp.base_salary?.toLocaleString()}</span>
+                                                <span className="font-bold">{formatRupiah(emp.base_salary)}</span>
                                             </div>
                                             {emp.system_username && (
                                                 <div className="flex justify-between text-sm">
@@ -367,8 +450,8 @@ export default function PayrollPage() {
                                             <tr key={loan.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
                                                 <td className="px-6 py-4 font-bold">{loan.employee_name}</td>
                                                 <td className="px-6 py-4 text-sm">{new Date(loan.date).toLocaleDateString('id-ID')}</td>
-                                                <td className="px-6 py-4 font-bold text-amber-600">Rp {loan.amount.toLocaleString()}</td>
-                                                <td className="px-6 py-4 font-bold text-red-500">Rp {loan.remaining_amount.toLocaleString()}</td>
+                                                <td className="px-6 py-4 font-bold text-amber-600">{formatRupiah(loan.amount)}</td>
+                                                <td className="px-6 py-4 font-bold text-red-500">{formatRupiah(loan.remaining_amount)}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${loan.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>{loan.status}</span>
                                                 </td>
@@ -421,23 +504,61 @@ export default function PayrollPage() {
                                                         <p className="font-bold">{s.employee_name}</p>
                                                         <p className="text-[10px] text-slate-500">{s.position}</p>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-medium">Rp {s.base_processing_salary.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-sm font-medium">{formatRupiah(s.base_processing_salary)}</td>
                                                     <td className="px-6 py-4 text-sm text-emerald-600">
-                                                        +{((s.attendance_bonus || 0) + (s.overtime_pay || 0)).toLocaleString()}
+                                                        +{formatRupiah((s.attendance_bonus || 0) + (s.overtime_pay || 0))}
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-red-500">
-                                                        -{((s.loan_deduction || 0) + (s.other_deductions || 0)).toLocaleString()}
+                                                        -{formatRupiah((s.loan_deduction || 0) + (s.other_deductions || 0))}
                                                     </td>
-                                                    <td className="px-6 py-4 font-black text-indigo-600">Rp {s.net_salary.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 font-black text-indigo-600">{formatRupiah(s.net_salary)}</td>
                                                     <td className="px-6 py-4">
                                                         <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${s.status === 'paid' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>{s.status}</span>
                                                     </td>
                                                     <td className="px-6 py-4 text-right">
-                                                        {s.status === 'draft' ? (
-                                                            <button onClick={() => handlePaySalary(s)} className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-600 hover:text-white transition-all">Proses Bayar</button>
-                                                        ) : (
-                                                            <button onClick={() => { setSelectedSalary(s); setIsSlipModalOpen(true); }} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><FiFileText size={18} /></button>
-                                                        )}
+                                                        <div className="flex justify-end items-center gap-2">
+                                                            <button 
+                                                                onClick={() => { setSelectedSalary(s); setIsSlipModalOpen(true); }} 
+                                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                                title="Pratinjau Slip"
+                                                            >
+                                                                <FiFileText size={18} />
+                                                            </button>
+
+                                                            <button 
+                                                                onClick={() => onNavigate('print-salary-slip', { salary: s, period })} 
+                                                                className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                                title="Cetak Slip Resmi"
+                                                            >
+                                                                <FiPrinter size={16} />
+                                                            </button>
+
+                                                            {s.status === 'draft' && (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => handleEditSalarySlip(s)} 
+                                                                        className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
+                                                                        title="Edit Draft"
+                                                                    >
+                                                                        <FiEdit size={16} />
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handlePaySalary(s)} 
+                                                                        className="text-[10px] bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all"
+                                                                    >
+                                                                        Bayar
+                                                                    </button>
+                                                                </>
+                                                            )}
+
+                                                            <button 
+                                                                onClick={() => handleDeleteSalarySlip(s)} 
+                                                                className={`p-2 rounded-lg transition-all ${s.status === 'paid' ? 'text-slate-300 hover:text-slate-400 hover:bg-slate-50' : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'}`}
+                                                                title="Hapus Slip"
+                                                            >
+                                                                <FiTrash2 size={16} />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -474,7 +595,18 @@ export default function PayrollPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">Gaji Pokok</label>
-                            <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-indigo-500" value={empForm.base_salary} onChange={e => setEmpForm({ ...empForm, base_salary: e.target.value })} />
+                            <div className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</div>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-slate-50 dark:bg-slate-800 py-2.5 pl-10 pr-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-indigo-500 font-bold" 
+                                    value={empForm.base_salary ? Number(empForm.base_salary).toLocaleString('id-ID') : ''} 
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setEmpForm({ ...empForm, base_salary: val ? parseInt(val) : 0 });
+                                    }} 
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-bold mb-1">User Sistem (Link)</label>
@@ -499,8 +631,19 @@ export default function PayrollPage() {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold mb-1">Jumlah Pinjaman (Rp)</label>
-                        <input type="number" className="w-full bg-slate-50 dark:bg-slate-800 p-2.5 rounded-xl border-none outline-none focus:ring-2 focus:ring-amber-500" value={loanForm.amount} onChange={e => setLoanForm({ ...loanForm, amount: e.target.value })} />
+                        <label className="block text-sm font-bold mb-1">Jumlah Pinjaman</label>
+                        <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</div>
+                            <input 
+                                type="text" 
+                                className="w-full bg-slate-50 dark:bg-slate-800 py-2.5 pl-10 pr-3 rounded-xl border-none outline-none focus:ring-2 focus:ring-amber-500 font-bold text-amber-600" 
+                                value={loanForm.amount ? Number(loanForm.amount).toLocaleString('id-ID') : ''} 
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setLoanForm({ ...loanForm, amount: val ? parseInt(val) : 0 });
+                                }} 
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-bold mb-1">Alasan / Deskripsi</label>
@@ -547,64 +690,17 @@ export default function PayrollPage() {
             </Modal>
 
             {/* SALARY SLIP MODAL */}
-            <Modal isOpen={isSlipModalOpen} onClose={() => setIsSlipModalOpen(false)} title="Detail Slip Gaji">
-                {selectedSalary && (
-                    <div className="space-y-6">
-                        <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border-l-4 border-indigo-500">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-xl font-bold">{selectedSalary.employee_name}</h2>
-                                    <p className="text-sm text-slate-500">{selectedSalary.position}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs font-bold text-slate-400 uppercase">Periode</p>
-                                    <p className="font-bold">{period.month}/{period.year}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-8 px-2">
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Penerimaan</h3>
-                                <div className="flex justify-between text-sm">
-                                    <span>Gaji Pokok</span>
-                                    <span className="font-bold">Rp {selectedSalary.base_processing_salary.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span>Bonus Absensi</span>
-                                    <span className="font-bold text-emerald-600">+{selectedSalary.attendance_bonus?.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span>Lembur</span>
-                                    <span className="font-bold text-emerald-600">+{selectedSalary.overtime_pay?.toLocaleString()}</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b pb-2">Potongan</h3>
-                                <div className="flex justify-between text-sm text-red-500">
-                                    <span>Potongan Pinjaman</span>
-                                    <span className="font-bold">-{selectedSalary.loan_deduction?.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-sm text-red-500">
-                                    <span>Potongan Lainnya</span>
-                                    <span className="font-bold">-{selectedSalary.other_deductions?.toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-indigo-600 text-white p-6 rounded-2xl flex justify-between items-center shadow-lg shadow-indigo-100 dark:shadow-none">
-                            <span className="font-bold">Total Gaji Diterima (Net)</span>
-                            <span className="text-2xl font-black italic">Rp {selectedSalary.net_salary.toLocaleString()}</span>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button onClick={() => window.print()} className="flex-1 flex items-center justify-center gap-2 bg-slate-900 text-white p-3 rounded-xl font-bold hover:bg-slate-800 transition-all">
-                                <FiDownload /> Cetak / Download PDF
-                            </button>
-                        </div>
-                    </div>
-                )}
+            <Modal 
+                isOpen={isSlipModalOpen} 
+                onClose={() => setIsSlipModalOpen(false)} 
+                title={null}
+                size="lg"
+            >
+                <SalarySlipProMax 
+                    salary={selectedSalary} 
+                    period={period} 
+                    storeSettings={storeSettings} 
+                />
             </Modal>
         </div>
     );

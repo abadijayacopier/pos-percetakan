@@ -10,7 +10,7 @@ import {
 export default function ProfitLossPage() {
     const printRef = useRef();
     const [printMode, setPrintMode] = useState('detailed'); // 'detailed' or 'compact'
-    const [activeTab, setActiveTab] = useState('summary');
+    const [activeTab, setActiveTab] = useState('summary'); // summary, expenses, margin
     const [period, setPeriod] = useState('this-month');
     const [storeInfo, setStoreInfo] = useState({});
     const [dateFrom, setDateFrom] = useState(() => {
@@ -172,6 +172,32 @@ export default function ProfitLossPage() {
 
         return categories;
     }, [filteredTransactions]);
+
+    const productMargins = useMemo(() => {
+        const margins = {};
+        filteredTransactions.forEach(t => {
+            (t.items || []).forEach(item => {
+                const product = products.find(p => p.id === item.productId);
+                if (product) {
+                    if (!margins[product.id]) {
+                        margins[product.id] = {
+                            id: product.id,
+                            name: product.name,
+                            qty: 0,
+                            revenue: 0,
+                            cost: 0,
+                            profit: 0
+                        };
+                    }
+                    margins[product.id].qty += Number(item.qty);
+                    margins[product.id].revenue += (Number(item.price) || 0) * item.qty;
+                    margins[product.id].cost += (Number(product.buyPrice) || 0) * item.qty;
+                    margins[product.id].profit = margins[product.id].revenue - margins[product.id].cost;
+                }
+            });
+        });
+        return Object.values(margins).sort((a, b) => b.profit - a.profit);
+    }, [filteredTransactions, products]);
 
     // Expense breakdown
     const expenseBreakdown = useMemo(() => {
@@ -462,6 +488,25 @@ export default function ProfitLossPage() {
                     </div>
                 </div>
 
+                {/* Tabs */}
+                <div className="flex gap-2 mb-8 no-print">
+                    <button 
+                        onClick={() => setActiveTab('summary')}
+                        className={`px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'summary' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white dark:bg-slate-800 text-slate-400'}`}
+                    >
+                        Ringkasan Umum
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('margin')}
+                        className={`px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'margin' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white dark:bg-slate-800 text-slate-400'}`}
+                    >
+                        Analisis Margin Produk
+                    </button>
+                </div>
+
+                {activeTab === 'summary' && (
+                    <>
+
                 {/* Summary Cards */}
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     {/* Total Pendapatan */}
@@ -629,6 +674,65 @@ export default function ProfitLossPage() {
                             <p className="font-bold border-t border-slate-400 pt-2">Pemilik / Manager</p>
                         </div>
                     </div>
+                </>)}
+                    {/* Margin Analysis Tab */}
+                    {activeTab === 'margin' && (
+                        <div className="space-y-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                                    <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Analisis Margin Per Produk</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Produk paling menguntungkan berdasarkan harga beli vs harga jual</p>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-left">
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produk</th>
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Terjual</th>
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Omzet</th>
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">HPP</th>
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Laba Kotor</th>
+                                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Margin</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            {productMargins.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="6" className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">Belum ada data penjualan pada periode ini</td>
+                                                </tr>
+                                            ) : productMargins.map((m, idx) => {
+                                                const marginPercent = m.revenue > 0 ? (m.profit / m.revenue * 100).toFixed(1) : 0;
+                                                return (
+                                                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                                                        <td className="px-8 py-5">
+                                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{m.name}</p>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-center text-xs font-bold text-slate-600 dark:text-slate-300">
+                                                            {m.qty}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right text-xs font-bold text-slate-900 dark:text-white italic">
+                                                            {formatCurrency(m.revenue)}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right text-xs font-bold text-rose-500 italic">
+                                                            {formatCurrency(m.cost)}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right text-xs font-black text-emerald-600 italic">
+                                                            {formatCurrency(m.profit)}
+                                                        </td>
+                                                        <td className="px-8 py-5 text-center">
+                                                            <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-black">
+                                                                {marginPercent}%
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 

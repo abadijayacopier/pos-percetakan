@@ -21,6 +21,8 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import PayrollPage from './pages/PayrollPage';
 import SPKListPage from './pages/SPKListPage';
+import ReceivablesPage from './pages/ReceivablesPage';
+import DamagedGoodsPage from './pages/DamagedGoodsPage';
 import SPKDetailPage from './pages/SPKDetailPage';
 import SPKSettlementPage from './pages/SPKSettlementPage';
 import CashierPaymentPage from './pages/CashierPaymentPage';
@@ -35,6 +37,7 @@ import ProductionQueuePage from './pages/ProductionQueuePage';
 import AssignmentSettingsPage from './pages/AssignmentSettingsPage';
 import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
 import PrintReceiptPage from './pages/PrintReceiptPage';
+import PrintSalarySlipPage from './pages/PrintSalarySlipPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
@@ -61,7 +64,9 @@ export default function App() {
     return 'dashboard';
   });
   const [storeSettings, setStoreSettings] = useState({
-    name: 'POS System',
+    name: 'FOTOCOPY ABADI JAYA',
+    address: 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan',
+    phone: '085655620979',
     logo: null,
     favicon: null
   });
@@ -145,7 +150,9 @@ export default function App() {
         data.forEach(s => { sMap[s.key] = s.value; });
 
         const newSettings = {
-          name: sMap.store_name || 'POS System',
+          name: sMap.store_name || 'FOTOCOPY ABADI JAYA',
+          address: sMap.store_address || 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan',
+          phone: sMap.store_phone || '085655620979',
           logo: sMap.landing_logo || null,
         };
 
@@ -400,8 +407,10 @@ export default function App() {
       case 'pembelian': return <PurchasingPage onNavigate={handleNavigate} />;
       case 'suppliers': return <SuppliersPage onNavigate={handleNavigate} />;
       case 'customers': return <CustomersPage onNavigate={handleNavigate} />;
-      case 'finance': return <FinancePage onNavigate={handleNavigate} />;
+      case 'finance': return <FinancePage onNavigate={handleNavigate} storeSettings={storeSettings} />;
       case 'reports': return <ReportsPage onNavigate={handleNavigate} />;
+      case 'receivables': return <ReceivablesPage onNavigate={handleNavigate} />;
+      case 'damaged-goods': return <DamagedGoodsPage onNavigate={handleNavigate} />;
       case 'settings': return <SettingsPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'payroll': return <PayrollPage onNavigate={handleNavigate} />;
       case 'spk-list': return <SPKListPage onNavigate={handleNavigate} />;
@@ -419,6 +428,7 @@ export default function App() {
       case 'assignment-settings': return <AssignmentSettingsPage onNavigate={handleNavigate} />;
       case 'dp-cart': return <DigitalPrintingCartPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
+      case 'print-salary-slip': return <PrintSalarySlipPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
       case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
       case 'dashboard-teknisi': return <TechnicianDashboardPage onNavigate={handleNavigate} />;

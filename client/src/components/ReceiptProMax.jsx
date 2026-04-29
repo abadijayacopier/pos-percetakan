@@ -138,6 +138,14 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
                 </div>
             </div>
 
+            {/* Notes Section */}
+            {receiptData.notes && (
+                <div className="mb-6 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Catatan:</p>
+                    <p className="text-[11px] leading-relaxed whitespace-pre-wrap">{receiptData.notes}</p>
+                </div>
+            )}
+
             {/* Signatures */}
             <div className="grid grid-cols-2 gap-20 mb-8 px-10 text-[10px] text-center">
                 <div>

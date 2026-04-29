@@ -3,14 +3,14 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatRupiah, formatDateTime, formatDate } from '../utils';
 import Modal from '../components/Modal';
-import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown, FiLoader } from 'react-icons/fi';
+import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown, FiLoader, FiPrinter } from 'react-icons/fi';
 
 const CATEGORIES_IN = ['Penjualan', 'Setoran Modal', 'Piutang Masuk', 'Pendapatan Lain'];
 const CATEGORIES_OUT = ['Pembelian Stok', 'Gaji', 'Listrik & Air', 'Sewa', 'Operasional', 'Pengeluaran Lain'];
 
 const emptyForm = { date: new Date().toISOString().slice(0, 10), description: '', amount: '', type: 'in', category: '', reference: '' };
 
-export default function FinancePage() {
+export default function FinancePage({ storeSettings }) {
     const { showToast } = useToast();
     const [cashFlow, setCashFlow] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -100,6 +100,124 @@ export default function FinancePage() {
     const handleSearch = (v) => { setSearch(v); setPage(1); };
     const handleTab = (v) => { setActiveTab(v); setPage(1); };
 
+    const handlePrintJournal = () => {
+        const windowPrint = window.open('', '', 'width=1000,height=800');
+        
+        // Prepare data rows
+        const rowsHtml = filtered.map((c, i) => `
+            <tr>
+                <td style="text-align:center">${i + 1}</td>
+                <td>${formatDate(c.date || c.createdAt)}</td>
+                <td>${c.description}</td>
+                <td><span style="font-size: 10px; color: #666">${c.category || '-'}</span></td>
+                <td>${c.reference || '-'}</td>
+                <td style="text-align:right; color: #059669">${c.type === 'in' ? formatRupiah(c.amount) : '-'}</td>
+                <td style="text-align:right; color: #dc2626">${c.type === 'out' ? formatRupiah(c.amount) : '-'}</td>
+            </tr>
+        `).join('');
+
+        const tabTitle = activeTab === 'journal' ? 'JURNAL UMUM' : activeTab === 'in' ? 'LAPORAN KAS MASUK' : 'LAPORAN KAS KELUAR';
+
+        windowPrint.document.write(`
+            <html>
+                <head>
+                    <title>Cetak ${tabTitle}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+                        body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+                        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+                        .brand-info h1 { margin: 0; font-size: 24px; font-weight: 900; color: #2563eb; }
+                        .brand-info p { margin: 5px 0 0; font-size: 11px; color: #64748b; font-weight: bold; max-width: 300px; }
+                        .report-title { text-align: right; }
+                        .report-title h2 { margin: 0; font-size: 18px; font-weight: 900; color: #1e293b; text-transform: uppercase; letter-spacing: 1px; }
+                        .report-title p { margin: 5px 0 0; font-size: 10px; color: #94a3b8; font-weight: bold; }
+                        
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
+                        th { background: #f8fafc; padding: 12px 10px; text-align: left; border-bottom: 2px solid #e2e8f0; color: #64748b; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+                        td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500; }
+                        
+                        .summary-box { display: flex; justify-content: flex-end; gap: 40px; padding: 20px; background: #f8fafc; border-radius: 12px; }
+                        .summary-item { text-align: right; }
+                        .summary-item label { display: block; font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
+                        .summary-item span { font-size: 16px; font-weight: 900; }
+                        
+                        .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px; }
+                        .sign-box { text-align: center; width: 200px; }
+                        .sign-line { margin-top: 60px; border-top: 1px solid #1e293b; padding-top: 5px; font-weight: bold; }
+
+                        @media print {
+                            body { padding: 20px; }
+                            .summary-box { background: #f8fafc !important; -webkit-print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="brand-info">
+                            <h1>${storeSettings?.name || ''}</h1>
+                            <p>${storeSettings?.address || ''}<br/>WA: ${storeSettings?.phone || ''}</p>
+                        </div>
+                        <div class="report-title">
+                            <h2>${tabTitle}</h2>
+                            <p>Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 30px">No</th>
+                                <th style="width: 100px">Tanggal</th>
+                                <th>Deskripsi</th>
+                                <th style="width: 100px">Kategori</th>
+                                <th style="width: 120px">Referensi</th>
+                                <th style="width: 120px; text-align:right">Masuk (Rp)</th>
+                                <th style="width: 120px; text-align:right">Keluar (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="summary-box">
+                        <div class="summary-item">
+                            <label>Total Kas Masuk</label>
+                            <span style="color: #059669">${formatRupiah(filtered.filter(c => c.type === 'in').reduce((s, c) => s + (Number(c.amount) || 0), 0))}</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Total Kas Keluar</label>
+                            <span style="color: #dc2626">${formatRupiah(filtered.filter(c => c.type === 'out').reduce((s, c) => s + (Number(c.amount) || 0), 0))}</span>
+                        </div>
+                        <div class="summary-item">
+                            <label>Saldo Periode</label>
+                            <span style="color: #2563eb">${formatRupiah(filtered.filter(c => c.type === 'in').reduce((s, c) => s + (Number(c.amount) || 0), 0) - filtered.filter(c => c.type === 'out').reduce((s, c) => s + (Number(c.amount) || 0), 0))}</span>
+                        </div>
+                    </div>
+
+                    <div class="footer">
+                        <div class="sign-box">
+                            <div>Mengetahui,</div>
+                            <div class="sign-line">Pemilik Toko</div>
+                        </div>
+                        <div class="sign-box">
+                            <div>Dibuat Oleh,</div>
+                            <div class="sign-line">Admin Keuangan</div>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 1000);
+                    </script>
+                </body>
+            </html>
+        `);
+        windowPrint.document.close();
+    };
+
     return (
         <div className="p-4 sm:p-8 space-y-8 font-display bg-slate-50/30 dark:bg-transparent min-h-screen">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -111,6 +229,12 @@ export default function FinancePage() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1">Jurnal umum, kas masuk & keluar</p>
                 </div>
                 <div className="flex w-full sm:w-auto gap-3">
+                    <button 
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800"
+                        onClick={handlePrintJournal}
+                    >
+                        <FiPrinter /> Cetak Jurnal
+                    </button>
                     <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-100 dark:shadow-none" onClick={() => openAdd('in')}>
                         <FiArrowDownCircle /> Kas Masuk
                     </button>
@@ -221,7 +345,9 @@ export default function FinancePage() {
                                         </td>
                                         <td className="px-8 py-5">
                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-relaxed max-w-sm">
-                                                {c.description}
+                                                 {c.description && c.description.includes('GAJI') && c.description.includes('PERIODE') && c.description.length > 50
+                                                    ? c.description.replace(/GAJI\s+[0-9a-fA-F-]{36}\s+PERIODE/, 'GAJI KARYAWAN PERIODE')
+                                                    : c.description}
                                             </p>
                                         </td>
                                         <td className="px-8 py-5">

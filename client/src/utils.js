@@ -87,7 +87,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 36;
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 40;
     else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
     else W = 85; // Standard 9.5x11
   }
@@ -289,6 +289,14 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
     ['pending', 'debt'].includes(String(receipt.paymentType || '').toLowerCase());
   lines.push(rightAlignText('STATUS   :', isUnpaidRaw ? boldText('BELUM LUNAS') : boldText('LUNAS')));
 
+  // Add Notes section if exists
+  if (receipt.notes) {
+    lines.push('-'.repeat(W));
+    lines.push('Catatan:');
+    const noteLines = wrapText(receipt.notes, W - 2);
+    noteLines.forEach(ln => lines.push('  ' + ln));
+  }
+
   lines.push('-'.repeat(W));
   lines.push(centerTextExact(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
   lines.push('');
@@ -296,13 +304,22 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
   if (printerType === 'lx310') {
-    // For Dot Matrix LX-310, we feed just enough to reach the tear-off point without skipping pages
-    // ESC/P init: ESC @ (reset) + ESC P (10 CPI Pica = standard LX-310 font for 12cm paper)
-    textResult = '\x1b@\x1bP' + textResult;
-    textResult += '\n\n\n\n\n';
-  } else {
-    // For Thermal, usually 6-8 lines is enough to reach the cutter
-    textResult += '\n\n\n\n\n\n\n\n';
+    // ESC/P init: ESC @ (reset) + ESC P (10 CPI) + ESC 2 (6 LPI) + ESC O (Cancel bottom margin)
+    let init = '\x1b@\x1bP\x1b2\x1bO';
+    
+    // Set Page Length for Dot Matrix
+    if (paperSize === 'wartel' || paperSize === '12x14') {
+      // 14cm is approx 5.5 inches. At standard 6 LPI, that's 33 lines.
+      init += '\x1bC\x21'; 
+    } else if (paperSize === 'half' || paperSize === '9.5x5.5') {
+      // 5.5 inches = 33 lines
+      init += '\x1bC\x21';
+    } else {
+      // Standard 11 inches = 66 lines
+      init += '\x1bC\x42';
+    }
+    
+    textResult = init + textResult + '\x0c';
   }
 
   return textResult;
@@ -315,7 +332,7 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 36;
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 40;
     else W = 85; // Standard & Half use full width
   }
 
@@ -403,7 +420,7 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   text += `Rincian: ${(order.description || '-').substring(0, W)}\n`;
   text += `Specs  : ${(order.specs || '-').substring(0, W)}\n`;
   text += `Jumlah : ${order.qty} ${order.unit}\n`;
-  text += `Selesai: ${formatDate(order.deadline)}\n`;
+  text += `Selesai: ${formatDate(order.deadline).toUpperCase()}\n`;
   text += `-`.repeat(W) + `\n`;
 
   const padR = (l, r) => {
@@ -420,10 +437,21 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
 
   text += `\n`;
   text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
-  text += `\n\n\n\n\n`;
+
   if (printerType === 'lx310') {
+    // Pad text with 2 spaces for left margin on LX-310
     text = text.split('\n').map(l => '  ' + l).join('\n');
+
+    // Standard initialization for LX-310
+    let init = '\x1b@\x1bP\x1b2\x1bO';
+    if (paperSize === 'wartel' || paperSize === '12x14') {
+      init += '\x1bC\x21'; // 33 lines
+    }
+    text = init + text + '\x0c';
+  } else {
+    text += `\n\n\n\n\n`;
   }
+
   return text;
 };
 
@@ -627,10 +655,13 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
     });
 
     // Send raw data (ESC/P or Text) directly to the printer
+    // Ensure we only send the raw string data, not the full object
+    const rawData = typeof data === 'object' ? (data.data || '') : data;
+
     const printData = [{
       type: 'raw',
       format: 'plain',
-      data: data
+      data: rawData
     }];
 
     await qz.print(config, printData);

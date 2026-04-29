@@ -11,7 +11,8 @@ import {
     FiPackage,
     FiTruck,
     FiChevronLeft,
-    FiMessageCircle
+    FiMessageCircle,
+    FiAlertTriangle
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
@@ -51,13 +52,15 @@ const MENU_GROUPS = [
         items: [
             { id: 'dashboard-desainer', label: 'Dashboard Desain', icon: <FiActivity />, roles: ['admin', 'desainer', 'teknisi'] },
             { id: 'dashboard-teknisi', label: 'Dashboard Teknisi', icon: <FiCpu />, roles: ['admin', 'teknisi'] },
+            { id: 'receivables', label: 'Piutang Pelanggan', icon: <FiCreditCard />, roles: ['admin', 'kasir'] },
         ]
     },
     {
         title: 'Data Master',
         items: [
-            { id: 'inventory', label: 'Barang ATK', icon: <FiBox />, roles: ['admin', 'kasir'] },
-            { id: 'pembelian', label: 'Barang Masuk', icon: <FiPackage />, roles: ['admin', 'operator'] },
+            { id: 'inventory', label: 'Data Inventori / Barang', icon: <FiBox />, roles: ['admin', 'kasir', 'operator'] },
+            { id: 'damaged-goods', label: 'Barang Rusak', icon: <FiAlertTriangle />, roles: ['admin', 'operator'] },
+            { id: 'pembelian', label: 'Barang Masuk (Restock)', icon: <FiPackage />, roles: ['admin', 'operator'] },
             { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'operator'] },
             { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir'] },
         ]

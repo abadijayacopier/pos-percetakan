@@ -7,7 +7,7 @@ import {
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
     FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw,
-    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand, FiPieChart
+    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand, FiPieChart, FiAlertTriangle
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -383,11 +383,25 @@ export default function DashboardPage({ onNavigate }) {
                                     <span className="text-[9px] font-black uppercase tracking-widest">Kasir Baru</span>
                                 </button>
                                 <button
-                                    onClick={() => onNavigate('service')}
+                                    onClick={() => onNavigate('receivables')}
+                                    className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-rose-600 hover:text-white transition-all group"
+                                >
+                                    <FiDollarSign className="text-rose-500 group-hover:text-white transition-colors" size={20} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Tagih Piutang</span>
+                                </button>
+                                <button
+                                    onClick={() => onNavigate('damaged-goods')}
+                                    className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-orange-600 hover:text-white transition-all group"
+                                >
+                                    <FiAlertTriangle className="text-orange-500 group-hover:text-white transition-colors" size={20} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Barang Rusak</span>
+                                </button>
+                                <button
+                                    onClick={() => onNavigate('profit-loss')}
                                     className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-emerald-600 hover:text-white transition-all group"
                                 >
-                                    <FiTool className="text-emerald-500 group-hover:text-white transition-colors" size={20} />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">Input Servis</span>
+                                    <FiTrendingUp className="text-emerald-500 group-hover:text-white transition-colors" size={20} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Cek Margin</span>
                                 </button>
                             </div>
                         </div>

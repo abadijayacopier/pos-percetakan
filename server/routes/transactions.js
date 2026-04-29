@@ -85,7 +85,7 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const {
             invoiceNo, date, customerId, customerName, type,
             subtotal, discount, total, paid, changeAmount, paymentType, status,
-            items, customerWa
+            items, customerWa, notes
         } = req.body;
 
         const newTrxId = 't' + Date.now();
@@ -107,9 +107,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
 
         await connection.query(`
       INSERT INTO transactions 
-      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status]);
+      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status, notes]);
 
         // 3b. Insert Transaction Details & Update Stok
         for (const item of items) {
@@ -193,7 +193,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     try {
         const [trx] = await req.db.query(`
             SELECT id, invoice_no AS invoiceNo, date, customer_id AS customerId, customer_name AS customerName, user_name AS userName,
-                   type, subtotal, discount, tax_amount as taxAmount, total, paid, change_amount AS changeAmount, payment_type AS paymentType, status
+                   type, subtotal, discount, tax_amount as taxAmount, total, paid, change_amount AS changeAmount, payment_type AS paymentType, status, notes
             FROM transactions WHERE id = ?
         `, [req.params.id]);
 
@@ -245,13 +245,27 @@ router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, 
     }
 });
 
+// 5b. Update Transaksi (Edit General)
+router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+    try {
+        const { customerName, paidAmount, paymentType, notes } = req.body;
+        await req.db.query(
+            'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ? WHERE id = ?',
+            [customerName, paidAmount, paymentType, notes, req.params.id]
+        );
+        res.json({ message: 'Transaksi diupdate!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal update transaksi' });
+    }
+});
+
 // 6. Pelunasan
 router.put('/:id/pay', verifyToken, async (req, res) => {
     const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
         const { id } = req.params;
-        const { paidAmount, paymentMethod, customerWa } = req.body;
+        const { paidAmount, paymentMethod, customerWa, notes } = req.body;
 
         const [trxArr] = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
         if (trxArr.length === 0) throw new Error('Trx not found');
@@ -260,8 +274,8 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         const newPaid = Number(trx.paid || 0) + Number(paidAmount);
         const newStatus = newPaid >= trx.total ? 'paid' : 'debt';
 
-        await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ? WHERE id = ?',
-            [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, id]);
+        await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ?, notes = ? WHERE id = ?',
+            [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, notes || trx.notes, id]);
 
         const cashFlowId = 'cf' + Date.now();
         await connection.query(`

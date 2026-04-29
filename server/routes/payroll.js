@@ -317,4 +317,42 @@ router.post('/salaries/pay/:id', verifyToken, requireRole(['admin']), async (req
     }
 });
 
+// DELETE Salary Slip
+router.delete('/salaries/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check if paid - if paid, we might want to prevent deletion or handle reversal
+        const [slips] = await req.db.query('SELECT status FROM salaries WHERE id = ?', [id]);
+        if (slips.length === 0) return res.status(404).json({ message: 'Slip gaji tidak ditemukan' });
+        
+        // Simple delete for now. Reversal logic for 'paid' slips can be added if needed.
+        await req.db.query('DELETE FROM salaries WHERE id = ?', [id]);
+        res.json({ message: 'Slip gaji berhasil dihapus' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal menghapus slip gaji' });
+    }
+});
+
+// PUT Update Salary Slip (Draft)
+router.put('/salaries/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { base_processing_salary, attendance_bonus, overtime_pay, loan_deduction, other_deductions, status } = req.body;
+
+        const net = (base_processing_salary || 0) + (attendance_bonus || 0) + (overtime_pay || 0) - (loan_deduction || 0) - (other_deductions || 0);
+
+        await req.db.query(`
+            UPDATE salaries 
+            SET base_processing_salary=?, attendance_bonus=?, overtime_pay=?, loan_deduction=?, other_deductions=?, net_salary=?, status=?
+            WHERE id=?
+        `, [base_processing_salary || 0, attendance_bonus || 0, overtime_pay || 0, loan_deduction || 0, other_deductions || 0, net, status || 'draft', id]);
+
+        res.json({ message: 'Slip gaji berhasil diperbarui' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memperbarui slip gaji' });
+    }
+});
+
 module.exports = router;

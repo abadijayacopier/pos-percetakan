@@ -314,4 +314,74 @@ router.post('/import', verifyToken, requireRole(['admin']), async (req, res) => 
     }
 });
 
+// 8b. GET Histori Barang Rusak
+router.get('/damaged', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await req.db.query(`
+            SELECT sm.*, p.name as productName, p.unit 
+            FROM stock_movements sm
+            JOIN products p ON sm.product_id = p.id
+            WHERE sm.reference = 'Barang Rusak'
+            ORDER BY sm.date DESC
+            LIMIT 100
+        `);
+        // Map date to createdAt for frontend consistency if needed
+        const mapped = rows.map(r => ({
+            ...r,
+            createdAt: r.date 
+        }));
+        res.json(mapped);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Gagal mengambil histori barang rusak' });
+    }
+});
+
+// 9. POST Lapor Barang Rusak
+router.post('/report-damaged', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
+    const { productId, qty, notes } = req.body;
+
+    if (!productId || !qty || qty <= 0) {
+        return res.status(400).json({ message: 'Data tidak valid (ID Barang dan Jumlah wajib diisi)' });
+    }
+
+    const connection = await req.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [rows] = await connection.query('SELECT stock, name FROM products WHERE id = ?', [productId]);
+        if (rows.length === 0) throw new Error('Produk tidak ditemukan');
+
+        const currentStock = rows[0].stock;
+        if (currentStock < qty) {
+            throw new Error(`Stok tidak mencukupi (Tersedia: ${currentStock})`);
+        }
+
+        // 1. Kurangi stok produk
+        await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [qty, productId]);
+
+        // 2. Catat di stock_movements
+        await connection.query(
+            `INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
+             VALUES (?, 'out', ?, 'Barang Rusak', ?)`,
+            [productId, qty, notes || 'Dilaporkan rusak']
+        );
+
+        // 3. Log activity
+        await connection.query(
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'REPORT_DAMAGED', 'Product', `Lapor ${rows[0].name} Rusak: ${qty} unit`, req.ip || null]
+        );
+
+        await connection.commit();
+        res.json({ message: 'Laporan barang rusak berhasil disimpan', productId, qty });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Damaged goods error:', error);
+        res.status(500).json({ message: error.message || 'Gagal melaporkan barang rusak' });
+    } finally {
+        connection.release();
+    }
+});
+
 module.exports = router;

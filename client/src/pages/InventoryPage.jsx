@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { formatRupiah } from '../utils';
 import Modal from '../components/Modal';
@@ -36,6 +36,7 @@ import {
     FiDownload
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
+import { motion, AnimatePresence } from 'framer-motion';
 import StockOpnameModal from '../components/StockOpnameModal';
 
 const emptyForm = { code: '', name: '', categoryId: '', buyPrice: '', sellPrice: '', stock: '', minStock: '', unit: 'pcs', emoji: '📦', image: '' };
@@ -80,6 +81,16 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
     const [editItem, setEditItem] = useState(null);
     const [form, setForm] = useState(emptyForm);
     const [page, setPage] = useState(1);
+    const [selectedItems, setSelectedItems] = useState([]); // Array of IDs
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const [salesName, setSalesName] = useState('Sales Admin');
+    const [selectedQuantities, setSelectedQuantities] = useState({}); // { productId: qty }
+    const [showLabelModal, setShowLabelModal] = useState(false);
+    const [selectedLabelItem, setSelectedLabelItem] = useState(null);
+    const [labelQty, setLabelQty] = useState(1);
+    const [useCutLines, setUseCutLines] = useState(true);
+    const printRef = useRef();
+    const labelPrintRef = useRef();
     const PER_PAGE = 10;
 
     const reload = async () => {
@@ -261,6 +272,138 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
         }
     };
 
+    const handleToggleSelect = (id) => {
+        setSelectedItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedItems(paginated.map(p => p.id));
+        } else {
+            setSelectedItems([]);
+        }
+    };
+
+    const handlePrintLabel = (item) => {
+        setSelectedLabelItem(item);
+        setLabelQty(1); // Reset to 1 every time modal opens
+        setShowLabelModal(true);
+    };
+
+    const doPrintLabel = () => {
+        const printContent = labelPrintRef.current.innerHTML;
+        const windowPrint = window.open('', '', 'width=800,height=800');
+        
+        // Generate multiple labels based on qty
+        let labelsHtml = '';
+        for (let i = 0; i < labelQty; i++) {
+            labelsHtml += `<div class="label-card">${printContent}</div>`;
+        }
+
+        windowPrint.document.write(`
+            <html>
+                <head>
+                    <title>Cetak Label Barcode</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { margin: 0; padding: 0; display: flex; flex-wrap: wrap; font-family: 'Inter', sans-serif; background: white; }
+                        .label-card { 
+                            width: 50mm; 
+                            height: 30mm; 
+                            border: ${useCutLines ? '1px dashed #ddd' : '1px solid transparent'}; 
+                            padding: 1.5mm;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                            text-align: center;
+                            page-break-inside: avoid;
+                            box-sizing: border-box;
+                        }
+                        .store-name { font-size: 7px; font-weight: bold; color: #64748b; margin-bottom: 2px; text-transform: uppercase; overflow: hidden; white-space: nowrap; width: 100%; }
+                        .product-name { font-size: 9px; font-weight: 800; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; }
+                        .price { font-size: 11px; font-weight: 900; color: #2563eb; margin-bottom: 3px; }
+                        .barcode { font-family: 'Libre Barcode 39'; font-size: 32px; margin: 0; line-height: 1; color: black; }
+                        .sku { font-size: 7px; font-weight: bold; color: #94a3b8; margin-top: 1px; }
+                        @media print {
+                            body { padding: 0; }
+                            .label-card { border: ${useCutLines ? '1px dashed #ccc' : 'none'}; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${labelsHtml}
+                    <script>
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 800);
+                    </script>
+                </body>
+            </html>
+        `);
+        windowPrint.document.close();
+    };
+
+    const handleReportDamaged = (item) => {
+        onNavigate('damaged-goods', { preSelectedProductId: item.id });
+    };
+
+    const handlePrintDeliveryNote = () => {
+        if (selectedItems.length === 0) return Swal.fire('Perhatian', 'Pilih minimal satu barang untuk dicetak', 'warning');
+        
+        Swal.fire({
+            title: 'Nama Sales / Penerima',
+            input: 'text',
+            inputPlaceholder: 'Masukkan nama sales yang membawa barang...',
+            showCancelButton: true,
+            confirmButtonText: 'Lanjut Cetak',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'bg-blue-600 text-white font-bold py-3 px-6 rounded-xl',
+                cancelButton: 'bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl ml-3'
+            },
+            buttonsStyling: false
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                setSalesName(result.value);
+                setShowPrintModal(true);
+            } else if (result.isConfirmed && !result.value) {
+                Swal.fire('Error', 'Nama sales wajib diisi', 'error');
+            }
+        });
+    };
+
+
+    const doPrint = () => {
+        const content = printRef.current;
+        const win = window.open('', '', 'width=900,height=1100');
+        win.document.write('<html><head><title>Surat Jalan Inventaris</title>');
+        win.document.write('<style>');
+        win.document.write(`
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; }
+            .header { border-bottom: 3px solid #000; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+            .title { font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+            .meta { font-size: 12px; font-weight: 600; text-align: right; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            th { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; text-align: left; font-size: 11px; text-transform: uppercase; font-weight: 900; }
+            td { border: 1px solid #e2e8f0; padding: 12px; font-size: 12px; font-weight: 600; }
+            .footer { display: grid; grid-template-cols: 1fr 1fr; gap: 40px; margin-top: 60px; }
+            .sign-box { border-top: 1px solid #000; padding-top: 10px; text-align: center; font-size: 12px; font-weight: 700; height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
+            .brand { font-size: 18px; font-weight: 900; color: #2563eb; }
+        `);
+        win.document.write('</style></head><body>');
+        win.document.write(content.innerHTML);
+        win.document.write('</body></html>');
+        win.document.close();
+        setTimeout(() => {
+            win.focus();
+            win.print();
+            win.close();
+        }, 500);
+    };
+
     const handleDelete = async (p) => {
         const result = await Swal.fire({
             title: 'Hapus Barang ATK?',
@@ -308,6 +451,13 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1 italic opacity-75">Retail Stationery & Products Management</p>
                 </div>
                 <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                        onClick={handlePrintDeliveryNote}
+                        disabled={selectedItems.length === 0}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FiPrinter /> Cetak Surat Jalan
+                    </button>
                     <input
                         type="file"
                         id="excel-import-input"
@@ -406,6 +556,14 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                         <table className="w-full">
                             <thead>
                                 <tr className="text-left bg-slate-50/50 dark:bg-slate-800/50">
+                                    <th className="px-6 py-4 w-12">
+                                        <input 
+                                            type="checkbox" 
+                                            onChange={handleSelectAll}
+                                            checked={selectedItems.length === paginated.length && paginated.length > 0}
+                                            className="accent-blue-600 size-4 rounded-md"
+                                        />
+                                    </th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produk & Unit</th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode</th>
                                     <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</th>
@@ -419,7 +577,15 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                                 {paginated.map(p => {
                                     const isLow = p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0;
                                     return (
-                                        <tr key={p.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                                        <tr key={p.id} className={`group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors ${selectedItems.includes(p.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedItems.includes(p.id)}
+                                                    onChange={() => handleToggleSelect(p.id)}
+                                                    className="accent-blue-600 size-4 rounded-md cursor-pointer"
+                                                />
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-4">
                                                     {(p.image || storeSettings?.logo) ? (
@@ -430,7 +596,7 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => {
                                                                     e.target.onerror = null;
-                                                                    e.target.src = '/logo-fallback.png'; // Global fallback if both fail
+                                                                    e.target.src = '/logo-fallback.png'; 
                                                                 }}
                                                             />
                                                         </div>
@@ -480,6 +646,20 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                                                         className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
                                                     >
                                                         <FiClock size={14} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handlePrintLabel(p)}
+                                                        className="p-2.5 text-slate-400 hover:text-emerald-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                        title="Cetak Label Barcode"
+                                                    >
+                                                        <FiTag size={14} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleReportDamaged(p)}
+                                                        className="p-2.5 text-slate-400 hover:text-orange-600 hover:bg-white dark:hover:bg-slate-900 rounded-xl border border-transparent hover:border-slate-100 dark:hover:border-slate-800 transition-all shadow-sm"
+                                                        title="Laporkan Rusak"
+                                                    >
+                                                        <FiAlertTriangle size={14} />
                                                     </button>
                                                     <button
                                                         onClick={() => setOpnameTarget(p)}
@@ -800,6 +980,279 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                 product={opnameTarget}
                 onSuccess={reload}
             />
+            {/* Floating Action Bar for Selections */}
+            <AnimatePresence>
+                {selectedItems.length > 0 && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-8 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-10 border border-white/10 backdrop-blur-xl"
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Terpilih</span>
+                            <span className="text-xl font-black">{selectedItems.length} <span className="text-sm font-bold opacity-60 text-slate-400">Item</span></span>
+                        </div>
+                        <div className="h-10 w-px bg-white/10" />
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={() => setSelectedItems([])}
+                                className="px-6 py-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors font-bold text-xs"
+                            >
+                                Batal
+                            </button>
+                            <button 
+                                onClick={handlePrintDeliveryNote}
+                                className="px-8 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 flex items-center gap-2"
+                            >
+                                <FiPrinter size={16} /> Cetak Surat Jalan Sales
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Hidden Print Content */}
+            <div style={{ display: 'none' }}>
+                <div ref={printRef}>
+                    <div className="header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            {storeSettings?.logo && (
+                                <img 
+                                    src={`http://${window.location.hostname}:5001${storeSettings.logo}`} 
+                                    style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                                    alt="Logo"
+                                />
+                            )}
+                            <div>
+                                <div className="brand" style={{ color: '#2563eb' }}>{storeSettings?.name || 'ABAD JAYA COPIER'}</div>
+                                <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px', fontWeight: 'bold', maxWidth: '250px' }}>
+                                    {storeSettings?.address || 'PUSAT PERCETAKAN & ATK'}<br/>
+                                    WA: {storeSettings?.phone || '-'}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="title">Surat Jalan<br/>Inventaris</div>
+                        <div className="meta">
+                            <div>NO: SJ-{new Date().getTime().toString().slice(-6)}</div>
+                            <div>TGL: {new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: '20px', fontSize: '12px' }}>
+                        Telah diserahkan barang inventaris berikut kepada: <strong>{salesName}</strong> (Sales) untuk keperluan distribusi/penjualan.
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style={{ width: '50px' }}>No</th>
+                                <th>Nama Barang</th>
+                                <th style={{ width: '100px' }}>Jumlah</th>
+                                <th style={{ width: '100px' }}>Satuan</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {products.filter(p => selectedItems.includes(p.id)).map((p, i) => (
+                                <tr key={p.id}>
+                                    <td>{i + 1}</td>
+                                    <td>{p.name}</td>
+                                    <td style={{ fontWeight: '900', fontSize: '14px' }}>{selectedQuantities[p.id] || 0}</td>
+                                    <td>{p.unit}</td>
+                                    <td></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    <div className="footer">
+                        <div className="sign-box">
+                            <div>Diserahkan Oleh,</div>
+                            <div>( .................................. )</div>
+                        </div>
+                        <div className="sign-box">
+                            <div>Diterima Oleh (Sales),</div>
+                            <div>( <strong>{salesName}</strong> )</div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '40px', fontSize: '10px', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', borderTop: '1px dashed #e2e8f0', paddingTop: '10px' }}>
+                        * Barang yang sudah diterima menjadi tanggung jawab sales sepenuhnya. Harap lapor jika ada ketidaksesuaian stok.
+                    </div>
+                </div>
+            </div>
+
+            {/* Hidden Label Content */}
+            <div style={{ display: 'none' }}>
+                <div ref={labelPrintRef}>
+                    <div className="store-name">{storeSettings?.name}</div>
+                    <div className="product-name">{selectedLabelItem?.name}</div>
+                    <div className="price">{formatRupiah(selectedLabelItem?.sellPrice)}</div>
+                    <div className="barcode">*{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}*</div>
+                    <div className="sku">{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}</div>
+                </div>
+            </div>
+
+            {/* Label Print Modal */}
+            <AnimatePresence>
+                {showLabelModal && (
+                    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="text-xl font-black dark:text-white">Cetak Label Barcode</h3>
+                                <p className="text-sm text-slate-500 mt-1">Pratinjau label sebelum dikirim ke printer.</p>
+                            </div>
+                            
+                            <div className="p-8 flex justify-center">
+                                <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl shadow-inner flex flex-col items-center justify-center text-center w-[200px] h-[120px]">
+                                    <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' }}>{storeSettings?.name}</div>
+                                    <div style={{ fontSize: '10px', fontWeight: '800', marginBottom: '2px', color: '#1e293b' }}>{selectedLabelItem?.name}</div>
+                                    <div style={{ fontSize: '11px', fontWeight: '900', color: '#2563eb', marginBottom: '4px' }}>{formatRupiah(selectedLabelItem?.sellPrice)}</div>
+                                    <div className="font-barcode" style={{ fontSize: '40px', lineHeight: '1', margin: '0', color: '#000' }}>
+                                        *{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}*
+                                    </div>
+                                    <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#94a3b8' }}>{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}</div>
+                                </div>
+                            </div>
+
+                            <div className="px-8 mb-4 flex flex-col gap-4">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Cetak</span>
+                                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Mau cetak berapa stiker?</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button 
+                                            onClick={() => setLabelQty(Math.max(1, labelQty - 1))}
+                                            className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all active:scale-90"
+                                        >
+                                            <FiPlus className="rotate-45" />
+                                        </button>
+                                        <input 
+                                            type="number"
+                                            value={labelQty}
+                                            onChange={(e) => setLabelQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                            className="w-16 bg-transparent border-none text-center font-black text-lg focus:ring-0 text-blue-600"
+                                        />
+                                        <button 
+                                            onClick={() => setLabelQty(labelQty + 1)}
+                                            className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-90"
+                                        >
+                                            <FiPlus />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${useCutLines ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'} transition-colors`}>
+                                            <FiEdit size={16} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Garis Potong</span>
+                                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Tampilkan batas gunting</span>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setUseCutLines(!useCutLines)}
+                                        className={`w-12 h-6 rounded-full relative transition-all ${useCutLines ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${useCutLines ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl flex items-start gap-4">
+                                    <div className="p-2 bg-blue-600 rounded-lg text-white shrink-0"><FiTag /></div>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-[10px] text-blue-700 dark:text-blue-300 font-bold leading-relaxed">
+                                            Label ini dirancang untuk ukuran stiker **50mm x 30mm**.
+                                        </p>
+                                        <p className="text-[9px] text-blue-600/70 dark:text-blue-400/70 font-medium italic">
+                                            {useCutLines ? '* Rekomendasi untuk printer kertas A4 stiker.' : '* Rekomendasi untuk printer thermal label roll.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 bg-slate-50 dark:bg-slate-800/50 flex gap-4">
+                                <button 
+                                    onClick={() => setShowLabelModal(false)}
+                                    className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button 
+                                    onClick={doPrintLabel}
+                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                                >
+                                    <FiPrinter size={16} className="inline mr-2" /> Cetak Sekarang
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Print Modal for Confirmation */}
+            <AnimatePresence>
+                {showPrintModal && (
+                    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="text-xl font-black dark:text-white">Siap Cetak Surat Jalan?</h3>
+                                <p className="text-sm text-slate-500 mt-1">Daftar barang akan diserahkan kepada <strong>{salesName}</strong>.</p>
+                            </div>
+                            <div className="p-8">
+                                <div className="space-y-3 max-h-[300px] overflow-auto pr-2 custom-scrollbar">
+                                    {products.filter(p => selectedItems.includes(p.id)).map(p => (
+                                        <div key={p.id} className="flex flex-col gap-2 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs font-black dark:text-slate-200 uppercase tracking-tight">{p.name}</span>
+                                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-md uppercase">{p.unit}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Jumlah Dibawa:</span>
+                                                <input 
+                                                    type="number"
+                                                    value={selectedQuantities[p.id] || ''}
+                                                    onChange={(e) => setSelectedQuantities(prev => ({ ...prev, [p.id]: e.target.value }))}
+                                                    placeholder="0"
+                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="p-8 bg-slate-50 dark:bg-slate-800/50 flex gap-4">
+                                <button 
+                                    onClick={() => setShowPrintModal(false)}
+                                    className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        doPrint();
+                                        setShowPrintModal(false);
+                                    }}
+                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                                >
+                                    Konfirmasi & Cetak
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

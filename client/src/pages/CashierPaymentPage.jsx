@@ -8,7 +8,7 @@ import {
     FiCreditCard, FiSearch, FiCheckCircle, FiClock,
     FiDollarSign, FiChevronLeft, FiChevronRight,
     FiPrinter, FiAlertTriangle, FiInfo, FiTrendingUp,
-    FiEdit, FiTrash2
+    FiEdit, FiTrash2, FiMessageCircle
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,8 +25,9 @@ export default function CashierPaymentPage({ onNavigate }) {
     const PER_PAGE = 10;
 
     const [selectedEditTrx, setSelectedEditTrx] = useState(null);
-    const [editForm, setEditForm] = useState({ customerName: '', paidAmount: '', paymentType: '' });
+    const [editForm, setEditForm] = useState({ customerName: '', paidAmount: '', paymentType: '', notes: '' });
     const [selectedDeleteTrx, setSelectedDeleteTrx] = useState(null);
+    const [settleNotes, setSettleNotes] = useState('');
 
     const loadData = async () => {
         try {
@@ -87,7 +88,81 @@ export default function CashierPaymentPage({ onNavigate }) {
         setSelectedTrx(trx);
         setAmountPaid(trx.total - (trx.paidAmount || 0));
         setWaNumber(trx.customer_wa || '');
+        setSettleNotes(trx.notes || '');
         setPayMethod('tunai');
+    };
+
+    const handleSendWhatsApp = async (trx) => {
+        let number = trx.customer_wa || trx.customerWa || '';
+        
+        // Jika nomor tidak ada, minta input dari user
+        if (!number) {
+            const { value: typedNumber } = await Swal.fire({
+                title: 'Kirim WhatsApp',
+                text: `Masukkan nomor WhatsApp untuk ${trx.customerName || 'Pelanggan'}`,
+                input: 'text',
+                inputPlaceholder: 'Contoh: 08123456789',
+                showCancelButton: true,
+                confirmButtonText: 'Kirim Sekarang',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#10b981',
+                inputValidator: (value) => {
+                    if (!value) return 'Nomor tidak boleh kosong!';
+                    if (!/^\d+$/.test(value.replace(/[^0-9]/g, ''))) return 'Hanya masukkan angka!';
+                }
+            });
+
+            if (typedNumber) {
+                number = typedNumber;
+            } else {
+                return;
+            }
+        }
+
+        let formattedNumber = number.replace(/[^0-9]/g, '');
+        if (formattedNumber.startsWith('0')) {
+            formattedNumber = '62' + formattedNumber.slice(1);
+        } else if (!formattedNumber.startsWith('62') && formattedNumber.length > 5) {
+            formattedNumber = '62' + formattedNumber;
+        }
+
+        const storeName = 'Abadi Jaya POS';
+        const messageText = `Halo *${trx.customerName || 'Pelanggan'}*,\n\nTerima kasih telah berbelanja di *${storeName}*.\n\nBerikut detail transaksi Anda:\n--------------------------\nNo. Invoice: *${trx.invoiceNo}*\nTotal Tagihan: *${formatRupiah(trx.total)}*\nSudah Dibayar: *${formatRupiah(trx.paidAmount)}*\nSisa: *${formatRupiah(Math.max(0, trx.total - trx.paidAmount))}*\n--------------------------\n\nTerimakasih!`;
+        
+        try {
+            // Coba kirim via Gateway dulu
+            Swal.fire({
+                title: 'Mengirim...',
+                text: 'Sedang mengirim pesan via Gateway',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            const res = await api.post('/wa-gateway/test', {
+                to: formattedNumber,
+                message: messageText
+            });
+
+            Swal.close();
+
+            if (res.data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Nota pelunasan terkirim otomatis.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                throw new Error('Gateway response not success');
+            }
+        } catch (error) {
+            console.warn('Gateway WA failed, falling back to manual link:', error);
+            Swal.close();
+            // Fallback ke link manual
+            const encodedMessage = encodeURIComponent(messageText);
+            window.open(`https://wa.me/${formattedNumber}?text=${encodedMessage}`, '_blank');
+        }
     };
 
     const handleSettle = async () => {
@@ -97,7 +172,8 @@ export default function CashierPaymentPage({ onNavigate }) {
             await api.put(`/transactions/${selectedTrx.id}/pay`, {
                 paidAmount: paid,
                 paymentMethod: payMethod,
-                customerWa: waNumber
+                customerWa: waNumber,
+                notes: settleNotes
             });
             setSelectedTrx(null);
             setWaNumber('');
@@ -113,7 +189,8 @@ export default function CashierPaymentPage({ onNavigate }) {
         setEditForm({
             customerName: trx.customerName || '',
             paidAmount: trx.paidAmount || 0,
-            paymentType: trx.paymentType || 'tunai'
+            paymentType: trx.paymentType || 'tunai',
+            notes: trx.notes || ''
         });
     };
 
@@ -131,6 +208,20 @@ export default function CashierPaymentPage({ onNavigate }) {
 
     const handleDelete = async () => {
         if (!selectedDeleteTrx) return;
+
+        // Double check lunas status before actual delete API call
+        const paid = selectedDeleteTrx.paidAmount || 0;
+        if (paid >= selectedDeleteTrx.total) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Akses Ditolak',
+                text: 'Transaksi yang sudah LUNAS tidak dapat dihapus untuk menjaga integritas laporan keuangan.',
+                confirmButtonColor: '#3085d6'
+            });
+            setSelectedDeleteTrx(null);
+            return;
+        }
+
         try {
             await api.delete(`/transactions/${selectedDeleteTrx.id}`);
             setSelectedDeleteTrx(null);
@@ -310,9 +401,30 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                     </button>
 
                                                     <button
-                                                        onClick={() => setSelectedDeleteTrx(t)}
-                                                        className="p-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 rounded-xl transition-all"
-                                                        title="Hapus Transaksi"
+                                                        onClick={() => handleSendWhatsApp(t)}
+                                                        className="p-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 text-emerald-600 rounded-xl transition-all"
+                                                        title="Kirim WA"
+                                                    >
+                                                        <FiMessageCircle size={16} />
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            if (isLunas) {
+                                                                Swal.fire({
+                                                                    icon: 'warning',
+                                                                    title: 'Transaksi Terkunci',
+                                                                    text: 'Status transaksi ini sudah LUNAS. Data yang sudah lunas terproteksi dan tidak dapat dihapus.',
+                                                                    confirmButtonColor: '#2563eb'
+                                                                });
+                                                            } else {
+                                                                setSelectedDeleteTrx(t);
+                                                            }
+                                                        }}
+                                                        className={`p-2.5 rounded-xl transition-all ${isLunas 
+                                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-50' 
+                                                            : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600'}`}
+                                                        title={isLunas ? 'Transaksi Lunas Terkunci' : 'Hapus Transaksi'}
                                                     >
                                                         <FiTrash2 size={16} />
                                                     </button>
@@ -425,28 +537,48 @@ export default function CashierPaymentPage({ onNavigate }) {
 
                         <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nomor WhatsApp Nota (Opsional)</label>
-                            <input
-                                className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-4 px-6 text-lg font-bold tracking-tight text-emerald-600 focus:ring-8 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
-                                type="text"
-                                placeholder="Contoh: 08123456789"
-                                value={waNumber}
-                                onChange={e => setWaNumber(e.target.value)}
+                            <div className="flex gap-3">
+                                <input
+                                    className="flex-1 bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-4 px-6 text-lg font-bold tracking-tight text-emerald-600 focus:ring-8 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                                    type="text"
+                                    placeholder="Contoh: 08123456789"
+                                    value={waNumber}
+                                    onChange={e => setWaNumber(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => handleSendWhatsApp(selectedTrx)}
+                                    className="px-6 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:brightness-110"
+                                    title="Kirim Konfirmasi WA"
+                                >
+                                    <FiMessageCircle size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Keterangan Pelunasan</label>
+                            <textarea
+                                className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-4 px-6 text-sm font-bold tracking-tight text-slate-700 dark:text-slate-200 focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 min-h-[80px] resize-none"
+                                placeholder="Tambahkan catatan pelunasan..."
+                                value={settleNotes}
+                                onChange={e => setSettleNotes(e.target.value)}
                             />
                         </div>
 
                         <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Metode Pembayaran</label>
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 {[
                                     { key: 'tunai', label: 'Tunai', icon: FiDollarSign },
                                     { key: 'qris', label: 'QRIS', icon: FiCreditCard },
                                     { key: 'transfer', label: 'Transfer', icon: FiCreditCard },
+                                    { key: 'cicilan', label: 'Cicilan', icon: FiMessageCircle },
                                 ].map(m => (
                                     <button
                                         key={m.key}
                                         onClick={() => setPayMethod(m.key)}
                                         className={`flex flex-col items-center gap-3 p-4 rounded-[1.5rem] border-2 transition-all group ${payMethod === m.key
-                                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20'
+                                            ? (m.key === 'cicilan' ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl shadow-emerald-500/20' : 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/20')
                                             : 'bg-white dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-300 dark:hover:border-slate-700'
                                             }`}
                                     >
@@ -492,6 +624,14 @@ export default function CashierPaymentPage({ onNavigate }) {
                             value={editForm.customerName}
                             onChange={(e) => setEditForm(prev => ({ ...prev, customerName: e.target.value }))}
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3"
+                        />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Keterangan / Catatan Transaksi</label>
+                        <textarea
+                            value={editForm.notes}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 min-h-[80px] resize-none"
                         />
                     </div>
                     <div>

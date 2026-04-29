@@ -152,6 +152,7 @@ export default function PurchasingPage({ onNavigate }) {
                 id: p.id,
                 name: p.name || 'Produk Tanpa Nama',
                 stock: p.stock || 0,
+                minStock: p.minStock || 0,
                 unit: p.unit || 'pcs'
             })),
             ...materials.map(m => ({
@@ -159,10 +160,50 @@ export default function PurchasingPage({ onNavigate }) {
                 id: m.id,
                 name: m.nama_bahan || 'Bahan Tanpa Nama',
                 stock: m.stok_saat_ini || 0,
+                minStock: m.stok_minimum || 0,
                 unit: m.satuan || 'pcs'
             }))
         ].filter(item => (item.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()));
     }, [products, materials, searchQuery]);
+
+    const lowStockItems = useMemo(() => {
+        return [
+            ...products.map(p => ({
+                type: 'product',
+                id: p.id,
+                name: p.name || 'Produk Tanpa Nama',
+                stock: p.stock || 0,
+                minStock: p.minStock || 0,
+                unit: p.unit || 'pcs'
+            })),
+            ...materials.map(m => ({
+                type: 'material',
+                id: m.id,
+                name: m.nama_bahan || 'Bahan Tanpa Nama',
+                stock: m.stok_saat_ini || 0,
+                minStock: m.stok_minimum || 0,
+                unit: m.satuan || 'pcs'
+            }))
+        ].filter(item => item.minStock > 0 && item.stock <= item.minStock);
+    }, [products, materials]);
+
+    const handleAddLowStock = () => {
+        if (lowStockItems.length === 0) return showToast('Tidak ada barang dengan stok rendah', 'warn');
+        
+        setItems(prev => {
+            const newItems = [...prev];
+            lowStockItems.forEach(lowItem => {
+                const exists = newItems.find(i => String(i.id) === String(lowItem.id) && i.type === lowItem.type);
+                if (!exists) {
+                    // Suggested restock qty: (minStock * 2) - currentStock or at least 1
+                    const suggestedQty = Math.max(1, (lowItem.minStock * 2) - lowItem.stock);
+                    newItems.push({ ...lowItem, qty: suggestedQty, cost: 0, subtotal: 0 });
+                }
+            });
+            return newItems;
+        });
+        showToast(`${lowStockItems.length} barang stok rendah dimasukkan ke keranjang`, 'success');
+    };
 
     const handleAddItem = (option) => {
         setItems(prev => {
@@ -499,12 +540,45 @@ export default function PurchasingPage({ onNavigate }) {
                                     {searchQuery && (
                                         <button
                                             onClick={() => setSearchQuery('')}
-                                            className="absolute right-5 top-1/2 -translate-y-1/2 p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                            className="absolute right-5 top-1/2 -translate-y-1/2 p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:white rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                                         >
                                             <FiX size={16} />
                                         </button>
                                     )}
                                 </div>
+
+                                {/* Low Stock Auto-Fill Section */}
+                                <AnimatePresence>
+                                    {lowStockItems.length > 0 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="mt-4 flex flex-wrap items-center gap-3"
+                                        >
+                                            <button
+                                                onClick={handleAddLowStock}
+                                                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center gap-2 active:scale-95 animate-pulse hover:animate-none"
+                                            >
+                                                <FiAlertCircle size={14} /> Tarik {lowStockItems.length} Barang Stok Rendah
+                                            </button>
+                                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                                                {lowStockItems.slice(0, 5).map(item => (
+                                                    <button
+                                                        key={`${item.type}-${item.id}`}
+                                                        onClick={() => handleAddItem(item)}
+                                                        className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:border-blue-500 hover:text-blue-500 transition-all whitespace-nowrap"
+                                                    >
+                                                        + {item.name} ({item.stock}/{item.minStock})
+                                                    </button>
+                                                ))}
+                                                {lowStockItems.length > 5 && (
+                                                    <span className="text-[10px] font-bold text-slate-400 self-center">+{lowStockItems.length - 5} lainnya</span>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
                                 {/* Dropdown Results */}
                                 {showSearch && (
