@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiTruck, FiPlus, FiSearch, FiEdit3, FiTrash2,
-    FiCheck, FiX, FiAlertCircle, FiUser, FiPhone, FiMapPin, FiFileText
+    FiCheck, FiX, FiAlertCircle, FiUser, FiPhone, FiMapPin, FiFileText,
+    FiStar, FiPieChart, FiTrendingUp, FiLayers, FiGlobe
 } from 'react-icons/fi';
 import api from '../services/api';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -219,11 +220,9 @@ export default function SuppliersPage() {
     });
 
     return (
-        <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0b0f1a] fade-in relative overflow-hidden">
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0b0f1a] fade-in relative overflow-hidden font-inter">
             {/* Mesh Gradient Background */}
-            <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-500/10 dark:from-blue-600/10 to-transparent pointer-events-none" />
-            <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute top-40 -left-40 w-80 h-80 bg-emerald-400/20 dark:bg-emerald-600/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="mesh-bg" />
 
             <AnimatePresence>
                 {toastMsg && <Toast {...toastMsg} onClose={() => setToastMsg(null)} />}
@@ -246,126 +245,203 @@ export default function SuppliersPage() {
                 onConfirm={handleDelete}
                 title="Hapus Supplier"
                 message={`Anda yakin ingin menghapus data supplier "${deleteItem?.name}"? Tindakan ini mungkin ditolak sistem jika ada data transaksi yang masih menggunakan supplier ini!`}
-                confirmText="Ya, Hapus Kelman"
+                confirmText="Ya, Hapus Data"
                 cancelText="Batal"
                 type="danger"
             />
 
-            {/* Top Header */}
-            <header className="px-8 py-8 md:py-10 flex flex-col md:flex-row md:items-end justify-between gap-6 shrink-0 relative z-10">
-                <div>
-                    <motion.h1
-                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                        className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-4 hidden-print"
-                    >
-                        <div className="p-3.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/30">
-                            <FiTruck className="text-2xl" />
+            {/* Top Header & Stats */}
+            <header className="px-10 pt-16 pb-12 shrink-0 relative z-20">
+                <div className="max-w-7xl mx-auto space-y-12">
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                        <div className="space-y-6">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                className="w-20 h-20 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/30 relative"
+                            >
+                                <FiTruck size={36} />
+                                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full border-4 border-white dark:border-[#0b0f1a] flex items-center justify-center text-white">
+                                    <FiCheck size={14} />
+                                </div>
+                            </motion.div>
+                            <div>
+                                <motion.h1
+                                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                                    className="text-5xl md:text-6xl font-black tracking-tighter text-slate-800 dark:text-white font-premium leading-none"
+                                >
+                                    Ecosystem <span className="text-gradient">Suppliers</span>
+                                </motion.h1>
+                                <motion.p
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                                    className="text-slate-500 dark:text-slate-400 mt-4 font-bold max-w-xl leading-relaxed text-lg"
+                                >
+                                    Sentral manajemen mitra pengadaan barang dan bahan baku untuk mendukung operasional bisnis Anda secara optimal.
+                                </motion.p>
+                            </div>
                         </div>
-                        Data Master Supplier
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-                        className="text-sm md:text-base font-semibold text-slate-500 dark:text-slate-400 mt-3 max-w-xl leading-relaxed"
-                    >
-                        Kelola mitra bisnis, pabrikan, dan vendor pengadaan stok Anda dalam satu sentral database.
-                    </motion.p>
-                </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4"
-                >
-                    <div className="relative">
-                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            className="w-full sm:w-64 pl-11 pr-4 py-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/60 backdrop-blur-md border border-white/50 dark:border-slate-800/50 shadow-sm focus:ring-4 focus:ring-blue-500/10 dark:text-white transition-all outline-none font-medium"
-                            placeholder="Cari Supplier..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6"
+                        >
+                            <div className="relative group">
+                                <div className="absolute inset-0 bg-blue-500/10 blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                                <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors z-10" />
+                                <input
+                                    className="w-full sm:w-80 pl-14 pr-6 py-5 rounded-[2rem] bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl border border-white dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none focus:ring-4 focus:ring-blue-500/10 dark:text-white transition-all outline-none font-black text-sm relative z-10"
+                                    placeholder="Cari partner bisnis..."
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="group relative px-10 py-5 bg-blue-600 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-500/40 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3 uppercase tracking-wider text-sm overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
+                                <FiPlus size={22} /> <span>Registrasi Supplier</span>
+                            </button>
+                        </motion.div>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 text-white font-bold shadow-xl shadow-blue-600/30 hover:bg-blue-700 hover:shadow-blue-600/40 transition-all active:scale-95"
-                    >
-                        <FiPlus size={20} /> <span>Tambah Baru</span>
-                    </button>
-                </motion.div>
+
+                    {/* Quick Stats Summary */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[
+                            { label: 'Total Mitra', value: suppliers.length, icon: FiLayers, color: 'blue' },
+                            { label: 'Supplier Aktif', value: suppliers.filter(s => s.phone).length, icon: FiStar, color: 'emerald' },
+                            { label: 'Dalam Jangkauan', value: suppliers.filter(s => s.address).length, icon: FiGlobe, color: 'indigo' },
+                            { label: 'Pertumbuhan', value: '+12%', icon: FiTrendingUp, color: 'violet' },
+                        ].map((stat, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 + (i * 0.1) }}
+                                className="premium-card p-6 flex items-center gap-5 rounded-[2rem]"
+                            >
+                                <div className={`w-14 h-14 rounded-2xl bg-${stat.color}-500/10 text-${stat.color}-600 dark:text-${stat.color}-400 flex items-center justify-center text-2xl shadow-inner`}>
+                                    <stat.icon />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{stat.label}</p>
+                                    <p className="text-2xl font-black text-slate-800 dark:text-white leading-none font-premium">{stat.value}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 px-8 pb-8 overflow-hidden flex flex-col items-center relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}
-                    className="w-full h-full bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-white/60 dark:border-slate-800/50 flex flex-col overflow-hidden max-w-7xl relative"
-                >
-                    <div className="flex-1 overflow-auto custom-scrollbar">
+            <main className="flex-1 px-10 pb-16 relative z-10">
+                <div className="max-w-7xl mx-auto h-full flex flex-col">
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.6 }}
+                        className="flex-1 overflow-auto custom-scrollbar pr-2"
+                    >
                         {loading ? (
-                            <div className="h-full flex items-center justify-center p-12">
-                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-12 h-12 border-[5px] border-blue-500/30 border-t-blue-500 rounded-full" />
+                            <div className="h-96 flex flex-col items-center justify-center">
+                                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-16 h-16 border-[6px] border-blue-500/20 border-t-blue-600 rounded-full mb-6 shadow-lg shadow-blue-500/10" />
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Sinkronisasi Ecosystem...</p>
                             </div>
                         ) : filtered.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center p-12 text-center">
+                            <div className="h-96 flex flex-col items-center justify-center text-center p-12 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[4rem] border border-white dark:border-slate-800 shadow-2xl">
                                 <motion.div
                                     initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                                    className="w-32 h-32 bg-slate-100/50 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-600 mb-6 font-black text-6xl shadow-inner backdrop-blur-sm"
+                                    className="w-48 h-48 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-700 mb-10 shadow-inner border-8 border-white dark:border-slate-800"
                                 >
-                                    <FiTruck className="text-slate-300 dark:text-slate-600 drop-shadow-sm" />
+                                    <FiTruck size={80} />
                                 </motion.div>
-                                <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Tidak Ada Data Supplier</h3>
-                                <p className="text-slate-500 dark:text-slate-400 font-medium max-w-sm leading-relaxed">Pencarian tidak menemukan hasil atau database supplier masih kosong.</p>
+                                <h3 className="text-4xl font-black text-slate-800 dark:text-white mb-4 font-premium tracking-tighter">Entitas Tidak Ditemukan</h3>
+                                <p className="text-slate-500 dark:text-slate-400 font-bold max-w-sm leading-relaxed text-lg">Pencarian Bapak tidak membuahkan hasil dalam sistem radar kami.</p>
+                                <button onClick={() => setSearch('')} className="mt-8 text-blue-600 font-black uppercase tracking-widest text-sm hover:underline">Reset Pencarian</button>
                             </div>
                         ) : (
-                            <table className="w-full text-left whitespace-nowrap">
-                                <thead className="sticky top-0 bg-white/90 dark:bg-slate-900/90 border-b border-slate-200 dark:border-slate-800 z-10 backdrop-blur-md">
-                                    <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                        <th className="px-6 py-4">Profil Perusahaan</th>
-                                        <th className="px-6 py-4">Informasi Kontak</th>
-                                        <th className="px-6 py-4">Catatan Internal</th>
-                                        <th className="px-6 py-4 text-right w-24">Tindakan</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                    {filtered.map((s, idx) => (
-                                        <motion.tr
-                                            key={s.id}
-                                            initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.4) }}
-                                            className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="font-extrabold text-slate-800 dark:text-white text-sm leading-tight mb-1.5">{s.name}</div>
-                                                <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                                                    <FiMapPin className="text-blue-500" /> {s.address ? (s.address.length > 35 ? s.address.substring(0, 35) + '...' : s.address) : 'Belum Ada Alamat'}
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-10">
+                                {filtered.map((s, idx) => (
+                                    <motion.div
+                                        key={s.id}
+                                        initial={{ opacity: 0, y: 30 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.6, delay: Math.min(idx * 0.08, 0.5) }}
+                                        className="premium-card p-10 group relative overflow-hidden rounded-[3.5rem] hover:ring-2 hover:ring-blue-500/20"
+                                    >
+                                        {/* Decorative elements */}
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-500/10 transition-colors" />
+                                        <div className="absolute bottom-0 left-0 w-2 h-0 bg-blue-600 group-hover:h-full transition-all duration-500 ease-out" />
+                                        
+                                        <div className="flex justify-between items-start mb-10 relative z-10">
+                                            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 text-blue-600 dark:text-blue-400 rounded-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner border border-white dark:border-slate-800">
+                                                <FiTruck size={28} />
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <button onClick={() => { setEditItem(s); setIsModalOpen(true); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-blue-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
+                                                    <FiEdit3 size={18} />
+                                                </button>
+                                                <button onClick={() => setDeleteItem(s)} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-rose-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
+                                                    <FiTrash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6 relative z-10">
+                                            <div>
+                                                <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-[1.1] mb-3 font-premium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight">
+                                                    {s.name}
+                                                </h3>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-1 flex-shrink-0"><FiMapPin className="text-blue-500" size={14} /></div>
+                                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+                                                        {s.address || 'LOKASI BELUM TERDEFINISI'}
+                                                    </p>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-700 dark:text-slate-200 text-sm flex items-center gap-2.5">
-                                                    <div className="p-1.5 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 rounded-lg"><FiUser size={14} /></div>
-                                                    {s.contact_person || 'N/A'}
+                                            </div>
+
+                                            <div className="pt-8 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner border border-emerald-500/5">
+                                                        <FiUser size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Person In Charge</p>
+                                                        <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight">{s.contact_person || 'No Contact'}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2.5">
-                                                    <div className="p-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg"><FiPhone size={14} /></div>
-                                                    {s.phone || '-'}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-500/5">
+                                                        <FiPhone size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Contact Line</p>
+                                                        <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight font-mono">{s.phone || 'N/A'}</p>
+                                                    </div>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 max-w-xs whitespace-normal leading-relaxed font-medium">
-                                                <div className="line-clamp-2">{s.notes || '-'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => { setEditItem(s); setIsModalOpen(true); }} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 dark:hover:bg-blue-900/30 dark:hover:border-blue-800 transition-all text-slate-500 dark:text-slate-400 shadow-sm">
-                                                        <FiEdit3 size={16} />
-                                                    </button>
-                                                    <button onClick={() => setDeleteItem(s)} className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-900/30 dark:hover:border-rose-800 transition-all text-slate-500 dark:text-slate-400 shadow-sm">
-                                                        <FiTrash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </div>
+
+                                            {s.notes && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0.8 }}
+                                                    whileHover={{ opacity: 1 }}
+                                                    className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] italic text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed border border-dashed border-slate-200 dark:border-slate-700 transition-all"
+                                                >
+                                                    <FiFileText className="inline mr-2 text-slate-300" size={14} />
+                                                    "{s.notes}"
+                                                </motion.div>
+                                            )}
+                                        </div>
+
+                                        {/* Action Hint */}
+                                        <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800/30 flex justify-end">
+                                            <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.3em]">Supplier ID: {s.id.toString().padStart(4, '0')}</span>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
+                    </motion.div>
+                </div>
+            </main>
                     </div>
                 </motion.div>
             </main>

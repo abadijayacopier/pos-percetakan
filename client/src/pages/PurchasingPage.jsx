@@ -3,7 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiPackage, FiPlus, FiTrash2, FiSave, FiSearch,
     FiCalendar, FiUser, FiFileText, FiArrowLeft, FiShoppingCart, FiCheckCircle,
-    FiAlertCircle, FiCheck, FiX, FiList, FiClock, FiEye, FiTrash2 as FiTrashAlt
+    FiAlertCircle, FiCheck, FiX, FiList, FiClock, FiEye, FiTrash2 as FiTrashAlt,
+    FiAlertTriangle, FiDollarSign, FiRefreshCw, FiTruck,
+    FiChevronRight, FiActivity, FiArrowUpRight, FiTarget,
+    FiZap, FiPieChart, FiTrendingUp
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import api from '../services/api';
@@ -60,6 +63,7 @@ export default function PurchasingPage({ onNavigate }) {
     // Search Drawer
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    const [showLowStock, setShowLowStock] = useState(false);
 
     useEffect(() => {
         const loadData = async () => {
@@ -319,456 +323,461 @@ export default function PurchasingPage({ onNavigate }) {
     }
 
     return (
-        <div className="h-full bg-slate-50 dark:bg-[#0b0f1a] flex flex-col relative overflow-hidden">
+        <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0b0f1a] relative overflow-hidden font-inter">
             {/* Mesh Gradient Background */}
-            <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-500/10 dark:from-blue-600/10 to-transparent pointer-events-none" />
-            <div className="absolute top-20 -left-40 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/10 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute bottom-40 right-10 w-80 h-80 bg-emerald-400/10 dark:bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none" />
+            <div className="mesh-bg" />
 
-            {/* Header */}
-            <header className="px-6 py-8 md:px-8 md:py-10 flex items-center justify-between shrink-0 relative z-10">
-                <div className="flex items-start gap-5">
-                    <button
-                        onClick={() => onNavigate('dashboard')}
-                        className="p-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-2xl transition-all shadow-sm group"
+            {/* Floating Low Stock Alert */}
+            <AnimatePresence>
+                {lowStockItems.length > 0 && activeTab === 'entry' && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 px-6 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-full shadow-2xl shadow-rose-500/20 border border-rose-500/20"
                     >
-                        <FiArrowLeft size={22} className="group-hover:-translate-x-1 transition-transform" />
-                    </button>
-                    <div>
-                        <motion.h1
-                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                            className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3"
+                        <div className="w-10 h-10 bg-rose-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-rose-500/30 animate-pulse">
+                            <FiAlertTriangle size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Peringatan Stok</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white leading-none">
+                                Ada <span className="text-rose-600 dark:text-rose-400">{lowStockItems.length} item</span> stok rendah Pak!
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowLowStock(true)}
+                            className="ml-4 px-4 py-2 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 rounded-full text-xs font-black transition-all"
                         >
-                            <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30">
-                                <FiPackage size={22} />
+                            DETAIL
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Top Header & Stats */}
+            <header className="px-10 pt-16 pb-12 shrink-0 relative z-20">
+                <div className="max-w-7xl mx-auto space-y-12">
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                        <div className="flex items-start gap-8">
+                            <button
+                                onClick={() => onNavigate('dashboard')}
+                                className="mt-2 w-14 h-14 bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl border border-white dark:border-slate-700 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-2xl flex items-center justify-center transition-all shadow-xl shadow-slate-200/50 dark:shadow-none hover:scale-105 active:scale-95 group"
+                            >
+                                <FiArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+                            </button>
+                            <div className="space-y-4">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                    className="w-16 h-16 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-500/30"
+                                >
+                                    <FiPackage size={28} />
+                                </motion.div>
+                                <div>
+                                    <motion.h1
+                                        initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                                        className="text-5xl md:text-6xl font-black tracking-tighter text-slate-800 dark:text-white font-premium leading-none"
+                                    >
+                                        Logistik <span className="text-gradient">Barang Masuk</span>
+                                    </motion.h1>
+                                    <motion.p
+                                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                                        className="text-slate-500 dark:text-slate-400 mt-4 font-bold max-w-xl leading-relaxed text-lg flex items-center gap-2"
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> Update stok gudang & HPP inventori
+                                    </motion.p>
+                                </div>
                             </div>
-                            Barang Masuk
-                        </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-                            className="text-sm md:text-base font-medium text-slate-500 dark:text-slate-400 mt-3"
-                        >
-                            Penerimaan tagihan supplier & re-stok inventori produk/bahan baku.
-                        </motion.p>
+                        </div>
+
+                        {/* Modern Tabs Pro Max */}
+                        <div className="flex bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl p-2 rounded-[2rem] border border-white/60 dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none">
+                            <button
+                                onClick={() => setActiveTab('entry')}
+                                className={`flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-sm font-black uppercase tracking-widest transition-all ${
+                                    activeTab === 'entry'
+                                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30 scale-[1.02]'
+                                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800'
+                                }`}
+                            >
+                                <FiPlus size={18} /> <span>Entry Baru</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-sm font-black uppercase tracking-widest transition-all ${
+                                    activeTab === 'history'
+                                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/30 scale-[1.02]'
+                                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800'
+                                }`}
+                            >
+                                <FiClock size={18} /> <span>Riwayat</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                {/* Tab Buttons */}
-                <div className="flex gap-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50">
-                    <button onClick={() => setActiveTab('entry')} className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'entry' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
-                        <FiPlus size={14} /> Entry Baru
-                    </button>
-                    <button onClick={() => setActiveTab('history')} className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
-                        <FiClock size={14} /> Riwayat
-                    </button>
+
+                    {/* Quick Action & Alerts */}
+                    <div className="flex flex-wrap items-center gap-4 border-t border-slate-200/50 dark:border-slate-800 pt-8">
+                        <button onClick={() => setShowLowStock(true)} className="group px-6 py-4 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-rose-100 dark:border-rose-900/30 hover:border-rose-500 transition-all flex items-center gap-4 shadow-xl shadow-rose-500/5">
+                            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 flex items-center justify-center group-hover:scale-110 group-hover:rotate-12 transition-transform shadow-inner">
+                                <FiAlertTriangle size={20} />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Stok Kritis</p>
+                                <p className="text-sm font-black text-slate-800 dark:text-white leading-none">{lowStockItems.length} Item Perlu Restock</p>
+                            </div>
+                        </button>
+                        {lowStockItems.length > 0 && (
+                            <button onClick={handleAddLowStock} className="px-6 py-4 rounded-2xl bg-rose-600 text-white font-black hover:bg-rose-700 transition-all shadow-xl shadow-rose-500/20 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-xs">
+                                <FiPlus /> Restock Semua
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto px-6 pb-8 md:px-8 custom-scrollbar relative z-10">
-                {activeTab === 'history' ? (
-                    /* ========== PURCHASE HISTORY TAB ========== */
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto">
-                        <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-white/60 dark:border-slate-800/50 overflow-hidden">
-                            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                                    <span className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-lg"><FiList size={16} /></span>
-                                    Riwayat Pembelian
-                                </h2>
-                                <button onClick={fetchHistory} className="p-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-xl border border-slate-100 dark:border-slate-700 transition-all text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                                    <FiClock size={14} /> Refresh
-                                </button>
-                            </div>
-                            {loadingHistory ? (
-                                <div className="py-20 text-center text-slate-400">
-                                    <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                                    <p className="text-xs font-bold uppercase tracking-widest">Memuat riwayat...</p>
-                                </div>
-                            ) : purchaseHistory.length === 0 ? (
-                                <div className="py-20 text-center text-slate-400">
-                                    <FiPackage size={48} className="mx-auto mb-4 opacity-20" />
-                                    <p className="text-xs font-bold uppercase tracking-widest">Belum ada riwayat pembelian</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="bg-slate-50/80 dark:bg-slate-800/50">
-                                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Invoice</th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Supplier</th>
-                                                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
-                                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</th>
-                                                <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                                <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                            {purchaseHistory.map((p, i) => (
-                                                <tr key={p.id || i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors group">
-                                                    <td className="px-6 py-4">
-                                                        <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">{p.invoice_no}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold">{p.id}</p>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-xs font-bold text-slate-600 dark:text-slate-300">{p.supplier_name || 'Umum'}</td>
-                                                    <td className="px-6 py-4 text-xs font-medium text-slate-500 dark:text-slate-400">
-                                                        {p.date ? new Date(p.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right text-sm font-black text-slate-800 dark:text-white">
-                                                        {formatRupiah(p.total_amount)}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${p.payment_status === 'lunas' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
-                                                            {p.payment_status === 'lunas' ? 'Lunas' : 'Hutang'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <div className="flex items-center justify-end gap-1.5">
-                                                            <button onClick={() => handleViewPurchase(p.id)} className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-600 rounded-xl transition-all" title="Lihat Detail">
-                                                                <FiEye size={15} />
-                                                            </button>
-                                                            <button onClick={() => handleDeletePurchase(p)} className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-400 hover:text-rose-600 rounded-xl transition-all" title="Hapus">
-                                                                <FiTrashAlt size={15} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                            <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-center">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    Total {purchaseHistory.length} transaksi pembelian
-                                </p>
-                            </div>
-                        </div>
-                    </motion.div>
-                ) : (
-                    /* ========== ENTRY FORM TAB ========== */
-                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-                        {/* Left Panel: Form Header */}
+            <main className="flex-1 px-10 pb-16 overflow-hidden relative z-10">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'entry' ? (
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="lg:col-span-4"
+                            key="entry"
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                            className="h-full grid grid-cols-1 xl:grid-cols-12 gap-8 overflow-hidden"
                         >
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-white/60 dark:border-slate-800/50 sticky top-0">
-                                <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest border-b border-slate-200/50 dark:border-slate-800 pb-5 mb-6 flex items-center gap-2">
-                                    <span className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-lg"><FiFileText size={16} /></span>
-                                    Informasi Pre-order
-                                </h2>
-
-                                <div className="space-y-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1">Tanggal Terima *</label>
-                                        <div className="relative group">
-                                            <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                            <input
-                                                type="date"
-                                                value={form.date}
-                                                onChange={e => setForm({ ...form, date: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl py-3.5 pl-12 pr-4 outline-none font-bold text-slate-700 dark:text-slate-200 transition-all shadow-sm"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1">Data Supplier / Vendor</label>
-                                        <div className="relative group">
-                                            <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
-                                            <select
-                                                value={form.supplier_id}
-                                                onChange={e => setForm({ ...form, supplier_id: e.target.value })}
-                                                className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl py-3.5 pl-12 pr-4 outline-none font-bold text-slate-700 dark:text-slate-200 appearance-none cursor-pointer transition-all shadow-sm"
-                                            >
-                                                <option value="">Vendor Non-spesifik (Umum)</option>
-                                                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 pt-5 border-t border-slate-200/50 dark:border-slate-800">
-                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Status Pelunasan</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className={`relative flex items-center justify-center gap-2 p-3.5 font-bold text-xs uppercase tracking-wider rounded-2xl cursor-pointer border-2 transition-all shadow-sm ${form.payment_status === 'lunas' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                                <input type="radio" className="sr-only" name="payment_status" value="lunas" checked={form.payment_status === 'lunas'} onChange={() => setForm({ ...form, payment_status: 'lunas' })} />
-                                                Tunai (Lunas)
-                                            </label>
-                                            <label className={`relative flex items-center justify-center gap-2 p-3.5 font-bold text-xs uppercase tracking-wider rounded-2xl cursor-pointer border-2 transition-all shadow-sm ${form.payment_status === 'hutang' ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                                <input type="radio" className="sr-only" name="payment_status" value="hutang" checked={form.payment_status === 'hutang'} onChange={() => setForm({ ...form, payment_status: 'hutang' })} />
-                                                Kredit (Hutang)
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3 pt-3">
-                                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1">Catatan Tagihan / Resi</label>
-                                        <textarea
-                                            value={form.notes}
-                                            onChange={e => setForm({ ...form, notes: e.target.value })}
-                                            rows="3"
-                                            placeholder="Tulis keterangan surat jalan, nama driver, dll..."
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl py-3.5 px-5 outline-none font-medium text-slate-700 dark:text-slate-200 resize-none transition-all shadow-sm"
-                                        ></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Right Panel: Items */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                            className="lg:col-span-8 flex flex-col gap-6"
-                        >
-                            {/* Search Bar / Add Item */}
-                            <div className="relative z-[60]">
-                                <div className="relative group">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 p-2 rounded-xl text-slate-400 group-focus-within:text-blue-500 shadow-sm transition-colors border border-slate-100 dark:border-slate-700 pointer-events-none">
-                                        <FiSearch size={20} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Ketikan nama Produk Retail atau Bahan Cetak lalu klik tambah..."
-                                        value={searchQuery}
-                                        onFocus={() => setShowSearch(true)}
-                                        onChange={e => {
-                                            setSearchQuery(e.target.value);
-                                            setShowSearch(true);
-                                        }}
-                                        className="w-full pl-16 pr-5 py-5 rounded-[2rem] bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-slate-800/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 font-bold dark:text-white outline-none transition-all shadow-xl shadow-slate-200/50 dark:shadow-black/50 text-lg"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            onClick={() => setSearchQuery('')}
-                                            className="absolute right-5 top-1/2 -translate-y-1/2 p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:white rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                        >
-                                            <FiX size={16} />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Low Stock Auto-Fill Section */}
-                                <AnimatePresence>
-                                    {lowStockItems.length > 0 && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="mt-4 flex flex-wrap items-center gap-3"
-                                        >
-                                            <button
-                                                onClick={handleAddLowStock}
-                                                className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-rose-500/20 transition-all flex items-center gap-2 active:scale-95 animate-pulse hover:animate-none"
-                                            >
-                                                <FiAlertCircle size={14} /> Tarik {lowStockItems.length} Barang Stok Rendah
-                                            </button>
-                                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                                                {lowStockItems.slice(0, 5).map(item => (
-                                                    <button
-                                                        key={`${item.type}-${item.id}`}
-                                                        onClick={() => handleAddItem(item)}
-                                                        className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:border-blue-500 hover:text-blue-500 transition-all whitespace-nowrap"
-                                                    >
-                                                        + {item.name} ({item.stock}/{item.minStock})
-                                                    </button>
-                                                ))}
-                                                {lowStockItems.length > 5 && (
-                                                    <span className="text-[10px] font-bold text-slate-400 self-center">+{lowStockItems.length - 5} lainnya</span>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                {/* Dropdown Results */}
-                                {showSearch && (
-                                    <div
-                                        className="fixed inset-0 z-[1]"
-                                        onClick={() => setShowSearch(false)}
-                                    />
-                                )}
-                                <AnimatePresence>
-                                    {showSearch && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="absolute z-50 w-full mt-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl overflow-hidden"
-                                        >
-                                            <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-2">
-                                                {combinedOptions.length === 0 ? (
-                                                    <div className="p-8 text-center flex flex-col items-center">
-                                                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-3"><FiSearch size={24} /></div>
-                                                        <div className="text-slate-800 dark:text-white font-bold text-lg mb-1">Tidak Ditemukan</div>
-                                                        <div className="text-sm text-slate-500 dark:text-slate-400">Pastikan barang tersebut sudah didaftarkan pada menu Data Master.</div>
-                                                    </div>
-                                                ) : (
-                                                    combinedOptions.map(opt => (
-                                                        <div
-                                                            key={`${opt.type}-${opt.id}`}
-                                                            onMouseDown={(e) => {
-                                                                e.preventDefault(); // Keep focus in search while adding
-                                                                e.stopPropagation();
-                                                                handleAddItem(opt);
-                                                            }}
-                                                            className="px-5 py-4 m-1 rounded-2xl hover:bg-blue-50 dark:hover:bg-blue-900/10 cursor-pointer border border-transparent hover:border-blue-100 dark:hover:border-blue-800/50 flex justify-between items-center group transition-all"
-                                                        >
-                                                            <div>
-                                                                <div className="font-bold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors text-base">{opt.name}</div>
-                                                                <div className="text-[11px] tracking-widest uppercase font-bold text-slate-500 mt-1.5 flex gap-2">
-                                                                    <span className={`px-2 py-0.5 rounded-md ${opt.type === 'product' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'}`}>
-                                                                        {opt.type === 'product' ? '📦 Retail' : '🔧 Bahan Cetak'}
-                                                                    </span>
-                                                                    <span className="flex items-center text-slate-400">&bull; Sisa Sistem: {opt.stock} {opt.unit}</span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-active:scale-95 transition-all outline outline-1 outline-slate-200 dark:outline-slate-700 group-hover:outline-blue-600">
-                                                                <FiPlus size={20} />
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* List/Cart Container */}
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-white/60 dark:border-slate-800/50 flex-1 flex flex-col overflow-hidden relative z-10">
-
-                                <div className="p-8 pb-5 flex items-center justify-between border-b border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-slate-900/50">
-                                    <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3">
-                                        <div className="p-2 bg-blue-100 dark:bg-blue-500/20 text-blue-600 rounded-lg"><FiShoppingCart size={16} /></div>
-                                        Isi Keranjang Belanja
+                            {/* Left Panel: Form & Search */}
+                            <div className="xl:col-span-4 flex flex-col gap-6 overflow-y-auto custom-scrollbar pr-2">
+                                <div className="premium-card p-8 rounded-[2.5rem]">
+                                    <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest border-b border-slate-200/50 dark:border-slate-800 pb-5 mb-6 flex items-center gap-3">
+                                        <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-lg"><FiFileText size={16} /></div>
+                                        Informasi Kuitansi
                                     </h2>
-                                    <div className="text-xs font-black uppercase tracking-widest px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl shadow-inner border border-slate-200 dark:border-slate-700">
-                                        <span className="text-blue-600 dark:text-blue-400">{items.length}</span> SKU Ditambahkan
+
+                                    <div className="space-y-6">
+                                        <div className="space-y-3">
+                                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1">Tanggal Terima *</label>
+                                            <div className="relative group">
+                                                <FiCalendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                                <input
+                                                    type="date"
+                                                    value={form.date}
+                                                    onChange={e => setForm({ ...form, date: e.target.value })}
+                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl py-3.5 pl-12 pr-4 outline-none font-bold text-slate-700 dark:text-slate-200 transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1">Supplier / Vendor</label>
+                                            <div className="relative group">
+                                                <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors pointer-events-none" />
+                                                <select
+                                                    value={form.supplier_id}
+                                                    onChange={e => setForm({ ...form, supplier_id: e.target.value })}
+                                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl py-3.5 pl-12 pr-4 outline-none font-bold text-slate-700 dark:text-slate-200 appearance-none cursor-pointer transition-all shadow-sm"
+                                                >
+                                                    <option value="">Vendor Non-spesifik (Umum)</option>
+                                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-5 border-t border-slate-200/50 dark:border-slate-800">
+                                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest pl-1 mb-1 block">Status Pelunasan</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button
+                                                    onClick={() => setForm({ ...form, payment_status: 'lunas' })}
+                                                    className={`flex items-center justify-center gap-2 p-3.5 font-bold text-xs uppercase tracking-wider rounded-2xl border-2 transition-all shadow-sm ${form.payment_status === 'lunas' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                                >
+                                                    Tunai (Lunas)
+                                                </button>
+                                                <button
+                                                    onClick={() => setForm({ ...form, payment_status: 'hutang' })}
+                                                    className={`flex items-center justify-center gap-2 p-3.5 font-bold text-xs uppercase tracking-wider rounded-2xl border-2 transition-all shadow-sm ${form.payment_status === 'hutang' ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                                >
+                                                    Kredit (Hutang)
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-auto min-h-[350px]">
-                                    {items.length === 0 ? (
-                                        <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-80">
-                                            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-inner text-slate-300 dark:text-slate-600">
-                                                <FiPackage size={40} />
-                                            </div>
-                                            <p className="font-bold px-6 text-center max-w-sm text-slate-500">Keranjang masih kosong. Mulai ketik nama barang pada kolom pencarian di atas untuk memasukkan stok ke gudang.</p>
+                                <div className="premium-card p-8 rounded-[2.5rem] flex-1">
+                                    <div className="relative group mb-6">
+                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 p-2 rounded-xl text-slate-400 group-focus-within:text-blue-500 shadow-sm transition-colors border border-slate-100 dark:border-slate-700 pointer-events-none">
+                                            <FiSearch size={20} />
                                         </div>
-                                    ) : (
-                                        <table className="w-full text-left border-collapse whitespace-nowrap">
-                                            <thead className="bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
-                                                <tr>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-1/3">Detail Barang Masuk</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center w-28">Kuantitas</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-44">Modal Unit Baru (Rp)</th>
-                                                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-40">Subtotal</th>
-                                                    <th className="px-6 py-4 w-16"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                                                <AnimatePresence>
+                                        <input
+                                            type="text"
+                                            placeholder="Cari Produk atau Bahan..."
+                                            value={searchQuery}
+                                            onChange={e => {
+                                                setSearchQuery(e.target.value);
+                                                setShowSearch(true);
+                                            }}
+                                            className="w-full pl-16 pr-5 py-5 rounded-[2rem] bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border border-white/60 dark:border-slate-800/50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 font-bold dark:text-white outline-none transition-all shadow-xl shadow-slate-200/50 dark:shadow-black/50"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2 overflow-y-auto custom-scrollbar max-h-[40vh]">
+                                        {combinedOptions.map(opt => (
+                                            <button
+                                                key={`${opt.type}-${opt.id}`}
+                                                onClick={() => handleAddItem(opt)}
+                                                className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 hover:border-blue-500/50 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all text-left group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                        <FiPackage size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-black text-slate-800 dark:text-white leading-none">{opt.name}</p>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex gap-2">
+                                                            <span className={opt.type === 'product' ? 'text-indigo-500' : 'text-emerald-500'}>{opt.type === 'product' ? 'RETAIL' : 'BAHAN'}</span>
+                                                            <span>•</span>
+                                                            <span>STOK: {opt.stock} {opt.unit}</span>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <FiPlus className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Panel: Cart */}
+                            <div className="xl:col-span-8 flex flex-col overflow-hidden">
+                                <div className="premium-card rounded-[2.5rem] flex-1 flex flex-col overflow-hidden">
+                                    <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-slate-900/50">
+                                        <h2 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-3 font-premium">
+                                            <div className="p-2 bg-blue-100 dark:bg-blue-500/20 text-blue-600 rounded-lg"><FiShoppingCart size={16} /></div>
+                                            Keranjang Barang Masuk
+                                        </h2>
+                                        <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                            {items.length} SKU DITAMBAHKAN
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 overflow-auto custom-scrollbar p-8">
+                                        {items.length === 0 ? (
+                                            <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                                                <FiPackage size={80} className="text-slate-300 dark:text-slate-700 mb-6" />
+                                                <h4 className="text-2xl font-black text-slate-800 dark:text-white font-premium">Draft Kosong</h4>
+                                                <p className="text-slate-500 dark:text-slate-400 font-bold max-w-xs mt-2">Pilih barang di panel kiri untuk memasukkan data stok gudang.</p>
+                                            </div>
+                                        ) : (
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                                                        <th className="pb-6">Detail Produk</th>
+                                                        <th className="pb-6 text-center w-32">Kuantitas</th>
+                                                        <th className="pb-6 text-right w-48">Harga Modal Baru</th>
+                                                        <th className="pb-6 text-right w-40">Subtotal</th>
+                                                        <th className="pb-6 w-16"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                                                     {items.map((item, idx) => (
                                                         <motion.tr
-                                                            layout
                                                             key={`${item.type}-${item.id}`}
-                                                            initial={{ opacity: 0, x: -20 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            exit={{ opacity: 0, x: 20, gridTemplateRows: '0fr' }}
-                                                            className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
+                                                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                                            className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors"
                                                         >
-                                                            <td className="px-6 py-4">
-                                                                <div className="font-extrabold text-slate-800 dark:text-white text-sm mb-1.5 whitespace-normal">
-                                                                    {item.name}
-                                                                </div>
-                                                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                                    <span className={`px-2 py-0.5 rounded ${item.type === 'product' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10'}`}>
-                                                                        {item.type === 'product' ? 'Retail' : 'Bahan Baku'}
-                                                                    </span>
-                                                                    <span>&bull;</span>
-                                                                    <span>Stok Tercatat: {item.stock}</span>
-                                                                </div>
+                                                            <td className="py-6 pr-4">
+                                                                <p className="font-black text-slate-800 dark:text-white mb-1 group-hover:text-blue-600 transition-colors">{item.name}</p>
+                                                                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase">Sisa: {item.stock}</span>
                                                             </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/50">
+                                                            <td className="py-6 px-4">
+                                                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2 border border-slate-100 dark:border-slate-700 focus-within:border-blue-500 transition-all">
                                                                     <input
                                                                         type="number"
-                                                                        min="0.1"
-                                                                        step="any"
+                                                                        className="w-12 text-center bg-transparent border-none outline-none font-black text-slate-800 dark:text-white"
                                                                         value={item.qty}
                                                                         onChange={e => updateItem(idx, 'qty', e.target.value)}
-                                                                        className="w-16 px-2 py-2 text-center bg-transparent border-none outline-none font-black text-slate-800 dark:text-white"
                                                                     />
-                                                                    <span className="text-xs font-bold text-slate-400 uppercase pr-3">{item.unit}</span>
+                                                                    <span className="text-[10px] font-black text-slate-400">{item.unit}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/50">
-                                                                    <span className="text-xs font-bold text-slate-400 pl-3">Rp</span>
+                                                            <td className="py-6 px-4">
+                                                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 rounded-xl px-4 py-2 border border-slate-100 dark:border-slate-700 focus-within:border-emerald-500 transition-all">
+                                                                    <span className="text-[10px] font-black text-slate-400">Rp</span>
                                                                     <input
                                                                         type="number"
-                                                                        min="0"
+                                                                        className="w-full text-right bg-transparent border-none outline-none font-black text-slate-800 dark:text-white"
                                                                         value={item.cost}
                                                                         onChange={e => updateItem(idx, 'cost', e.target.value)}
-                                                                        className="w-full px-2 py-2 text-right bg-transparent border-none outline-none font-black text-slate-800 dark:text-white"
-                                                                        placeholder="0"
                                                                     />
                                                                 </div>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <div className="font-black text-lg text-slate-800 dark:text-white">
-                                                                    {formatRupiah(item.subtotal)}
-                                                                </div>
+                                                            <td className="py-6 pl-4 text-right">
+                                                                <p className="text-sm font-black text-slate-800 dark:text-white">{formatRupiah(item.subtotal)}</p>
                                                             </td>
-                                                            <td className="px-6 py-4 text-right">
-                                                                <button
-                                                                    onClick={() => removeItem(idx)}
-                                                                    className="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-500/20 dark:hover:text-rose-400 transition-colors shadow-sm border border-transparent hover:border-rose-200 dark:hover:border-rose-500/30"
-                                                                    title="Hapus Item"
-                                                                >
-                                                                    <FiTrash2 size={18} />
+                                                            <td className="py-6 text-right">
+                                                                <button onClick={() => removeItem(idx)} className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors">
+                                                                    <FiX size={20} />
                                                                 </button>
                                                             </td>
                                                         </motion.tr>
                                                     ))}
-                                                </AnimatePresence>
-                                            </tbody>
-                                        </table>
-                                    )}
-                                </div>
-
-                                {/* Summary Footer attached to Table */}
-                                <div className="p-6 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col md:flex-row justify-between items-center gap-6 z-10">
-                                    <div className="text-center md:text-left">
-                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                                            Total Kuitansi Vendor
-                                        </h3>
-                                        <div className="text-3xl font-black text-blue-600 dark:text-blue-400 mt-1">
-                                            {formatRupiah(totalAmount)}
-                                        </div>
-                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">
-                                            Pastikan HPP yang diinput sesuai faktur.
-                                        </p>
+                                                </tbody>
+                                            </table>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={handleSubmit}
-                                        disabled={saving || items.length === 0}
-                                        className="w-full md:w-auto px-10 py-4 lg:py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-[1.25rem] shadow-xl shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-blue-500/40 text-sm tracking-wide uppercase"
-                                    >
-                                        {saving ? (
-                                            <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        ) : <FiSave size={22} />}
-                                        Simpan Entri Pembelian
+
+                                    <div className="p-10 bg-slate-50/80 dark:bg-slate-800/40 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-8">
+                                        <div className="flex items-center gap-6">
+                                            <div className="p-4 bg-blue-500/10 text-blue-600 rounded-[1.5rem] hidden sm:flex">
+                                                <FiDollarSign size={32} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Belanja Faktur</p>
+                                                <p className="text-4xl font-black text-slate-800 dark:text-white font-premium">
+                                                    {formatRupiah(totalAmount)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleSubmit}
+                                            disabled={saving || items.length === 0}
+                                            className="w-full md:w-auto px-12 py-5 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-2xl shadow-blue-500/40 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:translate-y-0 flex items-center justify-center gap-3 uppercase tracking-wider text-sm"
+                                        >
+                                            {saving ? 'MEMPROSES...' : <><FiSave size={22} /> SIMPAN ENTRI</>}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="history"
+                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                            className="h-full premium-card rounded-[2.5rem] flex flex-col overflow-hidden"
+                        >
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-6 bg-white/50 dark:bg-slate-900/50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center text-2xl">
+                                        <FiClock />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white font-premium leading-none">History Barang Masuk</h3>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Laporan harian logistik gudang</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 w-full sm:w-auto">
+                                    <button onClick={fetchHistory} className="p-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                        <FiRefreshCw size={20} className={loadingHistory ? 'animate-spin' : ''} />
                                     </button>
                                 </div>
                             </div>
 
+                            <div className="flex-1 overflow-auto custom-scrollbar p-8">
+                                {loadingHistory ? (
+                                    <div className="h-full flex flex-col items-center justify-center">
+                                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-16 h-16 border-[6px] border-blue-500/20 border-t-blue-600 rounded-full mb-4 shadow-lg shadow-blue-500/10" />
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">Menarik Riwayat...</p>
+                                    </div>
+                                ) : purchaseHistory.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                                        <FiClock size={80} className="text-slate-300 dark:text-slate-700 mb-6" />
+                                        <h4 className="text-2xl font-black text-slate-800 dark:text-white font-premium">Belum Ada Transaksi</h4>
+                                        <p className="text-slate-500 dark:text-slate-400 font-bold max-w-xs mt-2">Data pengadaan stok belum tercatat dalam database riwayat.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {purchaseHistory.map((h, idx) => (
+                                            <motion.div
+                                                key={h.id}
+                                                initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                                                className="bg-white/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-800 p-8 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800/40 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 transition-all group relative overflow-hidden"
+                                            >
+                                                <div className="absolute top-0 left-0 w-2 h-full bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                                    <div className="flex items-start gap-5">
+                                                        <div className="w-16 h-16 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-[1.25rem] flex items-center justify-center text-3xl font-black font-premium shadow-inner border border-white dark:border-slate-800">
+                                                            {h.supplier_name?.charAt(0) || 'U'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-3 mb-1">
+                                                                <h4 className="text-xl font-black text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors uppercase font-premium leading-none">{h.supplier_name || 'Vendor Umum'}</h4>
+                                                                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest ${h.payment_status === 'lunas' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/10'}`}>
+                                                                    {h.payment_status}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                                <FiCalendar className="text-blue-500" /> {new Date(h.date).toLocaleString('id-ID', { dateStyle: 'long' })}
+                                                                <span className="text-slate-300">•</span>
+                                                                {h.invoice_no}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col lg:items-end">
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Tagihan</p>
+                                                        <p className="text-3xl font-black text-slate-800 dark:text-white font-premium">{formatRupiah(h.total_amount)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-8 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                                    <button onClick={() => handleViewPurchase(h.id)} className="px-5 py-2.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-all">
+                                                        <FiEye /> DETAIL FAKTUR
+                                                    </button>
+                                                    <button onClick={() => handleDeletePurchase(h)} className="p-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all">
+                                                        <FiTrash2 />
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </main>
+
+            {/* Low Stock Side Panel */}
+            <AnimatePresence>
+                {showLowStock && (
+                    <div className="fixed inset-0 z-[1000] flex justify-end">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowLowStock(false)} />
+                        <motion.div
+                            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="relative w-full max-w-lg h-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col"
+                        >
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-rose-600 text-white">
+                                <div className="flex items-center gap-4">
+                                    <FiAlertTriangle size={32} />
+                                    <div>
+                                        <h3 className="text-2xl font-black font-premium leading-none uppercase tracking-tight">Limit Stok Kritis</h3>
+                                        <p className="text-rose-100 text-[10px] font-black uppercase tracking-widest mt-1.5">Segera hubungi supplier Pak!</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowLowStock(false)} className="p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
+                                    <FiX size={24} />
+                                </button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+                                {lowStockItems.map(item => (
+                                    <div key={`${item.type}-${item.id}`} className="flex items-center gap-5 p-5 rounded-[1.5rem] bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 group hover:border-rose-500/30 transition-all">
+                                        <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center text-rose-500 shadow-sm font-black text-xl border border-slate-100 dark:border-slate-700">
+                                            {item.stock}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="text-sm font-black text-slate-800 dark:text-white leading-tight mb-2 uppercase tracking-tight">{item.name}</h4>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sisa: {item.stock} {item.unit}</span>
+                                                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest">Min: {item.minStock}</span>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => { handleAddItem(item); setShowLowStock(false); }} className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all group-active:scale-95">
+                                            <FiPlus size={24} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </motion.div>
                     </div>
                 )}
-            </main>
-
+            </AnimatePresence>
 
             {/* Detail Modal */}
             <AnimatePresence>
@@ -813,22 +822,13 @@ export default function PurchasingPage({ onNavigate }) {
                                         </span>
                                     </div>
                                 </div>
-
-                                {viewDetail.notes && (
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Catatan</p>
-                                        <p className="text-sm text-slate-600 dark:text-slate-300">{viewDetail.notes}</p>
-                                    </div>
-                                )}
-
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Detail Item ({viewDetail.items?.length || 0})</p>
+                                <div className="p-6">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Detail Item</p>
                                     <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                                         <table className="w-full">
                                             <thead>
                                                 <tr className="bg-slate-50 dark:bg-slate-800/50">
                                                     <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama</th>
-                                                    <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipe</th>
                                                     <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
                                                     <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Harga</th>
                                                     <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</th>
@@ -838,11 +838,6 @@ export default function PurchasingPage({ onNavigate }) {
                                                 {(viewDetail.items || []).map((item, idx) => (
                                                     <tr key={idx}>
                                                         <td className="px-4 py-3 text-xs font-bold text-slate-700 dark:text-slate-200">{item.item_name}</td>
-                                                        <td className="px-4 py-3 text-center">
-                                                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${item.item_type === 'product' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600'}`}>
-                                                                {item.item_type === 'product' ? 'Produk' : 'Bahan'}
-                                                            </span>
-                                                        </td>
                                                         <td className="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300">{item.qty}</td>
                                                         <td className="px-4 py-3 text-right text-xs font-medium text-slate-500">{formatRupiah(item.unit_cost)}</td>
                                                         <td className="px-4 py-3 text-right text-xs font-black text-slate-800 dark:text-white">{formatRupiah(item.subtotal)}</td>

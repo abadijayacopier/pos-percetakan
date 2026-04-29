@@ -102,6 +102,47 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.premium-card {
+  @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/60 dark:border-slate-800/50 shadow-2xl shadow-slate-200/50 dark:shadow-black/50 transition-all duration-300;
+}
+
+.premium-card:hover {
+  @apply shadow-blue-500/10 dark:shadow-blue-500/5 -translate-y-1;
+}
+
+.mesh-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background-image: radial-gradient(at 0% 0%, rgba(19, 127, 236, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(19, 127, 236, 0.1) 0px, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  @apply text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 font-black;
+}
+
+.btn-premium {
+  @apply relative overflow-hidden transition-all duration-300 active:scale-95 shadow-lg hover:shadow-xl;
+}
+
+.btn-premium::after {
+  content: '';
+  @apply absolute inset-0 bg-white/20 translate-y-full transition-transform duration-300;
+}
+
+.btn-premium:hover::after {
+  @apply translate-y-0;
+}
+
 .dark .glass-panel {
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -3679,51 +3720,94 @@ img {
    PRO MAX DESIGN TOKENS & UTILITIES
    ============================================ */
 
-/* ---- WhatsApp Chat Pattern ---- */
-.pattern-wa {
-  background-color: #e5ddd5;
-  background-image: url("https://web.whatsapp.com/img/bg-chat-tile-light_6860bc0e960359850c9053359d99723a.png");
-  background-repeat: repeat;
+/* ---- Typography ---- */
+.font-premium {
+  font-family: 'DM Sans', var(--font), sans-serif;
 }
 
-.dark .pattern-wa-dark {
-  background-color: #0b141a;
-  background-image: url("https://web.whatsapp.com/img/bg-chat-tile-dark_a4be512e7195b6b733d9110b4012a025.png");
-  background-repeat: repeat;
-  opacity: 0.4;
+/* ---- Ambient Backgrounds ---- */
+.mesh-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: 
+    radial-gradient(at 0% 0%, rgba(19, 127, 236, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.15) 0px, transparent 50%);
+  background-attachment: fixed;
 }
 
-/* ---- Pro Max Aesthetics ---- */
-.text-gradient-blue {
-  background: linear-gradient(135deg, #137fec 0%, #4aa3ff 100%);
+.dark .mesh-bg {
+  background: 
+    radial-gradient(at 0% 0%, rgba(19, 127, 236, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(15, 23, 42, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(15, 23, 42, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(30, 41, 59, 0.4) 0px, transparent 50%);
+}
+
+/* ---- Premium Cards ---- */
+.premium-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: var(--shadow-premium);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .premium-card {
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+}
+
+.premium-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: 0 20px 40px -12px rgba(19, 127, 236, 0.15);
+}
+
+/* ---- Text Gradients ---- */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, #6366f1 50%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+/* ---- Scrollbar Customization ---- */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.dark .glass-panel {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.pro-max-shadow {
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.12);
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 99px;
 }
 
-.dark .pro-max-shadow {
-  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.animate-float {
-  animation: proFloat 6s ease-in-out infinite;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
-@keyframes proFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
+/* ---- Animations ---- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
