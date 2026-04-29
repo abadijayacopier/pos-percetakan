@@ -668,7 +668,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
 
                         {/* Backup & Restore */}
                         {activeTab === 'backup' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
                                     <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6 shadow-sm border border-blue-50 dark:border-blue-800/50 mx-auto md:mx-0">
                                         <FiSave size={28} />
@@ -679,6 +679,39 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                         <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
                                     </button>
                                 </div>
+
+                                {user?.username === 'admin' && (
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                                        <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 shadow-sm border border-purple-50 dark:border-purple-800/50 mx-auto md:mx-0">
+                                            <FiZap size={28} />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Developer Sync</h3>
+                                        <p className="text-slate-500 text-sm mb-8 leading-relaxed">Fitur khusus SUPRIYANTO untuk update data ke GitHub.</p>
+                                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-200 dark:shadow-none group" onClick={async () => {
+                                            const { value: password } = await Swal.fire({
+                                                title: 'Konfirmasi Developer',
+                                                input: 'password',
+                                                inputLabel: 'Masukkan password admin untuk ekspor',
+                                                inputPlaceholder: 'Password...',
+                                                showCancelButton: true,
+                                                background: 'var(--bg-card)',
+                                                color: 'var(--text-primary)'
+                                            });
+                                            if (!password) return;
+
+                                            try {
+                                                showToast('Sedang mengekspor data...', 'info');
+                                                const res = await api.post('/settings/export-project', { password });
+                                                showToast(res.data.message, 'success');
+                                            } catch (e) {
+                                                const msg = e.response?.data?.message || 'Gagal ekspor database';
+                                                showToast(msg, 'error');
+                                            }
+                                        }}>
+                                            <FiSave className="group-hover:scale-110 transition-transform" /> Ekspor ke GitHub
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
                                     <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 mb-6 shadow-sm border border-orange-50 dark:border-orange-800/50 mx-auto md:mx-0">

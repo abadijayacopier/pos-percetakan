@@ -302,6 +302,60 @@ router.get('/backup', verifyToken, requireRole(['admin']), async (req, res) => {
     }
 });
 
+// POST Export to Project Root (for GitHub Sync)
+router.post('/export-project', verifyToken, requireRole(['admin']), async (req, res) => {
+    try {
+        console.log('--- PROSES EKSPOR DATABASE DIMULAI ---');
+        const { password } = req.body;
+        if (!password) return res.status(400).json({ message: 'Password diperlukan' });
+
+        // Verify password with DB
+        const [users] = await req.db.query('SELECT password FROM users WHERE username = ?', [req.user.username]);
+        if (users.length === 0) {
+            console.error('User tidak ditemukan di database');
+            return res.status(404).json({ message: 'User tidak ditemukan' });
+        }
+
+        const bcrypt = require('bcryptjs');
+        const isMatch = await bcrypt.compare(password, users[0].password);
+        if (!isMatch) {
+            console.error('Password yang dimasukkan salah!');
+            return res.status(401).json({ message: 'Password salah!' });
+        }
+
+        const isMysql = currentMode === 'standalone' && currentDbType === 'mysql';
+        if (!isMysql) return res.status(400).json({ message: 'Fitur ini hanya untuk database MySQL' });
+
+        const configPath = path.join(__dirname, '../database/db-config.json');
+        let externalConfig = {};
+        if (fs.existsSync(configPath)) {
+            try { externalConfig = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (e) {}
+        }
+
+        const dbName = externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi';
+        const exportPath = path.join(__dirname, '../../db_pos_abadi.sql');
+        
+        console.log('Mengekspor database:', dbName);
+        console.log('Ke lokasi:', exportPath);
+
+        await mysqldump({
+            connection: {
+                host: externalConfig.DB_HOST || process.env.DB_HOST || '127.0.0.1',
+                user: externalConfig.DB_USER || process.env.DB_USER || 'root',
+                password: (externalConfig.DB_PASS || process.env.DB_PASS || '').trim(), // Trim space if any
+                database: dbName,
+            },
+            dumpToFile: exportPath,
+        });
+
+        console.log('--- EKSPOR BERHASIL ---');
+        res.json({ message: 'Database berhasil diekspor ke folder project!', path: 'db_pos_abadi.sql' });
+    } catch (e) {
+        console.error('ERROR EKSPOR:', e.message);
+        res.status(500).json({ message: 'Gagal ekspor: ' + e.message });
+    }
+});
+
 // POST Restore
 router.post('/restore', verifyToken, requireRole(['admin']), upload.single('backup'), async (req, res) => {
     try {
