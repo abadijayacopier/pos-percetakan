@@ -1,5 +1,164 @@
 import React, { useMemo } from 'react';
 
+const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
+    const items = receiptData.items || [];
+    const paperSize = printSettings.paperSize || 'standard';
+    const printId = useMemo(() => `dot-matrix-print-${Math.random().toString(36).substr(2, 9)}`, []);
+
+    // Define dimensions based on paperSize
+    const dims = {
+        standard: { width: '241.3mm', height: '279.4mm', label: 'Standard (9.5 x 11")' },
+        half: { width: '241.3mm', height: '139.7mm', label: 'Half (9.5 x 5.5")' },
+        wartel: { width: '120mm', height: '140mm', label: 'Wartel (12 x 14 cm)' }
+    };
+
+    const currentDim = dims[paperSize] || dims.standard;
+    const isWartel = paperSize === 'wartel';
+
+    return (
+        <div id={printId} className={`bg-white text-black font-mono leading-tight p-4 mx-auto border border-slate-100 ${isWartel ? 'w-[450px]' : 'w-[800px]'} print:p-0 print:m-0 print:border-0`} style={{ fontSize: '12px' }}>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @page { 
+                    size: ${currentDim.width} ${currentDim.height}; 
+                    margin: 0 !important; 
+                }
+                @media print {
+                    body * { visibility: hidden !important; background: white !important; }
+                    #${printId}, #${printId} * { visibility: visible !important; }
+                    #${printId} { 
+                        position: absolute !important; 
+                        left: 0 !important; 
+                        top: 0 !important; 
+                        width: 100% !important; 
+                        margin: 0 !important;
+                        padding: 10mm !important;
+                        font-family: 'Courier New', Courier, monospace !important;
+                        color: black !important;
+                        background: white !important;
+                    }
+                    .dm-border-t { border-top: 1px dashed black !important; }
+                    .dm-border-b { border-bottom: 1px dashed black !important; }
+                    .dm-double-border-b { border-bottom: 3px double black !important; }
+                }
+            ` }} />
+
+            {/* Header */}
+            <div className="text-center mb-4 uppercase">
+                <div className="text-xl font-bold">{printSettings.storeName}</div>
+                <div className="text-[10px]">{printSettings.storeAddress}</div>
+                <div className="text-[10px]">Telp: {printSettings.storePhone}</div>
+                <div className="my-2 border-b-2 border-black"></div>
+                <div className="font-bold text-sm">FAKTUR PENJUALAN</div>
+                <div className="my-1 border-b border-black"></div>
+            </div>
+
+            {/* Metadata */}
+            <div className="grid grid-cols-2 gap-4 mb-4 text-[11px]">
+                <div className="space-y-1">
+                    <div className="flex justify-between">
+                        <span className="w-20">NO INVOICE</span>
+                        <span className="flex-1">: # {receiptData.invoiceNo}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="w-20">TANGGAL</span>
+                        <span className="flex-1">: {safeDate}</span>
+                    </div>
+                </div>
+                <div className="space-y-1 text-right">
+                    <div className="flex justify-between">
+                        <span className="w-20 text-left">PELANGGAN</span>
+                        <span className="flex-1">: {receiptData.customerName || 'UMUM'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="w-20 text-left">KASIR</span>
+                        <span className="flex-1">: {receiptData.userName || printSettings.userName || 'KASIR'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table */}
+            <table className="w-full text-left mb-4 border-collapse text-[11px]">
+                <thead>
+                    <tr className="border-t border-b border-black font-bold uppercase">
+                        <th className="py-1 px-1 w-8">NO</th>
+                        <th className="py-1 px-1">ITEM DESCRIPTION</th>
+                        <th className="py-1 px-1 text-center w-12">QTY</th>
+                        <th className="py-1 px-1 text-right w-24">HARGA</th>
+                        <th className="py-1 px-1 text-right w-24">SUBTOTAL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {items.map((item, idx) => {
+                        const qty = item.qty || item.quantity || 1;
+                        const price = item.price || item.sellPrice || 0;
+                        const sub = item.subtotal || (qty * price);
+                        return (
+                            <tr key={idx} className="border-b border-dashed border-slate-200 print:border-black">
+                                <td className="py-1 px-1 text-center">{idx + 1}</td>
+                                <td className="py-1 px-1 uppercase">{item.name}</td>
+                                <td className="py-1 px-1 text-center">{qty}</td>
+                                <td className="py-1 px-1 text-right">{formatCurrency(price)}</td>
+                                <td className="py-1 px-1 text-right">{formatCurrency(sub)}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+
+            {/* Totals */}
+            <div className="flex justify-end mb-6">
+                <div className="w-64 space-y-1 text-[11px]">
+                    <div className="flex justify-between">
+                        <span>SUBTOTAL</span>
+                        <span>{formatCurrency(receiptData.subtotal)}</span>
+                    </div>
+                    {receiptData.discount > 0 && (
+                        <div className="flex justify-between">
+                            <span>DISKON</span>
+                            <span>- {formatCurrency(receiptData.discount)}</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between font-bold border-t border-black pt-1 text-sm">
+                        <span>TOTAL</span>
+                        <span>RP {formatCurrency(receiptData.total)}</span>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-dashed border-black">
+                        <span>BAYAR</span>
+                        <span>{formatCurrency(receiptData.paid)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>KEMBALI</span>
+                        <span>{formatCurrency(receiptData.changeAmount)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                        <span>STATUS</span>
+                        <span>{(Number(receiptData.paid) < Number(receiptData.total)) ? 'BELUM LUNAS' : 'LUNAS'}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Signatures */}
+            <div className="grid grid-cols-2 gap-20 mb-8 px-10 text-[10px] text-center">
+                <div>
+                    <p className="mb-12">PELANGGAN</p>
+                    <p>( {receiptData.customerName || '................'} )</p>
+                </div>
+                <div>
+                    <p className="mb-12">HORMAT KAMI,</p>
+                    <p>( {printSettings.storeName} )</p>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center pt-4 border-t border-black text-[10px] uppercase">
+                <p>{printSettings.receiptFooter || 'Terima Kasih Atas Kunjungan Anda!'}</p>
+                <p className="mt-1 italic normal-case">Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.</p>
+            </div>
+        </div>
+    );
+};
+
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
     // Use a unique ID to prevent double-printing when multiple receipt components are in the DOM
@@ -206,6 +365,11 @@ const ReceiptProMax = ({
             changeAmount: receiptData.changeAmount ?? receiptData.change ?? 0
         };
         return <InvoiceLayout receiptData={safeReceiptData} printSettings={printSettings} formatCurrency={safeFormatCurrency} safeDate={safeDate} />;
+    }
+
+    // Inject DotMatrixLayout for LX310
+    if (printSettings.printerSize === 'lx310') {
+        return <DotMatrixLayout receiptData={receiptData} printSettings={printSettings} formatCurrency={safeFormatCurrency} safeDate={safeDate} />;
     }
 
     return (

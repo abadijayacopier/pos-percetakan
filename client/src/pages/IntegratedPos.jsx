@@ -23,7 +23,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const { showToast } = useToast();
     const { themeMode: theme, setTheme: toggleTheme } = useTheme();
     const isElectron = navigator.userAgent.toLowerCase().includes('electron');
-    const API_HOST = isElectron ? 'http://localhost:5001' : '';
+    const API_HOST = isElectron ? 'http://localhost:5001' : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '' : window.location.origin);
 
     // Basic States
     const [activeServiceTab, setActiveServiceTab] = useState('fotocopy'); // 'fotocopy' | 'jilid' | 'cetak'
@@ -256,7 +256,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                 (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (p.code && p.code.toLowerCase().includes(searchQuery.toLowerCase()));
-            const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+            const matchesCategory = selectedCategory === 'all' || (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase());
             const isRetail = !p.type || (p.type.toLowerCase() !== 'service' && p.type.toLowerCase() !== 'fotocopy');
             return matchesSearch && matchesCategory && isRetail;
         });
@@ -322,11 +322,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         });
     };
 
-    const updateQty = (id, delta) => {
+    const updateQty = (id, delta, isAbsolute = false) => {
         setCart(prev => prev.map(item => {
             if (item.id === id) {
-                const newQty = Math.max(0, item.quantity + delta);
-                if (delta > 0 && item.stock && newQty > item.stock) return item;
+                const newQty = isAbsolute ? delta : Math.max(0, item.quantity + delta);
+                if (!isAbsolute && delta > 0 && item.stock && newQty > item.stock) return item;
                 return { ...item, quantity: newQty };
             }
             return item;
@@ -424,14 +424,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
         const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, qty);
+            updateQty(existingItem.id, 1); // Always increment by 1 sequentially
             showToast('Keranjang diperbarui!', 'success');
         } else {
             const newItem = {
                 id: `jilid-${Date.now()}-${Math.random()}`,
                 name: `${item.name}`,
                 sellPrice: item.price,
-                quantity: qty,
+                quantity: 1, // Start with 1
                 type: 'service'
             };
             setCart(prev => [...prev, newItem]);
@@ -445,14 +445,14 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         const name = `Print ${item.paper} ${item.color.toUpperCase()} ${item.side === '2' ? '(Bolak-balik)' : '(1 Sisi)'}`;
         const existingItem = cart.find(c => c.name === name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, qty);
+            updateQty(existingItem.id, 1); // Always increment by 1 sequentially
             showToast('Keranjang diperbarui!', 'success');
         } else {
             const newItem = {
                 id: `print-${Date.now()}-${Math.random()}`,
                 name,
                 sellPrice: item.price,
-                quantity: qty,
+                quantity: 1, // Start with 1
                 type: 'service'
             };
             setCart(prev => [...prev, newItem]);
@@ -887,13 +887,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                             <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors overflow-hidden">
                                                 {product.image ? (
                                                     <img 
-                                                        src={product.image.startsWith('http') ? product.image : `${API_HOST}${product.image}`} 
+                                                        src={product.image.startsWith('http') ? product.image : (product.image.startsWith('/') ? `${API_HOST}${product.image}` : `${API_HOST}/${product.image}`)} 
                                                         alt={product.name} 
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
                                                             e.target.onerror = null;
                                                             e.target.src = '';
-                                                            e.target.parentElement.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-blue-600 transition-colors" height="24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.27 6.96 8.73 5.04 8.73-5.04"></path><path d="M12 22.08V12"></path></svg>';
+                                                            e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center text-slate-300"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.27 6.96 8.73 5.04 8.73-5.04"></path><path d="M12 22.08V12"></path></svg></div>';
                                                         }}
                                                     />
                                                 ) : (

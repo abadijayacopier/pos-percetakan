@@ -226,6 +226,9 @@ router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, 
              `, [item.product_id, item.qty, req.params.id]);
         }
 
+        // Cancel related DP Tasks if any
+        await connection.query('UPDATE dp_tasks SET status = "batal" WHERE customerName = (SELECT customer_name FROM transactions WHERE id = ?) AND status NOT IN ("selesai", "diambil")', [req.params.id]);
+
         await connection.query('DELETE FROM cash_flow WHERE reference_id = ?', [req.params.id]);
         await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
         await connection.query('DELETE FROM transactions WHERE id = ?', [req.params.id]);

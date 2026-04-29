@@ -19,7 +19,9 @@ router.get('/', verifyToken, async (req, res) => {
             LEFT JOIN design_assignments da
                 ON da.designer_id = u.id
                 AND da.status IN ('ditugaskan','dikerjakan')
+            LEFT JOIN dp_tasks dt ON da.task_id = dt.id
             WHERE u.role = 'desainer'
+              AND (dt.id IS NULL OR dt.status NOT IN ('batal'))
             ORDER BY u.name
         `);
 
