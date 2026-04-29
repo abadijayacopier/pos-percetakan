@@ -165,14 +165,19 @@ router.get('/my-tasks', verifyToken, async (req, res) => {
     try {
         const role = (req.user.role || '').toLowerCase();
         let query = `
-            SELECT da.*, u.name as designer_name 
+            SELECT da.*, u.name as designer_name,
+                   dt.customerName, dt.title, dt.material_name, 
+                   dt.dimensions_w, dt.dimensions_h, dt.pesan_desainer
             FROM design_assignments da
             LEFT JOIN users u ON da.designer_id = u.id
+            INNER JOIN dp_tasks dt ON da.task_id = dt.id
+            WHERE da.status NOT IN ('dibatalkan')
+              AND dt.status NOT IN ('batal')
         `;
         let params = [];
 
         if (role === 'desainer') {
-            query += ' WHERE da.designer_id = ?';
+            query += ' AND da.designer_id = ?';
             params.push(req.user.id);
         }
 

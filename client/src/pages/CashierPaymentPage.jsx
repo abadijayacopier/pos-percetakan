@@ -408,13 +408,19 @@ export default function CashierPaymentPage({ onNavigate }) {
 
                         <div className="flex flex-col gap-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Jumlah Pembayaran (Rp)</label>
-                            <input
-                                className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-5 px-6 text-xl font-black italic tracking-tighter text-blue-600 focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
-                                type="number"
-                                autoFocus
-                                value={amountPaid}
-                                onChange={e => setAmountPaid(e.target.value)}
-                            />
+                            <div className="relative group">
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-400 font-black text-xl pointer-events-none group-focus-within:text-blue-600 transition-colors">Rp</div>
+                                <input
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl py-5 pl-16 pr-6 text-xl font-black italic tracking-tighter text-blue-600 focus:ring-8 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                                    type="text"
+                                    autoFocus
+                                    value={amountPaid !== '' ? Number(amountPaid).toLocaleString('id-ID') : ''}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setAmountPaid(val);
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-3">
@@ -490,12 +496,18 @@ export default function CashierPaymentPage({ onNavigate }) {
                     </div>
                     <div>
                         <label className="text-xs font-bold text-slate-500 mb-1 block">Nominal Dibayar (Lunas jika ≥ Total)</label>
-                        <input
-                            type="number"
-                            value={editForm.paidAmount}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, paidAmount: e.target.value }))}
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3"
-                        />
+                        <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none group-focus-within:text-blue-500 transition-colors">Rp</div>
+                            <input
+                                type="text"
+                                value={editForm.paidAmount !== '' ? Number(editForm.paidAmount).toLocaleString('id-ID') : ''}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setEditForm(prev => ({ ...prev, paidAmount: val }));
+                                }}
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 transition-all"
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="text-xs font-bold text-slate-500 mb-1 block">Metode Pembayaran</label>

@@ -173,7 +173,7 @@ export default function PricingSettings({
                     </div>
                     <div className="flex w-full sm:w-auto gap-3">
                         <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-all text-sm font-semibold" onClick={() => {
-                            setPrintPrices([...printPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', price: 0 }]);
+                            setPrintPrices([...printPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', side: '1', price: 0 }]);
                         }}><FiPlus /> Tambah</button>
                         <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-bold shadow-md shadow-blue-200 dark:shadow-none" onClick={saveSettings}><FiSave /> Simpan</button>
                     </div>
@@ -185,6 +185,7 @@ export default function PricingSettings({
                                 <tr className="border-b border-slate-100 dark:border-slate-800">
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Jenis Kertas</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Warna</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Sisi</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Harga (Rp) / Lembar</th>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Aksi</th>
                                 </tr>
@@ -209,6 +210,16 @@ export default function PricingSettings({
                                                 }}>
                                                     <option value="bw">Hitam Putih</option>
                                                     <option value="color">Berwarna</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <select className="bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-[120px] dark:text-white font-medium" value={p.side || '1'} onChange={(e) => {
+                                                    const newPrices = [...printPrices];
+                                                    newPrices[realIdx] = { ...newPrices[realIdx], side: e.target.value };
+                                                    setPrintPrices(newPrices);
+                                                }}>
+                                                    <option value="1">1 Sisi</option>
+                                                    <option value="2">Bolak-balik</option>
                                                 </select>
                                             </td>
                                             <td className="px-6 py-3">

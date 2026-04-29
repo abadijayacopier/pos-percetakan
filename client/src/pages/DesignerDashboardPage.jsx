@@ -28,17 +28,17 @@ export default function DesignerDashboardPage() {
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
-            const [tasksRes, dpTasksRes] = await Promise.all([
-                api.get('/designers/my-tasks'),
-                api.get('/dp_tasks')
-            ]);
-            const data = tasksRes.data;
-            const dpData = dpTasksRes.data;
-            // Enrich with dp_tasks data from API 
-            const enriched = data.map(t => {
-                const dpTask = dpData.find(d => d.id === t.task_id);
-                return { ...t, dpTask };
-            });
+            const res = await api.get('/designers/my-tasks');
+            const enriched = res.data.map(t => ({
+                ...t,
+                dpTask: t.title ? {
+                    title: t.title,
+                    customerName: t.customerName,
+                    material_name: t.material_name,
+                    dimensions: { width: t.dimensions_w, height: t.dimensions_h },
+                    pesan_desainer: t.pesan_desainer
+                } : null
+            }));
             setTasks(enriched);
         } catch {
             setTasks([]);

@@ -3,7 +3,6 @@ import api from '../services/api';
 import { formatRupiah, generateInvoice, generateRawReceipt, printViaBluetooth, initQZ, printViaQZ } from '../utils';
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 import Modal from '../components/Modal';
-import { FiCheckCircle, FiPrinter, FiSearch, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiMessageCircle, FiUserCheck } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -14,13 +13,17 @@ import {
     Search, RefreshCw, ShoppingCart, Save, CreditCard, 
     User, ChevronRight, X, Minus, Plus, Trash2, 
     Package, LayoutGrid, Clock, Settings, Maximize, 
-    LogOut, UserPlus, Info, AlertCircle, CheckCircle2
+    LogOut, UserPlus, Info, AlertCircle, CheckCircle2,
+    Book, CheckCircle, Smartphone, MapPin, Mail, Phone
 } from 'lucide-react';
+import { FiPrinter, FiSearch, FiCheckCircle, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiMessageCircle, FiUserCheck } from 'react-icons/fi';
 
 export default function IntegratedPos({ onNavigate, pageState, onFullscreenChange, storeSettings }) {
     const { user } = useAuth();
     const { showToast } = useToast();
     const { themeMode: theme, setTheme: toggleTheme } = useTheme();
+    const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+    const API_HOST = isElectron ? 'http://localhost:5001' : '';
 
     // Basic States
     const [activeServiceTab, setActiveServiceTab] = useState('fotocopy'); // 'fotocopy' | 'jilid' | 'cetak'
@@ -170,7 +173,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 try { pDataRaw = sMap.print_prices ? JSON.parse(sMap.print_prices) : []; } catch (e) { }
                 const pData = pDataRaw.map(p => ({
                     ...p,
-                    name: p.name || `Print ${p.paper} (${p.color === 'bw' ? 'B/W' : 'Warna'})`
+                    name: p.name || `Print ${p.paper} (${p.color === 'bw' ? 'B/W' : 'Warna'}) ${p.side === '2' ? 'Bolak-balik' : '1 Sisi'}`
                 }));
                 setPrintPrices(pData);
                 if (pData.length > 0) setPrintType(pData[0]);
@@ -262,11 +265,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     // Barcode Listener
     useEffect(() => {
         const handleKeyPress = (e) => {
-            if (e.key === 'F8') {
-                e.preventDefault();
-                openCashDrawer();
-                return;
-            }
+
             if (e.key === 'F11') {
                 e.preventDefault();
                 toggleFullScreen();
@@ -425,7 +424,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
         const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, existingItem.quantity + qty);
+            updateQty(existingItem.id, qty);
             showToast('Keranjang diperbarui!', 'success');
         } else {
             const newItem = {
@@ -441,22 +440,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     const addPrintToCart = (item, qty) => {
-        if (!item) {
-            showToast('Pilih Spesifikasi Cetak terlebih dahulu.', 'warning');
-            return;
-        }
-        if (qty <= 0) {
-            showToast('Masukkan Jumlah Lembar untuk Print.', 'warning');
-            return;
-        }
-        const existingItem = cart.find(c => c.name === item.name && c.type === 'service');
+        if (!item) { showToast('Pilih Spesifikasi Cetak terlebih dahulu.', 'warning'); return; }
+        if (qty <= 0) { showToast('Masukkan Jumlah Lembar untuk Print.', 'warning'); return; }
+        const name = `Print ${item.paper} ${item.color.toUpperCase()} ${item.side === '2' ? '(Bolak-balik)' : '(1 Sisi)'}`;
+        const existingItem = cart.find(c => c.name === name && c.type === 'service');
         if (existingItem) {
-            updateQty(existingItem.id, existingItem.quantity + qty);
+            updateQty(existingItem.id, qty);
             showToast('Keranjang diperbarui!', 'success');
         } else {
             const newItem = {
                 id: `print-${Date.now()}-${Math.random()}`,
-                name: item.name,
+                name,
                 sellPrice: item.price,
                 quantity: qty,
                 type: 'service'
@@ -566,10 +560,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     };
 
     const openCashDrawer = async () => {
-        if (!printerSettings.printerName) return;
+        if (!printerSettings.printerName) {
+            showToast('Printer belum dikonfigurasi di Pengaturan', 'warning');
+            return;
+        }
         try {
             await api.post('/print/open-drawer', { printerName: printerSettings.printerName });
-        } catch (err) { }
+            showToast('Membuka laci kasir...', 'success');
+        } catch (err) {
+            showToast('Gagal membuka laci kasir', 'error');
+        }
     };
 
     const handleConfirmPayment = async () => {
@@ -756,6 +756,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         'F3': () => setActiveServiceTab('print'),
         'F3': () => setActiveServiceTab('print'),
         'F5': () => searchInputRef.current?.focus(),
+        'F8': () => openCashDrawer(),
         'F9': () => toggleDiscountModal(),
         'F10': () => openPayment(),
         'F12': () => saveQueue(),
@@ -819,6 +820,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 <span className="text-[10px] bg-black/10 px-1.5 py-0.5 rounded uppercase font-black opacity-50 ml-2">{tab.key}</span>
                             </button>
                         ))}
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 ml-auto pr-2">
+                            <button
+                                onClick={() => openCashDrawer()}
+                                className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30"
+                                title="Buka Laci Kasir (F8)"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">inbox</span>
+                                <div className="flex flex-col items-start leading-none">
+                                    <span className="text-[10px] uppercase tracking-widest">Buka Laci</span>
+                                    <span className="text-[9px] font-black opacity-70 mt-1">Cash Drawer</span>
+                                </div>
+                                <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded uppercase font-black opacity-70 ml-2">F8</span>
+                            </button>
+                        </div>
                     </div>
                 </header>
 
@@ -861,22 +877,56 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                     <button
                                         key={product.id}
                                         onClick={() => addToCart(product)}
-                                        className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 text-left transition-all hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 active:scale-[0.98] relative overflow-hidden"
+                                        className="group bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 rounded-[2.5rem] p-5 text-left transition-all hover:border-blue-500 hover:shadow-2xl hover:-translate-y-2 active:scale-[0.98] flex flex-col relative overflow-hidden"
                                     >
-                                        <div className="aspect-square bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-b border-slate-100 dark:border-slate-800">
-                                            {product.image ? (
-                                                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            ) : (
-                                                <Package size={48} className="text-slate-300 dark:text-slate-700" />
-                                            )}
+                                        <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-10 transition-opacity">
+                                            <Package size={80} />
                                         </div>
-                                        <div className="p-4">
-                                            <div className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">{product.category || 'RETAIL'}</div>
-                                            <h3 className="text-sm font-bold text-slate-800 dark:text-white line-clamp-2 leading-tight mb-2 uppercase">{product.name}</h3>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-lg font-black text-slate-900 dark:text-white">{formatRupiah(product.sellPrice || product.price)}</span>
-                                                <div className="w-8 h-8 bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                    <Plus size={18} />
+                                        
+                                        <div className="flex justify-between items-start mb-4 relative z-10">
+                                            <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors overflow-hidden">
+                                                {product.image ? (
+                                                    <img 
+                                                        src={product.image.startsWith('http') ? product.image : `${API_HOST}${product.image}`} 
+                                                        alt={product.name} 
+                                                        className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = '';
+                                                            e.target.parentElement.innerHTML = '<svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 group-hover:text-blue-600 transition-colors" height="24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.27 6.96 8.73 5.04 8.73-5.04"></path><path d="M12 22.08V12"></path></svg>';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Package size={24} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-blue-600 transition-colors">
+                                                    {product.category || 'RETAIL'}
+                                                </div>
+                                                <div className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-[9px] font-black text-slate-500 dark:text-slate-400">
+                                                    {product.sku || product.code || 'NO-SKU'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="relative z-10 flex-1 flex flex-col">
+                                            <h3 
+                                                title={product.name}
+                                                className="text-base font-black text-slate-900 dark:text-white mb-4 line-clamp-4 uppercase tracking-tight leading-tight min-h-[4rem]"
+                                            >
+                                                {product.name}
+                                            </h3>
+                                            
+                                            <div className="mt-auto flex items-center justify-between">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Price</span>
+                                                    <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">
+                                                        {formatRupiah(product.sellPrice || product.price)}
+                                                    </span>
+                                                </div>
+                                                <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                                                    <Plus size={20} />
                                                 </div>
                                             </div>
                                         </div>
@@ -888,85 +938,114 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                     {/* Fotocopy Tab */}
                     {activeServiceTab === 'fotocopy' && (
-                        <div className="max-w-5xl mx-auto">
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 md:p-12 shadow-sm">
-                                <div className="flex flex-col md:flex-row gap-12">
-                                    <div className="w-full md:w-1/2 space-y-8">
-                                        <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">
-                                            KONFIGURASI <span className="text-blue-600">FOTOCOPY</span>
-                                        </h2>
+                        <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none">
+                                <div className="flex flex-col lg:flex-row">
+                                    <div className="flex-1 p-8 md:p-12 space-y-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 bg-blue-600 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-blue-500/40">
+                                                <RefreshCw size={32} />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
+                                                    KONFIGURASI <span className="text-blue-600 block sm:inline">FOTOCOPY</span>
+                                                </h2>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">Pilih spesifikasi layanan Anda</p>
+                                            </div>
+                                        </div>
                                         
-                                        <div className="space-y-6">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ukuran Kertas</label>
-                                                    <div className="grid grid-cols-1 gap-2">
-                                                        {['HVS A4', 'HVS F4', 'HVS A3'].map(size => (
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {['HVS A4', 'HVS F4', 'HVS A3'].map(size => (
+                                                        <button
+                                                            key={size}
+                                                            onClick={() => setFcConfig({...fcConfig, paper: size})}
+                                                            className={`px-6 py-4 text-sm font-black transition-all border-2 rounded-2xl flex items-center justify-between group ${fcConfig.paper === size ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-500'}`}
+                                                        >
+                                                            {size}
+                                                            <Package size={16} className={`${fcConfig.paper === size ? 'text-white' : 'text-slate-300 group-hover:text-blue-500'}`} />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-1.5 h-6 bg-slate-900 dark:bg-white rounded-full"></span>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Warna & Sisi</label>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+                                                        {['bw', 'color'].map(c => (
                                                             <button
-                                                                key={size}
-                                                                onClick={() => setFcConfig({...fcConfig, paper: size})}
-                                                                className={`px-4 py-3 text-sm font-black transition-all border ${fcConfig.paper === size ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-500'}`}
+                                                                key={c}
+                                                                onClick={() => setFcConfig({...fcConfig, color: c})}
+                                                                className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${fcConfig.color === c ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                                                             >
-                                                                {size}
+                                                                {c === 'bw' ? 'B/W' : 'Warna'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {['1', '2'].map(s => (
+                                                            <button
+                                                                key={s}
+                                                                onClick={() => setFcConfig({...fcConfig, side: s})}
+                                                                className={`py-3.5 text-[10px] font-black transition-all border-2 rounded-2xl uppercase tracking-widest ${fcConfig.side === s ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600'}`}
+                                                            >
+                                                                {s === '1' ? '1 Sisi' : '2 Sisi'}
                                                             </button>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Warna & Sisi</label>
-                                                    <div className="space-y-4">
-                                                        <div className="flex gap-2">
-                                                            {['bw', 'color'].map(c => (
-                                                                <button
-                                                                    key={c}
-                                                                    onClick={() => setFcConfig({...fcConfig, color: c})}
-                                                                    className={`flex-1 py-3 text-[10px] font-black transition-all border uppercase tracking-widest ${fcConfig.color === c ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600'}`}
-                                                                >
-                                                                    {c === 'bw' ? 'B/W' : 'Warna'}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            {['1', '2'].map(s => (
-                                                                <button
-                                                                    key={s}
-                                                                    onClick={() => setFcConfig({...fcConfig, side: s})}
-                                                                    className={`flex-1 py-3 text-[10px] font-black transition-all border uppercase tracking-widest ${fcConfig.side === s ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600'}`}
-                                                                >
-                                                                    {s === '1' ? '1 Sisi' : '2 Sisi'}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
+                                        </div>
 
-                                            <div className="space-y-2">
+                                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center justify-between">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Kuantitas (Lembar)</label>
-                                                <input
-                                                    type="number"
-                                                    value={fcConfig.quantity}
-                                                    onChange={(e) => setFcConfig({...fcConfig, quantity: parseInt(e.target.value) || 1})}
-                                                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-black focus:ring-1 focus:ring-blue-500 outline-none transition-all dark:text-white"
-                                                />
+                                                <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg">MASUKKAN ANGKA</span>
                                             </div>
+                                            <input
+                                                type="number"
+                                                value={fcConfig.quantity}
+                                                onChange={(e) => setFcConfig({...fcConfig, quantity: parseInt(e.target.value) || 1})}
+                                                className="w-full px-8 py-6 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-700 rounded-[2rem] text-4xl font-black text-center focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all dark:text-white placeholder:text-slate-300"
+                                                placeholder="0"
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 bg-slate-50 dark:bg-slate-800/50 p-8 flex flex-col items-center justify-center text-center space-y-6 border border-slate-200 dark:border-slate-700">
-                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Estimasi Harga</div>
-                                        <div className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
-                                            {formatRupiah(getFcUnitPrice(fcConfig.paper, fcConfig.color, fcConfig.side) * fcConfig.quantity)}
+                                    <div className="w-full lg:w-[400px] bg-gradient-to-br from-blue-600 to-indigo-700 p-12 flex flex-col items-center justify-center text-center space-y-8 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-900/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+                                        
+                                        <div className="relative space-y-2">
+                                            <div className="text-[11px] font-black text-blue-100 uppercase tracking-[0.4em] opacity-80">Estimasi Harga</div>
+                                            <div className="text-7xl font-black text-white tracking-tighter">
+                                                {formatRupiah(getFcUnitPrice(fcConfig.paper, fcConfig.color, fcConfig.side) * fcConfig.quantity)}
+                                            </div>
+                                            <div className="inline-block px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black text-white uppercase tracking-widest mt-4">
+                                                {formatRupiah(getFcUnitPrice(fcConfig.paper, fcConfig.color, fcConfig.side))} / LEMBAR
+                                            </div>
                                         </div>
-                                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                                            {formatRupiah(getFcUnitPrice(fcConfig.paper, fcConfig.color, fcConfig.side))} / LEMBAR
-                                        </div>
+                                        
                                         <button
                                             onClick={() => addFotocopyToCart(fcConfig.paper, fcConfig.color, fcConfig.side, fcConfig.quantity)}
-                                            className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg tracking-widest uppercase transition-all shadow-xl shadow-blue-500/20 active:scale-95"
+                                            className="w-full py-6 bg-white hover:bg-slate-50 text-blue-600 font-black text-xl tracking-widest uppercase transition-all shadow-2xl shadow-black/20 active:scale-95 rounded-3xl flex items-center justify-center gap-3 group"
                                         >
-                                            TAMBAH KE KERANJANG
+                                            <ShoppingCart size={24} className="group-hover:rotate-12 transition-transform" />
+                                            TAMBAH
                                         </button>
+                                        
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-blue-100/40 uppercase tracking-widest">
+                                            <Info size={14} />
+                                            Harga dapat berubah sesuai kebijakan
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -983,25 +1062,31 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 {bindingPrices.length > 0 ? bindingPrices.map((item) => (
                                     <button
                                         key={item.id}
-                                        onClick={() => addToCart({
-                                            id: item.id,
-                                            name: `Jilid ${item.name}`,
-                                            price: item.price,
-                                            quantity: 1,
-                                            category: 'Service'
-                                        })}
-                                        className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 text-left transition-all hover:border-blue-500 hover:shadow-xl active:scale-[0.98] relative"
+                                        onClick={() => addJilidToCart(item, 1)}
+                                        className="group bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 p-6 text-left transition-all hover:border-blue-500 hover:shadow-2xl hover:-translate-y-2 active:scale-[0.98] relative rounded-[2rem] overflow-hidden"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
-                                                <span className="material-symbols-outlined">book</span>
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <Book size={64} />
+                                        </div>
+                                        <div className="flex flex-col h-full relative z-10">
+                                            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                                <Book size={28} />
                                             </div>
-                                            <div className="text-xl font-black text-slate-900 dark:text-white">
-                                                {formatRupiah(item.price)}
+                                            <h3 
+                                                title={item.name}
+                                                className="text-lg font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tighter leading-tight line-clamp-3 min-h-[3rem]"
+                                            >
+                                                {item.name}
+                                            </h3>
+                                            <div className="mt-auto pt-4 flex items-center justify-between">
+                                                <div className="text-lg font-black text-blue-600 dark:text-blue-400">
+                                                    {formatRupiah(item.price)}
+                                                </div>
+                                                <div className="w-10 h-10 bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all">
+                                                    <Plus size={20} />
+                                                </div>
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tighter">{item.name}</h3>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Penjilidan Berkualitas</p>
                                     </button>
                                 )) : (
                                     <div className="col-span-full py-20 text-center text-slate-400 font-bold uppercase tracking-widest bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800">
@@ -1022,25 +1107,33 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 {printPrices.length > 0 ? printPrices.map((item) => (
                                     <button
                                         key={item.id}
-                                        onClick={() => addToCart({
-                                            id: item.id,
-                                            name: `Print ${item.paper} ${item.color.toUpperCase()}`,
-                                            price: item.price,
-                                            quantity: 1,
-                                            category: 'Service'
-                                        })}
-                                        className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 text-left transition-all hover:border-blue-500 hover:shadow-xl active:scale-[0.98] relative"
+                                        onClick={() => addPrintToCart(item, 1)}
+                                        className="group bg-white dark:bg-slate-900 border-2 border-slate-50 dark:border-slate-800 p-6 text-left transition-all hover:border-emerald-500 hover:shadow-2xl hover:-translate-y-2 active:scale-[0.98] relative rounded-[2rem] overflow-hidden"
                                     >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center">
-                                                <span className="material-symbols-outlined">print</span>
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                            <FiPrinter size={64} />
+                                        </div>
+                                        <div className="flex flex-col h-full relative z-10">
+                                            <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                                <FiPrinter size={28} />
                                             </div>
-                                            <div className="text-xl font-black text-slate-900 dark:text-white">
-                                                {formatRupiah(item.price)}
+                                            <h3 
+                                                title={item.paper}
+                                                className="text-xl font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tighter leading-tight line-clamp-2"
+                                            >
+                                                {item.paper}
+                                            </h3>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{item.color === 'bw' ? 'HITAM PUTIH' : 'BERWARNA'}</p>
+                                            <p className="text-[10px] font-extrabold text-blue-500 uppercase tracking-widest mb-4">{item.side === '2' ? 'BOLAK-BALIK' : '1 SISI'}</p>
+                                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-50 dark:border-slate-800">
+                                                <div className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                                                    {formatRupiah(item.price)}
+                                                </div>
+                                                <div className="w-10 h-10 bg-emerald-600 text-white flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all shadow-lg shadow-emerald-500/20">
+                                                    <Plus size={20} />
+                                                </div>
                                             </div>
                                         </div>
-                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tighter">{item.paper}</h3>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.color === 'bw' ? 'HITAM PUTIH' : 'BERWARNA'}</p>
                                     </button>
                                 )) : (
                                     <div className="col-span-full py-20 text-center text-slate-400 font-bold uppercase tracking-widest bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800">
@@ -1108,7 +1201,12 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <div key={idx} className="bg-slate-50 dark:bg-slate-950/50 p-6 rounded-[2.5rem] border border-transparent hover:border-blue-500/20 transition-all shadow-sm">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="flex-1">
-                                        <h4 className="font-black text-slate-800 dark:text-white text-sm uppercase leading-tight">{item.name}</h4>
+                                        <h4 
+                                            title={item.name}
+                                            className="font-black text-slate-800 dark:text-white text-sm uppercase leading-tight break-words"
+                                        >
+                                            {item.name}
+                                        </h4>
                                         <p className="text-[10px] font-bold text-slate-400 mt-1">{formatRupiah(item.sellPrice)} x {item.quantity}</p>
                                     </div>
                                     <button onClick={() => removeFromCart(idx)} className="text-slate-300 hover:text-red-500 transition-all">
@@ -1179,14 +1277,20 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <div className="flex flex-col gap-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nominal Diskon (Rp)</label>
-                        <input
-                            type="number"
-                            value={globalDiscount}
-                            onChange={e => setGlobalDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-white/50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-5 text-4xl font-black text-primary focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none pro-max-shadow"
-                            placeholder="0"
-                            autoFocus
-                        />
+                        <div className="relative group">
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary font-black text-3xl pointer-events-none group-focus-within:scale-110 transition-transform">Rp</div>
+                            <input
+                                type="text"
+                                value={globalDiscount !== '' ? Number(globalDiscount).toLocaleString('id-ID') : ''}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setGlobalDiscount(Math.max(0, parseInt(val) || 0));
+                                }}
+                                className="w-full bg-white/50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl p-5 pl-24 text-4xl font-black text-primary focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none pro-max-shadow"
+                                placeholder="0"
+                                autoFocus
+                            />
+                        </div>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
                         {[500, 1000, 5000, 10000].map(v => (
@@ -1298,11 +1402,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Uang Diterima (Rp)</label>
                                 <div className="relative group">
+                                    <div className="absolute left-8 top-1/2 -translate-y-1/2 text-primary font-black text-3xl pointer-events-none group-focus-within:scale-110 transition-transform">Rp</div>
                                     <input
-                                        type="number"
-                                        value={amountPaid}
-                                        onChange={e => setAmountPaid(e.target.value)}
-                                        className="w-full px-6 py-6 rounded-[2rem] border-2 border-white dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-4 focus:ring-primary/20 focus:border-primary text-4xl font-black text-slate-800 dark:text-white transition-all outline-none pro-max-shadow"
+                                        type="text"
+                                        value={amountPaid !== '' ? Number(amountPaid).toLocaleString('id-ID') : ''}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9]/g, '');
+                                            setAmountPaid(val);
+                                        }}
+                                        className="w-full pl-24 pr-6 py-6 rounded-[2rem] border-2 border-white dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 focus:ring-4 focus:ring-primary/20 focus:border-primary text-4xl font-black text-slate-800 dark:text-white transition-all outline-none pro-max-shadow"
                                         placeholder="0"
                                         autoFocus
                                     />
