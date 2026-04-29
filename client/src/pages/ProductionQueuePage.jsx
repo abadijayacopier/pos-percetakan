@@ -159,7 +159,7 @@ export default function ProductionQueuePage({ onNavigate }) {
                 .map(t => ({
                     ...t,
                     type: t.type || 'digital',
-                    status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi'].includes(t.status) ? 'produksi' : t.status
+                    status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi', 'unassigned', 'diterima'].includes(t.status) ? 'produksi' : t.status
                 }));
         } catch (e) { console.error(e); }
 

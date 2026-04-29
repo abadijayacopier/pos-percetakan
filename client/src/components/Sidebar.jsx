@@ -12,7 +12,8 @@ import {
     FiTruck,
     FiChevronLeft,
     FiMessageCircle,
-    FiAlertTriangle
+    FiAlertTriangle,
+    FiCode
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
@@ -370,6 +371,21 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                     </button>
                                 )}
                             </div>
+                            
+                            {/* Developer Footer */}
+                            {!(isCollapsed && isDesktop) && (
+                                <div className="pt-3 pb-1 text-center border-t border-slate-100 dark:border-slate-800/60 mt-2">
+                                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                                        <FiCode className="text-blue-600 dark:text-blue-500" size={12} />
+                                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                            Developed by <span className="text-blue-600 dark:text-blue-500">SUPRIYANTO</span>
+                                        </p>
+                                    </div>
+                                    <p className="text-[12px] text-slate-700 dark:text-slate-200 font-black tracking-wider">
+                                        0856-5562-0979
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

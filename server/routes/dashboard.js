@@ -23,15 +23,21 @@ router.get('/stats', verifyToken, async (req, res) => {
             "SELECT SUM(CASE WHEN type = 'in' THEN amount ELSE -amount END) as saldo FROM cash_flow"
         );
 
-        // 3. Pending Print
+        // 3. Pending Print (Hanya hitung yang benar-benar sedang diproses/antre)
         const [pendingPrint] = await req.db.query(
-            "SELECT COUNT(id) as count FROM dp_tasks WHERE status NOT IN ('diambil', 'batal')"
+            "SELECT COUNT(id) as count FROM dp_tasks WHERE status NOT IN ('diambil', 'batal', 'checkout', 'selesai')"
         );
 
-        // 4. Pending Service
-        const [pendingService] = await req.db.query(
-            "SELECT COUNT(id) as count FROM service_orders WHERE status NOT IN ('diambil', 'batal', 'selesai')"
-        );
+        // 4. Pending & Active Service
+        const [serviceStats] = await req.db.query(`
+            SELECT 
+                SUM(CASE WHEN status = 'pengerjaan' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status IN ('approval', 'diterima', 'pending') THEN 1 ELSE 0 END) as pending
+            FROM service_orders
+            WHERE status NOT IN ('diambil', 'batal', 'selesai')
+        `);
+        const activeServiceCount = serviceStats[0]?.active || 0;
+        const pendingServiceCount = serviceStats[0]?.pending || 0;
 
         // 5. Low Stock
         const [lowStock] = await req.db.query(
@@ -85,8 +91,19 @@ router.get('/stats', verifyToken, async (req, res) => {
         // 8. Dynamic System Alerts
         const alerts = [];
         if (lowStock[0]?.count > 0) alerts.push(`⚠️ ${lowStock[0].count} Produk hampir habis stok! Harap segera restock.`);
-        if (pendingService[0]?.count > 0) alerts.push(`🛠️ ${pendingService[0].count} Servis sedang menunggu pengerjaan.`);
-        if (pendingPrint[0]?.count > 0) alerts.push(`🖨️ ${pendingPrint[0].count} Pesanan cetak belum diambil pelanggan.`);
+        if (pendingServiceCount > 0) alerts.push(`🛠️ ${pendingServiceCount} Servis baru sedang menunggu persetujuan.`);
+        if (activeServiceCount > 0) alerts.push(`⚙️ ${activeServiceCount} Unit sedang dalam proses perbaikan teknisi.`);
+        
+        // Split pending print alerts for better clarity
+        const [printAlerts] = await req.db.query(`
+            SELECT 
+                SUM(CASE WHEN status = 'selesai' THEN 1 ELSE 0 END) as ready,
+                SUM(CASE WHEN status NOT IN ('selesai', 'diambil', 'batal', 'checkout') THEN 1 ELSE 0 END) as processing
+            FROM dp_tasks
+        `);
+        
+        if (printAlerts[0]?.processing > 0) alerts.push(`🖨️ ${printAlerts[0].processing} Pesanan cetak sedang dalam antrean/pengerjaan.`);
+        if (printAlerts[0]?.ready > 0) alerts.push(`✅ ${printAlerts[0].ready} Pesanan cetak sudah selesai & siap diambil.`);
 
         if (alerts.length < 2) {
             alerts.push("💡 Tips: Gunakan shortcut F2 untuk transaksi jilid cepat.");
@@ -124,7 +141,9 @@ router.get('/stats', verifyToken, async (req, res) => {
             trxCount: trxToday[0]?.trxCount || 0,
             saldo: parseFloat(cashFlow[0]?.saldo || 0),
             pendingPrintCount: pendingPrint[0]?.count || 0,
-            pendingServiceCount: pendingService[0]?.count || 0,
+            pendingServiceCount: activeServiceCount, // We use active count for the main badge
+            activeServiceCount,
+            waitingServiceCount: pendingServiceCount,
             lowStockCount: lowStock[0]?.count || 0,
             weeklyData,
             monthlyData,

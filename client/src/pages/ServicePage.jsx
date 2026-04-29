@@ -74,7 +74,7 @@ export default function ServicePage({ onNavigate }) {
 
     const stats = useMemo(() => ({
         total: services.length,
-        pending: services.filter(s => s.status === 'approval' || s.status === 'pending').length,
+        pending: services.filter(s => s.status === 'approval' || s.status === 'pending' || s.status === 'diterima').length,
         active: services.filter(s => s.status === 'pengerjaan').length,
         completed: services.filter(s => s.status === 'selesai').length
     }), [services]);
@@ -360,8 +360,8 @@ export default function ServicePage({ onNavigate }) {
                             <tr className="border-b border-slate-100 dark:border-slate-800">
                                 <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 whitespace-nowrap">ID Tiket</th>
                                 <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10">Pelanggan & Unit</th>
-                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10">Problem Triage</th>
-                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-center">Status</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10">Status Kerja</th>
+                                <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-center">Teknisi</th>
                                 <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-right">Progress/Est.</th>
                                 <th className="p-4 sm:p-6 text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest bg-slate-50/50 dark:bg-slate-800/10 text-center w-24">Aksi</th>
                             </tr>
@@ -391,10 +391,12 @@ export default function ServicePage({ onNavigate }) {
                                     </td>
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-3">
-                                            <div className="size-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                            <div className={`size-8 rounded-xl flex items-center justify-center text-[10px] transition-all shadow-sm ${srv.technicianId ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                                                 <FiUser />
                                             </div>
-                                            <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">{srv.technicianName || 'unassigned'}</span>
+                                            <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+                                                {srv.technicianName || technicians.find(t => t.id === srv.technicianId)?.name || 'Belum Ada Teknisi'}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5 text-right">

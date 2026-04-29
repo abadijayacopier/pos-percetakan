@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiHome, FiCreditCard, FiList, FiGrid, FiUser } from 'react-icons/fi';
+import { FiHome, FiCreditCard, FiList, FiGrid, FiUser, FiCode } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,6 +17,14 @@ export default function BottomNav({ activePage, onNavigate }) {
 
     return (
         <div className="md:hidden print:hidden fixed bottom-6 left-6 right-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/40 dark:border-slate-800/40 flex justify-around items-end px-2 pt-2 pb-safe z-[90] shadow-premium rounded-[32px]">
+            {/* Developer Floating Tag */}
+            <div className="absolute -top-10 left-0 right-0 text-center opacity-60 pointer-events-none">
+                <div className="flex items-center justify-center gap-1.5">
+                    <FiCode className="text-slate-500 dark:text-slate-400" size={10} />
+                    <p className="text-[8px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Developed by SUPRIYANTO</p>
+                </div>
+                <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">0856-5562-0979</p>
+            </div>
             {items.map(item => {
                 const isActive = activePage === item.id;
                 return (
