@@ -442,9 +442,6 @@ export default function SuppliersPage() {
                     </motion.div>
                 </div>
             </main>
-                    </div>
-                </motion.div>
-            </main>
         </div>
     );
 }
