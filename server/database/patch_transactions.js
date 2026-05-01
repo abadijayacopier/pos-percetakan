@@ -21,6 +21,11 @@ const patch = async () => {
                 await db.exec('ALTER TABLE transactions ADD COLUMN tax_amount INTEGER DEFAULT 0');
             }
 
+            if (!columns.includes('notes')) {
+                console.log('➕ SQLite: Menambahkan kolom notes...');
+                await db.exec('ALTER TABLE transactions ADD COLUMN notes TEXT DEFAULT NULL');
+            }
+
             // Check settings table
             await db.exec('CREATE TABLE IF NOT EXISTS settings (`id` INTEGER PRIMARY KEY AUTO_INCREMENT, `key` VARCHAR(100) UNIQUE NOT NULL, `value` TEXT)');
 
@@ -39,6 +44,11 @@ const patch = async () => {
             if (!columns.includes('tax_amount')) {
                 console.log('➕ MySQL: Menambahkan kolom tax_amount...');
                 await pool.query('ALTER TABLE transactions ADD COLUMN tax_amount INTEGER DEFAULT 0 AFTER discount');
+            }
+
+            if (!columns.includes('notes')) {
+                console.log('➕ MySQL: Menambahkan kolom notes...');
+                await pool.query('ALTER TABLE transactions ADD COLUMN notes TEXT DEFAULT NULL');
             }
 
             // Ensure log_notifikasi_wa exists

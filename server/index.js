@@ -89,6 +89,10 @@ const startServer = async () => {
         }
     }
 
+    // 2. Run Database Migrations (Auto-Patch)
+    const { runMigrations } = require('./database/migrationManager');
+    await runMigrations();
+
     // Test koneksi database saat start
     await testConnection();
 
