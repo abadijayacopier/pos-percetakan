@@ -13,7 +13,8 @@ import {
     FiChevronLeft,
     FiMessageCircle,
     FiAlertTriangle,
-    FiCode
+    FiCode,
+    FiSend
 } from 'react-icons/fi';
 const FiSPK = FiLayers;
 import { HiOutlineDocumentReport, HiOutlineCollection } from 'react-icons/hi';
