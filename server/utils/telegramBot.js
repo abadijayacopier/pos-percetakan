@@ -77,9 +77,29 @@ const processCommand = async (chatId, text, db, token) => {
                 await sendTelegramNotification('💡 Masukkan nama barang. Contoh: <code>/harga kertas</code>', { telegram_bot_token: token, telegram_chat_id: chatId, telegram_enabled: true });
                 return;
             }
-            const [rows] = await db.query('SELECT name, sell_price, stock, unit FROM products WHERE name LIKE ? OR code LIKE ? LIMIT 5', [`%${args}%`, `%${args}%`]);
+
+            // Split words for smarter search (ALL words must match)
+            const searchWords = args.trim().split(/\s+/).filter(w => w.length > 0);
+            let query = 'SELECT name, sell_price, stock, unit FROM products WHERE ';
+            let params = [];
+            
+            if (searchWords.length > 0) {
+                const nameConditions = searchWords.map(w => {
+                    params.push(`%${w}%`);
+                    return 'name LIKE ?';
+                }).join(' AND ');
+                
+                query += `(${nameConditions}) OR code = ? LIMIT 5`;
+                params.push(args.trim()); // Still check exact code match
+            } else {
+                query += 'name LIKE ? OR code LIKE ? LIMIT 5';
+                params.push(`%${args}%`, `%${args}%`);
+            }
+
+            const [rows] = await db.query(query, params);
+
             if (rows.length === 0) {
-                await sendTelegramNotification(`❌ Barang <b>"${args}"</b> tidak ditemukan.`, { telegram_bot_token: token, telegram_chat_id: chatId, telegram_enabled: true });
+                await sendTelegramNotification(`❌ Barang <b>"${args}"</b> tidak ditemukan.\n\n<i>Tips: Coba masukkan 1-2 kata kunci saja (misal: "buku tulis").</i>`, { telegram_bot_token: token, telegram_chat_id: chatId, telegram_enabled: true });
                 return;
             }
             let msg = `🔍 <b>HASIL PENCARIAN HARGA</b>\n\n`;
