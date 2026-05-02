@@ -90,6 +90,8 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
     const [selectedLabelItem, setSelectedLabelItem] = useState(null);
     const [labelQty, setLabelQty] = useState(1);
     const [useCutLines, setUseCutLines] = useState(true);
+    const [labelPaperSize, setLabelPaperSize] = useState('thermal'); // 'thermal' or 'a4'
+    const [labelType, setLabelType] = useState('barcode'); // 'barcode' or 'qrcode'
     const printRef = useRef();
     const labelPrintRef = useRef();
     const PER_PAGE = 10;
@@ -292,27 +294,53 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
     };
 
     const doPrintLabel = () => {
-        const printContent = labelPrintRef.current.innerHTML;
-        const windowPrint = window.open('', '', 'width=800,height=800');
+        const windowPrint = window.open('', '', 'width=900,height=1100');
         
-        // Generate multiple labels based on qty
         let labelsHtml = '';
-        for (let i = 0; i < labelQty; i++) {
-            labelsHtml += `<div class="label-card">${printContent}</div>`;
-        }
+        const itemsToPrint = selectedLabelItem ? [{ ...selectedLabelItem, qty: labelQty }] : products.filter(p => selectedItems.includes(p.id)).map(p => ({ ...p, qty: parseInt(selectedQuantities[p.id]) || 1 }));
+
+        itemsToPrint.forEach(item => {
+            for (let i = 0; i < item.qty; i++) {
+                const codeData = item.code || item.id?.toString().slice(-6);
+                const codeDisplay = labelType === 'barcode' ? `*${codeData}*` : '';
+                const qrUrl = labelType === 'qrcode' ? `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${codeData}` : '';
+
+                labelsHtml += `
+                    <div class="label-card">
+                        <div class="store-name">${storeSettings?.name || 'ABADI JAYA'}</div>
+                        <div class="product-name">${item.name}</div>
+                        <div class="price">${formatRupiah(item.sellPrice)}</div>
+                        ${labelType === 'barcode' 
+                            ? `<div class="barcode">${codeDisplay}</div>` 
+                            : `<div class="qrcode"><img src="${qrUrl}" /></div>`
+                        }
+                        <div class="sku">${codeData}</div>
+                    </div>
+                `;
+            }
+        });
 
         windowPrint.document.write(`
             <html>
                 <head>
-                    <title>Cetak Label Barcode</title>
-                    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+                    <title>Cetak Label Produk</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
                     <style>
-                        body { margin: 0; padding: 0; display: flex; flex-wrap: wrap; font-family: 'Inter', sans-serif; background: white; }
+                        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: white; }
+                        
+                        /* Layout Base */
+                        .print-container { 
+                            display: ${labelPaperSize === 'a4' ? 'grid' : 'flex'};
+                            ${labelPaperSize === 'a4' ? 'grid-template-columns: repeat(4, 1fr); gap: 0;' : 'flex-direction: column;'}
+                            width: ${labelPaperSize === 'a4' ? '210mm' : '50mm'};
+                            margin: 0 auto;
+                        }
+
                         .label-card { 
                             width: 50mm; 
                             height: 30mm; 
-                            border: ${useCutLines ? '1px dashed #ddd' : '1px solid transparent'}; 
-                            padding: 1.5mm;
+                            border: ${useCutLines ? '0.1mm dashed #ccc' : 'none'}; 
+                            padding: 2mm;
                             display: flex;
                             flex-direction: column;
                             justify-content: center;
@@ -320,25 +348,41 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                             text-align: center;
                             page-break-inside: avoid;
                             box-sizing: border-box;
+                            overflow: hidden;
+                            background: white;
                         }
-                        .store-name { font-size: 7px; font-weight: bold; color: #64748b; margin-bottom: 2px; text-transform: uppercase; overflow: hidden; white-space: nowrap; width: 100%; }
-                        .product-name { font-size: 9px; font-weight: 800; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2; }
-                        .price { font-size: 11px; font-weight: 900; color: #2563eb; margin-bottom: 3px; }
-                        .barcode { font-family: 'Libre Barcode 39'; font-size: 32px; margin: 0; line-height: 1; color: black; }
-                        .sku { font-size: 7px; font-weight: bold; color: #94a3b8; margin-top: 1px; }
+
+                        .store-name { font-size: 6px; font-weight: 900; color: #64748b; margin-bottom: 1px; text-transform: uppercase; white-space: nowrap; }
+                        .product-name { font-size: 8px; font-weight: 800; margin-bottom: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1; color: #000; }
+                        .price { font-size: 10px; font-weight: 900; color: #000; margin-bottom: 2px; }
+                        
+                        .barcode { font-family: 'Libre Barcode 39'; font-size: 30px; margin: 0; line-height: 1; color: black; }
+                        .qrcode { width: 12mm; height: 12mm; margin: 1px 0; }
+                        .qrcode img { width: 100%; height: 100%; }
+                        
+                        .sku { font-size: 6px; font-weight: bold; color: #64748b; margin-top: 1px; }
+
                         @media print {
-                            body { padding: 0; }
-                            .label-card { border: ${useCutLines ? '1px dashed #ccc' : 'none'}; }
+                            @page { 
+                                size: ${labelPaperSize === 'a4' ? 'A4' : '50mm 30mm'}; 
+                                margin: 0; 
+                            }
+                            body { -webkit-print-color-adjust: exact; }
+                            .print-container { width: auto; margin: 0; }
                         }
                     </style>
                 </head>
                 <body>
-                    ${labelsHtml}
+                    <div class="print-container">
+                        ${labelsHtml}
+                    </div>
                     <script>
-                        setTimeout(() => {
-                            window.print();
-                            window.close();
-                        }, 800);
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                window.close();
+                            }, 1000);
+                        };
                     </script>
                 </body>
             </html>
@@ -1019,6 +1063,18 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                                 Batal
                             </button>
                             <button 
+                                onClick={() => {
+                                    const initialQtys = {};
+                                    selectedItems.forEach(id => { initialQtys[id] = 1; });
+                                    setSelectedQuantities(initialQtys);
+                                    setSelectedLabelItem(null); // Clear single item mode
+                                    setShowLabelModal(true);
+                                }}
+                                className="px-8 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-500/20 flex items-center gap-2"
+                            >
+                                <FiTag size={16} /> Cetak Label Barcode
+                            </button>
+                            <button 
                                 onClick={handlePrintDeliveryNote}
                                 className="px-8 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 flex items-center gap-2"
                             >
@@ -1117,79 +1173,120 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl"
+                            className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl"
                         >
-                            <div className="p-8 border-b border-slate-100 dark:border-slate-800">
-                                <h3 className="text-xl font-black dark:text-white">Cetak Label Barcode</h3>
-                                <p className="text-sm text-slate-500 mt-1">Pratinjau label sebelum dikirim ke printer.</p>
+                            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-xl font-black dark:text-white uppercase tracking-tighter italic">Konfigurasi Label Produk</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Pengaturan layout & jumlah cetak</p>
+                                </div>
+                                <button onClick={() => setShowLabelModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                                    <FiX size={20} className="text-slate-400" />
+                                </button>
                             </div>
                             
-                            <div className="p-8 flex justify-center">
-                                <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl shadow-inner flex flex-col items-center justify-center text-center w-[200px] h-[120px]">
-                                    <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#64748b', marginBottom: '2px', textTransform: 'uppercase' }}>{storeSettings?.name}</div>
-                                    <div style={{ fontSize: '10px', fontWeight: '800', marginBottom: '2px', color: '#1e293b' }}>{selectedLabelItem?.name}</div>
-                                    <div style={{ fontSize: '11px', fontWeight: '900', color: '#2563eb', marginBottom: '4px' }}>{formatRupiah(selectedLabelItem?.sellPrice)}</div>
-                                    <div className="font-barcode" style={{ fontSize: '40px', lineHeight: '1', margin: '0', color: '#000' }}>
-                                        *{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}*
-                                    </div>
-                                    <div style={{ fontSize: '7px', fontWeight: 'bold', color: '#94a3b8' }}>{selectedLabelItem?.sku || selectedLabelItem?.id?.toString().slice(-6)}</div>
-                                </div>
-                            </div>
-
-                            <div className="px-8 mb-4 flex flex-col gap-4">
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jumlah Cetak</span>
-                                        <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Mau cetak berapa stiker?</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button 
-                                            onClick={() => setLabelQty(Math.max(1, labelQty - 1))}
-                                            className="size-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all active:scale-90"
-                                        >
-                                            <FiPlus className="rotate-45" />
-                                        </button>
-                                        <input 
-                                            type="number"
-                                            value={labelQty}
-                                            onChange={(e) => setLabelQty(Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-16 bg-transparent border-none text-center font-black text-lg focus:ring-0 text-blue-600"
-                                        />
-                                        <button 
-                                            onClick={() => setLabelQty(labelQty + 1)}
-                                            className="size-10 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all active:scale-90"
-                                        >
-                                            <FiPlus />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${useCutLines ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'} transition-colors`}>
-                                            <FiEdit size={16} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Garis Potong</span>
-                                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Tampilkan batas gunting</span>
+                            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Left Side: Configuration */}
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Kertas</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={() => setLabelPaperSize('thermal')}
+                                                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${labelPaperSize === 'thermal' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                                            >
+                                                <FiPrinter size={20} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Thermal Stiker</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setLabelPaperSize('a4')}
+                                                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${labelPaperSize === 'a4' ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                                            >
+                                                <FiFileText size={20} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Kertas A4</span>
+                                            </button>
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={() => setUseCutLines(!useCutLines)}
-                                        className={`w-12 h-6 rounded-full relative transition-all ${useCutLines ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
-                                    >
-                                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${useCutLines ? 'left-7' : 'left-1'}`} />
-                                    </button>
+
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tipe Kode</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={() => setLabelType('barcode')}
+                                                className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${labelType === 'barcode' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                                            >
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Barcode</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setLabelType('qrcode')}
+                                                className={`p-3 rounded-xl border-2 transition-all flex items-center justify-center gap-2 ${labelType === 'qrcode' ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                                            >
+                                                <span className="text-[10px] font-black uppercase tracking-widest">QR Code</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg ${useCutLines ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-400'} transition-colors`}>
+                                                <FiEdit size={16} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Garis Potong</span>
+                                                <span className="text-[9px] font-bold text-slate-500">Tampilkan batas stiker</span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setUseCutLines(!useCutLines)}
+                                            className={`w-10 h-5 rounded-full relative transition-all ${useCutLines ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                        >
+                                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${useCutLines ? 'left-5.5' : 'left-0.5'}`} />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-2xl flex items-start gap-4">
-                                    <div className="p-2 bg-blue-600 rounded-lg text-white shrink-0"><FiTag /></div>
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-[10px] text-blue-700 dark:text-blue-300 font-bold leading-relaxed">
-                                            Label ini dirancang untuk ukuran stiker **50mm x 30mm**.
-                                        </p>
-                                        <p className="text-[9px] text-blue-600/70 dark:text-blue-400/70 font-medium italic">
-                                            {useCutLines ? '* Rekomendasi untuk printer kertas A4 stiker.' : '* Rekomendasi untuk printer thermal label roll.'}
+                                {/* Right Side: Item List & Qty */}
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Daftar Barang & Jumlah</label>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 overflow-hidden">
+                                        <div className="max-h-[250px] overflow-auto p-4 space-y-3 custom-scrollbar">
+                                            {selectedLabelItem ? (
+                                                <div className="flex items-center justify-between gap-4 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[10px] font-black text-slate-900 dark:text-white truncate uppercase">{selectedLabelItem.name}</p>
+                                                        <p className="text-[9px] text-slate-400 font-bold">{selectedLabelItem.code || 'NO CODE'}</p>
+                                                    </div>
+                                                    <input 
+                                                        type="number"
+                                                        value={labelQty}
+                                                        onChange={(e) => setLabelQty(Math.max(1, parseInt(e.target.value) || 1))}
+                                                        className="w-14 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-center font-black text-xs py-2"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                products.filter(p => selectedItems.includes(p.id)).map(p => (
+                                                    <div key={p.id} className="flex items-center justify-between gap-4 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-[10px] font-black text-slate-900 dark:text-white truncate uppercase">{p.name}</p>
+                                                            <p className="text-[9px] text-slate-400 font-bold">{p.code || 'NO CODE'}</p>
+                                                        </div>
+                                                        <input 
+                                                            type="number"
+                                                            value={selectedQuantities[p.id] || 1}
+                                                            onChange={(e) => setSelectedQuantities(prev => ({ ...prev, [p.id]: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                                            className="w-14 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-center font-black text-xs py-2"
+                                                        />
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/50 flex gap-3 items-start">
+                                        <FiInfo className="text-amber-600 mt-0.5 shrink-0" size={14} />
+                                        <p className="text-[9px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed uppercase italic">
+                                            {labelPaperSize === 'thermal' 
+                                                ? 'Pastikan printer thermal sudah terpasang kertas stiker ukuran 50x30mm.' 
+                                                : 'Gunakan kertas stiker A4. Layout akan disusun otomatis dalam 4 kolom.'}
                                         </p>
                                     </div>
                                 </div>
@@ -1198,15 +1295,15 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                             <div className="p-8 bg-slate-50 dark:bg-slate-800/50 flex gap-4">
                                 <button 
                                     onClick={() => setShowLabelModal(false)}
-                                    className="flex-1 py-4 font-bold text-slate-500 hover:text-slate-700 transition-colors"
+                                    className="flex-1 py-4 font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                     Batal
                                 </button>
                                 <button 
                                     onClick={doPrintLabel}
-                                    className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/20"
+                                    className="flex-[2] py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all"
                                 >
-                                    <FiPrinter size={16} className="inline mr-2" /> Cetak Sekarang
+                                    <FiPrinter size={16} className="inline mr-2" /> Mulai Cetak Label
                                 </button>
                             </div>
                         </motion.div>
