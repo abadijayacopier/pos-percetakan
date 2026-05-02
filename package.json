@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"cd server && npm start\" \"cd client && npm run dev\"",
     "build:client": "cd client && npm run build",
-    "build:main": "esbuild electron-main.js --bundle --platform=node --external:electron --outfile=dist-main.js",
+    "build:main": "esbuild electron-main.js --bundle --platform=node --external:electron --external:mysql2 --outfile=dist-main.js",
     "build:db-tool": "electron-builder --config.extraMetadata.main=db-tool/main.js --config.productName=\"Koneksi Database\" --config.directories.output=dist-db-tool",
     "start": "electron .",
     "start:db-tool": "electron db-tool/main.js",
@@ -24,7 +24,7 @@
     "jsonwebtoken": "^9.0.2",
     "midtrans-client": "^1.4.3",
     "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.9.2",
+    "mysql2": "^3.22.3",
     "qrcode": "1.5.4",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",

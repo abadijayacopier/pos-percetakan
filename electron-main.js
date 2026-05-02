@@ -18,10 +18,29 @@ let tray = null;
 const SERVER_PORT = 5001;
 
 // ---------- Resolve paths ----------
+function getDbConfigPath() {
+    const isPackaged = app.isPackaged;
+    const paths = [
+        path.join(app.getPath('userData'), 'database', 'db-config.json'),
+        path.join(__dirname, 'server', 'database', 'db-config.json'),
+        path.join(process.resourcesPath, 'server', 'database', 'db-config.json'),
+        path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'db-config.json')
+    ];
+    for (const p of paths) {
+        if (fs.existsSync(p)) return p;
+    }
+    return paths[1]; // fallback to dev path
+}
+
 function resPath(...parts) {
-    return app.isPackaged
-        ? path.join(process.resourcesPath, ...parts)
-        : path.join(__dirname, ...parts);
+    if (app.isPackaged) {
+        // In production, resources are in process.resourcesPath
+        const p = path.join(process.resourcesPath, ...parts);
+        if (fs.existsSync(p)) return p;
+        // Or inside app.asar
+        return path.join(process.resourcesPath, 'app.asar', ...parts);
+    }
+    return path.join(__dirname, ...parts);
 }
 
 function getLocalIP() {
@@ -367,58 +386,206 @@ ipcMain.handle('download-mariadb', async (event) => {
 });
 
 // ---------- IPC: Import Database ----------
-ipcMain.handle('import-database', async (event) => {
+ipcMain.handle('pick-sql-file', async (event) => {
     const win = event.sender;
-    return importDatabase(msg => win.send('setup-log', msg));
+    const { dialog, BrowserWindow } = require('electron');
+    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(win), {
+        properties: ['openFile'],
+        filters: [{ name: 'SQL Backup', extensions: ['sql'] }]
+    });
+    if (result.canceled) return null;
+    return result.filePaths[0];
 });
 
-async function importDatabase(log) {
+ipcMain.handle('backup-database', async (event) => {
+    const { dialog, BrowserWindow } = require('electron');
+    const win = event.sender;
+    const log = msg => win.send('server-log', msg);
+
+    const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(win), {
+        title: 'Simpan Backup Database',
+        defaultPath: path.join(os.homedir(), `backup_pos_${new Date().toISOString().slice(0,10)}.sql`),
+        filters: [{ name: 'SQL File', extensions: ['sql'] }]
+    });
+
+    if (result.canceled) return { success: false, error: 'Dibatalkan' };
+
+    const dest = result.filePath;
+    log('Memulai proses backup...');
+
+    const configPath = getDbConfigPath();
+    let cfg = {};
+    try { if (fs.existsSync(configPath)) cfg = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch { }
+
+    const dbName = cfg.DB_NAME || (cfg.mysql && cfg.mysql.database) || 'pos_abadi';
+    const user = cfg.DB_USER || (cfg.mysql && cfg.mysql.user) || 'root';
+    const pass = cfg.DB_PASS || (cfg.mysql && cfg.mysql.password) || '';
+    const host = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
+
     return new Promise(resolve => {
-        const sqlFile = resPath('database', 'pos_abadi.sql');
-        if (!fs.existsSync(sqlFile)) {
-            log && log('✗ File SQL tidak ditemukan: ' + sqlFile);
-            return resolve({ success: false, error: 'SQL file not found' });
-        }
-
-        const mysqlLocations = [
-            'mysql',
-            'C:\\Program Files\\MariaDB 10.11\\bin\\mysql.exe',
-            'C:\\Program Files\\MariaDB 11.4\\bin\\mysql.exe',
-            'C:\\Program Files\\MariaDB 10.6\\bin\\mysql.exe',
-        ];
-
-        let mysqlBin = 'mysql';
-        for (const loc of mysqlLocations) {
-            try {
-                require('child_process').execSync(`"${loc}" --version`, { timeout: 3000 });
-                mysqlBin = loc;
-                break;
-            } catch (_) { }
-        }
-
-        const sql = fs.readFileSync(sqlFile, 'utf8');
-
-        exec(`"${mysqlBin}" -u root -e "CREATE DATABASE IF NOT EXISTS pos_abadi;"`, (err) => {
-            if (err) log && log('⚠ Create DB: ' + err.message);
-
-            const imp = exec(
-                `"${mysqlBin}" -u root pos_abadi`,
-                { timeout: 30000 },
-                (err2) => {
-                    if (err2) {
-                        log && log('✗ Import gagal: ' + err2.message);
-                        return resolve({ success: false, error: err2.message });
+        // Try mysqldump first
+        const cmd = `mysqldump -h ${host} -u ${user} ${pass ? '-p' + pass : ''} --databases ${dbName} > "${dest}"`;
+        exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+                log('✗ mysqldump gagal, mencoba alternatif...');
+                // If mysqldump fails (not in PATH), we can try to find it in common MariaDB paths
+                const dumpPaths = [
+                    'C:\\Program Files\\MariaDB 10.11\\bin\\mysqldump.exe',
+                    'C:\\Program Files\\MariaDB 11.4\\bin\\mysqldump.exe',
+                    'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe'
+                ];
+                let found = false;
+                for (const p of dumpPaths) {
+                    if (fs.existsSync(p)) {
+                        try {
+                            require('child_process').execSync(`"${p}" -h ${host} -u ${user} ${pass ? '-p' + pass : ''} --databases ${dbName} > "${dest}"`);
+                            found = true;
+                            break;
+                        } catch (e2) {}
                     }
-                    log && log('✓ Database pos_abadi berhasil diimpor!');
-                    resolve({ success: true });
                 }
-            );
-            if (imp.stdin) {
-                imp.stdin.write(sql);
-                imp.stdin.end();
+                if (found) {
+                    log('✓ Backup berhasil disimpan!');
+                    return resolve({ success: true });
+                }
+                log('✗ Backup gagal: pastikan MariaDB/MySQL terinstal di PATH');
+                return resolve({ success: false, error: stderr || err.message });
             }
+            log('✓ Backup berhasil disimpan!');
+            resolve({ success: true });
         });
     });
+});
+
+ipcMain.handle('import-database', async (event, customPath) => {
+    const win = event.sender;
+    return importDatabase(msg => win.send('server-log', msg), customPath);
+});
+
+async function importDatabase(log, customPath) {
+    // Find SQL file in multiple locations
+    let sqlFile = customPath;
+    
+    if (!sqlFile) {
+        const possiblePaths = [
+            resPath('database', 'pos_abadi.sql'),
+            path.join(__dirname, 'server', 'database', 'pos_abadi_latest.sql'),
+            path.join(__dirname, 'server', 'database', 'pos_abadi_utf8.sql'),
+            path.join(__dirname, 'server', 'database', 'pos_abadi.sql'),
+            path.join(__dirname, 'build', 'pos_abadi.sql'),
+            resPath('db-tool', 'pos_abadi.sql'),
+        ];
+
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) { sqlFile = p; break; }
+        }
+    }
+    log && log('SQL file: ' + (sqlFile || 'TIDAK DITEMUKAN'));
+
+    // Read current config (support both old & new format)
+    const configPath = resPath('server', 'database', 'db-config.json');
+    let cfg = {};
+    try { if (fs.existsSync(configPath)) cfg = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch { }
+
+    // Normalize config: old format uses DB_TYPE/DB_HOST etc, new uses mode/mysql
+    const mode = cfg.mode || cfg.DB_TYPE || 'sqlite';
+    if (!cfg.mysql && cfg.DB_HOST) {
+        cfg.mysql = {
+            host: cfg.DB_HOST || 'localhost',
+            port: cfg.DB_PORT || 3306,
+            user: cfg.DB_USER || 'root',
+            password: cfg.DB_PASS || '',
+            database: cfg.DB_NAME || 'pos_abadi'
+        };
+    }
+    log && log('Mode: ' + mode);
+
+    // ─── SQLite Mode ───
+    if (mode === 'sqlite') {
+        log && log('Mode SQLite: menjalankan init script...');
+        try {
+            const initScript = app.isPackaged
+                ? path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'init_sqlite.js')
+                : path.join(__dirname, 'server', 'database', 'init_sqlite.js');
+            const seedScript = app.isPackaged
+                ? path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'seed_sqlite.js')
+                : path.join(__dirname, 'server', 'database', 'seed_sqlite.js');
+
+            if (fs.existsSync(initScript)) {
+                require('child_process').execSync(`"${process.execPath}" "${initScript}"`, {
+                    timeout: 30000,
+                    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+                });
+                log && log('✓ Init SQLite berhasil');
+            } else {
+                log && log('⚠ File init_sqlite.js tidak ditemukan');
+            }
+
+            if (fs.existsSync(seedScript)) {
+                require('child_process').execSync(`"${process.execPath}" "${seedScript}"`, {
+                    timeout: 30000,
+                    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
+                });
+                log && log('✓ Seed SQLite berhasil');
+            }
+
+            return { success: true };
+        } catch (e) {
+            log && log('✗ Gagal init SQLite: ' + e.message);
+            return { success: false, error: e.message };
+        }
+    }
+
+    // ─── MySQL Mode (menggunakan mysql2 package) ───
+    if (!sqlFile) {
+        log && log('✗ File SQL tidak ditemukan di semua lokasi');
+        return { success: false, error: 'SQL file not found' };
+    }
+
+    // MySQL Mode
+    try {
+        // Load mysql2 specifically from the server directory
+        const serverNodeModules = path.join(__dirname, 'server', 'node_modules', 'mysql2', 'promise.js');
+        const mysql = fs.existsSync(serverNodeModules) ? require(serverNodeModules) : require('mysql2/promise');
+        
+        const dbName = cfg.DB_NAME || (cfg.mysql && cfg.mysql.database) || 'pos_abadi';
+        const dbHost = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
+        
+        log && log(`Mencoba koneksi ke MySQL di ${dbHost}...`);
+
+        const conn = await mysql.createConnection({
+            host: dbHost,
+            user: cfg.DB_USER || (cfg.mysql && cfg.mysql.user) || 'root',
+            password: cfg.DB_PASS || (cfg.mysql && cfg.mysql.password) || '',
+            multipleStatements: true,
+            connectTimeout: 10000 // 10 detik timeout agar tidak nyangkut
+        });
+
+        log && log(`✓ Terkoneksi! Membersihkan & menyiapkan database "${dbName}"...`);
+        
+        // Hapus database lama agar tidak bentrok (Clean Install)
+        await conn.query(`DROP DATABASE IF EXISTS \`${dbName}\``);
+        await conn.query(`CREATE DATABASE \`${dbName}\``);
+        await conn.query(`USE \`${dbName}\``);
+        
+        log && log('✓ Database dikosongkan. Membaca file SQL...');
+        const sqlContent = fs.readFileSync(sqlFile, 'utf8');
+        
+        log && log('Menjalankan perintah SQL (mohon tunggu)...');
+        
+        // Matikan pengamanan relasi
+        await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+        await conn.query(sqlContent);
+        await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+        
+        log && log('✓ IMPORT SELESAI! Database baru berhasil dibuat.');
+
+        await conn.end();
+        return { success: true };
+    } catch (e) {
+        log && log('✗ Gagal: ' + e.message);
+        return { success: false, error: e.message };
+    }
 }
 
 // ---------- Backend ----------
