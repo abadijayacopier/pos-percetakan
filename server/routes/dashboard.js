@@ -7,14 +7,9 @@ router.get('/stats', verifyToken, async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 
-        // 1. Omset Hari Ini (Dari Cash Flow IN - Tenant Scope)
-        const [cashToday] = await req.db.query(
-            "SELECT SUM(amount) as omset FROM cash_flow WHERE type = 'in' AND date LIKE ?",
-            [`${today}%`]
-        );
-
-        const [trxToday] = await req.db.query(
-            "SELECT COUNT(id) as trxCount FROM transactions WHERE date LIKE ?",
+        // 1. Omset & Trx Count Hari Ini (Derived from Transactions for better accuracy)
+        const [trxStats] = await req.db.query(
+            "SELECT SUM(CASE WHEN status IN ('paid', 'completed') THEN total ELSE paid END) as omset, COUNT(id) as trxCount FROM transactions WHERE date LIKE ?",
             [`${today}%`]
         );
 
@@ -50,7 +45,7 @@ router.get('/stats', verifyToken, async (req, res) => {
         const startDate = thirtyDaysAgo.toISOString().split('T')[0];
 
         const [periodTrx] = await req.db.query(
-            "SELECT DATE(date) as date, SUM(amount) as total FROM cash_flow WHERE type = 'in' AND date >= ? GROUP BY DATE(date) ORDER BY DATE(date)",
+            "SELECT DATE(date) as date, SUM(CASE WHEN status IN ('paid', 'completed') THEN total ELSE paid END) as total FROM transactions WHERE date >= ? GROUP BY DATE(date) ORDER BY DATE(date)",
             [`${startDate} 00:00:00`]
         );
 
@@ -137,8 +132,8 @@ router.get('/stats', verifyToken, async (req, res) => {
         }));
 
         res.json({
-            omset: parseFloat(cashToday[0]?.omset || 0),
-            trxCount: trxToday[0]?.trxCount || 0,
+            omset: parseFloat(trxStats[0]?.omset || 0),
+            trxCount: trxStats[0]?.trxCount || 0,
             saldo: parseFloat(cashFlow[0]?.saldo || 0),
             pendingPrintCount: pendingPrint[0]?.count || 0,
             pendingServiceCount: activeServiceCount, // We use active count for the main badge

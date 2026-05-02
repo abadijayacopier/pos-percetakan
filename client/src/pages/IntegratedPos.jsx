@@ -543,6 +543,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         await printViaQZ({ data: receiptText, paperSize: printerSettings.paperSize }, printerSettings.printerName || 'LX-310');
                     }, 1000);
                 }
+            } else if (effectivePrinterSize === 'inkjet') {
+                // For inkjet/laser, we use the high-quality browser print (ReceiptProMax Invoice Layout)
+                // This ensures it looks like a professional invoice, not just plain text
+                showToast('Membuka pratinjau cetak...', 'info');
+                setTimeout(() => {
+                    window.print();
+                }, 500);
             } else {
                 await api.post('/print/receipt', {
                     text: receiptText,

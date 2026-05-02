@@ -9,7 +9,10 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
     const dims = {
         standard: { width: '241.3mm', height: '279.4mm', label: 'Standard (9.5 x 11")' },
         half: { width: '241.3mm', height: '139.7mm', label: 'Half (9.5 x 5.5")' },
-        wartel: { width: '120mm', height: '140mm', label: 'Wartel (12 x 14 cm)' }
+        wartel: { width: '120mm', height: '140mm', label: 'Wartel (12 x 14 cm)' },
+        A4: { width: '210mm', height: '297mm', label: 'A4' },
+        A5: { width: '148mm', height: '210mm', label: 'A5' },
+        Folio: { width: '215mm', height: '330mm', label: 'Folio / F4' }
     };
 
     const currentDim = dims[paperSize] || dims.standard;
@@ -96,7 +99,15 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
                         return (
                             <tr key={idx} className="border-b border-dashed border-slate-200 print:border-black">
                                 <td className="py-1 px-1 text-center">{idx + 1}</td>
-                                <td className="py-1 px-1 uppercase">{item.name}</td>
+                                <td className="py-1 px-1 uppercase">
+                                    <div className="font-bold">{item.name}</div>
+                                    {item.meta && (
+                                        <div className="text-[9px] lowercase italic opacity-70">
+                                            {item.type === 'fotocopy' && `${item.meta.paper} | ${item.meta.color === 'bw' ? 'B/W' : 'Warna'} | ${item.meta.side} Sisi`}
+                                            {item.type === 'service' && `${item.meta.device} - ${item.meta.issue}`}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className="py-1 px-1 text-center">{qty}</td>
                                 <td className="py-1 px-1 text-right">{formatCurrency(price)}</td>
                                 <td className="py-1 px-1 text-right">{formatCurrency(sub)}</td>
@@ -169,15 +180,23 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
 
 const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate }) => {
     const items = receiptData.items || [];
-    // Use a unique ID to prevent double-printing when multiple receipt components are in the DOM
     const printId = useMemo(() => `invoice-print-${Math.random().toString(36).substr(2, 9)}`, []);
+    
+    const paperSize = printSettings.paperSize || 'A4';
+    const dims = {
+        A4: { width: '210mm', height: '297mm', size: 'A4' },
+        A5: { width: '148mm', height: '210mm', size: 'A5' },
+        Folio: { width: '215mm', height: '330mm', size: '215mm 330mm' },
+        standard: { width: '210mm', height: '297mm', size: 'A4' }
+    };
+    const currentDim = dims[paperSize] || dims.A4;
 
     return (
         <div id={printId} className="bg-white p-12 text-slate-900 w-full font-sans relative leading-normal print:p-0 print:m-0 print:border-0 print:shadow-none min-h-0 print:bg-white" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             {/* Print Style Injector - CLEAN & PRO */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @page { size: A4; margin: 15mm !important; }
+                @page { size: ${currentDim.size}; margin: 15mm !important; }
                 @media print {
                     /* Hide everything in the page body */
                     body * { visibility: hidden !important; background-color: white !important; }
@@ -280,6 +299,23 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                                 <td className="py-4 pr-4 text-center font-bold text-slate-400 print:text-black">{idx + 1}</td>
                                 <td className="py-4 pr-4">
                                     <p className="font-black text-slate-900 text-[13px] mb-0.5 uppercase tracking-tight print:text-black">{item.name}</p>
+                                    {item.meta && (
+                                        <div className="flex flex-wrap gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest print:text-slate-700">
+                                            {item.type === 'fotocopy' && (
+                                                <>
+                                                    <span className="bg-slate-100 px-2 py-0.5 rounded print:bg-none print:px-0">{item.meta.paper}</span>
+                                                    <span className="bg-slate-100 px-2 py-0.5 rounded print:bg-none print:px-0">{item.meta.color === 'bw' ? 'B/W' : 'WARNA'}</span>
+                                                    <span className="bg-slate-100 px-2 py-0.5 rounded print:bg-none print:px-0">{item.meta.side} SISI</span>
+                                                </>
+                                            )}
+                                            {item.type === 'service' && (
+                                                <>
+                                                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded print:bg-none print:px-0">{item.meta.device}</span>
+                                                    <span className="text-slate-400 font-medium normal-case print:text-slate-600">/ {item.meta.issue}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="py-4 px-4 text-center font-black text-base print:text-black">{qty}</td>
                                 <td className="py-4 px-4 text-right font-code print:text-black">{formatCurrency(price)}</td>

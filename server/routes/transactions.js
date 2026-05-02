@@ -158,18 +158,19 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             }
         }
 
-        // 3c. Cash Flow
-        if ((status === 'paid' || status === 'completed') && paid > 0) {
+        // 3c. Cash Flow (Record actual income received, net of change)
+        const actualIncome = Math.min(paid, total);
+        if (actualIncome > 0) {
             const cashFlowId = 'cf' + Date.now();
             await connection.query(`
-        INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
-        VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
-      `, [cashFlowId, date.split('T')[0], paid, `Penjualan ${type} - ${invoiceNo}`, newTrxId]);
+                INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
+            `, [cashFlowId, date.split('T')[0], actualIncome, `Penjualan ${type} - ${invoiceNo}`, newTrxId]);
         }
 
         // 3d. Customer sync
         if (customerId) {
-            await connection.query('UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?', [paid, customerId]);
+            await connection.query('UPDATE customers SET total_trx = total_trx + 1, total_spend = total_spend + ? WHERE id = ?', [actualIncome, customerId]);
         }
 
         // 3e. Manual Activity Log (Robust Insertion)
