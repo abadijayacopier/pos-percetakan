@@ -285,7 +285,7 @@ async function importDatabase(log) {
 function startBackend() {
     const isPackaged = app.isPackaged;
     const serverPath = isPackaged
-        ? path.join(process.resourcesPath, 'app', 'server', 'index.js')
+        ? path.join(process.resourcesPath, 'app.asar', 'server', 'index.js')
         : path.join(__dirname, 'server', 'index.js');
 
     const dbDir = isPackaged
@@ -297,6 +297,7 @@ function startBackend() {
     serverProcess = spawn(process.execPath, [serverPath], {
         env: {
             ...process.env,
+            ELECTRON_RUN_AS_NODE: '1',
             PORT: 5001,
             NODE_ENV: isPackaged ? 'production' : 'development',
             SQLITE_PATH: path.join(dbDir, 'pos.sqlite'),

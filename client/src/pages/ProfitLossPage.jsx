@@ -282,9 +282,41 @@ export default function ProfitLossPage() {
                         </button>
                         <button
                             onClick={() => {
-                                // Trigger print dialog with PDF save option
-                                window.print();
+                                // Simple Excel Export Logic using window.XLSX if available, 
+                                // or just a CSV download as fallback
+                                try {
+                                    const data = productMargins.map(m => ({
+                                        'Produk': m.name,
+                                        'Terjual': m.qty,
+                                        'Omzet': m.revenue,
+                                        'HPP': m.cost,
+                                        'Laba Kotor': m.profit,
+                                        'Margin (%)': (m.revenue > 0 ? (m.profit / m.revenue * 100).toFixed(1) : 0) + '%'
+                                    }));
+                                    
+                                    const csvContent = "data:text/csv;charset=utf-8," 
+                                        + "Laporan Laba Rugi Produk\n"
+                                        + "Periode: " + dateFrom + " s/d " + dateTo + "\n\n"
+                                        + Object.keys(data[0]).join(",") + "\n"
+                                        + data.map(row => Object.values(row).join(",")).join("\n");
+                                    
+                                    const encodedUri = encodeURI(csvContent);
+                                    const link = document.createElement("a");
+                                    link.setAttribute("href", encodedUri);
+                                    link.setAttribute("download", `Laporan_Untung_${dateFrom}_${dateTo}.csv`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                } catch (err) {
+                                    alert('Gagal export: ' + err.message);
+                                }
                             }}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/30"
+                        >
+                            <FiFileText size={16} />
+                            Export Excel
+                        </button>
+                        <button
+                            onClick={() => window.print()}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-blue-500/30"
                         >
                             <FiDownload size={16} />
@@ -497,6 +529,12 @@ export default function ProfitLossPage() {
                         Ringkasan Umum
                     </button>
                     <button 
+                        onClick={() => setActiveTab('expenses')}
+                        className={`px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'expenses' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white dark:bg-slate-800 text-slate-400'}`}
+                    >
+                        Rincian Pengeluaran
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('margin')}
                         className={`px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'margin' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white dark:bg-slate-800 text-slate-400'}`}
                     >
@@ -674,7 +712,57 @@ export default function ProfitLossPage() {
                             <p className="font-bold border-t border-slate-400 pt-2">Pemilik / Manager</p>
                         </div>
                     </div>
-                </>)}
+                </div></>)}
+
+                {/* Expenses Details Tab */}
+                {activeTab === 'expenses' && (
+                    <div className="space-y-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Rincian Pengeluaran Kas</h3>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Daftar biaya operasional dan pengeluaran lainnya</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-left">
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tanggal</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Keterangan</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Jumlah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                                        {filteredCashFlow.filter(c => c.type === 'out').length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">Tidak ada data pengeluaran pada periode ini</td>
+                                            </tr>
+                                        ) : filteredCashFlow.filter(c => c.type === 'out').map((c, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+                                                <td className="px-8 py-5 text-xs font-bold text-slate-500">{formatDate(c.date)}</td>
+                                                <td className="px-8 py-5">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 text-[10px] font-black uppercase">
+                                                        {c.category || 'Lainnya'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-8 py-5 text-xs font-medium text-slate-600 dark:text-slate-300">{c.note || '-'}</td>
+                                                <td className="px-8 py-5 text-right text-xs font-black text-red-600 italic">
+                                                    {formatCurrency(c.amount)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-slate-50/50 dark:bg-slate-800/50">
+                                        <tr className="font-black">
+                                            <td colSpan="3" className="px-8 py-5 text-[10px] uppercase tracking-widest text-slate-400">Total Pengeluaran Kas</td>
+                                            <td className="px-8 py-5 text-right text-sm text-red-600 italic">{formatCurrency(metrics.operationalExpenses)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
                     {/* Margin Analysis Tab */}
                     {activeTab === 'margin' && (
                         <div className="space-y-6">
@@ -733,8 +821,8 @@ export default function ProfitLossPage() {
                             </div>
                         </div>
                     )}
-                </div>
             </main>
+        </div>
 
             {/* Print Styles */}
             <style>{`
