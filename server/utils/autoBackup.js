@@ -17,7 +17,30 @@ if (!fs.existsSync(BACKUP_DIR)) {
 
 async function runBackup() {
     try {
-        // Retrieve credentials from .env via process.env
+        const { currentDbType } = require('../config/database');
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (currentDbType === 'sqlite') {
+            const dbPath = process.env.SQLITE_PATH || path.join(__dirname, '../database/pos.sqlite');
+            const fileName = `backup_${today}.sqlite`;
+            const filePath = path.join(BACKUP_DIR, fileName);
+
+            if (fs.existsSync(filePath)) {
+                console.log(`[Backup] Today's SQLite backup already exists: ${fileName}`);
+                return;
+            }
+
+            if (fs.existsSync(dbPath)) {
+                fs.copyFileSync(dbPath, filePath);
+                console.log(`[Backup] ✅ Success (SQLite): ${fileName}`);
+                cleanOldBackups(30);
+            } else {
+                console.warn(`[Backup] ⚠️ Source SQLite file not found: ${dbPath}`);
+            }
+            return;
+        }
+
+        // MySQL Mode
         const dbConfig = {
             host: process.env.DB_HOST || 'localhost',
             user: process.env.DB_USER || 'root',
@@ -25,13 +48,11 @@ async function runBackup() {
             database: process.env.DB_NAME || 'pos_abadi'
         };
 
-        const today = new Date().toISOString().split('T')[0];
         const fileName = `backup_${today}.sql`;
         const filePath = path.join(BACKUP_DIR, fileName);
 
-        // Check if today's backup already exists
         if (fs.existsSync(filePath)) {
-            console.log(`[Backup] Today's backup already exists: ${fileName}`);
+            console.log(`[Backup] Today's MySQL backup already exists: ${fileName}`);
             return;
         }
 
@@ -42,9 +63,7 @@ async function runBackup() {
             dumpToFile: filePath,
         });
 
-        console.log(`[Backup] ✅ Success: ${fileName}`);
-
-        // Optional: Delete backups older than 30 days
+        console.log(`[Backup] ✅ Success (MySQL): ${fileName}`);
         cleanOldBackups(30);
 
     } catch (error) {

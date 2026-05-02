@@ -163,9 +163,6 @@ ipcMain.on('open-app', () => {
         mainWindow.focus();
     }
 
-    // Open in browser
-    shell.openExternal(`http://localhost:${SERVER_PORT}`);
-
     // Minimize launcher to tray
     if (launcherWindow) {
         launcherWindow.hide();

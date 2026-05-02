@@ -160,7 +160,7 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                 >
                                     {storeSettings?.logo ? (
                                         <img 
-                                            src={storeSettings.logo.startsWith('http') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
+                                            src={storeSettings.logo.startsWith('http') || storeSettings.logo.startsWith('data:') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
                                             className="w-full h-full object-cover" 
                                             alt="Logo" 
                                         />

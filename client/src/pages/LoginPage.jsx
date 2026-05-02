@@ -76,7 +76,7 @@ export default function LoginPage({ storeSettings, onNavigate, systemInfo }) {
                         >
                             {storeSettings?.logo ? (
                                 <img 
-                                    src={storeSettings.logo.startsWith('http') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
+                                    src={storeSettings.logo.startsWith('http') || storeSettings.logo.startsWith('data:') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
                                     className="max-w-full max-h-full object-contain" 
                                     alt="Logo" 
                                 />
