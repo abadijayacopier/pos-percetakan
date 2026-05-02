@@ -34,7 +34,7 @@ router.get('/', verifyToken, async (req, res) => {
             invoiceNo: t.invoice_no || t.invoiceNo,
             invoiceNumber: t.invoice_no || t.invoiceNo,
             customerName: t.customer_name || t.customerName,
-            customerPhone: t.customer_phone || t.customerPhone,
+            customerPhone: t.customer_wa || t.customerPhone,
             userName: t.user_name || t.userName,
             paymentType: t.payment_type || t.paymentType,
             changeAmount: t.change_amount || t.changeAmount,
@@ -114,7 +114,7 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         const validCustomerId = (customerId && customerId !== 'null' && customerId !== 'undefined' && String(customerId).trim() !== '') ? customerId : null;
 
         const [trxResult] = await connection.query(`
-            INSERT INTO transactions (id, invoice_no, date, customer_id, customer_name, customer_phone, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status, notes)
+            INSERT INTO transactions (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status, notes)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status, notes]);
 

@@ -167,7 +167,7 @@ router.get('/print', verifyToken, async (req, res) => {
 // 8. GET /api/pricing/public/all (Public for Landing Page)
 router.get('/public/all', async (req, res) => {
     try {
-        const shopId = req.headers['x-shop-id'] || 'default';
+        const shopId = req.headers['x-shop-id'] || req.query.shopId || 'default';
         const tenantDb = await TenantManager.getPoolForShop(shopId);
         if (!tenantDb) return res.status(404).json({ message: 'Shop not found' });
 
@@ -175,8 +175,8 @@ router.get('/public/all', async (req, res) => {
         const [print] = await tenantDb.query("SELECT id, name, sell_price AS price FROM products WHERE category_id = (SELECT id FROM categories WHERE name LIKE '%print%' LIMIT 1)");
 
         res.json({
-            binding: binding.length > 0 ? binding : [{ id: 'b1', name: 'Jilid Lakban Biasa', price: 3000 }],
-            print: print.length > 0 ? print : [{ id: 'p1', name: 'Print B/W A4', price: 500 }]
+            binding: binding.length > 0 ? binding : [{ id: 'b1', name: 'Jilid Lakban Biasa', price: 3000 }, { id: 'b2', name: 'Jilid Spiral Kawat', price: 15000 }],
+            print: print.length > 0 ? print : [{ id: 'p1', name: 'Print B/W A4', price: 500 }, { id: 'p2', name: 'Print Warna A4', price: 1000 }]
         });
     } catch (error) {
         res.status(500).json({ message: 'Gagal mengambil data harga publik' });

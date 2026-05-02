@@ -1,8 +1,8 @@
+import React, { useState } from 'react';
 import { FiSend, FiZap, FiCheckCircle, FiAlertCircle, FiSettings, FiBell, FiShield, FiExternalLink, FiUsers, FiRefreshCw, FiEye, FiEyeOff } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import api from '../../services/api';
 import Swal from 'sweetalert2';
-
 
 export default function TelegramSettings({
     telegramBotToken, setTelegramBotToken,
@@ -14,9 +14,8 @@ export default function TelegramSettings({
     telegramErrorMonitoring, setTelegramErrorMonitoring,
     saveSettings
 }) {
-    const [testLoading, setTestLoading] = useState(false);
-    const [showToken, setShowToken] = useState(false);
-
+    const [testLoading, setTestLoading] = React.useState(false);
+    const [showToken, setShowToken] = React.useState(false);
 
     const handleTestTelegram = async () => {
         if (!telegramBotToken || !telegramChatId) {
@@ -32,7 +31,6 @@ export default function TelegramSettings({
             });
             Swal.fire('Berhasil', 'Pesan tes telah dikirim ke Telegram', 'success');
         } catch (error) {
-
             Swal.fire('Gagal', error.response?.data?.message || 'Gagal mengirim pesan tes', 'error');
         } finally {
             setTestLoading(false);
@@ -41,7 +39,6 @@ export default function TelegramSettings({
 
     return (
         <div className="space-y-10 pb-20 max-w-5xl mx-auto">
-            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-5">
                     <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-2xl shadow-sky-500/30">
@@ -58,14 +55,11 @@ export default function TelegramSettings({
                 </div>
             </div>
 
-
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Connection Form */}
                 <div className="lg:col-span-2 space-y-8">
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="premium-card p-10 rounded-[3rem]"
+                        className="premium-card p-10 rounded-[3rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm"
                     >
                         <div className="flex items-center justify-between mb-10">
                             <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">Bot Configuration</h3>
@@ -129,7 +123,6 @@ export default function TelegramSettings({
                                 onClick={handleTestTelegram}
                                 disabled={testLoading || (telegramEnabled !== 'true' && telegramEnabled !== true)}
                                 className={`flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${testLoading || (telegramEnabled !== 'true' && telegramEnabled !== true) ? 'bg-slate-100 text-slate-400' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white shadow-lg shadow-emerald-500/10'}`}
-
                             >
                                 {testLoading ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
                                 Test Kirim Notifikasi
@@ -137,8 +130,7 @@ export default function TelegramSettings({
                         </div>
                     </motion.div>
 
-
-                    <div className="premium-card p-10 rounded-[3rem]">
+                    <div className="premium-card p-10 rounded-[3rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm">
                         <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter italic mb-8">Feature Scopes</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {[
@@ -197,10 +189,8 @@ export default function TelegramSettings({
                             ))}
                         </div>
                     </div>
-
                 </div>
 
-                {/* Guide Panel */}
                 <div className="space-y-8">
                     <div className="premium-card p-10 rounded-[3rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/20 rounded-full blur-3xl -mr-16 -mt-16" />

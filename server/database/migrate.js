@@ -1,7 +1,8 @@
-const { pool } = require('../config/database');
+const { getActivePool } = require('../config/database');
 
 const createTables = async () => {
   try {
+    const pool = await getActivePool();
     const connection = await pool.getConnection();
 
     // 1. Users
@@ -81,6 +82,7 @@ const createTables = async () => {
         change_amount INT DEFAULT 0,
         payment_type VARCHAR(50) DEFAULT 'tunai',
         status VARCHAR(50) DEFAULT 'unpaid',
+        notes TEXT,
         FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       )
@@ -141,6 +143,7 @@ const createTables = async () => {
         condition_physic TEXT,
         diagnosis TEXT,
         labor_cost INT DEFAULT 0,
+        dp_amount INT DEFAULT 0,
         total_cost INT DEFAULT 0,
         status ENUM('diterima', 'diagnosa', 'approval', 'tunggu_part', 'pengerjaan', 'testing', 'selesai', 'diambil', 'batal') DEFAULT 'diterima',
         technician_id VARCHAR(50),
@@ -160,11 +163,41 @@ const createTables = async () => {
         name VARCHAR(100) NOT NULL,
         qty INT NOT NULL,
         price INT NOT NULL,
-        FOREIGN KEY (service_order_id) REFERENCES service_orders(id) ON DELETE CASCADE
+        product_id VARCHAR(50),
+        FOREIGN KEY (service_order_id) REFERENCES service_orders(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
       )
     `);
 
-    // 10. Suppliers
+    // 10. Tiered Pricing Rules
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS tiered_pricing_rules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id VARCHAR(50) NOT NULL,
+        min_kuantitas INT NOT NULL,
+        max_kuantitas INT,
+        diskon_persen DECIMAL(5,2) DEFAULT 0,
+        harga_per_unit_akhir INT NOT NULL,
+        urutan_tier INT DEFAULT 1,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      )
+    `);
+    
+    // 11. Pricing Logs
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pricing_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        product_id VARCHAR(50) NOT NULL,
+        user_id VARCHAR(50),
+        payload_sebelum TEXT,
+        payload_sesudah TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    // 12. Suppliers
     await connection.query(`
       CREATE TABLE IF NOT EXISTS suppliers (
         id VARCHAR(50) PRIMARY KEY,
@@ -285,7 +318,9 @@ const createTables = async () => {
         user_id VARCHAR(50),
         user_name VARCHAR(100),
         action VARCHAR(50) NOT NULL,
+        target VARCHAR(50) DEFAULT NULL,
         detail TEXT,
+        ip_address VARCHAR(45) DEFAULT NULL,
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
       )

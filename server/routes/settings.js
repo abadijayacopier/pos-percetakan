@@ -178,7 +178,9 @@ router.post('/license', verifyToken, requireRole(['admin']), async (req, res) =>
             return res.json({
                 success: true,
                 message: 'Aktivasi berhasil',
-                clientName: result.clientName
+                clientName: result.clientName,
+                expiryDate: result.expiryDate,
+                hardwareId: result.hwid
             });
         }
 

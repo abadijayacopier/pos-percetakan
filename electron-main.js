@@ -418,43 +418,33 @@ ipcMain.handle('backup-database', async (event) => {
     try { if (fs.existsSync(configPath)) cfg = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch { }
 
     const dbName = cfg.DB_NAME || (cfg.mysql && cfg.mysql.database) || 'pos_abadi';
-    const user = cfg.DB_USER || (cfg.mysql && cfg.mysql.user) || 'root';
-    const pass = cfg.DB_PASS || (cfg.mysql && cfg.mysql.password) || '';
-    const host = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
+    const dbUser = cfg.DB_USER || (cfg.mysql && cfg.mysql.user) || 'root';
+    const dbPass = cfg.DB_PASS || (cfg.mysql && cfg.mysql.password) || '';
+    const dbHost = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
 
-    return new Promise(resolve => {
-        // Try mysqldump first
-        const cmd = `mysqldump -h ${host} -u ${user} ${pass ? '-p' + pass : ''} --databases ${dbName} > "${dest}"`;
-        exec(cmd, (err, stdout, stderr) => {
-            if (err) {
-                log('✗ mysqldump gagal, mencoba alternatif...');
-                // If mysqldump fails (not in PATH), we can try to find it in common MariaDB paths
-                const dumpPaths = [
-                    'C:\\Program Files\\MariaDB 10.11\\bin\\mysqldump.exe',
-                    'C:\\Program Files\\MariaDB 11.4\\bin\\mysqldump.exe',
-                    'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe'
-                ];
-                let found = false;
-                for (const p of dumpPaths) {
-                    if (fs.existsSync(p)) {
-                        try {
-                            require('child_process').execSync(`"${p}" -h ${host} -u ${user} ${pass ? '-p' + pass : ''} --databases ${dbName} > "${dest}"`);
-                            found = true;
-                            break;
-                        } catch (e2) {}
-                    }
-                }
-                if (found) {
-                    log('✓ Backup berhasil disimpan!');
-                    return resolve({ success: true });
-                }
-                log('✗ Backup gagal: pastikan MariaDB/MySQL terinstal di PATH');
-                return resolve({ success: false, error: stderr || err.message });
-            }
-            log('✓ Backup berhasil disimpan!');
-            resolve({ success: true });
+    try {
+        // Use mysqldump npm package (no CLI dependency needed)
+        const mysqldumpPkg = require(path.join(__dirname, 'server', 'node_modules', 'mysqldump'));
+        const mysqldump = mysqldumpPkg.default || mysqldumpPkg;
+
+        log(`Mengekspor database "${dbName}" dari ${dbHost}...`);
+
+        await mysqldump({
+            connection: {
+                host: dbHost,
+                user: dbUser,
+                password: dbPass,
+                database: dbName,
+            },
+            dumpToFile: dest,
         });
-    });
+
+        log('✓ Backup berhasil disimpan ke: ' + dest);
+        return { success: true };
+    } catch (e) {
+        log('✗ Backup gagal: ' + e.message);
+        return { success: false, error: e.message };
+    }
 });
 
 ipcMain.handle('import-database', async (event, customPath) => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React from 'react';
 import api from '../services/api';
 import Swal from 'sweetalert2';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,111 +29,111 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const themeCtx = useTheme();
 
     // Core states
-    const [activeTab, setActiveTab] = useState(pageState?.tab || 'hub');
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = React.useState(pageState?.tab || 'hub');
+    const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
+    const [loading, setLoading] = React.useState(true);
 
     // Data States
-    const [fotocopyPrices, setFotocopyPrices] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [printPrices, setPrintPrices] = useState([]);
-    const [bindPrices, setBindPrices] = useState([]);
-    const [systemPrinters, setSystemPrinters] = useState([]);
-    const [qzPrinters, setQZPrinters] = useState([]);
-    const [galleryImages, setGalleryImages] = useState([]);
+    const [fotocopyPrices, setFotocopyPrices] = React.useState([]);
+    const [users, setUsers] = React.useState([]);
+    const [printPrices, setPrintPrices] = React.useState([]);
+    const [bindPrices, setBindPrices] = React.useState([]);
+    const [systemPrinters, setSystemPrinters] = React.useState([]);
+    const [qzPrinters, setQZPrinters] = React.useState([]);
+    const [galleryImages, setGalleryImages] = React.useState([]);
 
-    const [fcDiscounts, setFcDiscounts] = useState([]);
-    const [tarifDesainPerJam, setTarifDesainPerJam] = useState(50000);
+    const [fcDiscounts, setFcDiscounts] = React.useState([]);
+    const [tarifDesainPerJam, setTarifDesainPerJam] = React.useState(50000);
 
     // License States
-    const [licenseInfo, setLicenseInfo] = useState({ activated: false });
-    const [isActivationModalOpen, setIsActivationModalOpen] = useState(false);
+    const [licenseInfo, setLicenseInfo] = React.useState({ activated: false });
+    const [isActivationModalOpen, setIsActivationModalOpen] = React.useState(false);
 
     // Branding & Terminal States
-    const [storeName, setStoreName] = useState('');
-    const [storeAddress, setStoreAddress] = useState('');
-    const [storePhone, setStorePhone] = useState('');
-    const [storeEmail, setStoreEmail] = useState('');
-    const [storeMapsUrl, setStoreMapsUrl] = useState('');
-    const [storeLogo, setStoreLogo] = useState('');
-    const [landingLogo, setLandingLogo] = useState('');
-    const [landingFavicon, setLandingFavicon] = useState('');
-    const [receiptFooter, setReceiptFooter] = useState('');
-    const [printerSize, setPrinterSize] = useState('80mm');
-    const [printerName, setPrinterName] = useState('');
-    const [paperSize, setPaperSize] = useState('A4');
-    const [autoPrint, setAutoPrint] = useState(true);
+    const [storeName, setStoreName] = React.useState('');
+    const [storeAddress, setStoreAddress] = React.useState('');
+    const [storePhone, setStorePhone] = React.useState('');
+    const [storeEmail, setStoreEmail] = React.useState('');
+    const [storeMapsUrl, setStoreMapsUrl] = React.useState('');
+    const [storeLogo, setStoreLogo] = React.useState('');
+    const [landingLogo, setLandingLogo] = React.useState('');
+    const [landingFavicon, setLandingFavicon] = React.useState('');
+    const [receiptFooter, setReceiptFooter] = React.useState('');
+    const [printerSize, setPrinterSize] = React.useState('80mm');
+    const [printerName, setPrinterName] = React.useState('');
+    const [paperSize, setPaperSize] = React.useState('A4');
+    const [autoPrint, setAutoPrint] = React.useState(true);
 
     // Payment & QRIS States
-    const [midtransKey, setMidtransKey] = useState('');
-    const [midtransIsProduction, setMidtransIsProduction] = useState(false);
-    const [danaNumber, setDanaNumber] = useState('');
-    const [danaName, setDanaName] = useState('');
-    const [bankName, setBankName] = useState('');
-    const [bankAccount, setBankAccount] = useState('');
-    const [bankAccountName, setBankAccountName] = useState('');
-    const [taxEnabled, setTaxEnabled] = useState(false);
-    const [taxPercentage, setTaxPercentage] = useState(11);
-    const [fingerprintIp, setFingerprintIp] = useState('192.168.1.201');
-    const [fingerprintPort, setFingerprintPort] = useState(4370);
+    const [midtransKey, setMidtransKey] = React.useState('');
+    const [midtransIsProduction, setMidtransIsProduction] = React.useState(false);
+    const [danaNumber, setDanaNumber] = React.useState('');
+    const [danaName, setDanaName] = React.useState('');
+    const [bankName, setBankName] = React.useState('');
+    const [bankAccount, setBankAccount] = React.useState('');
+    const [bankAccountName, setBankAccountName] = React.useState('');
+    const [taxEnabled, setTaxEnabled] = React.useState(false);
+    const [taxPercentage, setTaxPercentage] = React.useState(11);
+    const [fingerprintIp, setFingerprintIp] = React.useState('192.168.1.201');
+    const [fingerprintPort, setFingerprintPort] = React.useState(4370);
 
-    const [telegramBotToken, setTelegramBotToken] = useState('');
-    const [telegramChatId, setTelegramChatId] = useState('');
-    const [telegramEnabled, setTelegramEnabled] = useState(false);
-    const [telegramStokKritis, setTelegramStokKritis] = useState(true);
-    const [telegramLaporanKasir, setTelegramLaporanKasir] = useState(true);
-    const [telegramSecurityAlert, setTelegramSecurityAlert] = useState(false);
-    const [telegramErrorMonitoring, setTelegramErrorMonitoring] = useState(false);
+    const [telegramBotToken, setTelegramBotToken] = React.useState('');
+    const [telegramChatId, setTelegramChatId] = React.useState('');
+    const [telegramEnabled, setTelegramEnabled] = React.useState(false);
+    const [telegramStokKritis, setTelegramStokKritis] = React.useState(true);
+    const [telegramLaporanKasir, setTelegramLaporanKasir] = React.useState(true);
+    const [telegramSecurityAlert, setTelegramSecurityAlert] = React.useState(false);
+    const [telegramErrorMonitoring, setTelegramErrorMonitoring] = React.useState(false);
 
     // WhatsApp Gateway States
-    const [waGatewayUrl, setWaGatewayUrl] = useState('');
-    const [waApiKey, setWaApiKey] = useState('');
-    const [waSessionName, setWaSessionName] = useState('default');
-    const [waSenderNumber, setWaSenderNumber] = useState('');
-    const [waTemplateInv, setWaTemplateInv] = useState('Halo *{{name}}*, pesanan Anda *#{{invoice}}* sebesar *{{total}}* sedang kami proses. Terima kasih!');
-    const [waTemplateProcess, setWaTemplateProcess] = useState('Halo *{{name}}*, pesanan *#{{invoice}}* sedang dalam proses produksi/pengerjaan.');
-    const [waTemplateDone, setWaTemplateDone] = useState('Halo *{{name}}*, pesanan *#{{invoice}}* sudah selesai dan siap diambil. Silakan datang ke toko.');
-    const [waTemplateKasir, setWaTemplateKasir] = useState('LAPORAN KASIR: Transaksi baru *#{{invoice}}* senilai *{{total}}* oleh *{{user}}*.');
+    const [waGatewayUrl, setWaGatewayUrl] = React.useState('');
+    const [waApiKey, setWaApiKey] = React.useState('');
+    const [waSessionName, setWaSessionName] = React.useState('default');
+    const [waSenderNumber, setWaSenderNumber] = React.useState('');
+    const [waTemplateInv, setWaTemplateInv] = React.useState('Halo *{{name}}*, pesanan Anda *#{{invoice}}* sebesar *{{total}}* sedang kami proses. Terima kasih!');
+    const [waTemplateProcess, setWaTemplateProcess] = React.useState('Halo *{{name}}*, pesanan *#{{invoice}}* sedang dalam proses produksi/pengerjaan.');
+    const [waTemplateDone, setWaTemplateDone] = React.useState('Halo *{{name}}*, pesanan *#{{invoice}}* sudah selesai dan siap diambil. Silakan datang ke toko.');
+    const [waTemplateKasir, setWaTemplateKasir] = React.useState('LAPORAN KASIR: Transaksi baru *#{{invoice}}* senilai *{{total}}* oleh *{{user}}*.');
 
     // CDN & Cloud Storage States
-    const [cdnAccountId, setCdnAccountId] = useState('');
-    const [cdnBucketName, setCdnBucketName] = useState('');
+    const [cdnAccountId, setCdnAccountId] = React.useState('');
+    const [cdnBucketName, setCdnBucketName] = React.useState('');
 
     // Visibility States
-    const [showMidtransKey, setShowMidtransKey] = useState(false);
-    const [cdnAccessKey, setCdnAccessKey] = useState('');
-    const [cdnSecretKey, setCdnSecretKey] = useState('');
-    const [cdnCustomDomain, setCdnCustomDomain] = useState('');
+    const [showMidtransKey, setShowMidtransKey] = React.useState(false);
+    const [cdnAccessKey, setCdnAccessKey] = React.useState('');
+    const [cdnSecretKey, setCdnSecretKey] = React.useState('');
+    const [cdnCustomDomain, setCdnCustomDomain] = React.useState('');
 
     // UI/Form States
-    const [userFormOpen, setUserFormOpen] = useState(false);
-    const [editUser, setEditUser] = useState(null);
-    const [userForm, setUserForm] = useState({ name: '', username: '', password: '', role: 'kasir', isActive: true });
+    const [userFormOpen, setUserFormOpen] = React.useState(false);
+    const [editUser, setEditUser] = React.useState(null);
+    const [userForm, setUserForm] = React.useState({ name: '', username: '', password: '', role: 'kasir', isActive: true });
 
     // Price Pagination States
-    const [fcPage, setFcPage] = useState(1);
-    const [printPage, setPrintPage] = useState(1);
-    const [bindPage, setBindPage] = useState(1);
+    const [fcPage, setFcPage] = React.useState(1);
+    const [printPage, setPrintPage] = React.useState(1);
+    const [bindPage, setBindPage] = React.useState(1);
     const pageSize = 10;
 
-    const [logPage, setLogPage] = useState(1);
-    const [logPageSize] = useState(15);
-    const [allLogs, setAllLogs] = useState([]);
-    const activityLog = useMemo(() => {
+    const [logPage, setLogPage] = React.useState(1);
+    const [logPageSize] = React.useState(15);
+    const [allLogs, setAllLogs] = React.useState([]);
+    const activityLog = React.useMemo(() => {
         const start = (logPage - 1) * logPageSize;
         return allLogs.slice(start, start + logPageSize);
     }, [allLogs, logPage, logPageSize]);
     const totalLogPages = Math.ceil(allLogs.length / logPageSize);
 
     // Effects
-    useEffect(() => {
+    React.useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Handle Deep Linking / Navigation State
-    useEffect(() => {
+    React.useEffect(() => {
         if (pageState?.tab) {
             setActiveTab(pageState.tab);
         }
@@ -269,12 +269,12 @@ export default function SettingsPage({ onNavigate, pageState }) {
         }
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         loadSettings();
         loadLicenseStatus();
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (printerSize === 'lx310') {
             const fetchQZ = async () => {
                 const list = await listQZPrinters();
@@ -1046,65 +1046,6 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         
                         {activeTab === 'system' && (
                             <SystemSettings />
-                        )}
-
-
-                        {/* Backup & Restore */}
-                        {activeTab === 'backup' && (
-                            <div className="space-y-6 pb-12">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
-                                        <div className="w-16 h-16 rounded-3xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mb-6">
-                                            <FiDownload size={32} />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Database Backup</h3>
-                                        <p className="text-slate-500 mb-8 leading-relaxed">Cadangkan seluruh data transaksi, pelanggan, dan produk ke dalam file backup.</p>
-                                        <button onClick={handleBackup} className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 transition-all uppercase tracking-widest text-xs">
-                                            Mulai Backup Sekarang
-                                        </button>
-                                    </div>
-                                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
-                                        <div className="w-16 h-16 rounded-3xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center mb-6">
-                                            <FiUpload size={32} />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Restore Database</h3>
-                                        <p className="text-slate-500 mb-8 leading-relaxed">Pulihkan data dari file backup yang sudah ada. Perhatian: Data saat ini akan tertimpa.</p>
-                                        <label className="block w-full py-5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-500/20 transition-all uppercase tracking-widest text-xs text-center cursor-pointer">
-                                            Pilih File & Restore
-                                            <input type="file" className="hidden" accept=".backup" onChange={handleRestore} />
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* License Settings */}
-                        {activeTab === 'license' && (
-                            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32" />
-                                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                                    <div className="w-48 h-48 rounded-[3rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner">
-                                        <FiShield size={80} className={licenseInfo.activated ? 'text-emerald-500' : 'text-slate-400'} />
-                                    </div>
-                                    <div className="flex-1 text-center md:text-left">
-                                        <div className="inline-block px-4 py-2 bg-blue-600/10 text-blue-600 rounded-full text-[10px] font-black tracking-[0.2em] mb-4 uppercase">System License Info</div>
-                                        <h3 className="text-3xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">
-                                            {licenseInfo.activated ? 'Lisensi Terverifikasi' : 'Belum Teraktivasi'}
-                                        </h3>
-                                        <p className="text-slate-500 mb-6 font-medium">Software Berlisensi Resmi - Abadi Jaya POS Pro Max Industrial Suite</p>
-                                        <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                                            <div className="bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-2xl">
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Hardware ID</p>
-                                                <p className="font-mono text-sm text-slate-700 dark:text-slate-300">{licenseInfo.hardwareId || 'NOT_FOUND'}</p>
-                                            </div>
-                                            <div className="bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-2xl">
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Mode Sistem</p>
-                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">MySQL Industrial Engine</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         )}
 
 

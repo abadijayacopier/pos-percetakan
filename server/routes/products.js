@@ -44,8 +44,8 @@ router.get('/', verifyToken, async (req, res) => {
 // 1b. GET Produk (Publik untuk Landing Page - SaaS Aware)
 router.get('/public', async (req, res) => {
     try {
-        const shopId = req.query.shopId || req.header('X-Shop-Id');
-        if (!shopId) return res.status(400).json({ message: 'Shop ID diperlukan untuk melihat katalog.' });
+        const shopId = req.query.shopId || req.header('X-Shop-Id') || 'default';
+        // Removed strict shopId check to allow default/standalone access
 
         const dbName = await TenantManager.getShopDBName(shopId);
         if (!dbName) return res.status(404).json({ message: 'Toko tidak ditemukan.' });

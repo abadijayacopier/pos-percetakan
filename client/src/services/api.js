@@ -43,11 +43,12 @@ api.interceptors.response.use(
             configUrl.includes('auth/login') ||
             responseUrl.includes('/auth/');
 
-        // Skip jika endpoint publik (tidak butuh auth)
+        // Skip jika endpoint benar-benar publik (tidak butuh auth sama sekali di backend)
         const isPublicEndpoint =
-            configUrl.includes('fotocopy-prices') ||
-            configUrl.includes('public') ||
-            configUrl.includes('landing');
+            configUrl.includes('/public') ||
+            configUrl.includes('/landing') ||
+            configUrl.includes('/auth/login') ||
+            configUrl.includes('/settings/public');
 
         if (status === 401 && !isAuthEndpoint && !isPublicEndpoint) {
             const sessionStr = localStorage.getItem('pos_session');

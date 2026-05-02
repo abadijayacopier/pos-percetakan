@@ -30,7 +30,7 @@ router.get('/', verifyToken, async (req, res) => {
             LEFT JOIN (
                 SELECT customer_id, 
                        COUNT(id) as total_trx,
-                       SUM(total_harga) as total_spend
+                       SUM(total_price) as total_spend
                 FROM print_orders
                 GROUP BY customer_id
             ) p_stats ON c.id = p_stats.customer_id

@@ -11,7 +11,13 @@ class TenantManager {
      * @param {number|string} shopId 
      */
     static async getShopDBName(shopIdentifier) {
+        // Handle Standalone Mode
+        if (process.env.APP_MODE === 'standalone') {
+            return { dbName: process.env.DB_NAME || 'pos_abadi', shopId: 1 };
+        }
+
         try {
+            if (!masterPool) return null;
             const [rows] = await masterPool.query(
                 'SELECT id, db_name, status FROM shops WHERE subdomain = ? OR id = ?',
                 [shopIdentifier, shopIdentifier]
@@ -97,6 +103,25 @@ class TenantManager {
             console.error(`❌ Failed to initialize schema for ${dbName}:`, error.message);
             throw error;
         }
+    }
+    /**
+     * Get a database pool for a specific shop
+     * @param {string} shopIdentifier 
+     */
+    static async getPoolForShop(shopIdentifier) {
+        const { getActivePool } = require('../config/database');
+        
+        if (process.env.APP_MODE === 'standalone') {
+            return await getActivePool();
+        }
+
+        if (!shopIdentifier || shopIdentifier === 'default') {
+            return masterPool;
+        }
+
+        const shop = await this.getShopDBName(shopIdentifier);
+        if (!shop) return null;
+        return getTenantPool(shop.dbName);
     }
 }
 
