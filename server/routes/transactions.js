@@ -89,7 +89,14 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         } = req.body;
 
         const newTrxId = 't' + Date.now();
-        const mysqlDate = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
+        // Use local time for MySQL saving to match user expectations (WIB)
+        const localDate = new Date(date || new Date());
+        const mysqlDate = localDate.getFullYear() + '-' +
+            String(localDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(localDate.getDate()).padStart(2, '0') + ' ' +
+            String(localDate.getHours()).padStart(2, '0') + ':' +
+            String(localDate.getMinutes()).padStart(2, '0') + ':' +
+            String(localDate.getSeconds()).padStart(2, '0');
 
         // Fetch Tax Settings
         const [settingsRows] = await connection.query('SELECT value FROM settings WHERE `key` = "tax_enabled"');

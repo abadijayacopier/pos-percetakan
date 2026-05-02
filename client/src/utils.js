@@ -16,7 +16,7 @@ export const formatDate = (date) => {
   if (!date) return '-';
   let validDate = date;
   if (typeof validDate === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(validDate)) {
-    validDate = validDate.replace(' ', 'T') + 'Z';
+    validDate = validDate.replace(' ', 'T'); // No 'Z' to treat as local time
   }
   const d = new Date(validDate);
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -24,17 +24,25 @@ export const formatDate = (date) => {
 
 export const formatDateTime = (dateStr) => {
   if (!dateStr) return '-';
-  let validDateStr = dateStr;
-  if (typeof validDateStr === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(validDateStr)) {
-    validDateStr = validDateStr.replace(' ', 'T') + 'Z';
+  let d;
+
+  if (typeof dateStr === 'string' && dateStr.includes(' ')) {
+    // MySQL format: "YYYY-MM-DD HH:mm:ss"
+    // Treat as local time by replacing space with T but NOT adding Z
+    d = new Date(dateStr.replace(' ', 'T'));
+  } else {
+    d = new Date(dateStr);
   }
-  const d = new Date(validDateStr);
+
   if (isNaN(d.getTime())) {
-    // Try to clean/extract if it's already a partial string or contains "Invalid Date"
-    if (typeof validDateStr === 'string' && !validDateStr.includes('Invalid')) return validDateStr;
-    return new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (typeof dateStr === 'string' && !dateStr.includes('Invalid')) return dateStr;
+    return '-';
   }
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':');
+
+  return d.toLocaleString('id-ID', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).replace(/\./g, ':');
 };
 
 export const formatTime = (date) => {
@@ -87,7 +95,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 40;
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 38; // Reduced to 38 to prevent cutoff
     else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
     else W = 85; // Standard 9.5x11
   }
@@ -218,7 +226,9 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   // Strip ESC codes for accurate length calculation
   const visibleLength = (str) => str.replace(/\x1b[A-Za-z@]/g, '').length;
 
-  const MARGIN = printerType === 'lx310' ? '  ' : '';
+  // Margin calculation for centering LX-310
+  // Increased to 8 spaces for Wartel to shift it significantly to the RIGHT as requested
+  const MARGIN = (printerType === 'lx310' && paperSize === 'wartel') ? '        ' : (printerType === 'lx310' ? '  ' : '');
   const rightAlignText = (left, right) => {
     const sp = W - visibleLength(left) - visibleLength(right);
     return left + ' '.repeat(sp > 0 ? sp : 1) + right;
@@ -231,6 +241,12 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   };
 
   const lines = [];
+  // Add top margin for LX-310 to prevent printing too close to the edge
+  if (printerType === 'lx310') {
+    lines.push('');
+    lines.push('');
+  }
+
   lines.push(centerTextExact(boldText((storeInfo.name || 'FOTOCOPY ABADI JAYA').toUpperCase())));
   // Wrap address at half width for centered multi-line header
   const addrWrapWidth = Math.min(W, Math.floor(W * 0.7));
@@ -247,12 +263,10 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
     lines.push('-'.repeat(W));
   }
 
-  lines.push(`No      : ${receipt.invoiceNo || '-'}`);
-  lines.push(`Tanggal : ${safeDate}`);
-  lines.push(`Kasir   : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
-  if (receipt.customerName && receipt.customerName !== 'Umum') {
-    lines.push(`Pelanggn: ${receipt.customerName}`);
-  }
+  lines.push(`No       : ${receipt.invoiceNo || '-'}`);
+  lines.push(`Tanggal  : ${safeDate}`);
+  lines.push(`Kasir    : ${receipt.userName || storeInfo.userName || 'Kasir'}`);
+  lines.push(`Pelanggan: ${receipt.customerName || receipt.customer || 'Umum'}`);
   lines.push('-'.repeat(W));
 
   const items = receipt.items || [];
@@ -267,6 +281,25 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
 
     const nameLines = wrapText(item.name || item.desc || 'Item', W);
     nameLines.forEach(l => lines.push(l));
+
+    // --- SINKRONISASI SERVICE FOTOCOPY & DETAIL LAINNYA ---
+    // Tampilkan detail spesifikasi jika ada (meta data)
+    if (item.meta) {
+      let metaText = '';
+      if (item.type === 'fotocopy') {
+        metaText = `${item.meta.paper || ''} ${item.meta.color === 'bw' ? 'B/W' : 'Warna'} ${item.meta.side === '2' ? '2-Sisi' : '1-Sisi'}`;
+      } else if (item.type === 'digital') {
+        metaText = `${item.meta.width}x${item.meta.height}m ${item.meta.notes || ''}`;
+      } else if (item.type === 'service_order') {
+        metaText = `${item.meta.device || ''} ${item.meta.issue ? `(${item.meta.issue})` : ''}`;
+      }
+
+      if (metaText) {
+        const metaLines = wrapText(metaText.trim(), W - 2);
+        metaLines.forEach(ml => lines.push('  ' + ml));
+      }
+    }
+
     lines.push(rightAlignText(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
   });
   lines.push('-'.repeat(W));
@@ -300,17 +333,22 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   lines.push('-'.repeat(W));
   lines.push(centerTextExact(storeInfo.footer || 'Terima kasih atas kunjungan Anda!'));
   lines.push('');
-  lines.push(`Dicetak: ${new Date().toLocaleString('id-ID')}`);
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+  const dateStrShort = now.toLocaleDateString('id-ID');
+  lines.push(`Dicetak: ${dateStrShort}, ${timeStr}`);
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
   if (printerType === 'lx310') {
     // ESC/P init: ESC @ (reset) + ESC P (10 CPI) + ESC 2 (6 LPI) + ESC O (Cancel bottom margin)
-    let init = '\x1b@\x1bP\x1b2\x1bO';
-    
+    // We use ESC l 0 (Left margin 0) to maximize printing area
+    let init = '\x1b@\x1bP\x1b2\x1bO\x1bl\x00';
+
     // Set Page Length for Dot Matrix
     if (paperSize === 'wartel' || paperSize === '12x14') {
       // 14cm is approx 5.5 inches. At standard 6 LPI, that's 33 lines.
-      init += '\x1bC\x21'; 
+      init += '\x1bC\x21';
     } else if (paperSize === 'half' || paperSize === '9.5x5.5') {
       // 5.5 inches = 33 lines
       init += '\x1bC\x21';
@@ -318,7 +356,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
       // Standard 11 inches = 66 lines
       init += '\x1bC\x42';
     }
-    
+
     textResult = init + textResult + '\x0c';
   }
 
@@ -332,8 +370,9 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 40;
-    else W = 85; // Standard & Half use full width
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 38;
+    else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
+    else W = 85; // Standard 
   }
 
   const rightAlign = (left, right) => {
@@ -404,48 +443,75 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
     return encoder.encode();
   }
 
-  // --- RAW FALLBACK ---
-  let text = '';
-  text += `${storeInfo.name.toUpperCase()}\n`;
-  text += `${storeInfo.address}\n`;
-  text += `Telp: ${storeInfo.phone}\n`;
-  text += `-`.repeat(W) + `\n`;
-
-  text += `No Order : ${order.orderNo}\n`;
-  text += `Tanggal  : ${formatDateTime(order.createdAt || order.date || new Date())}\n`;
-  text += `Pelanggan: ${order.customerName}\n`;
-  text += `-`.repeat(W) + `\n`;
-
-  text += `Jenis  : ${order.type}\n`;
-  text += `Rincian: ${(order.description || '-').substring(0, W)}\n`;
-  text += `Specs  : ${(order.specs || '-').substring(0, W)}\n`;
-  text += `Jumlah : ${order.qty} ${order.unit}\n`;
-  text += `Selesai: ${formatDate(order.deadline).toUpperCase()}\n`;
-  text += `-`.repeat(W) + `\n`;
-
-  const padR = (l, r) => {
-    const sp = W - l.length - r.length;
-    return l + ' '.repeat(sp > 0 ? sp : 1) + r;
+  // --- RAW FALLBACK (LX-310 / Generic) ---
+  const boldText = (str) => printerType === 'lx310' ? `\x1bE${str}\x1bF` : str;
+  const centerTextExact = (str) => {
+    const cleanStr = str.replace(/\x1b[E|F]/g, '');
+    const pad = Math.max(0, Math.floor((W - cleanStr.length) / 2));
+    return ' '.repeat(pad) + str;
   };
-
-  text += padR('Total  :', formatRupiah(order.totalPrice)) + '\n';
-  if (order.shippingCost > 0) {
-    text += padR('Ongkir :', formatRupiah(order.shippingCost)) + '\n';
+  const lines = [];
+  // Add top margin for LX-310
+  if (printerType === 'lx310') {
+    lines.push('');
+    lines.push('');
   }
-  text += padR('DP     :', formatRupiah(order.dpAmount)) + '\n';
-  text += padR('SISA   :', formatRupiah(order.remaining)) + '\n';
 
-  text += `\n`;
-  text += `${storeInfo.footer || 'Terima kasih telah memesan'}\n`;
+  // Header
+  lines.push(centerTextExact(boldText((storeInfo.name || 'ABADI JAYA').toUpperCase())));
+  const addrWrapWidth = Math.min(W, Math.floor(W * 0.8));
+  wrapText(storeInfo.address || '', addrWrapWidth).forEach(l => lines.push(centerTextExact(l)));
+  if (storeInfo.phone) lines.push(centerTextExact('Telp: ' + storeInfo.phone));
+  
+  lines.push('='.repeat(W));
+  lines.push(centerTextExact(boldText('NOTA PEMESANAN')));
+  lines.push('='.repeat(W));
+
+  lines.push(`No Order : ${order.orderNo || order.invoiceNo || '-'}`);
+  lines.push(`Tanggal  : ${formatDateTime(order.createdAt || order.date)}`);
+  lines.push(`Pelanggan: ${order.customerName || 'Umum'}`);
+  lines.push('-'.repeat(W));
+
+  lines.push(boldText(`JENIS: ${order.type?.toUpperCase() || 'CETAK'}`));
+  
+  const descTitle = 'RINCIAN: ';
+  const descLines = wrapText(order.description || '-', W - descTitle.length);
+  descLines.forEach((l, i) => lines.push((i === 0 ? descTitle : ' '.repeat(descTitle.length)) + l));
+
+  const specTitle = 'SPECS  : ';
+  const specLines = wrapText(order.specs || '-', W - specTitle.length);
+  specLines.forEach((l, i) => lines.push((i === 0 ? specTitle : ' '.repeat(specTitle.length)) + l));
+
+  lines.push(`JUMLAH : ${order.qty || 1} ${order.unit || 'PCS'}`);
+  lines.push(`SELESAI: ${formatDate(order.deadline).toUpperCase()}`);
+  lines.push('-'.repeat(W));
+
+  lines.push(rightAlign('TOTAL HARGA :', formatRupiah(order.totalPrice || order.total || 0)));
+  if (order.shippingCost > 0) {
+    lines.push(rightAlign('ONGKIR      :', formatRupiah(order.shippingCost)));
+  }
+  lines.push(rightAlign('DP / BAYAR  :', formatRupiah(order.dpAmount || order.paid || 0)));
+  lines.push('-'.repeat(W));
+  lines.push(rightAlign(boldText('SISA BAYAR  :'), formatRupiah(order.remaining || ((order.totalPrice || 0) - (order.dpAmount || 0)))));
+
+  lines.push('\n' + centerTextExact(storeInfo.footer || 'Terima kasih telah memesan'));
+  lines.push(centerTextExact(`DICETAK: ${formatDateTime(new Date())}`));
+
+  let text = lines.join('\n');
 
   if (printerType === 'lx310') {
-    // Pad text with 2 spaces for left margin on LX-310
-    text = text.split('\n').map(l => '  ' + l).join('\n');
+    // Pad text with spaces for left margin on LX-310 (8 spaces for Wartel)
+    const margin = paperSize === 'wartel' ? '        ' : '    ';
+    text = text.split('\n').map(l => margin + l).join('\n');
 
     // Standard initialization for LX-310
-    let init = '\x1b@\x1bP\x1b2\x1bO';
+    let init = '\x1b@\x1bP\x1b2\x1bO\x1bl\x00';
     if (paperSize === 'wartel' || paperSize === '12x14') {
-      init += '\x1bC\x21'; // 33 lines
+      init += '\x1bC\x21'; // 33 lines for 14cm
+    } else if (paperSize === 'half' || paperSize === '9.5x5.5') {
+      init += '\x1bC\x21';
+    } else {
+      init += '\x1bC\x42';
     }
     text = init + text + '\x0c';
   } else {
@@ -651,7 +717,8 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
     const config = qz.configs.create(printer, {
       size: paperSizeConfig,
       units: 'in',
-      margins: { top: 0.1, right: 0.1, bottom: 0.1, left: 0.1 }
+      margins: 0, // Removed margins for raw dot matrix printing to avoid misalignment
+      interpolation: 'nearest-neighbor'
     });
 
     // Send raw data (ESC/P or Text) directly to the printer
@@ -686,35 +753,35 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
 };
 
 export const resizeImage = (file, maxWidth, maxHeight, quality = 0.7) => {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-                if (width > height) {
-                    if (width > maxWidth) {
-                        height = Math.round((height * maxWidth) / width);
-                        width = maxWidth;
-                    }
-                } else {
-                    if (height > maxHeight) {
-                        width = Math.round((width * maxHeight) / height);
-                        height = maxHeight;
-                    }
-                }
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/webp', quality));
-            };
-        };
-    });
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/webp', quality));
+      };
+    };
+  });
 };
 

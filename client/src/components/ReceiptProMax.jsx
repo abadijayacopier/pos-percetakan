@@ -353,10 +353,26 @@ const ReceiptProMax = ({
     if (!receiptData) return null;
 
     const items = receiptData.items || [];
-    const safeDate = receiptData.date ? new Date(receiptData.date).toLocaleString('id-ID', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    }) : '-';
+    
+    // Robust date parsing to avoid "Invalid Date"
+    const getSafeDate = (dateVal) => {
+        if (!dateVal) return '-';
+        let d = new Date(dateVal);
+        
+        // If invalid, try replacing space with T (MySQL format fix)
+        if (isNaN(d.getTime()) && typeof dateVal === 'string') {
+            d = new Date(dateVal.replace(' ', 'T'));
+        }
+        
+        if (isNaN(d.getTime())) return dateVal; // Return as-is if still invalid but string
+        
+        return d.toLocaleString('id-ID', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        }).replace(/\./g, ':');
+    };
+
+    const safeDate = getSafeDate(receiptData.date);
 
     // Ensure formatCurrency is robust
     const safeFormatCurrency = (num) => {

@@ -16,6 +16,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         storePhone: '0812-3456-7890',
         receiptFooter: 'Terima Kasih Atas Kunjungan Anda!',
         printerSize: '80mm',
+        paperSize: 'standard', // Default paper size
         printerName: ''
     });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -27,7 +28,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         switch (effectivePrinterSize) {
             case '58mm': return 'max-w-[300px]';
             case '80mm': return 'max-w-[380px]';
-            case 'lx310': return 'max-w-[600px] text-lg'; // continuous prints usually need wider
+            case 'lx310': return printSettings.paperSize === 'wartel' ? 'max-w-[450px] text-lg' : 'max-w-[800px] text-lg';
             case 'inkjet': return 'max-w-[794px] text-lg'; // a4 width
             default: return 'max-w-[380px]';
         }
@@ -37,7 +38,9 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         switch (effectivePrinterSize) {
             case '58mm': return '58mm';
             case '80mm': return '80mm';
-            case 'lx310': return '9.5in';
+            case 'lx310': 
+                if (printSettings.paperSize === 'wartel') return '120mm';
+                return '9.5in';
             case 'inkjet': return '210mm';
             default: return '80mm';
         }
@@ -92,7 +95,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
         return () => {
             document.head.removeChild(style);
         };
-    }, [printSettings.printerSize]);
+    }, [printSettings.printerSize, printSettings.paperSize]);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -114,6 +117,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                         storePhone: sMap.store_phone || '0812-3456-7890',
                         receiptFooter: sMap.receipt_footer || 'Terima Kasih Atas Kunjungan Anda!',
                         printerSize: sMap.printer_size || '80mm',
+                        paperSize: sMap.paper_size || 'standard',
                         printerName: sMap.printer_name || ''
                     });
                 }
@@ -128,9 +132,9 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                         const trx = res.data[0];
                         setReceiptData({
                             invoiceNo: trx.invoiceNo || trx.invoice_no,
-                            date: formatDateTime(trx.date || new Date().toISOString()),
+                            date: trx.date, // Pass raw date to let component handle formatting
                             cashier: trx.userName || trx.user_name || user?.name || 'Kasir',
-                            customer: trx.customerName || trx.customer_name || 'Umum',
+                            customer: trx.customer_name || trx.customerName || trx.customer || 'Umum',
                             items: (trx.items || []).map(i => ({
                                 desc: i.name || 'Item Cetak',
                                 qty: i.qty || 1,
@@ -143,6 +147,7 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                             paymentType: trx.paymentType || trx.payment_type || 'Tunai',
                             paid: trx.paid || 0,
                             changeAmount: trx.changeAmount || trx.change_amount || 0,
+                            notes: trx.notes || '', // Added missing notes
                             status: trx.status || (trx.paid >= trx.total ? 'paid' : 'debt')
                         });
                     }
