@@ -36,8 +36,8 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-// Basic route test
-app.get('/', (req, res) => {
+// API root test (only for /api direct hit)
+app.get('/api', (req, res) => {
     res.json({ message: 'POS Abadi Jaya API is running!' });
 });
 
@@ -78,6 +78,22 @@ app.use('/api/activity-logs', require('./routes/activity-logs'));
 app.use('/api/super-auth', require('./routes/super-auth'));
 app.use('/api/super-admin', require('./routes/super-admin'));
 app.use('/api/subscriptions', require('./routes/subscription'));
+
+// ─── Serve Frontend (client/dist) ───
+const clientDistPath = path.join(__dirname, '..', 'client', 'dist');
+if (fs.existsSync(clientDistPath)) {
+    app.use(express.static(clientDistPath));
+    // SPA fallback: any non-API route serves index.html
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api/')) return next();
+        res.sendFile(path.join(clientDistPath, 'index.html'));
+    });
+    console.log('📦 Serving frontend from:', clientDistPath);
+} else {
+    app.get('/', (req, res) => {
+        res.json({ message: 'POS Abadi Jaya API is running! (Frontend not built)' });
+    });
+}
 
 const startServer = async () => {
     // 1. Auto-Initialize SQLite if in Standalone mode and DB file missing

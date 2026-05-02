@@ -1,7 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { masterPool } = require('../config/database');
+const { currentDbType, currentMode } = require('../config/database');
 const { verifyToken } = require('../middleware/auth');
+
+/**
+ * GET /api/health/ping
+ * Public endpoint — no auth required.
+ * Used by the Electron launcher to check if the backend is alive.
+ */
+router.get('/ping', (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: Math.floor(process.uptime()),
+        dbType: currentDbType,
+        dbMode: currentMode,
+        timestamp: new Date().toISOString()
+    });
+});
 
 /**
  * GET /api/health/db-status

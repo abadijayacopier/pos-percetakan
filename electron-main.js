@@ -1,19 +1,21 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, shell, nativeImage } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
 const os = require('os');
 
 // Environment
 process.env.NODE_ENV = app.isPackaged ? 'production' : 'development';
 
+let launcherWindow;
 let mainWindow;
 let serverProcess;
-let setupWindow;
+let tray = null;
 
-const isSetupMode = process.argv.includes('--setup');
+const SERVER_PORT = 5001;
 
 // ---------- Resolve paths ----------
 function resPath(...parts) {
@@ -22,25 +24,48 @@ function resPath(...parts) {
         : path.join(__dirname, ...parts);
 }
 
-// ---------- Setup Window ----------
-function createSetupWindow() {
-    setupWindow = new BrowserWindow({
-        width: 460,
-        height: 580,
+function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return '127.0.0.1';
+}
+
+// ---------- Launcher Window ----------
+function createLauncherWindow() {
+    const preloadPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'db-tool', 'preload.js')
+        : path.join(__dirname, 'build/db-tool/preload.js');
+
+    launcherWindow = new BrowserWindow({
+        width: 520,
+        height: 720,
         resizable: false,
         frame: false,
         transparent: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'build/db-tool/preload.js'),
+            preload: preloadPath,
         },
         icon: path.join(__dirname, 'build/icon.ico'),
-        title: 'POS Abadi Jaya - Setup',
+        title: 'POS Abadi Jaya — Launcher',
+        skipTaskbar: false,
     });
 
-    setupWindow.loadFile(path.join(__dirname, 'build/db-tool/index.html'));
+    const htmlPath = app.isPackaged
+        ? path.join(process.resourcesPath, 'db-tool', 'index.html')
+        : path.join(__dirname, 'build/db-tool/index.html');
+
+    launcherWindow.loadFile(htmlPath);
     Menu.setApplicationMenu(null);
+
+    launcherWindow.on('closed', () => { launcherWindow = null; });
 }
 
 // ---------- Main Window ----------
@@ -59,23 +84,153 @@ function createWindow() {
     if (app.isPackaged) {
         mainWindow.loadFile(path.join(__dirname, 'client/dist/index.html'));
     } else {
-        mainWindow.loadURL('http://localhost:5173');
+        // In dev mode, load from server which serves both API + frontend
+        mainWindow.loadURL(`http://localhost:${SERVER_PORT}`);
     }
 
     Menu.setApplicationMenu(null);
     mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-// ---------- IPC: Close / Launch ----------
+// ---------- System Tray ----------
+function createTray() {
+    if (tray) return;
+
+    const iconPath = path.join(__dirname, 'build/icon.ico');
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon.resize({ width: 16, height: 16 }));
+
+    const contextMenu = Menu.buildFromTemplate([
+        { label: 'Buka Launcher', click: () => showLauncher() },
+        { label: 'Buka Aplikasi', click: () => { if (!mainWindow) createWindow(); else mainWindow.focus(); } },
+        { label: 'Buka di Browser', click: () => shell.openExternal(`http://localhost:${SERVER_PORT}`) },
+        { type: 'separator' },
+        { label: 'Keluar', click: () => { if (serverProcess) serverProcess.kill(); app.quit(); } },
+    ]);
+
+    tray.setToolTip('POS Abadi Jaya');
+    tray.setContextMenu(contextMenu);
+
+    tray.on('double-click', () => showLauncher());
+}
+
+function showLauncher() {
+    if (launcherWindow) {
+        launcherWindow.show();
+        launcherWindow.focus();
+    } else {
+        createLauncherWindow();
+    }
+}
+
+// ---------- IPC: Close / Minimize / Launch ----------
 ipcMain.on('close-app', () => {
-    if (setupWindow) setupWindow.close();
+    if (serverProcess) serverProcess.kill();
     app.quit();
 });
 
-ipcMain.on('launch-main', () => {
-    if (setupWindow) setupWindow.close();
-    startBackend();
-    setTimeout(createWindow, 2000);
+ipcMain.on('minimize-to-tray', () => {
+    if (launcherWindow) {
+        launcherWindow.hide();
+        createTray();
+    }
+});
+
+ipcMain.on('open-app', () => {
+    // Open Electron window
+    if (!mainWindow) {
+        createWindow();
+    } else {
+        mainWindow.focus();
+    }
+
+    // Open in browser
+    shell.openExternal(`http://localhost:${SERVER_PORT}`);
+
+    // Minimize launcher to tray
+    if (launcherWindow) {
+        launcherWindow.hide();
+        createTray();
+    }
+});
+
+// ---------- IPC: Server Control ----------
+ipcMain.handle('start-server', () => {
+    if (serverProcess) {
+        return { success: true, message: 'Server already running' };
+    }
+
+    try {
+        startBackend();
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
+ipcMain.handle('stop-server', () => {
+    if (serverProcess) {
+        serverProcess.kill();
+        serverProcess = null;
+    }
+    return { success: true };
+});
+
+ipcMain.handle('check-server-health', () => {
+    return new Promise(resolve => {
+        const req = http.get(`http://localhost:${SERVER_PORT}/api/health/ping`, { timeout: 3000 }, res => {
+            let data = '';
+            res.on('data', chunk => { data += chunk; });
+            res.on('end', () => {
+                try { resolve(JSON.parse(data)); }
+                catch { resolve({ status: 'ok' }); }
+            });
+        });
+        req.on('error', () => resolve(null));
+        req.on('timeout', () => { req.destroy(); resolve(null); });
+    });
+});
+
+// ---------- IPC: Network ----------
+ipcMain.handle('get-network-info', () => {
+    return { ip: getLocalIP(), port: SERVER_PORT };
+});
+
+// ---------- IPC: App Info ----------
+ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+});
+
+// ---------- IPC: Open in Browser ----------
+ipcMain.handle('open-in-browser', () => {
+    shell.openExternal(`http://localhost:${SERVER_PORT}`);
+    return { success: true };
+});
+
+// ---------- IPC: DB Status ----------
+ipcMain.handle('get-db-status', () => {
+    const p = resPath('server', 'database', 'db-config.json');
+    if (fs.existsSync(p)) {
+        try {
+            const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+            return { mode: cfg.mode || cfg.APP_MODE || 'sqlite', config: cfg };
+        } catch { }
+    }
+    return { mode: 'sqlite', config: null };
+});
+
+ipcMain.handle('switch-db-mode', async (_, mode) => {
+    const dir = resPath('server', 'database');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const p = path.join(dir, 'db-config.json');
+    let cfg = {};
+    try { if (fs.existsSync(p)) cfg = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { }
+
+    cfg.mode = mode;
+    cfg.DB_TYPE = mode;
+    fs.writeFileSync(p, JSON.stringify(cfg, null, 2));
+    return { success: true };
 });
 
 // ---------- IPC: Config ----------
@@ -99,7 +254,6 @@ ipcMain.handle('save-config', (_, config) => {
 // ---------- IPC: Test Connection ----------
 ipcMain.handle('test-connection', async (_, cfg) => {
     return new Promise(resolve => {
-        // Use mysql2 if available, else use mysql CLI
         const cmd = `mysql -h ${cfg.host} -P ${cfg.port} -u ${cfg.user} ${cfg.password ? '-p' + cfg.password : ''} -e "SELECT 1" 2>&1`;
         exec(cmd, { timeout: 5000 }, (err, stdout) => {
             if (err) return resolve({ success: false, error: stdout || err.message });
@@ -111,18 +265,15 @@ ipcMain.handle('test-connection', async (_, cfg) => {
 // ---------- IPC: Check MariaDB ----------
 ipcMain.handle('check-mariadb', async () => {
     return new Promise(resolve => {
-        // Check common install locations
         const locations = [
-            'mysql', // in PATH
+            'mysql',
             'C:\\Program Files\\MariaDB 10.11\\bin\\mysql.exe',
             'C:\\Program Files\\MariaDB 11.4\\bin\\mysql.exe',
             'C:\\Program Files\\MariaDB 10.6\\bin\\mysql.exe',
             'C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysql.exe',
         ];
 
-        let found = false;
         let idx = 0;
-
         function tryNext() {
             if (idx >= locations.length) return resolve({ found: false });
             const loc = locations[idx++];
@@ -135,7 +286,6 @@ ipcMain.handle('check-mariadb', async () => {
             });
         }
 
-        // Also check via SC query
         exec('sc query mysql', { timeout: 3000 }, (err, stdout) => {
             if (!err && stdout.includes('RUNNING')) {
                 resolve({ found: true, version: 'MySQL/MariaDB service is running' });
@@ -162,9 +312,7 @@ ipcMain.handle('download-mariadb', async (event) => {
 
         const request = https.get(url, res => {
             if (res.statusCode === 302 || res.statusCode === 301) {
-                // Handle redirect
                 fs.unlinkSync(dest);
-                // Retry with new location handled by follow-redirects or manual
                 sendLog('Mengikuti redirect...');
             }
 
@@ -174,9 +322,7 @@ ipcMain.handle('download-mariadb', async (event) => {
             res.on('data', chunk => {
                 downloaded += chunk.length;
                 const pct = total > 0 ? (downloaded / total) * 100 : 0;
-                const dlMB = downloaded / 1024 / 1024;
-                const totalMB = total / 1024 / 1024;
-                sendProgress({ percent: pct, transferredMB: dlMB, totalMB });
+                sendProgress({ percent: pct, transferredMB: downloaded / 1024 / 1024, totalMB: total / 1024 / 1024 });
             });
 
             res.pipe(file);
@@ -186,13 +332,9 @@ ipcMain.handle('download-mariadb', async (event) => {
                 sendLog('✓ Download selesai! Memulai instalasi MariaDB...');
                 sendProgress({ percent: 100 });
 
-                // Silent MSI install
                 const msi = spawn('msiexec', [
-                    '/i', dest,
-                    '/qn',
-                    'PASSWORD=root',
-                    'SERVICENAME=mysql',
-                    'PORT=3306',
+                    '/i', dest, '/qn',
+                    'PASSWORD=root', 'SERVICENAME=mysql', 'PORT=3306',
                     '/L*V', path.join(os.tmpdir(), 'mariadb-install.log'),
                 ], { detached: false, shell: false });
 
@@ -245,7 +387,6 @@ async function importDatabase(log) {
             'C:\\Program Files\\MariaDB 10.6\\bin\\mysql.exe',
         ];
 
-        // Find working mysql binary
         let mysqlBin = 'mysql';
         for (const loc of mysqlLocations) {
             try {
@@ -257,14 +398,13 @@ async function importDatabase(log) {
 
         const sql = fs.readFileSync(sqlFile, 'utf8');
 
-        // Create DB then import
         exec(`"${mysqlBin}" -u root -e "CREATE DATABASE IF NOT EXISTS pos_abadi;"`, (err) => {
             if (err) log && log('⚠ Create DB: ' + err.message);
 
             const imp = exec(
                 `"${mysqlBin}" -u root pos_abadi`,
                 { timeout: 30000 },
-                (err2, stdout) => {
+                (err2) => {
                     if (err2) {
                         log && log('✗ Import gagal: ' + err2.message);
                         return resolve({ success: false, error: err2.message });
@@ -298,7 +438,7 @@ function startBackend() {
         env: {
             ...process.env,
             ELECTRON_RUN_AS_NODE: '1',
-            PORT: 5001,
+            PORT: SERVER_PORT,
             NODE_ENV: isPackaged ? 'production' : 'development',
             SQLITE_PATH: path.join(dbDir, 'pos.sqlite'),
             APP_MODE: 'standalone',
@@ -306,7 +446,22 @@ function startBackend() {
         stdio: 'inherit',
     });
 
-    serverProcess.on('error', err => console.error('Backend error:', err));
+    serverProcess.on('error', err => {
+        console.error('Backend error:', err);
+        if (launcherWindow) {
+            launcherWindow.webContents.send('server-status', 'crashed');
+            launcherWindow.webContents.send('server-log', '✗ Backend crash: ' + err.message);
+        }
+    });
+
+    serverProcess.on('close', (code) => {
+        console.log('Backend exited with code:', code);
+        serverProcess = null;
+        if (launcherWindow) {
+            launcherWindow.webContents.send('server-status', 'crashed');
+            launcherWindow.webContents.send('server-log', '✗ Backend process keluar (code: ' + code + ')');
+        }
+    });
 }
 
 // ---------- Auto Update Logic ----------
@@ -335,26 +490,24 @@ autoUpdater.on('error', (err) => {
 
 // ---------- App Lifecycle ----------
 app.whenReady().then(() => {
-    if (isSetupMode) {
-        createSetupWindow();
-    } else {
-        startBackend();
-        setTimeout(createWindow, 2000);
+    // Always open Launcher first — user controls when to start server
+    createLauncherWindow();
 
-        // Check for updates
-        if (app.isPackaged) {
-            autoUpdater.checkForUpdatesAndNotify();
-        }
+    // Check for updates
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
     }
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
-            isSetupMode ? createSetupWindow() : createWindow();
+            createLauncherWindow();
         }
     });
 });
 
 app.on('window-all-closed', () => {
+    // Don't quit if tray exists (launcher is hidden)
+    if (tray) return;
     if (process.platform !== 'darwin') {
         if (serverProcess) serverProcess.kill();
         app.quit();
@@ -363,4 +516,5 @@ app.on('window-all-closed', () => {
 
 app.on('quit', () => {
     if (serverProcess) serverProcess.kill();
+    if (tray) { tray.destroy(); tray = null; }
 });
