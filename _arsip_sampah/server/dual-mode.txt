@@ -1,0 +1,13 @@
+Cara Login Offline (Standalone):
+
+Ganti APP_MODE=saas menjadi APP_MODE=standalone.
+Simpan dan Restart servernya.
+Buka Login Page: Sekarang kolom "Shop ID" akan OTOMATIS HILANG. Bos cukup masukkan Username & Password seperti biasa.
+Cara Login SaaS (Cloud):
+
+Ganti lagi di .env jadi APP_MODE=saas.
+Restart server.
+Buka Login Page: Kolom "Shop ID" akan OTOMATIS MUNCUL lagi supaya bisa pilih toko.
+Hasil Akhir:
+
+SaaS: Ada kolom Shop ID -> Ketik abadi-jaya.
