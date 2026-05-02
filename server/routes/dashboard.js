@@ -5,7 +5,9 @@ const { verifyToken } = require('../middleware/auth');
 
 router.get('/stats', verifyToken, async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const today = new Date(now - offset).toISOString().split('T')[0];
 
         // 1. Omset & Trx Count Hari Ini (Derived from Transactions for better accuracy)
         const [trxStats] = await req.db.query(
@@ -77,7 +79,7 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         // 7. Activity Log (Tenant Specific)
         const [activityLog] = await req.db.query(`
-            SELECT al.id, al.user_id, al.user_name, al.action, al.detail, al.timestamp
+            SELECT al.id, al.user_id, al.user_name AS userName, al.action, al.target, al.detail, al.timestamp
             FROM activity_log al 
             ORDER BY al.id DESC 
             LIMIT 10

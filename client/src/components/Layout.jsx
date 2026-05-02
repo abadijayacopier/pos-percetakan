@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import Sidebar from './Sidebar';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +24,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
     const [notifOpen, setNotifOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [dbStatus, setDbStatus] = useState('checking'); // 'checking', 'connected', 'disconnected'
+    const [updateInfo, setUpdateInfo] = useState(null);
 
     const toggleSidebarCollapse = () => {
         setSidebarCollapsed(prev => {
@@ -43,21 +44,26 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Fetch Notifications (Low Stock Alerts)
+    // Fetch Notifications (Low Stock, New Tasks, New Services)
     useEffect(() => {
         let isMounted = true;
         const fetchNotifs = async () => {
             try {
-                const [prodRes, matRes] = await Promise.all([
+                const [prodRes, matRes, taskRes, srvRes] = await Promise.all([
                     api.get('/products'),
-                    api.get('/materials')
+                    api.get('/materials'),
+                    api.get('/dp-tasks'),
+                    api.get('/service')
                 ]);
                 if (!isMounted) return;
 
                 const prods = prodRes.data || [];
                 const mats = matRes.data || [];
+                const tasks = taskRes.data || [];
+                const services = srvRes.data || [];
                 const alerts = [];
 
+                // 1. Stock Alerts
                 prods.forEach(p => {
                     if (p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0) {
                         alerts.push({ id: `p-${p.id}`, title: 'Stok ATK Menipis', message: `${p.name} tersisa ${p.stock} ${p.unit}`, type: 'warning' });
@@ -69,18 +75,61 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                     }
                 });
 
+                // 2. New Print Tasks (status: produksi)
+                tasks.filter(t => t.status === 'produksi').forEach(t => {
+                    alerts.push({ id: `t-${t.id}`, title: 'Tugas Cetak Baru', message: `Pesanan ${t.customer_name} sedang menunggu produksi.`, type: 'info' });
+                });
+
+                // 3. New Service Orders (status: diterima)
+                services.filter(s => s.status === 'diterima' || s.status === 'Diterima').forEach(s => {
+                    alerts.push({ id: `s-${s.id}`, title: 'Unit Servis Masuk', message: `${s.customerName}: ${s.machineInfo} baru diterima.`, type: 'info' });
+                });
+
                 setNotifications(alerts);
             } catch (e) {
                 console.error("Failed to fetch notifications");
             }
         };
         fetchNotifs();
-        const interval = setInterval(fetchNotifs, 60000); // refresh every 1 min
+        const interval = setInterval(fetchNotifs, 30000); // refresh every 30s for better "real-time" feel
         return () => {
             isMounted = false;
             clearInterval(interval);
         };
     }, []);
+
+    // Check for System Updates (GitHub)
+    useEffect(() => {
+        const checkUpdate = async () => {
+            try {
+                const res = await api.get('/settings/check-update');
+                const latestSha = res.data.latestCommit.sha;
+                const lastSeenSha = localStorage.getItem('pos_last_seen_commit');
+                
+                if (latestSha !== lastSeenSha) {
+                    setUpdateInfo(res.data);
+                }
+            } catch (err) {
+                console.warn('Update check failed');
+            }
+        };
+        checkUpdate();
+    }, []);
+
+    // Combine standard notifications with update notification
+    const allNotifications = useMemo(() => {
+        const list = [...notifications];
+        if (updateInfo) {
+            list.unshift({
+                id: `update-${updateInfo.latestCommit.sha}`,
+                title: '📦 Pembaruan Sistem',
+                message: `Update baru tersedia: "${updateInfo.latestCommit.message.split('\n')[0]}"`,
+                type: 'info',
+                isUpdate: true
+            });
+        }
+        return list;
+    }, [notifications, updateInfo]);
 
     // Global listener for toggling sidebar from child pages
     useEffect(() => {
@@ -192,8 +241,10 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                                     onClick={() => setNotifOpen(!notifOpen)}
                                 >
                                     <span className="material-symbols-outlined">notifications</span>
-                                    {notifications.length > 0 && (
-                                        <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></span>
+                                    {allNotifications.length > 0 && (
+                                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-rose-500 text-white text-[10px] font-black rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-lg">
+                                            {allNotifications.length}
+                                        </span>
                                     )}
                                 </button>
 
@@ -210,8 +261,8 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                                                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                     <FiBell className="text-blue-500" /> Notifikasi
                                                 </h3>
-                                                {notifications.length > 0 && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-widest">{notifications.length} Baru</span>
+                                                {allNotifications.length > 0 && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[9px] font-black uppercase tracking-widest">{allNotifications.length} Baru</span>
                                                 )}
                                             </div>
                                             <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -222,10 +273,28 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                                                     </div>
                                                 ) : (
                                                     <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                                                        {notifications.map(n => (
-                                                            <div key={n.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
-                                                                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${n.type === 'danger' ? 'text-rose-500' : 'text-amber-500'}`}>{n.title}</p>
+                                                        {allNotifications.map(n => (
+                                                            <div 
+                                                                key={n.id} 
+                                                                onClick={() => {
+                                                                    if (n.isUpdate) {
+                                                                        onNavigate('settings', { tab: 'system' });
+                                                                        localStorage.setItem('pos_last_seen_commit', n.id.replace('update-', ''));
+                                                                        setUpdateInfo(null);
+                                                                    }
+                                                                    else if (n.id.startsWith('p-')) onNavigate('inventory');
+                                                                    else if (n.id.startsWith('m-')) onNavigate('stok-bahan');
+                                                                    else if (n.id.startsWith('t-')) onNavigate('spk-list');
+                                                                    else if (n.id.startsWith('s-')) onNavigate('service');
+                                                                    setNotifOpen(false);
+                                                                }}
+                                                                className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                                                            >
+                                                                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${n.type === 'danger' ? 'text-rose-500' : n.type === 'warning' ? 'text-amber-500' : 'text-blue-500'}`}>{n.title}</p>
                                                                 <p className="text-xs text-slate-600 dark:text-slate-300 font-bold group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{n.message}</p>
+                                                                <div className="mt-2 flex items-center gap-1 text-[9px] font-bold text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    Lihat Detail <FiSearch size={10} />
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>

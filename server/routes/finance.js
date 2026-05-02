@@ -18,6 +18,16 @@ const cashFlowSchema = z.object({
 // 1. GET Semua Data Arus Kas (Buku Kas)
 router.get('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
+        // Self-healing: Fix inconsistent PENJUALAN amounts that are greater than transaction totals (caused by old gross payment logging)
+        await req.db.query(`
+            UPDATE cash_flow cf
+            JOIN transactions t ON cf.reference_id = t.id
+            SET cf.amount = t.total
+            WHERE cf.category = 'Penjualan' 
+            AND cf.amount > t.total 
+            AND t.status IN ('paid', 'completed')
+        `);
+
         const [rows] = await req.db.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC');
         res.json(rows);
     } catch (error) {

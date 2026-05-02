@@ -225,13 +225,15 @@ router.get('/logs', verifyToken, async (req, res) => {
             SELECT 
                 al.id, 
                 al.user_id, 
-                al.user_name, 
+                u.username,
+                COALESCE(u.name, al.user_name) as user_name, 
                 al.action, 
                 al.detail as details, 
                 al.target,
                 al.ip_address,
                 al.timestamp as created_at
             FROM activity_log al
+            LEFT JOIN users u ON al.user_id = u.id
             ORDER BY al.id DESC
             LIMIT 200
         `);
@@ -420,4 +422,118 @@ router.post('/restore', verifyToken, requireRole(['admin']), upload.single('back
     }
 });
 
+// Send Manual Telegram Report
+router.post('/telegram-report', verifyToken, async (req, res) => {
+    try {
+        const { type } = req.body;
+        const { sendDailyReport, sendStockReport } = require('../utils/notificationHelper');
+        
+        if (type === 'daily') {
+            await sendDailyReport(req.db);
+        } else if (type === 'stock') {
+            await sendStockReport(req.db);
+        } else {
+            return res.status(400).json({ message: 'Tipe laporan tidak valid' });
+        }
+        
+        res.json({ success: true, message: `Laporan ${type} berhasil dikirim ke Telegram` });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal mengirim laporan: ' + e.message });
+    }
+});
+
+// Test Telegram Notification
+router.post('/test-telegram', verifyToken, requireRole(['admin']), async (req, res) => {
+
+    try {
+        const { telegram_bot_token, telegram_chat_id } = req.body;
+        const { sendTelegramNotification } = require('../utils/notificationHelper');
+        
+        await sendTelegramNotification('🧪 <b>TEST NOTIFIKASI</b>\n\nSelamat! Integrasi Telegram Anda berhasil dikonfigurasi pada sistem POS Abadi Jaya.', {
+            telegram_bot_token,
+            telegram_chat_id,
+            telegram_enabled: true
+        });
+        
+        res.json({ message: 'Pesan tes berhasil dikirim ke Telegram' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal mengirim pesan tes: ' + e.message });
+    }
+});
+
+// POST Manual Telegram Report (from POS Dashboard)
+router.post('/telegram-report', verifyToken, async (req, res) => {
+    try {
+        const { type } = req.body;
+        const { sendDailyReport, sendStockReport } = require('../utils/notificationHelper');
+        
+        if (type === 'daily') {
+            await sendDailyReport(req.db);
+        } else if (type === 'stock') {
+            await sendStockReport(req.db);
+        } else {
+            return res.status(400).json({ message: 'Tipe laporan tidak valid' });
+        }
+        
+        res.json({ success: true, message: 'Laporan sedang dikirim...' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Gagal memicu pengiriman laporan: ' + e.message });
+    }
+});
+
+
+// GET Check for System Updates (GitHub API)
+router.get('/check-update', async (req, res) => {
+    try {
+        const https = require('https');
+        const options = {
+            hostname: 'api.github.com',
+            path: '/repos/abadijayacopier/pos-percetakan/commits/main',
+            headers: { 
+                'User-Agent': 'POS-Abadi-Jaya',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        };
+
+        const githubReq = https.get(options, (apiRes) => {
+            let data = '';
+            apiRes.on('data', (chunk) => data += chunk);
+            apiRes.on('end', () => {
+                try {
+                    if (apiRes.statusCode !== 200) {
+                        return res.status(apiRes.statusCode).json({ message: 'GitHub API Error: ' + apiRes.statusMessage });
+                    }
+                    const commit = JSON.parse(data);
+                    const packageJson = require('../../package.json');
+                    
+                    res.json({
+                        currentVersion: packageJson.version,
+                        latestCommit: {
+                            sha: commit.sha,
+                            message: commit.commit?.message,
+                            date: commit.commit?.author?.date,
+                            author: commit.commit?.author?.name,
+                            url: commit.html_url
+                        }
+                    });
+                } catch (parseErr) {
+                    res.status(500).json({ message: 'Gagal parse data update' });
+                }
+            });
+        });
+
+        githubReq.on('error', (e) => {
+            res.status(500).json({ message: 'Gagal koneksi ke GitHub: ' + e.message });
+        });
+    } catch (e) {
+        console.error('Update Check Error:', e);
+        res.status(500).json({ message: 'Internal Server Error saat cek update' });
+    }
+});
+
 module.exports = router;
+
+

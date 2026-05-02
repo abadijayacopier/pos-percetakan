@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { formatDateTime, printViaBluetooth, listQZPrinters } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiEyeOff, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey, FiSend, FiDatabase } from 'react-icons/fi';
 import ActivationModal from '../components/ActivationModal';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import PrinterSettings from '../components/settings/PrinterSettings';
@@ -16,6 +16,10 @@ import HardwareSettings from '../components/settings/HardwareSettings';
 import PricingSettings from '../components/settings/PricingSettings';
 import LandingSettings from '../components/settings/LandingSettings';
 import LogSettings from '../components/settings/LogSettings';
+import WhatsAppSettings from '../components/settings/WhatsAppSettings';
+import TelegramSettings from '../components/settings/TelegramSettings';
+import CDNSettings from '../components/settings/CDNSettings';
+import SystemSettings from '../components/settings/SystemSettings';
 import { resizeImage } from '../utils';
 
 
@@ -25,7 +29,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const themeCtx = useTheme();
 
     // Core states
-    const [activeTab, setActiveTab] = useState(pageState?.tab || 'general');
+    const [activeTab, setActiveTab] = useState(pageState?.tab || 'hub');
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [loading, setLoading] = useState(true);
 
@@ -49,6 +53,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const [storeName, setStoreName] = useState('');
     const [storeAddress, setStoreAddress] = useState('');
     const [storePhone, setStorePhone] = useState('');
+    const [storeEmail, setStoreEmail] = useState('');
     const [storeMapsUrl, setStoreMapsUrl] = useState('');
     const [storeLogo, setStoreLogo] = useState('');
     const [landingLogo, setLandingLogo] = useState('');
@@ -71,6 +76,34 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const [taxPercentage, setTaxPercentage] = useState(11);
     const [fingerprintIp, setFingerprintIp] = useState('192.168.1.201');
     const [fingerprintPort, setFingerprintPort] = useState(4370);
+
+    const [telegramBotToken, setTelegramBotToken] = useState('');
+    const [telegramChatId, setTelegramChatId] = useState('');
+    const [telegramEnabled, setTelegramEnabled] = useState(false);
+    const [telegramStokKritis, setTelegramStokKritis] = useState(true);
+    const [telegramLaporanKasir, setTelegramLaporanKasir] = useState(true);
+    const [telegramSecurityAlert, setTelegramSecurityAlert] = useState(false);
+    const [telegramErrorMonitoring, setTelegramErrorMonitoring] = useState(false);
+
+    // WhatsApp Gateway States
+    const [waGatewayUrl, setWaGatewayUrl] = useState('');
+    const [waApiKey, setWaApiKey] = useState('');
+    const [waSessionName, setWaSessionName] = useState('default');
+    const [waSenderNumber, setWaSenderNumber] = useState('');
+    const [waTemplateInv, setWaTemplateInv] = useState('Halo *{{name}}*, pesanan Anda *#{{invoice}}* sebesar *{{total}}* sedang kami proses. Terima kasih!');
+    const [waTemplateProcess, setWaTemplateProcess] = useState('Halo *{{name}}*, pesanan *#{{invoice}}* sedang dalam proses produksi/pengerjaan.');
+    const [waTemplateDone, setWaTemplateDone] = useState('Halo *{{name}}*, pesanan *#{{invoice}}* sudah selesai dan siap diambil. Silakan datang ke toko.');
+    const [waTemplateKasir, setWaTemplateKasir] = useState('LAPORAN KASIR: Transaksi baru *#{{invoice}}* senilai *{{total}}* oleh *{{user}}*.');
+
+    // CDN & Cloud Storage States
+    const [cdnAccountId, setCdnAccountId] = useState('');
+    const [cdnBucketName, setCdnBucketName] = useState('');
+
+    // Visibility States
+    const [showMidtransKey, setShowMidtransKey] = useState(false);
+    const [cdnAccessKey, setCdnAccessKey] = useState('');
+    const [cdnSecretKey, setCdnSecretKey] = useState('');
+    const [cdnCustomDomain, setCdnCustomDomain] = useState('');
 
     // UI/Form States
     const [userFormOpen, setUserFormOpen] = useState(false);
@@ -147,31 +180,54 @@ export default function SettingsPage({ onNavigate, pageState }) {
             setStoreName(sMap.store_name || 'FOTOCOPY ABADI JAYA');
             setStoreAddress(sMap.store_address || 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan');
             setStorePhone(sMap.store_phone || '085655620979');
-            setStoreMapsUrl(sMap.store_maps_url || 'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7');
+            setStoreEmail(sMap.store_email || '');
+            setStoreMapsUrl(sMap.store_maps_url || '');
             setStoreLogo(sMap.store_logo || '');
             setLandingLogo(sMap.landing_logo || '');
             setLandingFavicon(sMap.landing_favicon || '');
             setReceiptFooter(sMap.receipt_footer || '');
-
             setPrinterSize(sMap.printer_size || '80mm');
             setPrinterName(sMap.printer_name || '');
             setPaperSize(sMap.paper_size || 'A4');
-            setAutoPrint(sMap.auto_print === 'true' || sMap.auto_print === true);
-
             setMidtransKey(sMap.midtrans_key || '');
-            setMidtransIsProduction(sMap.midtrans_is_production === 'true' || sMap.midtrans_is_production === true);
-            setDanaNumber(sMap.dana_number || '085655620979');
-            setDanaName(sMap.dana_name || 'SUPRIYANTO');
-            setBankName(sMap.bank_name || 'BANK BCA');
+            setMidtransIsProduction(sMap.midtrans_is_production === 'true');
+            setDanaNumber(sMap.dana_number || '');
+            setDanaName(sMap.dana_name || '');
+            setBankName(sMap.bank_name || '');
             setBankAccount(sMap.bank_account || '');
-            setBankAccountName(sMap.bank_account_name || 'SUPRIYANTO');
-
-            setTaxEnabled(sMap.tax_enabled === 'true' || sMap.tax_enabled === true);
-            setTaxPercentage(parseFloat(sMap.tax_percentage) || 11);
-
-            setTarifDesainPerJam(parseInt(sMap.tarif_desain_per_jam) || 50000);
+            setBankAccountName(sMap.bank_account_name || '');
+            setTarifDesainPerJam(parseInt(sMap.tarif_desain_per_jam || '50000'));
+            setTaxEnabled(sMap.tax_enabled === 'true');
+            setTaxPercentage(parseInt(sMap.tax_percentage || '11'));
             setFingerprintIp(sMap.fingerprint_ip || '192.168.1.201');
-            setFingerprintPort(parseInt(sMap.fingerprint_port) || 4370);
+            setFingerprintPort(parseInt(sMap.fingerprint_port || '4370'));
+            setAutoPrint(sMap.auto_print !== 'false');
+
+            // Telegram
+            setTelegramBotToken(sMap.telegram_bot_token || '');
+            setTelegramChatId(sMap.telegram_chat_id || '');
+            setTelegramEnabled(sMap.telegram_enabled === 'true');
+            setTelegramStokKritis(sMap.telegram_stok_kritis !== 'false');
+            setTelegramLaporanKasir(sMap.telegram_laporan_kasir !== 'false');
+            setTelegramSecurityAlert(sMap.telegram_security_alert === 'true');
+            setTelegramErrorMonitoring(sMap.telegram_error_monitoring === 'true');
+
+            // WhatsApp
+            setWaGatewayUrl(sMap.wa_gateway_url || '');
+            setWaApiKey(sMap.wa_api_key || '');
+            setWaSessionName(sMap.wa_session_name || 'default');
+            setWaSenderNumber(sMap.wa_sender_number || '');
+            setWaTemplateInv(sMap.wa_template_inv || 'Halo *{{name}}*, pesanan Anda *#{{invoice}}* sebesar *{{total}}* sedang kami proses. Terima kasih!');
+            setWaTemplateProcess(sMap.wa_template_process || 'Halo *{{name}}*, pesanan *#{{invoice}}* sedang dalam proses produksi/pengerjaan.');
+            setWaTemplateDone(sMap.wa_template_done || 'Halo *{{name}}*, pesanan *#{{invoice}}* sudah selesai dan siap diambil. Silakan datang ke toko.');
+            setWaTemplateKasir(sMap.wa_template_kasir || 'LAPORAN KASIR: Transaksi baru *#{{invoice}}* senilai *{{total}}* oleh *{{user}}*.');
+
+            // CDN & Cloud Storage
+            setCdnAccountId(sMap.cdn_account_id || '');
+            setCdnBucketName(sMap.cdn_bucket_name || '');
+            setCdnAccessKey(sMap.cdn_access_key || '');
+            setCdnSecretKey(sMap.cdn_secret_key || '');
+            setCdnCustomDomain(sMap.cdn_custom_domain || '');
 
         } catch (error) {
             console.error(error);
@@ -262,6 +318,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
                 { key: 'store_name', value: storeName },
                 { key: 'store_address', value: storeAddress },
                 { key: 'store_phone', value: storePhone },
+                { key: 'store_email', value: storeEmail },
                 { key: 'store_maps_url', value: storeMapsUrl },
                 { key: 'store_logo', value: storeLogo },
                 { key: 'landing_logo', value: landingLogo },
@@ -286,7 +343,27 @@ export default function SettingsPage({ onNavigate, pageState }) {
                 { key: 'tax_enabled', value: taxEnabled ? 'true' : 'false' },
                 { key: 'tax_percentage', value: taxPercentage.toString() },
                 { key: 'fingerprint_ip', value: fingerprintIp },
-                { key: 'fingerprint_port', value: fingerprintPort.toString() }
+                { key: 'fingerprint_port', value: fingerprintPort.toString() },
+                { key: 'telegram_bot_token', value: telegramBotToken },
+                { key: 'telegram_chat_id', value: telegramChatId },
+                { key: 'telegram_enabled', value: telegramEnabled ? 'true' : 'false' },
+                { key: 'telegram_stok_kritis', value: telegramStokKritis ? 'true' : 'false' },
+                { key: 'telegram_laporan_kasir', value: telegramLaporanKasir ? 'true' : 'false' },
+                { key: 'telegram_security_alert', value: telegramSecurityAlert ? 'true' : 'false' },
+                { key: 'telegram_error_monitoring', value: telegramErrorMonitoring ? 'true' : 'false' },
+                { key: 'wa_gateway_url', value: waGatewayUrl },
+                { key: 'wa_api_key', value: waApiKey },
+                { key: 'wa_session_name', value: waSessionName },
+                { key: 'wa_sender_number', value: waSenderNumber },
+                { key: 'wa_template_inv', value: waTemplateInv },
+                { key: 'wa_template_process', value: waTemplateProcess },
+                { key: 'wa_template_done', value: waTemplateDone },
+                { key: 'wa_template_kasir', value: waTemplateKasir },
+                { key: 'cdn_account_id', value: cdnAccountId },
+                { key: 'cdn_bucket_name', value: cdnBucketName },
+                { key: 'cdn_access_key', value: cdnAccessKey },
+                { key: 'cdn_secret_key', value: cdnSecretKey },
+                { key: 'cdn_custom_domain', value: cdnCustomDomain }
             ];
             await api.post('/settings', payload);
             showToast('Pengaturan berhasil disimpan!', 'success');
@@ -426,6 +503,9 @@ export default function SettingsPage({ onNavigate, pageState }) {
         { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS' },
         { id: 'hardware', icon: <FiCpu />, text: 'Perangkat Keras' },
         { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
+        { id: 'whatsapp', icon: <FiMessageCircle />, text: 'WhatsApp Gateway' },
+        { id: 'telegram', icon: <FiSend />, text: 'Telegram Integration' },
+        { id: 'cdn', icon: <FiDatabase />, text: 'CDN & Cloud Storage' },
         { id: 'license', icon: <FiShield />, text: 'Lisensi' },
     ];
 
@@ -446,37 +526,83 @@ export default function SettingsPage({ onNavigate, pageState }) {
 
             <main className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
 
-                {/* Navigation Tabs */}
-                <div className="mb-8 overflow-auto no-scrollbar pb-2">
-                    <div className="flex gap-2 min-w-max p-1.5 bg-slate-200/50 dark:bg-slate-800/50 rounded-2xl w-fit">
-                        {TABS.map(t => {
-                            const isActive = activeTab === t.id;
-                            return (
-                                <button
-                                    key={t.id}
-                                    className={`relative flex items-center gap-2 px-5 py-3 transition-all rounded-xl font-medium z-10 ${isActive
-                                        ? 'text-blue-700 dark:text-blue-300'
-                                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                                        }`}
-                                    onClick={() => {
-                                        setActiveTab(t.id);
-                                        if (t.id === 'log') setLogPage(1);
-                                    }}
+                {activeTab === 'hub' ? (
+                    <div className="max-w-7xl mx-auto">
+                        {/* Header Hub */}
+                        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                            <div>
+                                <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
+                                    Pengaturan <span className="text-blue-600">Sistem</span>
+                                </h1>
+                                <p className="text-slate-500 mt-2 font-medium">KONFIGURASI PARAMETER OPERASIONAL POS ABADI JAYA</p>
+                            </div>
+                        </div>
+
+                        {/* Hub Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {[
+                                { id: 'general', title: 'PENGATURAN UMUM', desc: 'Identitas toko, alamat, dan pengaturan pajak.', icon: <FiHome />, color: 'blue' },
+                                { id: 'fotocopy', title: 'TARIF & BIAYA', desc: 'Harga fotocopy, cetak, desain, dan jilid.', icon: <FiDollarSign />, color: 'indigo' },
+                                { id: 'printer', title: 'PRINTER & NOTA', desc: 'Setting printer, ukuran struk, dan logo nota.', icon: <FiPrinter />, color: 'emerald' },
+                                { id: 'users', title: 'MANAJEMEN PENGGUNA', desc: 'Kelola akun staf, kasir, dan admin.', icon: <FiUsers />, color: 'orange' },
+                                { id: 'landing', title: 'TAMPILAN & LANDING', desc: 'Logo website, favicon, dan galeri depan.', icon: <FiImage />, color: 'rose' },
+                                { id: 'payment', title: 'PEMBAYARAN & QRIS', desc: 'Midtrans, Bank, dan Dana (QRIS Dinamis).', icon: <FiZap />, color: 'cyan' },
+                                { id: 'log', title: 'AUDIT LOG SYSTEM', desc: 'Riwayat aktivitas staf dan sistem.', icon: <FiActivity />, color: 'slate' },
+                                { id: 'hardware', title: 'PERANGKAT KERAS', desc: 'Setting IP Fingerprint dan perangkat.', icon: <FiCpu />, color: 'purple' },
+                                { id: 'whatsapp', title: 'WHATSAPP GATEWAY', desc: 'Konfigurasi API WA & Template Pesan.', icon: <FiMessageCircle />, color: 'emerald' },
+                                { id: 'telegram', title: 'TELEGRAM INTEGRATION', desc: 'Robot Notifikasi & Monitoring Sistem.', icon: <FiSend />, color: 'sky' },
+                                { id: 'cdn', title: 'CDN & CLOUD STORAGE', desc: 'Konfigurasi Cloudflare R2 dan custom domain CDN.', icon: <FiDatabase />, color: 'blue' },
+                                { id: 'backup', title: 'BACKUP & RESTORE', desc: 'Cadangkan dan pulihkan database sistem.', icon: <FiSave />, color: 'teal' },
+                                { id: 'license', title: 'LISENSI & KEAMANAN', desc: 'Status aktivasi dan lisensi aplikasi.', icon: <FiShield />, color: 'red' },
+                                { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue' },
+                            ].map((cat, idx) => (
+                                <motion.div
+                                    key={cat.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    onClick={() => setActiveTab(cat.id)}
+                                    className="group bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 border border-slate-100 dark:border-slate-800 cursor-pointer transition-all duration-300 relative overflow-hidden"
                                 >
-                                    {isActive && (
-                                        <motion.div
-                                            layoutId="settings-tab-bubble"
-                                            className="absolute inset-0 bg-white dark:bg-slate-700 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600/50"
-                                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                        />
-                                    )}
-                                    <span className="relative z-20 text-lg">{t.icon}</span>
-                                    <span className="relative z-20 whitespace-nowrap">{t.text}</span>
-                                </button>
-                            );
-                        })}
+                                    <div className={`absolute top-0 right-0 w-24 h-24 bg-${cat.color}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500`} />
+                                    <div className="relative z-10">
+                                        <div className={`w-16 h-16 rounded-2xl bg-${cat.color}-100 dark:bg-${cat.color}-900/30 text-${cat.color}-600 flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform`}>
+                                            {React.cloneElement(cat.icon, { size: 32 })}
+                                        </div>
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">{cat.title}</h3>
+                                        <p className="text-sm text-slate-500 leading-relaxed font-medium">{cat.desc}</p>
+                                        <div className="mt-6 flex items-center gap-2 text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            BUKA PENGATURAN <FiChevronRight />
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="space-y-8">
+                        {/* Toolbar Sub-Page */}
+                        <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 sticky top-24 z-30 border border-slate-200 dark:border-slate-800 px-6 py-4 rounded-3xl flex items-center justify-between shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setActiveTab('hub')}
+                                    className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                                >
+                                    <FiChevronDown className="rotate-90" size={20} />
+                                </button>
+                                <div>
+                                    <h2 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">
+                                        {activeTab.replace('-', ' ')}
+                                    </h2>
+                                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Modul Konfigurasi</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button onClick={saveSettings} className="bg-blue-600 hover:bg-blue-700 text-white font-black px-6 py-3 rounded-xl flex items-center gap-2 shadow-xl shadow-blue-500/20 transition-all text-xs uppercase tracking-widest">
+                                    <FiSave size={18} /> Simpan
+                                </button>
+                            </div>
+                        </div>
 
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -486,24 +612,26 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
                     >
-                        {/* General (Theme) */}
-                        {activeTab === 'general' && (
-                            <GeneralSettings 
-                                taxEnabled={taxEnabled}
-                                setTaxEnabled={setTaxEnabled}
-                                taxPercentage={taxPercentage}
-                                setTaxPercentage={setTaxPercentage}
-                                saveSettings={saveSettings}
-                            />
-                        )}
+                            {activeTab === 'general' && (
+                                <GeneralSettings 
+                                    storeName={storeName} setStoreName={setStoreName}
+                                    storeAddress={storeAddress} setStoreAddress={setStoreAddress}
+                                    storePhone={storePhone} setStorePhone={setStorePhone}
+                                    storeEmail={storeEmail} setStoreEmail={setStoreEmail}
+                                    storeLogo={storeLogo} setStoreLogo={setStoreLogo}
+                                    handleLogoUpload={handleLogoUpload}
+                                    taxEnabled={taxEnabled}
+                                    setTaxEnabled={setTaxEnabled}
+                                    taxPercentage={taxPercentage}
+                                    setTaxPercentage={setTaxPercentage}
+                                    saveSettings={saveSettings}
+                                />
+                            )}
 
 
                         {/* Landing Page Settings */}
                         {activeTab === 'landing' && (
                             <LandingSettings 
-                                storeName={storeName} setStoreName={setStoreName}
-                                storeAddress={storeAddress} setStoreAddress={setStoreAddress}
-                                storePhone={storePhone} setStorePhone={setStorePhone}
                                 storeMapsUrl={storeMapsUrl} setStoreMapsUrl={setStoreMapsUrl}
                                 landingLogo={landingLogo} setLandingLogo={setLandingLogo}
                                 landingFavicon={landingFavicon} setLandingFavicon={setLandingFavicon}
@@ -589,7 +717,22 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                                         <div className="space-y-2 col-span-1 md:col-span-2">
                                             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Server Key / API Key</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="SB-Mid-server-..." value={midtransKey} onChange={e => setMidtransKey(e.target.value)} />
+                                            <div className="relative">
+                                                <input 
+                                                    type={showMidtransKey ? "text" : "password"}
+                                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono pr-12" 
+                                                    placeholder="SB-Mid-server-..." 
+                                                    value={midtransKey} 
+                                                    onChange={e => setMidtransKey(e.target.value)} 
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowMidtransKey(!showMidtransKey)}
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                                                >
+                                                    {showMidtransKey ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                                </button>
+                                            </div>
                                             <p className="text-xs text-slate-400">Pastikan API Key sudah sesuai dengan akses environment Anda.</p>
                                         </div>
                                         <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 col-span-1 md:col-span-2">
@@ -853,14 +996,115 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         )}
 
                         {/* Hardware Settings */}
+                        {/* Hardware Settings */}
                         {activeTab === 'hardware' && (
                             <HardwareSettings 
-                                fingerprintIp={fingerprintIp}
-                                setFingerprintIp={setFingerprintIp}
-                                fingerprintPort={fingerprintPort}
-                                setFingerprintPort={setFingerprintPort}
+                                fingerprintIp={fingerprintIp} setFingerprintIp={setFingerprintIp}
+                                fingerprintPort={fingerprintPort} setFingerprintPort={setFingerprintPort}
                                 saveSettings={saveSettings}
                             />
+                        )}
+
+                        {activeTab === 'whatsapp' && (
+                            <WhatsAppSettings
+                                waGatewayUrl={waGatewayUrl} setWaGatewayUrl={setWaGatewayUrl}
+                                waApiKey={waApiKey} setWaApiKey={setWaApiKey}
+                                waSessionName={waSessionName} setWaSessionName={setWaSessionName}
+                                waSenderNumber={waSenderNumber} setWaSenderNumber={setWaSenderNumber}
+                                waTemplateInv={waTemplateInv} setWaTemplateInv={setWaTemplateInv}
+                                waTemplateProcess={waTemplateProcess} setWaTemplateProcess={setWaTemplateProcess}
+                                waTemplateDone={waTemplateDone} setWaTemplateDone={setWaTemplateDone}
+                                waTemplateKasir={waTemplateKasir} setWaTemplateKasir={setWaTemplateKasir}
+                                saveSettings={saveSettings}
+                            />
+                        )}
+
+                        {activeTab === 'telegram' && (
+                            <TelegramSettings
+                                telegramBotToken={telegramBotToken} setTelegramBotToken={setTelegramBotToken}
+                                telegramChatId={telegramChatId} setTelegramChatId={setTelegramChatId}
+                                telegramEnabled={telegramEnabled} setTelegramEnabled={setTelegramEnabled}
+                                telegramStokKritis={telegramStokKritis} setTelegramStokKritis={setTelegramStokKritis}
+                                telegramLaporanKasir={telegramLaporanKasir} setTelegramLaporanKasir={setTelegramLaporanKasir}
+                                telegramSecurityAlert={telegramSecurityAlert} setTelegramSecurityAlert={setTelegramSecurityAlert}
+                                telegramErrorMonitoring={telegramErrorMonitoring} setTelegramErrorMonitoring={setTelegramErrorMonitoring}
+                                saveSettings={saveSettings}
+                            />
+                        )}
+
+
+                        {activeTab === 'cdn' && (
+                            <CDNSettings
+                                cdnAccountId={cdnAccountId} setCdnAccountId={setCdnAccountId}
+                                cdnBucketName={cdnBucketName} setCdnBucketName={setCdnBucketName}
+                                cdnAccessKey={cdnAccessKey} setCdnAccessKey={setCdnAccessKey}
+                                cdnSecretKey={cdnSecretKey} setCdnSecretKey={setCdnSecretKey}
+                                cdnCustomDomain={cdnCustomDomain} setCdnCustomDomain={setCdnCustomDomain}
+                                saveSettings={saveSettings}
+                            />
+                        )}
+                        
+                        {activeTab === 'system' && (
+                            <SystemSettings />
+                        )}
+
+
+                        {/* Backup & Restore */}
+                        {activeTab === 'backup' && (
+                            <div className="space-y-6 pb-12">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
+                                        <div className="w-16 h-16 rounded-3xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mb-6">
+                                            <FiDownload size={32} />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Database Backup</h3>
+                                        <p className="text-slate-500 mb-8 leading-relaxed">Cadangkan seluruh data transaksi, pelanggan, dan produk ke dalam file backup.</p>
+                                        <button onClick={handleBackup} className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 transition-all uppercase tracking-widest text-xs">
+                                            Mulai Backup Sekarang
+                                        </button>
+                                    </div>
+                                    <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
+                                        <div className="w-16 h-16 rounded-3xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center mb-6">
+                                            <FiUpload size={32} />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Restore Database</h3>
+                                        <p className="text-slate-500 mb-8 leading-relaxed">Pulihkan data dari file backup yang sudah ada. Perhatian: Data saat ini akan tertimpa.</p>
+                                        <label className="block w-full py-5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-500/20 transition-all uppercase tracking-widest text-xs text-center cursor-pointer">
+                                            Pilih File & Restore
+                                            <input type="file" className="hidden" accept=".backup" onChange={handleRestore} />
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* License Settings */}
+                        {activeTab === 'license' && (
+                            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 rounded-full blur-3xl -mr-32 -mt-32" />
+                                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                                    <div className="w-48 h-48 rounded-[3rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-inner">
+                                        <FiShield size={80} className={licenseInfo.activated ? 'text-emerald-500' : 'text-slate-400'} />
+                                    </div>
+                                    <div className="flex-1 text-center md:text-left">
+                                        <div className="inline-block px-4 py-2 bg-blue-600/10 text-blue-600 rounded-full text-[10px] font-black tracking-[0.2em] mb-4 uppercase">System License Info</div>
+                                        <h3 className="text-3xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight">
+                                            {licenseInfo.activated ? 'Lisensi Terverifikasi' : 'Belum Teraktivasi'}
+                                        </h3>
+                                        <p className="text-slate-500 mb-6 font-medium">Software Berlisensi Resmi - Abadi Jaya POS Pro Max Industrial Suite</p>
+                                        <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                                            <div className="bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-2xl">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Hardware ID</p>
+                                                <p className="font-mono text-sm text-slate-700 dark:text-slate-300">{licenseInfo.hardwareId || 'NOT_FOUND'}</p>
+                                            </div>
+                                            <div className="bg-slate-100 dark:bg-slate-800 px-6 py-4 rounded-2xl">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Mode Sistem</p>
+                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">MySQL Industrial Engine</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         )}
 
 
@@ -927,6 +1171,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         />
                     </motion.div>
                 </AnimatePresence>
+                </div>
+                )}
             </main>
         </div >
     );

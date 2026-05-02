@@ -8,7 +8,7 @@ import PrintReportLayout from '../components/PrintReportLayout';
 import {
     FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
     FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle, FiActivity,
-    FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight
+    FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight, FiSend
 } from 'react-icons/fi';
 
 export default function ReportsPage() {
@@ -389,7 +389,22 @@ export default function ReportsPage() {
                             Ekspor PDF
                         </button>
                     </div>
-                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const res = await api.post('/settings/telegram-report', { type: activeTab === 'products' ? 'stock' : 'daily' });
+                                    if (res.data.success) {
+                                        Swal.fire({ icon: 'success', title: 'Terkirim!', text: 'Laporan berhasil dikirim ke Telegram.', timer: 1500, showConfirmButton: false });
+                                    }
+                                } catch (err) {
+                                    Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || err.message });
+                                }
+                            }}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-sky-500/20 active:scale-95 group"
+                        >
+                            <FiSend className="text-lg group-hover:translate-x-0.5 transition-transform" />
+                            Kirim ke Telegram
+                        </button>
                         <button
                             onClick={activeTab === 'profit-loss' ? exportProfitLossExcel :
                                 activeTab === 'sales' ? exportSalesExcel :
@@ -401,9 +416,10 @@ export default function ReportsPage() {
                             <FiDownload className="text-lg group-hover:translate-y-0.5 transition-transform" />
                             Excel (.xls)
                         </button>
-                    </div>
                 </div>
             </div>
+
+
 
             {/* Print Only Header (Only for tabs without their own PrintReportLayout) */}
             {!['sales', 'profit-loss'].includes(activeTab) && (
@@ -929,8 +945,8 @@ export default function ReportsPage() {
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                                 {[
                                     { label: 'Verified Partners', value: allCustomers.length, icon: FiUsers, color: 'blue', sub: 'Client Database' },
-                                    { label: 'Accumulated Spend', value: formatRupiah(allCustomers.reduce((s, c) => s + (c.totalSpend || 0), 0)), icon: FiDollarSign, color: 'emerald', sub: 'Lifetime Value' },
-                                    { label: 'Service Volume', value: allCustomers.reduce((s, c) => s + (c.totalTrx || 0), 0), icon: FiShoppingCart, color: 'indigo', sub: 'Repeat Orders' },
+                                    { label: 'Accumulated Spend', value: formatRupiah(allCustomers.reduce((s, c) => s + Number(c.totalSpend || 0), 0)), icon: FiDollarSign, color: 'emerald', sub: 'Lifetime Value' },
+                                    { label: 'Service Volume', value: allCustomers.reduce((s, c) => s + Number(c.totalTrx || 0), 0), icon: FiShoppingCart, color: 'indigo', sub: 'Repeat Orders' },
                                     { label: 'Corporate Accounts', value: allCustomers.filter(c => c.type === 'corporate').length, icon: FiPieChart, color: 'amber', sub: 'B2B Segment' },
                                 ].map((s, i) => (
                                     <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm group">

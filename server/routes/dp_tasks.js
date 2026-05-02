@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
+const { sendProcessNotification, sendDoneNotification } = require('../utils/notificationHelper');
 
 // 1. GET Semua Task
 router.get('/', verifyToken, async (req, res) => {
@@ -40,6 +41,8 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
+const { logActivity } = require('../utils/logger');
+
 // 3. POST Task Baru
 router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
     try {
@@ -63,6 +66,9 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
             priority || 'normal', pesan_desainer || null, type || 'digital', qty || 1, dp_amount || 0,
             is_paid ? 1 : 0
         ]);
+
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_TASK', customerName, `Tambah pesanan cetak: ${title} (${newId})`, req.ip, req.user.name);
 
         res.status(201).json({ message: 'Task berhasil dibuat!', id: newId });
     } catch (error) {
@@ -113,6 +119,18 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desa
             req.params.id
         ]);
 
+        // Log activity
+        await logActivity(req.user.id, 'UPDATE_TASK', customerName || 'N/A', `Update data pesanan: ${title || req.params.id}`, req.ip, req.user.name);
+
+        // Trigger Notifications based on status
+        if (status === 'produksi' || status === 'proses') {
+            const [rows] = await req.db.query('SELECT t.*, c.phone FROM dp_tasks t LEFT JOIN customers c ON t.customerId = c.id WHERE t.id = ?', [req.params.id]);
+            if (rows.length > 0) sendProcessNotification(rows[0]);
+        } else if (status === 'selesai') {
+            const [rows] = await req.db.query('SELECT t.*, c.phone FROM dp_tasks t LEFT JOIN customers c ON t.customerId = c.id WHERE t.id = ?', [req.params.id]);
+            if (rows.length > 0) sendDoneNotification(rows[0]);
+        }
+
         res.json({ message: 'Task berhasil diupdate!' });
     } catch (error) {
         console.error('PUT dp_tasks error:', error);
@@ -125,9 +143,23 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
     try {
         const { status } = req.body;
         await req.db.query('UPDATE dp_tasks SET status = ? WHERE id = ?', [status, req.params.id]);
-        if (status === 'batal') {
-            await req.db.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+        
+        // Fetch info for logging
+        const [rows] = await req.db.query('SELECT t.*, c.phone FROM dp_tasks t LEFT JOIN customers c ON t.customerId = c.id WHERE t.id = ?', [req.params.id]);
+
+        if (rows.length > 0) {
+            // Log activity
+            await logActivity(req.user.id, 'UPDATE_TASK_STATUS', rows[0].customerName, `Status pesanan ${rows[0].id} -> ${status}`, req.ip, req.user.name);
+
+            if (status === 'batal') {
+                await req.db.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+            } else if (status === 'produksi' || status === 'proses') {
+                sendProcessNotification(rows[0]);
+            } else if (status === 'selesai') {
+                sendDoneNotification(rows[0]);
+            }
         }
+
         res.json({ message: 'Status task diupdate!' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal memindah status' });
@@ -137,7 +169,14 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
 // 6. DELETE Task
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
+        const [taskArr] = await req.db.query('SELECT id, title FROM dp_tasks WHERE id = ?', [req.params.id]);
+        const taskInfo = taskArr.length > 0 ? `${taskArr[0].title} (${taskArr[0].id})` : req.params.id;
+
         await req.db.query('DELETE FROM dp_tasks WHERE id = ?', [req.params.id]);
+
+        // Log activity
+        await logActivity(req.user.id, 'DELETE_TASK', 'Percetakan', `Hapus pesanan cetak: ${taskInfo}`, req.ip, req.user.name);
+
         res.json({ message: 'Task dihapus' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal hapus task' });

@@ -123,8 +123,9 @@ const getActivePool = async (req) => {
         }
         return standalonePool;
     }
-    return req.db || masterPool;
+    return (req && req.db) || masterPool;
 };
+
 
 /**
  * Get or create a MySQL pool for a specific tenant (SaaS Mode)

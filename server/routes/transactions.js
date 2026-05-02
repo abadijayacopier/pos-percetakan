@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
-const { sendInvoiceNotification } = require('../utils/notificationHelper');
+const { sendInvoiceNotification, checkCriticalStock } = require('../utils/notificationHelper');
 
 // 1. GET Semua Transaksi
 router.get('/', verifyToken, async (req, res) => {
@@ -32,10 +32,14 @@ router.get('/', verifyToken, async (req, res) => {
         const result = rows.map(t => ({
             ...t,
             invoiceNo: t.invoice_no || t.invoiceNo,
+            invoiceNumber: t.invoice_no || t.invoiceNo,
             customerName: t.customer_name || t.customerName,
+            customerPhone: t.customer_phone || t.customerPhone,
             userName: t.user_name || t.userName,
             paymentType: t.payment_type || t.paymentType,
             changeAmount: t.change_amount || t.changeAmount,
+            paidAmount: t.paid || 0,
+            createdAt: t.date,
             items: detailsMap[t.id] || []
         }));
         res.json(result);
@@ -89,14 +93,11 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         } = req.body;
 
         const newTrxId = 't' + Date.now();
-        // Use local time for MySQL saving to match user expectations (WIB)
-        const localDate = new Date(date || new Date());
-        const mysqlDate = localDate.getFullYear() + '-' +
-            String(localDate.getMonth() + 1).padStart(2, '0') + '-' +
-            String(localDate.getDate()).padStart(2, '0') + ' ' +
-            String(localDate.getHours()).padStart(2, '0') + ':' +
-            String(localDate.getMinutes()).padStart(2, '0') + ':' +
-            String(localDate.getSeconds()).padStart(2, '0');
+        
+        // Handle date: Use provided date or current time, adjusted for local timezone offset
+        const dateObj = date ? new Date(date) : new Date();
+        const offset = dateObj.getTimezoneOffset() * 60000;
+        const mysqlDate = new Date(dateObj.getTime() - offset).toISOString().slice(0, 19).replace('T', ' ');
 
         // Fetch Tax Settings
         const [settingsRows] = await connection.query('SELECT value FROM settings WHERE `key` = "tax_enabled"');
@@ -112,11 +113,10 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
         // 3a. Insert Transaction Header
         const validCustomerId = (customerId && customerId !== 'null' && customerId !== 'undefined' && String(customerId).trim() !== '') ? customerId : null;
 
-        await connection.query(`
-      INSERT INTO transactions 
-      (id, invoice_no, date, customer_id, customer_name, customer_wa, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status, notes]);
+        const [trxResult] = await connection.query(`
+            INSERT INTO transactions (id, invoice_no, date, customer_id, customer_name, customer_phone, user_id, user_name, type, subtotal, discount, tax_amount, total, paid, change_amount, payment_type, status, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [newTrxId, invoiceNo, mysqlDate, validCustomerId, customerName || 'Umum', customerWa || null, req.user.id, req.user.name, type, subtotal, discount, calculatedTax, total, paid, changeAmount, paymentType, status, notes]);
 
         // 3b. Insert Transaction Details & Update Stok
         for (const item of items) {
@@ -137,6 +137,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
           INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
           VALUES (?, 'out', ?, ?, 'Penjualan POS')
         `, [productId, item.qty, invoiceNo]);
+                
+                // Trigger stock check after update
+                checkCriticalStock(connection, productId).catch(err => console.error('Stock check error:', err));
             }
 
             // Digital Printing & Service Integration (Isolated per Tenant)
@@ -256,10 +259,16 @@ router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, 
 // 5b. Update Transaksi (Edit General)
 router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        const { customerName, paidAmount, paymentType, notes } = req.body;
+        const { customerName, paidAmount, paymentType, notes, status } = req.body;
+        
+        // Map frontend status 'Lunas'/'Cicil' to backend status 'paid'/'debt' if provided
+        let dbStatus = status;
+        if (status === 'Lunas') dbStatus = 'paid';
+        if (status === 'Cicil') dbStatus = 'debt';
+
         await req.db.query(
-            'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ? WHERE id = ?',
-            [customerName, paidAmount, paymentType, notes, req.params.id]
+            'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status) WHERE id = ?',
+            [customerName, paidAmount, paymentType, notes, dbStatus || null, req.params.id]
         );
         res.json({ message: 'Transaksi diupdate!' });
     } catch (error) {
@@ -299,6 +308,34 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
     } catch (e) {
         if (connection) await connection.rollback();
         res.status(500).json({ message: 'Gagal mencatat pembayaran' });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// 7. Batal Pelunasan (Admin Only)
+router.put('/:id/cancel-settlement', verifyToken, requireRole(['admin']), async (req, res) => {
+    const connection = await req.db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const { id } = req.params;
+
+        const [trxArr] = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
+        if (trxArr.length === 0) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
+        const trx = trxArr[0];
+
+        // Reset status ke debt dan nominal paid dikurangi (atau bisa juga ditanya nominalnya, tapi biasanya batal lunas itu reset ke sisa)
+        // Disini kita set status ke 'debt' saja. Nominal paid tetap apa adanya agar admin bisa edit manual nominalnya di modal Edit.
+        await connection.query('UPDATE transactions SET status = "debt" WHERE id = ?', [id]);
+
+        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'cancel_payment', 'Transaction', `BATAL PELUNASAN (Admin) - Invoice ${trx.invoice_no || id}`, req.ip || null]);
+
+        await connection.commit();
+        res.json({ message: 'Status pelunasan berhasil dibatalkan!' });
+    } catch (e) {
+        if (connection) await connection.rollback();
+        res.status(500).json({ message: 'Gagal membatalkan pelunasan' });
     } finally {
         if (connection) connection.release();
     }

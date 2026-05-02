@@ -232,6 +232,36 @@ export default function CashierPaymentPage({ onNavigate }) {
         }
     };
 
+    const handleCancelSettle = async (trx) => {
+        const { isConfirmed } = await Swal.fire({
+            title: 'Batalkan Pelunasan?',
+            text: `Invoice ${trx.invoiceNo} akan dikembalikan ke status BELUM LUNAS. Data nominal pembayaran tetap ada namun status berubah agar bisa diedit kembali.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Batalkan!',
+            cancelButtonText: 'Tutup'
+        });
+
+        if (isConfirmed) {
+            try {
+                await api.put(`/transactions/${trx.id}/cancel-settlement`);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: 'Status pelunasan berhasil dibatalkan!',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                reload();
+            } catch (e) {
+                console.error(e);
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal membatalkan pelunasan', timer: 3000 });
+            }
+        }
+    };
+
     const handleSearch = (v) => { setSearch(v); setPage(1); };
     const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
@@ -390,6 +420,16 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
                                                         >
                                                             <FiDollarSign /> Lunasi
+                                                        </button>
+                                                    )}
+
+                                                    {isLunas && user?.role === 'admin' && (
+                                                        <button
+                                                            onClick={() => handleCancelSettle(t)}
+                                                            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
+                                                            title="Batalkan Status Lunas"
+                                                        >
+                                                            <FiAlertTriangle /> Batal
                                                         </button>
                                                     )}
 

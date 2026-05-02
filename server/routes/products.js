@@ -100,6 +100,8 @@ router.post('/categories', verifyToken, requireRole(['kasir', 'admin']), async (
     }
 });
 
+const { logActivity } = require('../utils/logger');
+
 // 3. POST Tambah Produk Baru
 router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('image'), async (req, res) => {
     try {
@@ -119,6 +121,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), upload.single('im
       (id, code, name, category_id, buy_price, sell_price, stock, min_stock, unit, emoji, image) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [newId, code, name, validCategoryId, buyPrice, sellPrice, stock, minStock, unit, emoji || '📦', imageUrl]);
+
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_PRODUCT', name, `Tambah produk: ${name} (${code})`, req.ip, req.user.name);
 
         res.status(201).json({ message: 'Produk berhasil ditambahkan!', id: newId, image: imageUrl });
     } catch (error) {
@@ -162,6 +167,9 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('
             return res.status(404).json({ message: 'Produk tidak ditemukan' });
         }
 
+        // Log activity
+        await logActivity(req.user.id, 'UPDATE_PRODUCT', name, `Update produk: ${name}`, req.ip, req.user.name);
+
         res.json({ message: 'Produk berhasil diperbarui!', image: imageUrl });
     } catch (error) {
         console.error(error);
@@ -173,11 +181,17 @@ router.put('/:id', verifyToken, requireRole(['kasir', 'admin']), upload.single('
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
+        const [prodArr] = await req.db.query('SELECT name FROM products WHERE id = ?', [id]);
+        const productName = prodArr.length > 0 ? prodArr[0].name : 'Unknown';
+
         const [result] = await req.db.query('DELETE FROM products WHERE id = ?', [id]);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Produk tidak ditemukan' });
         }
+
+        // Log activity
+        await logActivity(req.user.id, 'DELETE_PRODUCT', productName, `Hapus produk ID: ${id}`, req.ip, req.user.name);
 
         res.json({ message: 'Produk berhasil dihapus!' });
     } catch (error) {
@@ -219,6 +233,10 @@ router.post('/:id/opname', verifyToken, requireRole(['admin', 'kasir', 'operator
                  VALUES (?, 'adjust', ?, 'Opname', ?)`,
                 [id, diff, notes || `Penyesuaian stok opname (${systemStock} -> ${actualStock})`]
             );
+
+            // Trigger stock check after opname
+            const { checkCriticalStock } = require('../utils/notificationHelper');
+            checkCriticalStock(connection, id).catch(err => console.error('Stock check error:', err));
 
             // Log activity manually or using refined logger
             await connection.query(

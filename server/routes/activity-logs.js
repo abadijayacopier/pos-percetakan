@@ -7,9 +7,17 @@ const { verifyToken } = require('../middleware/auth');
 router.get('/', verifyToken, async (req, res) => {
     try {
         const [rows] = await req.db.query(`
-            SELECT al.id, al.user_id, al.user_name, al.action, al.detail, al.timestamp
-            FROM activity_log al
-            ORDER BY al.id DESC
+            SELECT 
+                id, 
+                user_id, 
+                user_name as username, 
+                action, 
+                target, 
+                detail as details, 
+                ip_address, 
+                timestamp as created_at
+            FROM activity_log
+            ORDER BY id DESC
             LIMIT 500
         `);
         res.json(rows);

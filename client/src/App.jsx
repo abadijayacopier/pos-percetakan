@@ -27,7 +27,6 @@ import SPKDetailPage from './pages/SPKDetailPage';
 import SPKSettlementPage from './pages/SPKSettlementPage';
 import CashierPaymentPage from './pages/CashierPaymentPage';
 import HandoverPage from './pages/HandoverPage';
-import WASettingsPage from './pages/WASettingsPage';
 import PrintInvoicePage from './pages/PrintInvoicePage';
 import PrintLabelPage from './pages/PrintLabelPage';
 import PrintSPKPage from './pages/PrintSPKPage';
@@ -55,14 +54,30 @@ import SubscriptionExpiredPage from './pages/SubscriptionExpiredPage';
 export default function App() {
   const { user, loading, logout } = useAuth();
   const [activePage, setActivePage] = useState(() => {
+    // Check if there's a saved page from before refresh
+    const savedPage = localStorage.getItem('abadi_pos_active_page');
+    
     // Public landing page by default if not logged in
     if (!user) return 'landing';
-    // Auto-redirect desainer to their dashboard
+
+    // If we have a saved page and it's not a restricted/one-time page, use it
+    if (savedPage && !['landing', 'login', 'superadmin-login', 'subscription-expired'].includes(savedPage)) {
+      return savedPage;
+    }
+
+    // Auto-redirect based on roles if no saved page
     if (user?.role?.toLowerCase() === 'desainer') return 'dashboard-desainer';
     if (user?.role?.toLowerCase() === 'teknisi') return 'dashboard-teknisi';
     if (user?.role?.toLowerCase() === 'kasir') return 'pos';
     return 'dashboard';
   });
+
+  // Persist active page on every change
+  useEffect(() => {
+    if (activePage && !['landing', 'login', 'superadmin-login'].includes(activePage)) {
+      localStorage.setItem('abadi_pos_active_page', activePage);
+    }
+  }, [activePage]);
   const [storeSettings, setStoreSettings] = useState({
     name: 'FOTOCOPY ABADI JAYA',
     address: 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan',
@@ -418,7 +433,6 @@ export default function App() {
       case 'spk-settlement': return <SPKSettlementPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'kasir-payment': return <CashierPaymentPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'handover': return <HandoverPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'wa-settings': return <WASettingsPage onNavigate={handleNavigate} />;
       case 'print-invoice': return <PrintInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-label': return <PrintLabelPage onNavigate={handleNavigate} pageState={pageState} />;
       case 'print-spk': return <PrintSPKPage onNavigate={handleNavigate} pageState={pageState} />;

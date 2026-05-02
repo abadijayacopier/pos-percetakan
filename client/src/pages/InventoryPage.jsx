@@ -33,7 +33,8 @@ import {
     FiBarChart2,
     FiCheck,
     FiUpload,
-    FiDownload
+    FiDownload,
+    FiSend
 } from 'react-icons/fi';
 import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -472,6 +473,21 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                         <FiUpload /> Impor Excel
                     </button>
                     <button
+                        onClick={async () => {
+                            try {
+                                const res = await api.post('/settings/telegram-report', { type: 'stock' });
+                                if (res.data.success) {
+                                    Swal.fire({ icon: 'success', title: 'Terkirim!', text: 'Laporan Stok Rendah berhasil dikirim ke Telegram.', timer: 1500, showConfirmButton: false });
+                                }
+                            } catch (err) {
+                                Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || err.message });
+                            }
+                        }}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-sky-500/20 active:scale-95 group"
+                    >
+                        <FiSend className="group-hover:translate-x-0.5 transition-transform" /> Telegram Stok
+                    </button>
+                    <button
                         onClick={openAdd}
                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95"
                     >
@@ -479,6 +495,7 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                     </button>
                 </div>
             </div>
+
 
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

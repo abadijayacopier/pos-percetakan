@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronRight, FiZap, FiShoppingCart, FiBell, FiUser, FiSettings, FiLogOut, FiEdit, FiMaximize, FiInbox, FiSun, FiMoon } from 'react-icons/fi';
+import { FiChevronRight, FiZap, FiShoppingCart, FiBell, FiUser, FiSettings, FiLogOut, FiEdit, FiMaximize, FiInbox, FiSun, FiMoon, FiSend } from 'react-icons/fi';
 import ThemeToggle from '../ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -74,6 +74,27 @@ export default function PosHeader({
                     <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-1"></div>
                     
                     <motion.button
+                        whileHover={{ scale: 1.1, backgroundColor: 'rgba(14, 165, 233, 0.1)' }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={async () => {
+                            try {
+                                const res = await api.post('/settings/telegram-report', { type: 'daily' });
+                                if (res.data.success) {
+                                    Swal.fire({ icon: 'success', title: 'Terkirim!', text: 'Laporan telah dikirim ke Telegram.', timer: 1500, showConfirmButton: false });
+                                }
+                            } catch (err) {
+                                Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || err.message });
+                            }
+                        }}
+                        title="Kirim Laporan ke Telegram"
+                        className="p-2.5 rounded-xl text-slate-400 hover:text-sky-500 transition-all"
+                    >
+                        <FiSend className="text-xl" />
+                    </motion.button>
+
+                    <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-1"></div>
+                    
+                    <motion.button
                         whileHover={{ scale: 1.1, backgroundColor: 'rgba(59, 130, 246, 0.1)' }}
                         whileTap={{ scale: 0.9 }}
                         onClick={onToggleFullscreen}
@@ -82,6 +103,7 @@ export default function PosHeader({
                     >
                         <FiMaximize className="text-xl" />
                     </motion.button>
+
                     
                     <motion.button
                         whileHover={{ scale: 1.1, backgroundColor: 'rgba(59, 130, 246, 0.1)' }}

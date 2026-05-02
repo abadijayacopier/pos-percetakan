@@ -22,11 +22,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+const { logActivity } = require('../utils/logger');
+
 // 7. DELETE Order Service
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
+
+        const [orders] = await connection.query('SELECT service_no, customer_name FROM service_orders WHERE id = ?', [req.params.id]);
+        const orderInfo = orders.length > 0 ? `${orders[0].service_no} (${orders[0].customer_name})` : req.params.id;
 
         const [parts] = await connection.query('SELECT productId, qty FROM service_spareparts WHERE service_order_id = ?', [req.params.id]);
 
@@ -43,6 +48,9 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
             await connection.rollback();
             return res.status(404).json({ message: 'Tiket tidak ditemukan.' });
         }
+
+        // Log activity
+        await logActivity(req.user.id, 'DELETE_SERVICE', 'Service', `Hapus tiket service: ${orderInfo}`, req.ip, req.user.name);
 
         await connection.commit();
         res.json({ message: 'Tiket service berhasil dihapus dan stok dikembalikan.' });
@@ -134,6 +142,9 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
             await connection.query('UPDATE customers SET total_trx = total_trx + 1 WHERE id = ?', [customerId]);
         }
 
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_SERVICE', customerName, `Terima service baru: ${serviceNo} (${machineInfo})`, req.ip, req.user.name);
+
         await connection.commit();
 
         // Send WhatsApp Notification
@@ -159,7 +170,7 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
         await connection.beginTransaction();
         const {
             diagnosis, laborCost, status, spareparts, warrantyEnd, dpAmount, technicianId,
-            customerId, customerName, phone, machineInfo, serialNo, complaint
+            customerId, customerName, phone, machineInfo, serialNo, complaint, serviceNo
         } = req.body;
 
         const conditionPhysic = req.body.conditionPhysic || req.body.condition;
@@ -196,6 +207,9 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
         const grandTotal = (parseInt(laborCost) || 0) + totalSparepartCost;
         await connection.query('UPDATE service_orders SET total_cost = ? WHERE id = ?', [grandTotal, req.params.id]);
 
+        // Log activity
+        await logActivity(req.user.id, 'UPDATE_SERVICE', customerName, `Update diagnosa service: ${serviceNo || req.params.id}`, req.ip, req.user.name);
+
         await connection.commit();
         res.json({ message: 'Data pengerjaan berhasil diupdate!' });
     } catch (error) {
@@ -212,15 +226,20 @@ router.patch('/:id/status', verifyToken, requireRole(['teknisi', 'admin', 'kasir
         const { status } = req.body;
         await req.db.query('UPDATE service_orders SET status = ? WHERE id = ?', [status, req.params.id]);
 
-        // Send WhatsApp Notification if finished
-        if (status === 'selesai' || status === 'Selesai') {
-            try {
-                const [rows] = await req.db.query('SELECT service_no as serviceNo, customer_name as customerName, phone, machine_info as machineInfo FROM service_orders WHERE id = ?', [req.params.id]);
-                if (rows.length > 0) {
+        // Fetch info for logging
+        const [rows] = await req.db.query('SELECT service_no as serviceNo, customer_name as customerName, phone, machine_info as machineInfo FROM service_orders WHERE id = ?', [req.params.id]);
+        
+        if (rows.length > 0) {
+            // Log activity
+            await logActivity(req.user.id, 'UPDATE_SERVICE_STATUS', rows[0].customerName, `Status service ${rows[0].serviceNo} -> ${status}`, req.ip, req.user.name);
+
+            // Send WhatsApp Notification if finished
+            if (status === 'selesai' || status === 'Selesai') {
+                try {
                     await sendServiceNotification(rows[0], 'done');
+                } catch (waErr) {
+                    console.error('Gagal kirim notifikasi WA service selesai:', waErr);
                 }
-            } catch (waErr) {
-                console.error('Gagal kirim notifikasi WA service selesai:', waErr);
             }
         }
 
@@ -246,10 +265,14 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
             VALUES (?, ?, 'in', 'Service Mesin', ?, ?, ?)
         `, [cashFlowId, date, totalCost, `Biaya Service ${serviceNo}`, req.params.id]);
 
-        const [orderRows] = await connection.query('SELECT customer_id FROM service_orders WHERE id = ?', [req.params.id]);
+        const [orderRows] = await connection.query('SELECT customer_id, customer_name FROM service_orders WHERE id = ?', [req.params.id]);
         if (orderRows.length > 0 && orderRows[0].customer_id) {
             await connection.query('UPDATE customers SET total_spend = total_spend + ? WHERE id = ?', [totalCost, orderRows[0].customer_id]);
         }
+
+        // Log activity
+        const custName = orderRows.length > 0 ? orderRows[0].customer_name : 'Pelanggan';
+        await logActivity(req.user.id, 'PAY_SERVICE', custName, `Pelunasan service: ${serviceNo} - Rp ${totalCost.toLocaleString('id-ID')}`, req.ip, req.user.name);
 
         await connection.commit();
         res.json({ message: 'Pembayaran service berhasil diproses!' });

@@ -7,7 +7,7 @@ import {
     FiFileText, FiPlus, FiEdit, FiCheckCircle, FiClock, FiUsers,
     FiPackage, FiArrowRight, FiTag, FiTrendingUp, FiActivity,
     FiChevronLeft, FiChevronRight, FiInbox, FiLayers, FiBriefcase, FiRefreshCw,
-    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand, FiPieChart, FiAlertTriangle
+    FiServer, FiEdit3, FiPlusSquare, FiTool, FiCommand, FiPieChart, FiAlertTriangle, FiSend
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -406,7 +406,59 @@ export default function DashboardPage({ onNavigate }) {
                             </div>
                         </div>
 
+                        {/* Telegram Command Center */}
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-sky-500/10 rounded-lg text-sky-500">
+                                    <FiCommand size={16} />
+                                </div>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Telegram Command Center</h4>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await api.post('/settings/telegram-report', { type: 'daily' });
+                                            if (res.data.success) {
+                                                alert('Laporan Penjualan Hari Ini berhasil dikirim ke Telegram! ✅');
+                                            }
+                                        } catch (err) {
+                                            alert('Gagal kirim Telegram: ' + (err.response?.data?.message || err.message));
+                                        }
+                                    }}
+                                    className="w-full p-4 bg-sky-500 text-white rounded-2xl flex items-center justify-between hover:bg-sky-600 transition-all shadow-lg shadow-sky-500/20 group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FiActivity size={18} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Kirim Laporan Omset Hari Ini</span>
+                                    </div>
+                                    <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const res = await api.post('/settings/telegram-report', { type: 'stock' });
+                                            if (res.data.success) {
+                                                alert('Laporan Stok Rendah berhasil dikirim ke Telegram! 📦');
+                                            }
+                                        } catch (err) {
+                                            alert('Gagal kirim Telegram: ' + (err.response?.data?.message || err.message));
+                                        }
+                                    }}
+                                    className="w-full p-4 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl flex items-center justify-between hover:bg-slate-200 dark:hover:bg-slate-700 transition-all group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <FiAlertCircle size={18} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Cek Stok Kritis (Telegram)</span>
+                                    </div>
+                                    <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
+                                </button>
+                            </div>
+                            <p className="text-[8px] text-center text-slate-400 italic font-medium px-4">Pastikan Telegram Bot sudah dikonfigurasi & diaktifkan di Pengaturan.</p>
+                        </div>
+
                         {/* Terminal Health Statistics */}
+
                         <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] text-slate-800 dark:text-white border border-slate-200 dark:border-slate-800 space-y-6 relative overflow-hidden group shadow-sm dark:shadow-none">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
 
@@ -705,14 +757,21 @@ export default function DashboardPage({ onNavigate }) {
                                             <div className="pt-0.5 overflow-hidden">
                                                 <p className="text-[10px] font-black text-cyan-600 uppercase tracking-tighter truncate">{log.userName || 'System'}</p>
                                                 <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                                                    {log.action}
+                                                    {log.action} {log.target && <span className="text-cyan-600 dark:text-cyan-400">→ {log.target}</span>}
                                                 </p>
                                                 <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-tight italic opacity-80">"{log.detail}"</p>
-                                                <div className="flex items-center gap-1.5 mt-2 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic leading-none">
-                                                    <FiClock size={10} />
-                                                    {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
-                                                        ? new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                                        : 'Baru saja'}
+                                                 <div className="flex flex-col gap-1.5 mt-2">
+                                                    <div className="flex items-center gap-1.5 font-code font-black text-[9px] text-slate-300 dark:text-slate-600 uppercase tracking-widest italic leading-none">
+                                                        <FiClock size={10} />
+                                                        {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
+                                                            ? new Date(log.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                                                            : 'Baru saja'}
+                                                    </div>
+                                                    <div className="text-[8px] font-black text-slate-400 dark:text-slate-700 uppercase tracking-widest italic leading-none">
+                                                        {log.timestamp && !isNaN(new Date(log.timestamp).getTime())
+                                                            ? new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(log.timestamp))
+                                                            : ''}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </motion.div>

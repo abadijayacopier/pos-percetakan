@@ -83,12 +83,22 @@ router.post('/login', async (req, res) => {
             { expiresIn: '7d' }
         );
 
-        // Activity Log
+        // Activity Log & Security Alert
         try {
+            const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
             await tenantDb.query(
-                'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-                [user.id, user.name, 'LOGIN', 'Auth', `Login sukses ke Toko ID: ${resolvedShopId}`, req.ip || null]
+                'INSERT INTO activity_log (user_id, user_name, action, detail, timestamp) VALUES (?, ?, ?, ?, NOW())',
+                [user.id, user.name, 'LOGIN', `Login sukses ke Toko ID: ${resolvedShopId} via IP: ${userIp}`]
             );
+
+            // Send Security Alert via Telegram
+            const { sendSecurityAlert } = require('../utils/notificationHelper');
+            await sendSecurityAlert(tenantDb, {
+                name: user.name,
+                username: user.username,
+                role: user.role,
+                ip: userIp
+            });
         } catch (logError) {
             console.error('Login Activity Log Error:', logError.message);
         }
@@ -104,6 +114,7 @@ router.post('/login', async (req, res) => {
                 shopId: resolvedShopId
             }
         });
+
 
     } catch (error) {
         console.error('Login Error:', error);

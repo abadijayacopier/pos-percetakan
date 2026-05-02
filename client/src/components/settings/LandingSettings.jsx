@@ -2,9 +2,6 @@ import { FiHome, FiBriefcase, FiStar, FiImage, FiPlus, FiTrash2, FiSave } from '
 import { resizeImage } from '../../utils';
 
 export default function LandingSettings({
-    storeName, setStoreName,
-    storeAddress, setStoreAddress,
-    storePhone, setStorePhone,
     storeMapsUrl, setStoreMapsUrl,
     landingLogo, setLandingLogo,
     landingFavicon, setLandingFavicon,
@@ -14,47 +11,27 @@ export default function LandingSettings({
 }) {
     return (
         <div className="space-y-8 pb-12">
-            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-4xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-                <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-slate-50/80 dark:bg-slate-800/50">
-                    <FiHome className="text-blue-600" />
-                    <h3 className="font-bold text-slate-800 dark:text-white">Identitas Toko & Kontak</h3>
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden p-8 max-w-3xl">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                        <FiHome size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Lokasi & Peta</h3>
+                        <p className="text-sm text-slate-500">Link navigasi toko untuk mempermudah pelanggan menemukan lokasi Bapak.</p>
+                    </div>
                 </div>
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Toko (Header)</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Google Maps URL</label>
                         <input
-                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                            placeholder="Contoh: Abadi Jaya Copier"
-                            value={storeName}
-                            onChange={(e) => setStoreName(e.target.value)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">No. WhatsApp Toko</label>
-                        <input
-                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                            placeholder="Contoh: 08123456789"
-                            value={storePhone}
-                            onChange={(e) => setStorePhone(e.target.value)}
-                        />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Alamat Lengkap Toko</label>
-                        <textarea
-                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white h-24 resize-none"
-                            placeholder="Masukkan alamat lengkap toko Anda..."
-                            value={storeAddress}
-                            onChange={(e) => setStoreAddress(e.target.value)}
-                        />
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Google Maps URL</label>
-                        <input
-                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                            className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
                             placeholder="Paste link dari Google Maps..."
                             value={storeMapsUrl}
                             onChange={(e) => setStoreMapsUrl(e.target.value)}
                         />
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1">* Informasi Nama, Alamat, dan No. WhatsApp sekarang dikelola di menu "PENGATURAN UMUM"</p>
                     </div>
                 </div>
             </div>

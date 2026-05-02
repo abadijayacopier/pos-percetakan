@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
+const { logActivity } = require('../utils/logger');
+
 // GET all users (Admin only)
 router.get('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
@@ -37,6 +39,10 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
             'INSERT INTO users (name, username, password, role, is_active) VALUES (?, ?, ?, ?, ?)',
             [name, username, hashed, role, isActive]
         );
+
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_USER', name, `Tambah user baru: ${username} (${role})`, req.ip, req.user.name);
+
         res.json({ id: result.insertId, name, username, role, isActive });
     } catch (e) {
         console.error(e);
@@ -66,6 +72,10 @@ router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
                 [name, username, role, is_active, id]
             );
         }
+
+        // Log activity
+        await logActivity(req.user.id, 'UPDATE_USER', name, `Update data user: ${username}`, req.ip, req.user.name);
+
         res.json({ message: 'Pengguna berhasil diperbarui' });
     } catch (e) {
         console.error(e);
@@ -77,7 +87,14 @@ router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
+        const [userArr] = await req.db.query('SELECT name, username FROM users WHERE id = ?', [id]);
+        const userName = userArr.length > 0 ? userArr[0].name : 'Unknown';
+
         await req.db.query('DELETE FROM users WHERE id = ?', [id]);
+
+        // Log activity
+        await logActivity(req.user.id, 'DELETE_USER', userName, `Hapus user ID: ${id}`, req.ip, req.user.name);
+
         res.json({ message: 'Pengguna berhasil dihapus' });
     } catch (e) {
         console.error(e);

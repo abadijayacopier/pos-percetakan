@@ -8,6 +8,16 @@ require('./config/firebase');
 const licenseGuard = require('./middleware/licenseGuard');
 
 const app = express();
+
+// Global Error Handlers to prevent crash
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});
+
 const PORT = process.env.PORT || 5001;
 
 // Middleware
@@ -56,7 +66,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/purchases', require('./routes/purchases'));
 app.use('/api/qris', require('./routes/qris'));
-app.use('/api/dp_tasks', require('./routes/dp_tasks'));
+app.use('/api/dp-tasks', require('./routes/dp_tasks'));
 app.use('/api/handovers', require('./routes/handovers'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/employees', require('./routes/employees'));
@@ -98,7 +108,16 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
         console.log(`🚀 Server backend berjalan di http://localhost:${PORT}`);
+        
+        // Start Telegram Bot Polling (Interactive Commands)
+        try {
+            const { startPolling } = require('./utils/telegramBot');
+            startPolling();
+        } catch (e) {
+            console.error('❌ Gagal mengaktifkan Telegram Bot Polling:', e.message);
+        }
     });
 };
+
 
 startServer();

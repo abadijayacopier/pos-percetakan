@@ -185,6 +185,9 @@ export default function SuppliersPage() {
     const [deleteItem, setDeleteItem] = useState(null);
     const [toastMsg, setToastMsg] = useState(null);
 
+    const [page, setPage] = useState(1);
+    const PER_PAGE = 12;
+
     const toast = useCallback((msg, type = 'success') => setToastMsg({ msg, type }), []);
 
     const fetchSuppliers = useCallback(async () => {
@@ -218,6 +221,11 @@ export default function SuppliersPage() {
         const q = search.toLowerCase();
         return !q || s.name.toLowerCase().includes(q) || (s.contact_person || '').toLowerCase().includes(q) || (s.phone || '').includes(q);
     });
+
+    const totalPages = Math.ceil(filtered.length / PER_PAGE);
+    const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    const handleSearch = (v) => { setSearch(v); setPage(1); };
 
     return (
         <div className="flex flex-col h-full bg-slate-50 dark:bg-[#0b0f1a] fade-in relative overflow-hidden font-inter">
@@ -292,7 +300,7 @@ export default function SuppliersPage() {
                                     className="w-full sm:w-80 pl-14 pr-6 py-5 rounded-[2rem] bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl border border-white dark:border-slate-800 shadow-2xl shadow-slate-200/40 dark:shadow-none focus:ring-4 focus:ring-blue-500/10 dark:text-white transition-all outline-none font-black text-sm relative z-10"
                                     placeholder="Cari partner bisnis..."
                                     value={search}
-                                    onChange={e => setSearch(e.target.value)}
+                                    onChange={e => handleSearch(e.target.value)}
                                 />
                             </div>
                             <button
@@ -345,7 +353,7 @@ export default function SuppliersPage() {
                                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="w-16 h-16 border-[6px] border-blue-500/20 border-t-blue-600 rounded-full mb-6 shadow-lg shadow-blue-500/10" />
                                 <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Sinkronisasi Ecosystem...</p>
                             </div>
-                        ) : filtered.length === 0 ? (
+                        ) : paginated.length === 0 ? (
                             <div className="h-96 flex flex-col items-center justify-center text-center p-12 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[4rem] border border-white dark:border-slate-800 shadow-2xl">
                                 <motion.div
                                     initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -355,88 +363,123 @@ export default function SuppliersPage() {
                                 </motion.div>
                                 <h3 className="text-4xl font-black text-slate-800 dark:text-white mb-4 font-premium tracking-tighter">Entitas Tidak Ditemukan</h3>
                                 <p className="text-slate-500 dark:text-slate-400 font-bold max-w-sm leading-relaxed text-lg">Pencarian Bapak tidak membuahkan hasil dalam sistem radar kami.</p>
-                                <button onClick={() => setSearch('')} className="mt-8 text-blue-600 font-black uppercase tracking-widest text-sm hover:underline">Reset Pencarian</button>
+                                <button onClick={() => handleSearch('')} className="mt-8 text-blue-600 font-black uppercase tracking-widest text-sm hover:underline">Reset Pencarian</button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-10">
-                                {filtered.map((s, idx) => (
-                                    <motion.div
-                                        key={s.id}
-                                        initial={{ opacity: 0, y: 30 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.6, delay: Math.min(idx * 0.08, 0.5) }}
-                                        className="premium-card p-10 group relative overflow-hidden rounded-[3.5rem] hover:ring-2 hover:ring-blue-500/20"
-                                    >
-                                        {/* Decorative elements */}
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-500/10 transition-colors" />
-                                        <div className="absolute bottom-0 left-0 w-2 h-0 bg-blue-600 group-hover:h-full transition-all duration-500 ease-out" />
+                            <div className="space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                                    {paginated.map((s, idx) => (
+                                        <motion.div
+                                            key={s.id}
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.6, delay: Math.min(idx * 0.08, 0.5) }}
+                                            className="premium-card p-10 group relative overflow-hidden rounded-[3.5rem] hover:ring-2 hover:ring-blue-500/20"
+                                        >
+                                            {/* Decorative elements */}
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-blue-500/10 transition-colors" />
+                                            <div className="absolute bottom-0 left-0 w-2 h-0 bg-blue-600 group-hover:h-full transition-all duration-500 ease-out" />
+                                            
+                                            <div className="flex justify-between items-start mb-10 relative z-10">
+                                                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 text-blue-600 dark:text-blue-400 rounded-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner border border-white dark:border-slate-800">
+                                                    <FiTruck size={28} />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button onClick={() => { setEditItem(s); setIsModalOpen(true); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-blue-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
+                                                        <FiEdit3 size={18} />
+                                                    </button>
+                                                    <button onClick={() => setDeleteItem(s)} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-rose-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
+                                                        <FiTrash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6 relative z-10">
+                                                <div>
+                                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-[1.1] mb-3 font-premium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight">
+                                                        {s.name}
+                                                    </h3>
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="mt-1 flex-shrink-0"><FiMapPin className="text-blue-500" size={14} /></div>
+                                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+                                                            {s.address || 'LOKASI BELUM TERDEFINISI'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-8 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-5">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner border border-emerald-500/5">
+                                                            <FiUser size={18} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Person In Charge</p>
+                                                            <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight">{s.contact_person || 'No Contact'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-500/5">
+                                                            <FiPhone size={18} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Contact Line</p>
+                                                            <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight font-mono">{s.phone || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {s.notes && (
+                                                    <motion.div 
+                                                        initial={{ opacity: 0.8 }}
+                                                        whileHover={{ opacity: 1 }}
+                                                        className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] italic text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed border border-dashed border-slate-200 dark:border-slate-700 transition-all"
+                                                    >
+                                                        <FiFileText className="inline mr-2 text-slate-300" size={14} />
+                                                        "{s.notes}"
+                                                    </motion.div>
+                                                )}
+                                            </div>
+
+                                            {/* Action Hint */}
+                                            <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800/30 flex justify-end">
+                                                <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.3em]">Supplier ID: {s.id.toString().padStart(4, '0')}</span>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* Pagination Controls */}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-center gap-4 pt-10">
+                                        <button
+                                            disabled={page === 1}
+                                            onClick={() => setPage(p => p - 1)}
+                                            className="w-14 h-14 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-slate-200/50 dark:shadow-none"
+                                        >
+                                            <FiChevronLeft size={24} />
+                                        </button>
                                         
-                                        <div className="flex justify-between items-start mb-10 relative z-10">
-                                            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-500/10 dark:to-indigo-500/10 text-blue-600 dark:text-blue-400 rounded-3xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 shadow-inner border border-white dark:border-slate-800">
-                                                <FiTruck size={28} />
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <button onClick={() => { setEditItem(s); setIsModalOpen(true); }} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-blue-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
-                                                    <FiEdit3 size={18} />
-                                                </button>
-                                                <button onClick={() => setDeleteItem(s)} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center text-slate-400 hover:text-rose-600 hover:scale-110 transition-all border border-slate-100 dark:border-slate-700">
-                                                    <FiTrash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-6 relative z-10">
-                                            <div>
-                                                <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-[1.1] mb-3 font-premium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors tracking-tight">
-                                                    {s.name}
-                                                </h3>
-                                                <div className="flex items-start gap-3">
-                                                    <div className="mt-1 flex-shrink-0"><FiMapPin className="text-blue-500" size={14} /></div>
-                                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                                                        {s.address || 'LOKASI BELUM TERDEFINISI'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-8 border-t border-slate-100 dark:border-slate-800/60 flex flex-col gap-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shadow-inner border border-emerald-500/5">
-                                                        <FiUser size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Person In Charge</p>
-                                                        <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight">{s.contact_person || 'No Contact'}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shadow-inner border border-indigo-500/5">
-                                                        <FiPhone size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Contact Line</p>
-                                                        <p className="text-sm font-black text-slate-700 dark:text-slate-300 tracking-tight font-mono">{s.phone || 'N/A'}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {s.notes && (
-                                                <motion.div 
-                                                    initial={{ opacity: 0.8 }}
-                                                    whileHover={{ opacity: 1 }}
-                                                    className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] italic text-xs text-slate-500 dark:text-slate-400 line-clamp-3 leading-relaxed border border-dashed border-slate-200 dark:border-slate-700 transition-all"
+                                        <div className="flex items-center gap-2">
+                                            {Array.from({ length: totalPages }).map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setPage(i + 1)}
+                                                    className={`w-14 h-14 rounded-3xl text-sm font-black transition-all ${page === i + 1 ? 'bg-blue-600 text-white shadow-2xl shadow-blue-500/40 scale-110' : 'bg-white dark:bg-slate-900 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800'}`}
                                                 >
-                                                    <FiFileText className="inline mr-2 text-slate-300" size={14} />
-                                                    "{s.notes}"
-                                                </motion.div>
-                                            )}
+                                                    {(i + 1).toString().padStart(2, '0')}
+                                                </button>
+                                            ))}
                                         </div>
 
-                                        {/* Action Hint */}
-                                        <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800/30 flex justify-end">
-                                            <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.3em]">Supplier ID: {s.id.toString().padStart(4, '0')}</span>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                        <button
+                                            disabled={page === totalPages}
+                                            onClick={() => setPage(p => p + 1)}
+                                            className="w-14 h-14 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-xl shadow-slate-200/50 dark:shadow-none"
+                                        >
+                                            <FiChevronRight size={24} />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </motion.div>

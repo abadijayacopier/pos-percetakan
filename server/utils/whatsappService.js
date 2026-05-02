@@ -15,18 +15,28 @@ class WhatsappService {
             'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
             path.join(process.env.USERPROFILE || '', 'AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'),
-            path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe')
+            path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe'),
+            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
         ];
         
         for (const p of paths) {
             if (fs.existsSync(p)) {
-                console.log(`[WA] Found Chrome at: ${p}`);
+                console.log(`[WA] Found Browser at: ${p}`);
+                this.logDebug(`Found Browser at: ${p}`);
                 return p;
             }
         }
-        console.warn('[WA] Chrome not found in standard Windows paths');
+        this.logDebug('No Browser found in standard paths');
         return null;
     }
+
+    logDebug(message) {
+        const logPath = path.join(__dirname, '../wa_debug.log');
+        const timestamp = new Date().toISOString();
+        fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
+    }
+
 
     formatPhoneNumber(number) {
         if (!number) return null;
@@ -56,20 +66,33 @@ class WhatsappService {
         }
 
         console.log(`[WA] Initializing WhatsApp Client for Shop: ${shopId}...`);
+        this.logDebug(`Initializing WA for shop: ${shopId}`);
         
         const clientId = `tenant_${shopId}`;
         const sessionPath = path.join(__dirname, `../.wwebjs_auth/session-${clientId}`);
         
         console.log(`[WA] Session path: ${sessionPath}`);
+        this.logDebug(`Session path: ${sessionPath}`);
 
         // FIX: Remove lock files if they exist (prevents stuck initialization on Windows)
         try {
-            const lockFile = path.join(sessionPath, 'Default/parent.lock');
-            if (fs.existsSync(lockFile)) {
-                fs.unlinkSync(lockFile);
-                console.log(`Removed stale lock file for shop ${shopId}`);
-            }
-        } catch (e) {}
+            const lockFiles = [
+                path.join(sessionPath, 'Default/parent.lock'),
+                path.join(sessionPath, 'SingletonLock'),
+                path.join(sessionPath, 'SingletonSocket'),
+                path.join(sessionPath, 'SingletonCookie'),
+                path.join(sessionPath, 'lockfile')
+            ];
+            lockFiles.forEach(file => {
+                if (fs.existsSync(file)) {
+                    fs.unlinkSync(file);
+                    console.log(`Removed stale lock file: ${file}`);
+                    this.logDebug(`Removed stale lock file: ${file}`);
+                }
+            });
+        } catch (e) {
+            this.logDebug(`Error clearing locks: ${e.message}`);
+        }
 
         const instance = {
             client: null,
@@ -78,6 +101,9 @@ class WhatsappService {
             info: null
         };
         this.instances.set(shopId, instance);
+
+        const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH || this.getChromePath();
+        this.logDebug(`Using Browser Path: ${browserPath || 'Puppeteer Default'}`);
 
         instance.client = new Client({
             authStrategy: new LocalAuth({
@@ -95,24 +121,42 @@ class WhatsappService {
                     '--no-zygote',
                     '--disable-gpu',
                     '--disable-extensions',
-                    '--disable-software-rasterizer'
+                    '--disable-software-rasterizer',
+                    '--ignore-certificate-errors',
+                    '--no-default-browser-check',
+                    '--disable-infobars',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--window-size=1280,720'
                 ],
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || this.getChromePath() || undefined
+                executablePath: browserPath || undefined,
+                handleSIGINT: false,
+                handleSIGTERM: false,
+                handleSIGHUP: false
             },
             webVersionCache: {
                 type: 'remote',
-                remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+                remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.101413.html',
             }
+        });
+
+
+        instance.client.on('loading_screen', (percent, message) => {
+            console.log(`[WA] Shop ${shopId} Loading: ${percent}% - ${message}`);
+            this.logDebug(`Loading Shop ${shopId}: ${percent}% - ${message}`);
+            instance.status = 'loading';
         });
 
         instance.client.on('qr', async (qr) => {
             console.log(`QR Received for Shop: ${shopId}`);
+            this.logDebug(`QR Received for Shop: ${shopId}`);
             instance.status = 'qr';
             instance.qrCodeData = await qrcode.toDataURL(qr);
         });
 
         instance.client.on('ready', () => {
             console.log(`WhatsApp Client for Shop: ${shopId} is ready!`);
+            this.logDebug(`WA for shop ${shopId} is ready!`);
             instance.status = 'ready';
             instance.qrCodeData = null;
             instance.info = instance.client.info;
@@ -120,50 +164,70 @@ class WhatsappService {
 
         instance.client.on('authenticated', () => {
             console.log(`WhatsApp Client for Shop: ${shopId} authenticated`);
+            this.logDebug(`WA for shop ${shopId} authenticated`);
             instance.status = 'authenticated';
         });
 
         instance.client.on('auth_failure', (msg) => {
             console.error(`WhatsApp Auth failure for Shop: ${shopId}:`, msg);
+            this.logDebug(`Auth Failure for shop ${shopId}: ${msg}`);
             instance.status = 'disconnected';
             this.instances.delete(shopId);
         });
 
         instance.client.on('disconnected', (reason) => {
             console.log(`WhatsApp Client for Shop: ${shopId} logged out`, reason);
+            this.logDebug(`Disconnected shop ${shopId}: ${reason}`);
             instance.status = 'disconnected';
             instance.qrCodeData = null;
             instance.info = null;
             this.instances.delete(shopId);
         });
 
+        instance.client.on('error', (err) => {
+            console.error(`[WA Error] Shop ${shopId}:`, err);
+            this.logDebug(`Client Error for shop ${shopId}: ${err.message}`);
+        });
+
+
         try {
+            this.logDebug('Starting initialization...');
             await instance.client.initialize();
+            this.logDebug('Initialization call finished');
         } catch (error) {
             console.error(`Failed to initialize WA for Shop: ${shopId}:`, error);
+            this.logDebug(`Initialization ERROR: ${error.message}`);
             instance.status = 'disconnected';
             this.instances.delete(shopId);
         }
+
     }
 
     async reset(shopId) {
         console.log(`Resetting WhatsApp for Shop: ${shopId}...`);
         const instance = this.instances.get(shopId);
-        if (instance && instance.client) {
-            try {
-                await instance.client.destroy();
-            } catch (e) {}
-        }
-        this.instances.delete(shopId);
-
+        this.logDebug(`Resetting WA for shop: ${shopId}`);
         const clientId = `tenant_${shopId}`;
         const sessionPath = path.join(__dirname, `../.wwebjs_auth/session-${clientId}`);
         
+        if (this.instances.has(shopId)) {
+            const instance = this.instances.get(shopId);
+            try {
+                this.logDebug('Destroying existing client...');
+                await instance.client.destroy();
+            } catch (e) {
+                this.logDebug(`Error destroying client: ${e.message}`);
+            }
+            this.instances.delete(shopId);
+        }
+
         if (fs.existsSync(sessionPath)) {
+            this.logDebug(`Deleting session path: ${sessionPath}`);
             try {
                 fs.rmSync(sessionPath, { recursive: true, force: true });
                 console.log(`Cleared session data for shop ${shopId}`);
             } catch (e) {
+                this.logDebug(`Error deleting session path: ${e.message}`);
                 console.error(`Failed to clear session data for shop ${shopId}:`, e);
             }
         }

@@ -37,15 +37,15 @@ export default function LogSettings({
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                             {activityLog.map(l => (
                                 <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
-                                        {new Date(l.created_at).toLocaleString('id-ID')}
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
+                                        {new Date(l.created_at).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}, {new Date(l.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-400">
-                                                {l.username?.charAt(0).toUpperCase()}
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-black text-blue-600 dark:text-blue-400">
+                                                {(l.username || l.user_name || 'U')?.charAt(0).toUpperCase()}
                                             </div>
-                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{l.username}</span>
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{l.username || l.user_name || 'System'}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -58,8 +58,8 @@ export default function LogSettings({
                                             {l.action}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 italic">
-                                        {l.target_table}
+                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider">
+                                        {l.target || '-'}
                                     </td>
                                     <td className="px-6 py-4 text-xs text-slate-400 font-mono">
                                         {l.ip_address}
