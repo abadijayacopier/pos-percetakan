@@ -38,7 +38,35 @@ router.get('/', verifyToken, async (req, res) => {
         `);
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ message: 'Gagal memuat master pelanggan' });
+        console.warn('Complex customer query failed (likely missing tables), falling back to simple query.', error.message);
+        try {
+            // Fallback for when service_orders or print_orders do not exist
+            const [rows] = await req.db.query(`
+                SELECT c.*, 
+                       CAST(COALESCE(t_stats.total_trx, 0) AS SIGNED) as totalTrx,
+                       CAST(COALESCE(t_stats.total_spend, 0) AS DECIMAL(20,2)) as totalSpend
+                FROM customers c
+                LEFT JOIN (
+                    SELECT customer_id, 
+                           COUNT(id) as total_trx,
+                           SUM(CASE WHEN status IN ('paid', 'completed') THEN total ELSE paid END) as total_spend
+                    FROM transactions
+                    GROUP BY customer_id
+                ) t_stats ON c.id = t_stats.customer_id
+                ORDER BY c.name ASC
+            `);
+            res.json(rows);
+        } catch (fallbackError) {
+            console.error('Fallback customer query also failed.', fallbackError.message);
+            
+            // Ultra-fallback: Just return the raw customers
+            try {
+                const [rows] = await req.db.query('SELECT * FROM customers ORDER BY name ASC');
+                res.json(rows);
+            } catch (fatalError) {
+                res.status(500).json({ message: 'Gagal memuat master pelanggan' });
+            }
+        }
     }
 });
 

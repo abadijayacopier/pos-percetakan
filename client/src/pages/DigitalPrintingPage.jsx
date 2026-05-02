@@ -95,13 +95,24 @@ export default function DigitalPrintingPage({ onNavigate }) {
         }
 
         try {
-            const { data: allCustomers } = await api.get('/customers');
+            const custRes = await api.get('/customers');
+            const allCustomers = custRes.data || [];
+            
             setCustomers(allCustomers);
-            if (allCustomers.length > 0 && !customerId) {
+            
+            // Sync default customer for both states
+            if (allCustomers.length > 0) {
                 const walkIn = allCustomers.find(c => c.name.toLowerCase().includes('umum') || c.name.toLowerCase().includes('walk-in'));
-                setCustomerId(walkIn ? walkIn.id : allCustomers[0].id);
+                const defaultId = walkIn ? walkIn.id : allCustomers[0].id;
+                
+                if (!customerId) setCustomerId(defaultId);
+                if (!calcOrderData.customerId) {
+                    setCalcOrderData(prev => ({ ...prev, customerId: defaultId }));
+                }
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error('Gagal memuat pelanggan:', e); 
+        }
 
         try {
             // Load active designs from API
@@ -113,6 +124,16 @@ export default function DigitalPrintingPage({ onNavigate }) {
             setActiveDesigns(designs);
             const logs = [...allTasks].filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')));
             setRecentLogs(logs);
+
+            // WhatsApp Status Check
+            try {
+                const { data: waStatus } = await api.get('/wa-gateway/status');
+                if (waStatus && waStatus.status === 'CONNECTED') {
+                    setSystemStatus('online');
+                } else {
+                    setSystemStatus('offline');
+                }
+            } catch (e) { setSystemStatus('offline'); }
 
             // Queue Stats Fallback
             let menunggu = 0, cetak = 0, finishing = 0;
@@ -166,6 +187,28 @@ export default function DigitalPrintingPage({ onNavigate }) {
         fetchDesigners();
     };
 
+    const handleSendWhatsApp = async (task) => {
+        const customer = customers.find(c => c.id === task.customerId);
+        const number = customer?.phone || '';
+        
+        if (!number) {
+            Swal.fire({ icon: 'warning', title: 'No. WA Tidak Ada', text: 'Pelanggan ini tidak memiliki nomor WhatsApp yang terdaftar.', timer: 3000 });
+            return;
+        }
+
+        const msg = `*Halo ${task.customerName}*,\n\nPesanan Digital Printing Anda:\n*${task.title}*\n\nStatus saat ini: *${task.status.replace('_', ' ').toUpperCase()}*\n\nTerima kasih telah mempercayakan pesanan Anda kepada kami!\n_Abadi Jaya POS_`;
+
+        try {
+            await api.post('/wa-gateway/test', { to: number, message: msg });
+            Swal.fire({ icon: 'success', title: 'Terkirim!', text: 'Notifikasi WhatsApp berhasil dikirim.', timer: 2000, showConfirmButton: false });
+        } catch (err) {
+            console.error('WA Error:', err);
+            // Fallback manual
+            const waUrl = `https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        }
+    };
+
     const handleAssignDesigner = async (designerId) => {
         try {
             await api.post('/designers/assign', {
@@ -173,6 +216,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 designer_id: designerId
             });
             await api.put(`/dp_tasks/${selectedTask.id}`, { status: 'ditugaskan' });
+            
+            // Auto WhatsApp Notify
+            handleSendWhatsApp({ ...selectedTask, status: 'ditugaskan' });
+
             setShowAssignModal(false);
             setSelectedTask(null);
             loadData();
@@ -253,6 +300,11 @@ export default function DigitalPrintingPage({ onNavigate }) {
         api.post('/dp_tasks', newTask).then(() => {
             return api.post('/transactions', newTransaction);
         }).then(() => {
+            // WhatsApp Notify
+            if (selectedCust?.phone) {
+                handleSendWhatsApp(newTask);
+            }
+
             setPanjang('');
             setLebar('');
             setPesanDesainer('');
@@ -315,7 +367,25 @@ export default function DigitalPrintingPage({ onNavigate }) {
         api.post('/dp_tasks', newTask).then(() => {
             return api.post('/transactions', newTransaction);
         }).then(() => {
-            setCalcOrderData({ customerId: '', materialId: '', width: '', height: '', notes: '', designFee: 0, isManualCustomer: false, manualCustomerName: '', estimatedTotal: 0 });
+            // WhatsApp Notify
+            if (!calcOrderData.isManualCustomer && selectedCust?.phone) {
+                handleSendWhatsApp(newTask);
+            }
+
+            const walkIn = customers.find(c => c.name.toLowerCase().includes('umum') || c.name.toLowerCase().includes('walk-in'));
+            const defaultId = walkIn ? walkIn.id : (customers[0]?.id || '');
+
+            setCalcOrderData({ 
+                customerId: defaultId, 
+                materialId: '', 
+                width: '', 
+                height: '', 
+                notes: '', 
+                designFee: 0, 
+                isManualCustomer: false, 
+                manualCustomerName: '', 
+                estimatedTotal: 0 
+            });
             setLoading(false);
             loadData();
         }).catch(err => {
@@ -473,6 +543,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                 </span>
                                             </div>
                                             <div className="flex items-center bg-slate-50 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                <button className="p-2 text-slate-400 hover:text-emerald-500 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => handleSendWhatsApp(d)} title="Kirim WA">
+                                                    <FiMessageSquare size={16} />
+                                                </button>
                                                 <button className="p-2 text-slate-400 hover:text-blue-600 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => { setSelectedTask(d); setShowViewModal(true); }}>
                                                     <FiEye size={16} />
                                                 </button>
@@ -626,16 +699,21 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                             placeholder="Ketik Nama Pelanggan Manual..."
                                         />
                                     ) : (
-                                        <select
-                                            value={calcOrderData.customerId}
-                                            onChange={(e) => setCalcOrderData({ ...calcOrderData, customerId: e.target.value })}
-                                            className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
-                                        >
-                                            <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
-                                            {customers.map(c => (
-                                                <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.company ? `(${c.company})` : ''}</option>
-                                            ))}
-                                        </select>
+                                        <div>
+                                            <select
+                                                value={calcOrderData.customerId}
+                                                onChange={(e) => setCalcOrderData({ ...calcOrderData, customerId: e.target.value })}
+                                                className="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-200 outline-none text-[14px] shadow-sm appearance-none"
+                                            >
+                                                <option value="" className="text-slate-900 dark:text-white">-- Pilih Pelanggan --</option>
+                                                {customers.map(c => (
+                                                    <option key={c.id} value={c.id} className="text-slate-900 dark:text-white">{c.name} {c.company ? `(${c.company})` : ''}</option>
+                                                ))}
+                                            </select>
+                                            {customers.length === 0 && (
+                                                <p className="text-xs text-rose-500 mt-1 font-bold">Debug: Data pelanggan kosong / gagal dimuat.</p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
