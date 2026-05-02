@@ -9,8 +9,12 @@ import { FiBell, FiHelpCircle, FiLogOut, FiUser, FiMenu, FiSearch, FiDatabase } 
 import api from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Layout({ activePage, onNavigate, children, isFullscreen, storeSettings }) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function Layout({ activePage, onNavigate, children, isFullscreen, storeSettings, isSidebarOpen, setSidebarOpen }) {
+    // Gunakan prop dari App.jsx jika tersedia, jika tidak gunakan state internal
+    const [internalSidebarOpen, setInternalSidebarOpen] = useState(false);
+    const sidebarOpen = isSidebarOpen !== undefined ? isSidebarOpen : internalSidebarOpen;
+    const setOpen = setSidebarOpen || setInternalSidebarOpen;
+
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         const saved = localStorage.getItem('abadi_sidebar_collapsed');
         return saved === 'true';
@@ -133,10 +137,10 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
 
     // Global listener for toggling sidebar from child pages
     useEffect(() => {
-        const handleToggleSidebar = () => setSidebarOpen(prev => !prev);
+        const handleToggleSidebar = () => setOpen(prev => !prev);
         window.addEventListener('toggleSidebar', handleToggleSidebar);
         return () => window.removeEventListener('toggleSidebar', handleToggleSidebar);
-    }, []);
+    }, [setOpen]);
 
     // Real-time Database Status polling
     useEffect(() => {
@@ -187,27 +191,27 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
     };
 
     return (
-        <div className="flex h-screen print:h-auto overflow-hidden print:overflow-visible bg-background-light dark:bg-background-dark print:bg-white font-display text-slate-900 dark:text-slate-100 print:text-black">
+        <div className="app-layout flex h-screen print:h-auto overflow-x-hidden overflow-y-auto lg:overflow-hidden bg-background-light dark:bg-background-dark print:bg-white font-display text-slate-900 dark:text-slate-100 print:text-black">
             {!(activePage === 'pos-v1' || isFullscreen) && (
                 <Sidebar
                     activePage={activePage}
                     onNavigate={onNavigate}
                     isOpen={sidebarOpen}
-                    onClose={() => setSidebarOpen(false)}
+                    onClose={() => setOpen(false)}
                     isCollapsed={sidebarCollapsed}
                     toggleCollapse={toggleSidebarCollapse}
                     storeSettings={storeSettings}
                 />
             )}
 
-            <main className={`flex-1 flex flex-col overflow-hidden min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
+            <main className={`flex-1 relative flex flex-col min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
                 {!['pos', 'pos-v1'].includes(activePage) && (
                     <header className="print:hidden h-[72px] border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0 sticky top-0 z-50 shadow-sm">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
                             {/* Mobile Menu Button */}
                             <button
                                 className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors shrink-0"
-                                onClick={() => setSidebarOpen(true)}
+                                onClick={() => setOpen(true)}
                             >
                                 <FiMenu size={20} />
                             </button>
@@ -361,7 +365,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
                 {(activePage === 'pos' || activePage === 'pos-v1') ? (
                     children
                 ) : (
-                    <div className="flex-1 overflow-y-auto block print:overflow-visible w-full print:h-auto print:block bg-background-light dark:bg-background-dark min-w-0 pb-28 md:pb-0">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 w-full bg-background-light dark:bg-background-dark pb-28 md:pb-8">
                         {children}
                     </div>
                 )}

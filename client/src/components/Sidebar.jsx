@@ -158,7 +158,11 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                                     whileHover={{ scale: 1.05, shadow: '0_0_25px_rgba(37,99,235,0.6)' }}
                                 >
                                     {storeSettings?.logo ? (
-                                        <img src={storeSettings.logo} className="w-full h-full object-cover" alt="Logo" />
+                                        <img 
+                                            src={storeSettings.logo.startsWith('http') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
+                                            className="w-full h-full object-cover" 
+                                            alt="Logo" 
+                                        />
                                     ) : (
                                         <FiPrinter size={20} />
                                     )}
@@ -168,7 +172,13 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
                             {!(isCollapsed && isDesktop) && (
                                 <div className="flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300 mr-2">
                                     <h1 className="text-slate-900 dark:text-white text-[14px] sm:text-[16px] font-black tracking-tight leading-none uppercase truncate">
-                                        {storeSettings?.name?.split(' ')[0] || 'ABADI'} <span className="text-blue-600 dark:text-blue-500">{storeSettings?.name?.split(' ').slice(1).join(' ') || 'JAYA'}</span>
+                                        {storeSettings?.name ? (
+                                            <>
+                                                {storeSettings.name.split(' ')[0]} <span className="text-blue-600 dark:text-blue-500">{storeSettings.name.split(' ').slice(1).join(' ')}</span>
+                                            </>
+                                        ) : (
+                                            <>ABADI <span className="text-blue-600 dark:text-blue-500">JAYA</span></>
+                                        )}
                                     </h1>
                                     <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Percetakan & POS</span>
                                 </div>
@@ -192,6 +202,24 @@ export default function Sidebar({ activePage, onNavigate, isOpen, onClose, isCol
 
                     {/* Navigation Stream */}
                     <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800 hover:scrollbar-thumb-slate-300 dark:hover:scrollbar-thumb-slate-700 bg-transparent">
+                        
+                        {/* Telegram Quick Access */}
+                        {!(isCollapsed && isDesktop) && (
+                            <div className="px-2 mb-2">
+                                <button 
+                                    onClick={() => window.open('https://t.me/your_bot_or_group', '_blank')}
+                                    className="w-full flex items-center gap-3 px-4 py-3 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-100 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-all group"
+                                >
+                                    <div className="size-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-lg shadow-sky-500/30 group-hover:scale-110 transition-transform">
+                                        <FiSend size={16} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none">Telegram</p>
+                                        <p className="text-[9px] font-bold opacity-60 mt-0.5">Buka Grup Support</p>
+                                    </div>
+                                </button>
+                            </div>
+                        )}
                         {MENU_GROUPS.map((group, gIdx) => {
                             const userRole = user?.role ? String(user.role).toLowerCase() : '';
                             const filteredItems = group.items.filter(item =>

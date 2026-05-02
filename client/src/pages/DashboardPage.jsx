@@ -228,7 +228,7 @@ export default function DashboardPage({ onNavigate }) {
     };
 
     return (
-        <div className="p-6 sm:p-8 space-y-8 font-display bg-slate-50 dark:bg-slate-950 min-h-screen min-w-0 overflow-x-hidden transition-colors duration-500">
+        <div className="p-6 sm:p-8 space-y-8 font-display bg-slate-50 dark:bg-slate-950 min-w-0 overflow-x-hidden transition-colors duration-500">
             <AnimatePresence>
                 {loading && <LoadingScreen />}
             </AnimatePresence>

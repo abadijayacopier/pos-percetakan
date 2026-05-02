@@ -54,7 +54,26 @@ export default function PricingSettings({
                         <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                             <FiFile size={20} />
                         </div>
-                        <h3 className="font-bold text-slate-800 dark:text-white text-lg">Master Harga Fotocopy</h3>
+                        <h3 className="font-bold text-slate-800 dark:text-white text-lg flex items-center gap-2">
+                            Master Harga Fotocopy
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-500">v1.1.3</span>
+                        </h3>
+                    </div>
+                    <div className="flex w-full sm:w-auto gap-3">
+                        <button 
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-xl transition-all text-sm font-bold border border-indigo-100 dark:border-indigo-800" 
+                            onClick={() => {
+                                setFotocopyPrices([...fotocopyPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', side: '1', price: 0 }]);
+                            }}
+                        >
+                            <FiPlus /> Tambah Data
+                        </button>
+                        <button 
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none active:scale-95" 
+                            onClick={saveSettings}
+                        >
+                            <FiSave /> Simpan Harga
+                        </button>
                     </div>
                 </div>
 

@@ -53,6 +53,14 @@ const runMigrations = async () => {
             await db.query(createLogTable);
         }
 
+        // --- SALARY & TAX MIGRATION ---
+        try {
+            const { migrate: migrateSalary } = require('./migrate_salary_tax');
+            await migrateSalary();
+        } catch (salErr) {
+            console.error('⚠️ Salary Migration Error:', salErr.message);
+        }
+
         console.log('✅ Migrations checked and applied!');
     } catch (error) {
         console.error('❌ Migration Error:', error.message);

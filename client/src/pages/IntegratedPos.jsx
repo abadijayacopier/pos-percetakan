@@ -846,7 +846,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     });
 
     return (
-        <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
+        <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-y-auto font-sans">
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 relative">
                 {/* Unified Tab Navigation */}

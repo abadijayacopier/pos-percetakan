@@ -8,7 +8,7 @@ t
   background: var(--bg-primary);
   display: flex;
   height: calc(100vh - 64px);
-  overflow: hidden;
+  overflow-y: auto;
   --bg-panel: var(--bg-secondary);
   --text-main: var(--text-primary);
   --text-sec: var(--text-secondary);
@@ -35,7 +35,7 @@ t
   padding: 0;
   min-width: 0;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 .premium-pos-wrapper .pos-catalog-header {

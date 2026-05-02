@@ -75,13 +75,23 @@ export default function LoginPage({ storeSettings, onNavigate, systemInfo }) {
                             className="p-3 bg-white dark:bg-slate-800 rounded-2xl text-blue-600 shadow-xl mb-6 flex items-center justify-center w-20 h-20 border border-slate-200 dark:border-slate-700"
                         >
                             {storeSettings?.logo ? (
-                                <img src={storeSettings.logo} className="max-w-full max-h-full object-contain" alt="Logo" />
+                                <img 
+                                    src={storeSettings.logo.startsWith('http') ? storeSettings.logo : `http://${window.location.hostname}:5001${storeSettings.logo.startsWith('/') ? '' : '/'}${storeSettings.logo}`} 
+                                    className="max-w-full max-h-full object-contain" 
+                                    alt="Logo" 
+                                />
                             ) : (
                                 <FiPrinter className="text-4xl" />
                             )}
                         </motion.div>
                         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-tight">
-                            {storeSettings?.name?.split(' ')[0] || 'ABADI'} <span className="text-blue-600 dark:text-blue-500">{storeSettings?.name?.split(' ').slice(1).join(' ') || 'JAYA'}</span>
+                            {storeSettings?.name ? (
+                                <>
+                                    {storeSettings.name.split(' ')[0]} <span className="text-blue-600 dark:text-blue-500">{storeSettings.name.split(' ').slice(1).join(' ')}</span>
+                                </>
+                            ) : (
+                                <>ABADI <span className="text-blue-600 dark:text-blue-500">JAYA</span></>
+                            )}
                         </h1>
                         <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mt-4 italic opacity-80">Premium Printing Solutions</p>
                     </div>

@@ -132,6 +132,14 @@ const startServer = async () => {
         } catch (e) {
             console.error('❌ Gagal mengaktifkan Telegram Bot Polling:', e.message);
         }
+
+        // Start Automatic Daily Backup
+        try {
+            const { initAutoBackup } = require('./utils/autoBackup');
+            initAutoBackup();
+        } catch (e) {
+            console.error('❌ Gagal mengaktifkan Auto Backup:', e.message);
+        }
     });
 };
 

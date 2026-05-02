@@ -52,8 +52,9 @@ export default function CashierPaymentPage({ onNavigate }) {
         const q = search.toLowerCase();
         return transactions.filter(t => {
             const matchSearch = !q || (t.invoiceNo || '').toLowerCase().includes(q) || (t.customerName || '').toLowerCase().includes(q);
-            if (filterStatus === 'lunas') return matchSearch && t.paidAmount >= t.total;
-            if (filterStatus === 'belum') return matchSearch && (!t.paidAmount || t.paidAmount < t.total);
+            const isLunas = t.status === 'paid';
+            if (filterStatus === 'lunas') return matchSearch && isLunas;
+            if (filterStatus === 'belum') return matchSearch && !isLunas;
             return matchSearch;
         });
     }, [transactions, search, filterStatus]);
@@ -61,8 +62,8 @@ export default function CashierPaymentPage({ onNavigate }) {
     const totalPages = Math.ceil(filtered.length / PER_PAGE);
     const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-    const totalPaid = transactions.filter(t => t.paidAmount >= t.total).length;
-    const totalUnpaid = transactions.filter(t => !t.paidAmount || t.paidAmount < t.total).length;
+    const totalPaid = transactions.filter(t => t.status === 'paid').length;
+    const totalUnpaid = transactions.filter(t => t.status !== 'paid').length;
     const totalRevenue = transactions.reduce((s, t) => s + (t.paidAmount || 0), 0);
 
     const handlePrintReceipt = (trx) => {
@@ -209,9 +210,9 @@ export default function CashierPaymentPage({ onNavigate }) {
     const handleDelete = async () => {
         if (!selectedDeleteTrx) return;
 
-        // Double check lunas status before actual delete API call
-        const paid = selectedDeleteTrx.paidAmount || 0;
-        if (paid >= selectedDeleteTrx.total) {
+        // Use the same logic as the main table: only block if status is officially 'paid'
+        // This allows cancelled settlements (which are now 'debt' but still have full paidAmount) to be deleted
+        if (selectedDeleteTrx.status === 'paid') {
             Swal.fire({
                 icon: 'error',
                 title: 'Akses Ditolak',
@@ -266,7 +267,7 @@ export default function CashierPaymentPage({ onNavigate }) {
     const handleFilter = (v) => { setFilterStatus(v); setPage(1); };
 
     return (
-        <div className="p-6 sm:p-8 min-h-screen bg-white dark:bg-slate-950 flex flex-col gap-8 font-display">
+        <div className="p-6 sm:p-8 bg-white dark:bg-slate-950 flex flex-col gap-8 font-display">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
@@ -316,7 +317,8 @@ export default function CashierPaymentPage({ onNavigate }) {
                             onChange={e => handleSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <div className="flex bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 items-center">
+                        <span className="px-3 text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest border-r border-slate-200 dark:border-slate-800 mr-1.5">v1.1.3</span>
                         {[
                             { key: 'all', label: 'Semua' },
                             { key: 'belum', label: `Belum Lunas (${totalUnpaid})` },
@@ -362,7 +364,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                                 {paginated.map((t) => {
                                     const paid = t.paidAmount || 0;
                                     const remaining = t.total - paid;
-                                    const isLunas = paid >= t.total;
+                                    const isLunas = t.status === 'paid';
                                     return (
                                         <motion.tr
                                             initial={{ opacity: 0 }}

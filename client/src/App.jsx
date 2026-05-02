@@ -1,479 +1,154 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import api from './services/api';
 import './App.css';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import PosPage from './pages/PosPage';
 import IntegratedPos from './pages/IntegratedPos';
-import PrintingPage from './pages/PrintingPage';
 import DigitalPrintingPage from './pages/DigitalPrintingPage';
+import ProductionQueuePage from './pages/ProductionQueuePage';
 import OffsetPrintingPage from './pages/OffsetPrintingPage';
 import MaterialsPage from './pages/MaterialsPage';
-import MaterialFormPage from './pages/MaterialFormPage';
-import ServicePage from './pages/ServicePage';
-import InventoryPage from './pages/InventoryPage';
-import CustomersPage from './pages/CustomersPage';
-import FinancePage from './pages/FinancePage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
-import PayrollPage from './pages/PayrollPage';
 import SPKListPage from './pages/SPKListPage';
-import ReceivablesPage from './pages/ReceivablesPage';
-import DamagedGoodsPage from './pages/DamagedGoodsPage';
-import SPKDetailPage from './pages/SPKDetailPage';
-import SPKSettlementPage from './pages/SPKSettlementPage';
-import CashierPaymentPage from './pages/CashierPaymentPage';
-import HandoverPage from './pages/HandoverPage';
-import PrintInvoicePage from './pages/PrintInvoicePage';
-import PrintLabelPage from './pages/PrintLabelPage';
-import PrintSPKPage from './pages/PrintSPKPage';
-import QRISMonitorPage from './pages/QRISMonitorPage';
-import DesignFinalizationPage from './pages/DesignFinalizationPage';
-import ProductionQueuePage from './pages/ProductionQueuePage';
-import AssignmentSettingsPage from './pages/AssignmentSettingsPage';
-import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
-import PrintReceiptPage from './pages/PrintReceiptPage';
-import PrintSalarySlipPage from './pages/PrintSalarySlipPage';
 import DesignerManagementPage from './pages/DesignerManagementPage';
+import ServicePage from './pages/ServicePage';
+import HandoverPage from './pages/HandoverPage';
 import DesignerDashboardPage from './pages/DesignerDashboardPage';
 import TechnicianDashboardPage from './pages/TechnicianDashboardPage';
-import ServiceInvoicePage from './pages/ServiceInvoicePage';
-import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
-import LandingPage from './pages/LandingPage';
+import ReceivablesPage from './pages/ReceivablesPage';
+import InventoryPage from './pages/InventoryPage';
+import DamagedGoodsPage from './pages/DamagedGoodsPage';
 import PurchasingPage from './pages/PurchasingPage';
 import SuppliersPage from './pages/SuppliersPage';
-import StockHistoryPage from './pages/StockHistoryPage';
-import ActivationModal from './components/ActivationModal';
-import SuperAdminLoginPage from './pages/SuperAdminLoginPage';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import SubscriptionExpiredPage from './pages/SubscriptionExpiredPage';
+import CustomersPage from './pages/CustomersPage';
+import FinancePage from './pages/FinancePage';
+import PayrollPage from './pages/PayrollPage';
+import CashierPaymentPage from './pages/CashierPaymentPage';
+import QRISMonitorPage from './pages/QRISMonitorPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 
-export default function App() {
-  const { user, loading, logout } = useAuth();
-  const [activePage, setActivePage] = useState(() => {
-    // Check if there's a saved page from before refresh
-    const savedPage = localStorage.getItem('abadi_pos_active_page');
-    
-    // Public landing page by default if not logged in
-    if (!user) return 'landing';
+// POS Abadi Jaya - Main Application Entry
+// Version: 1.1.3 (Scroll Fix Edition)
 
-    // If we have a saved page and it's not a restricted/one-time page, use it
-    if (savedPage && !['landing', 'login', 'superadmin-login', 'subscription-expired'].includes(savedPage)) {
-      return savedPage;
-    }
+function App() {
+    const { user, loading } = useAuth();
+    const [activePage, setActivePage] = useState('dashboard');
+    const [pageOptions, setPageOptions] = useState({});
+    const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [storeSettings, setStoreSettings] = useState({ name: '', logo: '' });
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    });
 
-    // Auto-redirect based on roles if no saved page
-    if (user?.role?.toLowerCase() === 'desainer') return 'dashboard-desainer';
-    if (user?.role?.toLowerCase() === 'teknisi') return 'dashboard-teknisi';
-    if (user?.role?.toLowerCase() === 'kasir') return 'pos';
-    return 'dashboard';
-  });
-
-  // Persist active page on every change
-  useEffect(() => {
-    if (activePage && !['landing', 'login', 'superadmin-login'].includes(activePage)) {
-      localStorage.setItem('abadi_pos_active_page', activePage);
-    }
-  }, [activePage]);
-  const [storeSettings, setStoreSettings] = useState({
-    name: 'FOTOCOPY ABADI JAYA',
-    address: 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan',
-    phone: '085655620979',
-    logo: null,
-    favicon: null
-  });
-  const [showLoginInPortal, setShowLoginInPortal] = useState(false);
-  const [pageState, setPageState] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isBrandingSyncing, setIsBrandingSyncing] = useState(true);
-  const [licenseInfo, setLicenseInfo] = useState({ activated: true, hardwareId: '' });
-  const [systemInfo, setSystemInfo] = useState({ mode: 'standalone', isSaaS: false });
-
-  // Global System Info & License Check
-  useEffect(() => {
-    const fetchSystemInfo = async () => {
-      try {
-        const { data } = await api.get('/auth/info');
-        setSystemInfo(data);
-      } catch (e) {
-        console.error('Failed to fetch system info:', e);
-      }
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/settings');
+            const sMap = {};
+            res.data.forEach(s => { sMap[s.key] = s.value; });
+            setStoreSettings({
+                name: sMap.store_name || '',
+                logo: sMap.store_logo || ''
+            });
+        } catch (e) {
+            console.error("Failed to fetch settings:", e);
+        }
     };
 
-    const checkLicense = async () => {
-      try {
-        const { data } = await api.get('/settings/license');
-        setLicenseInfo(data);
-      } catch (e) {
-        // License check might fail if not logged in, that's okay
-      }
-    };
-
-    fetchSystemInfo();
-    checkLicense();
-  }, [activePage, user]);
-
-  // When user finishes loading or logins, auto-redirect based on roles
-  useEffect(() => {
-    if (!user) return;
-
-    const role = (user.role || '').toLowerCase();
-
-    // 1. Super Admin Redirect
-    if (user.isPlatformAdmin && activePage !== 'superadmin-dashboard') {
-      setActivePage('superadmin-dashboard');
-      return;
-    }
-
-    // 2. Subscription Expiry Lockout
-    // Only lock out non-SuperAdmin users from regular pages
-    const isPublicPage = ['landing', 'login', 'superadmin-login'].includes(activePage);
-    const isMaintenancePage = ['subscription-expired', 'settings'].includes(activePage);
-
-    if (!user.isPlatformAdmin && user.subscriptionStatus === 'expired' && !isPublicPage && !isMaintenancePage) {
-      setActivePage('subscription-expired');
-      return;
-    }
-
-    // 3. Regular Role Redirects
-    // Redirect desainer to designer dashboard if they are on general landing/login/dashboard
-    if (role === 'desainer' && (activePage === 'dashboard' || activePage === 'landing' || activePage === 'login')) {
-      setActivePage('dashboard-desainer');
-    }
-    // Redirect kasir to POS if they are on general landing/login/dashboard
-    else if (role === 'kasir' && (activePage === 'dashboard' || activePage === 'landing' || activePage === 'login')) {
-      setActivePage('pos');
-    }
-    // Redirect other non-admins away from settings if they somehow get there (manual fix/etc)
-    else if (role !== 'admin' && role !== 'pemilik' && activePage === 'settings' && !user.isPlatformAdmin) {
-      setActivePage('dashboard');
-    }
-  }, [user, activePage]);
-
-  // Sync Favicon & Title with Settings
-  useEffect(() => {
-    const syncBranding = async () => {
-      try {
-        const shopId = user?.shopId || localStorage.getItem('last_shop_id');
-        const config = shopId ? { params: { shopId } } : {};
-
-        const { data } = await api.get('/settings/public', config);
-        const sMap = {};
-        data.forEach(s => { sMap[s.key] = s.value; });
-
-        const newSettings = {
-          name: sMap.store_name || 'FOTOCOPY ABADI JAYA',
-          address: sMap.store_address || 'Dsn. Selungguh Rt 06 Desa Kediren Kec. Lembeyan, Kab. Magetan',
-          phone: sMap.store_phone || '085655620979',
-          logo: sMap.landing_logo || null,
-        };
-
-        setStoreSettings(newSettings);
-        localStorage.setItem('abadi_store_settings', JSON.stringify(newSettings));
-
-        // Update Title
-        if (sMap.store_name) {
-          document.title = sMap.store_name;
+    useEffect(() => {
+        if (user) {
+            fetchSettings();
         }
 
-        // Update Favicon
-        const faviconEl = document.getElementById('app-favicon');
-        if (faviconEl && sMap.landing_favicon) {
-          faviconEl.href = sMap.landing_favicon;
+        const handleRefresh = () => fetchSettings();
+        window.addEventListener('sync-branding', handleRefresh);
+        return () => window.removeEventListener('sync-branding', handleRefresh);
+    }, [user]);
 
-          // Detect mime type from base64 if possible
-          const match = sMap.landing_favicon.match(/^data:([^;]+);/);
-          if (match) {
-            faviconEl.type = match[1];
-          } else {
-            faviconEl.type = sMap.landing_favicon.startsWith('data:image/svg') ? 'image/svg+xml' : 'image/x-icon';
-          }
+    useEffect(() => {
+        if (storeSettings.name) {
+            document.title = `${storeSettings.name} - POS Percetakan`;
         }
-      } catch (e) {
-        console.error('Failed to sync branding:', e);
-      } finally {
-        setIsBrandingSyncing(false);
-      }
+    }, [storeSettings.name]);
+
+    const handleNavigate = (page, options = {}) => {
+        setActivePage(page);
+        setPageOptions(options || {});
+        if (window.innerWidth < 1024) setSidebarOpen(false);
     };
 
-    syncBranding();
+    useEffect(() => {
+        if (isDarkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDarkMode]);
 
-    // Listen for manual sync trigger (from SettingsPage)
-    window.addEventListener('sync-branding', syncBranding);
-    return () => window.removeEventListener('sync-branding', syncBranding);
-  }, [user?.shopId]);
-
-  const handleNavigate = (pageId, state = null) => {
-    if (pageId === 'logout') {
-      logout();
-      setActivePage('landing');
-      return;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4 animate-spin" />
+                <p className="text-slate-500 dark:text-slate-400 font-bold tracking-widest uppercase text-xs">Memuat Aplikasi...</p>
+            </div>
+        );
     }
-    if (pageId === 'login') {
-      setShowLoginInPortal(true);
-      setActivePage('login');
-      return;
-    }
-    if (pageId === 'landing') {
-      setShowLoginInPortal(false);
-      setActivePage('landing');
-      return;
-    }
-    setActivePage(pageId);
-    setPageState(state);
-  };
 
+    if (!user) return <LoginPage storeSettings={storeSettings} />;
 
+    const renderPage = () => {
+        const props = { onNavigate: handleNavigate, storeSettings, ...pageOptions };
+        switch (activePage) {
+            case 'dashboard': return <DashboardPage {...props} />;
+            case 'pos': return <IntegratedPos {...props} />;
+            case 'digital-printing': return <DigitalPrintingPage {...props} />;
+            case 'production-queue': return <ProductionQueuePage {...props} />;
+            case 'cetak-offset': return <OffsetPrintingPage {...props} />;
+            case 'stok-bahan': return <MaterialsPage {...props} />;
+            case 'spk-list': return <SPKListPage {...props} />;
+            case 'manajemen-desainer': return <DesignerManagementPage {...props} />;
+            case 'service': return <ServicePage {...props} />;
+            case 'handover': return <HandoverPage {...props} />;
+            case 'dashboard-desainer': return <DesignerDashboardPage {...props} />;
+            case 'dashboard-teknisi': return <TechnicianDashboardPage {...props} />;
+            case 'receivables': return <ReceivablesPage {...props} />;
+            case 'inventory': return <InventoryPage {...props} />;
+            case 'damaged-goods': return <DamagedGoodsPage {...props} />;
+            case 'pembelian': return <PurchasingPage {...props} />;
+            case 'suppliers': return <SuppliersPage {...props} />;
+            case 'customers': return <CustomersPage {...props} />;
+            case 'finance': return <FinancePage {...props} />;
+            case 'payroll': return <PayrollPage {...props} />;
+            case 'kasir-payment': return <CashierPaymentPage {...props} />;
+            case 'qris-monitor': return <QRISMonitorPage {...props} />;
+            case 'reports': return <ReportsPage {...props} />;
+            case 'settings': return <SettingsPage {...props} />;
+            default: return <DashboardPage {...props} />;
+        }
+    };
 
-  if (loading) {
     return (
-      <div className="adaptive-loading-screen">
-        <style>{`
-          .adaptive-loading-screen {
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            background: var(--bg-primary);
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-          }
-          /* Skeleton Theme Colors (Fallback to CSS variables if available) */
-          :root {
-            --skel-bg: #f1f5f9;
-            --skel-shimmer: #e2e8f0;
-            --skel-panel: #ffffff;
-            --skel-border: #f1f5f9;
-          }
-          [data-theme="dark"] .adaptive-loading-screen {
-            --bg-primary: #0f1117;
-            --skel-bg: #1a1d27;
-            --skel-shimmer: #232734;
-            --skel-panel: rgba(26, 29, 39, 0.8);
-            --skel-border: rgba(255, 255, 255, 0.05);
-          }
-          
-          /* Shimmer Animation */
-          @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-          }
-          .skeleton {
-            background: var(--skel-bg);
-            background-image: linear-gradient(
-                to right,
-                var(--skel-bg) 0%,
-                var(--skel-shimmer) 20%,
-                var(--skel-bg) 40%,
-                var(--skel-bg) 100%
-            );
-            background-repeat: no-repeat;
-            background-size: 1000px 100%;
-            animation: shimmer 2s infinite linear forwards;
-            border-radius: 8px;
-          }
-
-          /* Loading Layout */
-          .skel-sidebar {
-            width: 260px;
-            background: var(--skel-panel);
-            border-right: 1px solid var(--skel-border);
-            padding: 24px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-          }
-          .skel-brand { display: flex; gap: 12px; align-items: center; }
-          .skel-brand-icon { width: 40px; height: 40px; border-radius: 8px; }
-          .skel-brand-text { width: 120px; height: 16px; }
-          
-          .skel-nav-list { display: flex; flex-direction: column; gap: 16px; margin-top: 10px; }
-          .skel-nav-item { width: 100%; height: 40px; border-radius: 8px; }
-          
-          .skel-main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-primary, #f4f6f8);
-          }
-          .skel-header {
-            height: 64px;
-            background: var(--skel-panel);
-            border-bottom: 1px solid var(--skel-border);
-            padding: 0 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          }
-          .skel-title { width: 200px; height: 24px; }
-          .skel-top-actions { display: flex; gap: 16px; align-items: center; }
-          .skel-search { width: 300px; height: 36px; border-radius: 8px; }
-          .skel-circle { width: 36px; height: 36px; border-radius: 50%; }
-
-          .skel-content {
-            padding: 32px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-          }
-          .skel-cards-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-          }
-          .skel-card {
-            height: 120px;
-            background: var(--skel-panel);
-            border: 1px solid var(--skel-border);
-            border-radius: 12px;
-            padding: 20px;
-          }
-          .skel-table {
-            height: 400px;
-            background: var(--skel-panel);
-            border: 1px solid var(--skel-border);
-            border-radius: 12px;
-            padding: 20px;
-          }
-          
-          /* Top Loading Bar */
-          .top-loader-bar {
-             position: absolute;
-             top: 0;
-             left: 0;
-             height: 3px;
-             background: #2563eb;
-             animation: loadingBar 1.5s ease-in-out infinite;
-             z-index: 9999;
-          }
-          @keyframes loadingBar {
-             0% { width: 0%; left: 0; }
-             50% { width: 50%; left: 25%; }
-             100% { width: 0%; left: 100%; }
-          }
-        `}</style>
-
-        <div className="top-loader-bar"></div>
-
-        <div className="skel-sidebar">
-          <div className="skel-brand">
-            <div className="skeleton skel-brand-icon"></div>
-            <div className="skeleton skel-brand-text"></div>
-          </div>
-          <div className="skel-nav-list">
-            <div className="skeleton skel-nav-item"></div>
-            <div className="skeleton skel-nav-item"></div>
-            <div className="skeleton skel-nav-item"></div>
-            <div className="skeleton skel-nav-item"></div>
-            <div className="skeleton skel-nav-item"></div>
-          </div>
-          <div style={{ marginTop: 'auto', display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div className="skeleton skel-circle"></div>
-            <div className="skeleton" style={{ width: '100px', height: '16px' }}></div>
-          </div>
-        </div>
-
-        <div className="skel-main">
-          <div className="skel-header">
-            <div className="skeleton skel-title"></div>
-            <div className="skel-top-actions">
-              <div className="skeleton skel-search"></div>
-              <div className="skeleton skel-circle"></div>
-              <div className="skeleton skel-circle"></div>
-              <div className="skeleton" style={{ width: '100px', height: '36px', borderRadius: '8px' }}></div>
+        <Layout 
+            activePage={activePage} 
+            onNavigate={handleNavigate} 
+            isSidebarOpen={isSidebarOpen} 
+            setSidebarOpen={setSidebarOpen}
+            storeSettings={storeSettings}
+        >
+            <div className="w-full min-h-0">
+                {renderPage()}
             </div>
-          </div>
-          <div className="skel-content">
-            <div className="skel-cards-row">
-              <div className="skeleton skel-card"></div>
-              <div className="skeleton skel-card"></div>
-              <div className="skeleton skel-card"></div>
-              <div className="skeleton skel-card"></div>
+            
+            {/* Version Label Floating */}
+            <div className="fixed bottom-4 right-4 z-50 pointer-events-none opacity-20 group">
+                <span className="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.2em] group-hover:opacity-100 transition-opacity">v1.1.4 (PRO MAX)</span>
             </div>
-            <div className="skeleton skel-table"></div>
-          </div>
-        </div>
-
-      </div>
+        </Layout>
     );
-  }
-
-  if (!user) {
-    if (activePage === 'login' || showLoginInPortal) {
-      return <LoginPage onNavigate={handleNavigate} storeSettings={storeSettings} systemInfo={systemInfo} />;
-    }
-    return <LandingPage onNavigate={handleNavigate} />;
-  }
-
-  const renderPage = () => {
-    switch (activePage) {
-      case 'dashboard': return <DashboardPage onNavigate={handleNavigate} />;
-      case 'pos': return <IntegratedPos onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} storeSettings={storeSettings} />;
-      case 'pos-v1': return <PosPage onNavigate={handleNavigate} pageState={pageState} onFullscreenChange={setIsFullscreen} />;
-      case 'printing': return <PrintingPage onNavigate={handleNavigate} />;
-      case 'digital-printing': return <DigitalPrintingPage onNavigate={handleNavigate} />;
-      case 'cetak-offset': return <OffsetPrintingPage onNavigate={handleNavigate} />;
-      case 'stok-bahan': return <MaterialsPage onNavigate={handleNavigate} />;
-      case 'tambah-bahan': return <MaterialFormPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'service': return <ServicePage onNavigate={handleNavigate} />;
-      case 'inventory': return <InventoryPage onNavigate={handleNavigate} storeSettings={storeSettings} />;
-      case 'pembelian': return <PurchasingPage onNavigate={handleNavigate} />;
-      case 'suppliers': return <SuppliersPage onNavigate={handleNavigate} />;
-      case 'customers': return <CustomersPage onNavigate={handleNavigate} />;
-      case 'finance': return <FinancePage onNavigate={handleNavigate} storeSettings={storeSettings} />;
-      case 'reports': return <ReportsPage onNavigate={handleNavigate} />;
-      case 'receivables': return <ReceivablesPage onNavigate={handleNavigate} />;
-      case 'damaged-goods': return <DamagedGoodsPage onNavigate={handleNavigate} />;
-      case 'settings': return <SettingsPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'payroll': return <PayrollPage onNavigate={handleNavigate} />;
-      case 'spk-list': return <SPKListPage onNavigate={handleNavigate} />;
-      case 'spk-detail': return <SPKDetailPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'spk-settlement': return <SPKSettlementPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'kasir-payment': return <CashierPaymentPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'handover': return <HandoverPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-invoice': return <PrintInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-label': return <PrintLabelPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-spk': return <PrintSPKPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'qris-monitor': return <QRISMonitorPage onNavigate={handleNavigate} />;
-      case 'design-finalization': return <DesignFinalizationPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'production-queue': return <ProductionQueuePage onNavigate={handleNavigate} />;
-      case 'assignment-settings': return <AssignmentSettingsPage onNavigate={handleNavigate} />;
-      case 'dp-cart': return <DigitalPrintingCartPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-receipt': return <PrintReceiptPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-salary-slip': return <PrintSalarySlipPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'manajemen-desainer': return <DesignerManagementPage onNavigate={handleNavigate} />;
-      case 'dashboard-desainer': return <DesignerDashboardPage onNavigate={handleNavigate} />;
-      case 'dashboard-teknisi': return <TechnicianDashboardPage onNavigate={handleNavigate} />;
-      case 'print-service-invoice': return <ServiceInvoicePage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'print-warranty-sticker': return <ServiceWarrantyStickerPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'stock-history': return <StockHistoryPage onNavigate={handleNavigate} pageState={pageState} />;
-      case 'superadmin-login': return <SuperAdminLoginPage onNavigate={handleNavigate} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard onNavigate={handleNavigate} />;
-      case 'subscription-expired': return <SubscriptionExpiredPage onNavigate={handleNavigate} />;
-      default: return <DashboardPage onNavigate={handleNavigate} />;
-    }
-  };
-
-  const renderAnimatedPage = () => (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={activePage}
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -15 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="min-h-full w-full flex flex-col"
-      >
-        {renderPage()}
-      </motion.div>
-    </AnimatePresence>
-  );
-
-  return (
-    <Layout activePage={activePage} onNavigate={handleNavigate} isFullscreen={isFullscreen} storeSettings={storeSettings}>
-      {renderAnimatedPage()}
-    </Layout>
-  );
 }
+
+export default App;

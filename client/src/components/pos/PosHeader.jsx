@@ -25,8 +25,14 @@ export default function PosHeader({
                         <span className="material-symbols-outlined text-3xl font-black">point_of_sale</span>
                     </div>
                     <div>
-                        <h1 className="text-xl font-black tracking-tighter leading-tight text-slate-800 dark:text-white uppercase italic">
-                            Kasir <span className="text-primary">Terpadu</span>
+                        <h1 className="text-xl font-black tracking-tighter leading-tight text-slate-800 dark:text-white uppercase italic truncate max-w-[200px]">
+                            {storeSettings?.name ? (
+                                <>
+                                    {storeSettings.name.split(' ')[0]} <span className="text-primary">{storeSettings.name.split(' ').slice(1).join(' ')}</span>
+                                </>
+                            ) : (
+                                <>Kasir <span className="text-primary">Terpadu</span></>
+                            )}
                         </h1>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none mt-1">Enterprise <span className="text-primary">Pos</span></p>
                     </div>

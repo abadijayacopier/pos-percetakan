@@ -697,7 +697,30 @@ img {
 .app-layout {
   display: flex;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
+}
+
+/* Force Scrollbar visibility */
+::-webkit-scrollbar {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #64748b !important;
+  border-radius: 6px !important;
+  border: 3px solid transparent !important;
+  background-clip: content-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #137fec !important;
+  background-clip: content-box !important;
 }
 
 /* ---- Sidebar ---- */

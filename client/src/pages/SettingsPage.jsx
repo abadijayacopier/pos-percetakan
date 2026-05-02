@@ -584,7 +584,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         {/* Toolbar Sub-Page */}
                         <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 sticky top-24 z-30 border border-slate-200 dark:border-slate-800 px-6 py-4 rounded-3xl flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-4">
-                                <button 
+                                <button
                                     onClick={() => setActiveTab('hub')}
                                     className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm"
                                 >
@@ -604,515 +604,515 @@ export default function SettingsPage({ onNavigate, pageState }) {
                             </div>
                         </div>
 
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={activeTab}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                            {activeTab === 'general' && (
-                                <GeneralSettings 
-                                    storeName={storeName} setStoreName={setStoreName}
-                                    storeAddress={storeAddress} setStoreAddress={setStoreAddress}
-                                    storePhone={storePhone} setStorePhone={setStorePhone}
-                                    storeEmail={storeEmail} setStoreEmail={setStoreEmail}
-                                    storeLogo={storeLogo} setStoreLogo={setStoreLogo}
-                                    handleLogoUpload={handleLogoUpload}
-                                    taxEnabled={taxEnabled}
-                                    setTaxEnabled={setTaxEnabled}
-                                    taxPercentage={taxPercentage}
-                                    setTaxPercentage={setTaxPercentage}
-                                    saveSettings={saveSettings}
-                                />
-                            )}
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                {activeTab === 'general' && (
+                                    <GeneralSettings
+                                        storeName={storeName} setStoreName={setStoreName}
+                                        storeAddress={storeAddress} setStoreAddress={setStoreAddress}
+                                        storePhone={storePhone} setStorePhone={setStorePhone}
+                                        storeEmail={storeEmail} setStoreEmail={setStoreEmail}
+                                        storeLogo={storeLogo} setStoreLogo={setStoreLogo}
+                                        handleLogoUpload={handleLogoUpload}
+                                        taxEnabled={taxEnabled}
+                                        setTaxEnabled={setTaxEnabled}
+                                        taxPercentage={taxPercentage}
+                                        setTaxPercentage={setTaxPercentage}
+                                        saveSettings={saveSettings}
+                                    />
+                                )}
 
 
-                        {/* Landing Page Settings */}
-                        {activeTab === 'landing' && (
-                            <LandingSettings 
-                                storeMapsUrl={storeMapsUrl} setStoreMapsUrl={setStoreMapsUrl}
-                                landingLogo={landingLogo} setLandingLogo={setLandingLogo}
-                                landingFavicon={landingFavicon} setLandingFavicon={setLandingFavicon}
-                                galleryImages={galleryImages} 
-                                handleGalleryUpload={handleGalleryUpload}
-                                removeGalleryImage={removeGalleryImage}
-                                saveSettings={saveSettings}
-                                showToast={showToast}
-                            />
-                        )}
+                                {/* Landing Page Settings */}
+                                {activeTab === 'landing' && (
+                                    <LandingSettings
+                                        storeMapsUrl={storeMapsUrl} setStoreMapsUrl={setStoreMapsUrl}
+                                        landingLogo={landingLogo} setLandingLogo={setLandingLogo}
+                                        landingFavicon={landingFavicon} setLandingFavicon={setLandingFavicon}
+                                        galleryImages={galleryImages}
+                                        handleGalleryUpload={handleGalleryUpload}
+                                        removeGalleryImage={removeGalleryImage}
+                                        saveSettings={saveSettings}
+                                        showToast={showToast}
+                                    />
+                                )}
 
-                        {/* Pricing Settings */}
-                        {activeTab === 'fotocopy' && (
-                            <PricingSettings 
-                                tarifDesainPerJam={tarifDesainPerJam} setTarifDesainPerJam={setTarifDesainPerJam}
-                                fotocopyPrices={fotocopyPrices} setFotocopyPrices={setFotocopyPrices}
-                                fcPage={fcPage} setFcPage={setFcPage}
-                                printPrices={printPrices} setPrintPrices={setPrintPrices}
-                                printPage={printPage} setPrintPage={setPrintPage}
-                                bindPrices={bindPrices} setBindPrices={setBindPrices}
-                                bindPage={bindPage} setBindPage={setBindPage}
-                                fcDiscounts={fcDiscounts} setFcDiscounts={setFcDiscounts}
-                                saveSettings={saveSettings}
-                                pageSize={pageSize}
-                            />
-                        )}
-
-
-                        {/* Users Management */}
-                        {activeTab === 'users' && (
-                            <UserManagement 
-                                users={users}
-                                setEditUser={setEditUser}
-                                setUserForm={setUserForm}
-                                setUserFormOpen={setUserFormOpen}
-                            />
-                        )}
+                                {/* Pricing Settings */}
+                                {activeTab === 'fotocopy' && (
+                                    <PricingSettings
+                                        tarifDesainPerJam={tarifDesainPerJam} setTarifDesainPerJam={setTarifDesainPerJam}
+                                        fotocopyPrices={fotocopyPrices} setFotocopyPrices={setFotocopyPrices}
+                                        fcPage={fcPage} setFcPage={setFcPage}
+                                        printPrices={printPrices} setPrintPrices={setPrintPrices}
+                                        printPage={printPage} setPrintPage={setPrintPage}
+                                        bindPrices={bindPrices} setBindPrices={setBindPrices}
+                                        bindPage={bindPage} setBindPage={setBindPage}
+                                        fcDiscounts={fcDiscounts} setFcDiscounts={setFcDiscounts}
+                                        saveSettings={saveSettings}
+                                        pageSize={pageSize}
+                                    />
+                                )}
 
 
-                        {/* Printer & Nota */}
-                        {activeTab === 'printer' && (
-                            <PrinterSettings 
-                                printerSize={printerSize} setPrinterSize={setPrinterSize}
-                                paperSize={paperSize} setPaperSize={setPaperSize}
-                                autoPrint={autoPrint} setAutoPrint={setAutoPrint}
-                                printerName={printerName} setPrinterName={setPrinterName}
-                                systemPrinters={systemPrinters} qzPrinters={qzPrinters}
-                                storeName={storeName} setStoreName={setStoreName}
-                                storeAddress={storeAddress} setStoreAddress={setStoreAddress}
-                                storePhone={storePhone} setStorePhone={setStorePhone}
-                                receiptFooter={receiptFooter} setReceiptFooter={setReceiptFooter}
-                                storeLogo={storeLogo} handleLogoUpload={handleLogoUpload}
-                                saveSettings={saveSettings} showToast={showToast}
-                            />
-                        )}
+                                {/* Users Management */}
+                                {activeTab === 'users' && (
+                                    <UserManagement
+                                        users={users}
+                                        setEditUser={setEditUser}
+                                        setUserForm={setUserForm}
+                                        setUserFormOpen={setUserFormOpen}
+                                    />
+                                )}
 
 
-                        {/* Activity Log */}
-                        {activeTab === 'log' && (
-                            <LogSettings 
-                                activityLog={activityLog}
-                                logPage={logPage}
-                                setLogPage={setLogPage}
-                                totalLogPages={totalLogPages}
-                            />
-                        )}
+                                {/* Printer & Nota */}
+                                {activeTab === 'printer' && (
+                                    <PrinterSettings
+                                        printerSize={printerSize} setPrinterSize={setPrinterSize}
+                                        paperSize={paperSize} setPaperSize={setPaperSize}
+                                        autoPrint={autoPrint} setAutoPrint={setAutoPrint}
+                                        printerName={printerName} setPrinterName={setPrinterName}
+                                        systemPrinters={systemPrinters} qzPrinters={qzPrinters}
+                                        storeName={storeName} setStoreName={setStoreName}
+                                        storeAddress={storeAddress} setStoreAddress={setStoreAddress}
+                                        storePhone={storePhone} setStorePhone={setStorePhone}
+                                        receiptFooter={receiptFooter} setReceiptFooter={setReceiptFooter}
+                                        storeLogo={storeLogo} handleLogoUpload={handleLogoUpload}
+                                        saveSettings={saveSettings} showToast={showToast}
+                                    />
+                                )}
 
-                        {/* Payment & QRIS */}
-                        {activeTab === 'payment' && (
-                            <div className="space-y-6 pb-12">
-                                {/* Midtrans Server */}
-                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
-                                    <div className="flex items-center gap-4 mb-6 relative z-10">
-                                        <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shadow-sm">
-                                            <FiCpu size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Midtrans Payment Gateway</h3>
-                                            <p className="text-sm text-slate-500">Konfigurasi API Key untuk QRIS Dinamis & Virtual Account</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                                        <div className="space-y-2 col-span-1 md:col-span-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Server Key / API Key</label>
-                                            <div className="relative">
-                                                <input 
-                                                    type={showMidtransKey ? "text" : "password"}
-                                                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono pr-12" 
-                                                    placeholder="SB-Mid-server-..." 
-                                                    value={midtransKey} 
-                                                    onChange={e => setMidtransKey(e.target.value)} 
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowMidtransKey(!showMidtransKey)}
-                                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-blue-500 transition-colors"
-                                                >
-                                                    {showMidtransKey ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                                                </button>
+
+                                {/* Activity Log */}
+                                {activeTab === 'log' && (
+                                    <LogSettings
+                                        activityLog={activityLog}
+                                        logPage={logPage}
+                                        setLogPage={setLogPage}
+                                        totalLogPages={totalLogPages}
+                                    />
+                                )}
+
+                                {/* Payment & QRIS */}
+                                {activeTab === 'payment' && (
+                                    <div className="space-y-6 pb-12">
+                                        {/* Midtrans Server */}
+                                        <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                            <div className="flex items-center gap-4 mb-6 relative z-10">
+                                                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shadow-sm">
+                                                    <FiCpu size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Midtrans Payment Gateway</h3>
+                                                    <p className="text-sm text-slate-500">Konfigurasi API Key untuk QRIS Dinamis & Virtual Account</p>
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-slate-400">Pastikan API Key sudah sesuai dengan akses environment Anda.</p>
-                                        </div>
-                                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 col-span-1 md:col-span-2">
-                                            <div className={`w-12 h-6 flex items-center bg-slate-200 dark:bg-slate-700 rounded-full p-1 cursor-pointer transition-colors ${midtransIsProduction ? 'bg-blue-500' : ''}`} onClick={() => setMidtransIsProduction(!midtransIsProduction)}>
-                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${midtransIsProduction ? 'translate-x-6' : ''}`} />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                                                <div className="space-y-2 col-span-1 md:col-span-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Server Key / API Key</label>
+                                                    <div className="relative">
+                                                        <input
+                                                            type={showMidtransKey ? "text" : "password"}
+                                                            className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono pr-12"
+                                                            placeholder="SB-Mid-server-..."
+                                                            value={midtransKey}
+                                                            onChange={e => setMidtransKey(e.target.value)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowMidtransKey(!showMidtransKey)}
+                                                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-blue-500 transition-colors"
+                                                        >
+                                                            {showMidtransKey ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-xs text-slate-400">Pastikan API Key sudah sesuai dengan akses environment Anda.</p>
+                                                </div>
+                                                <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 col-span-1 md:col-span-2">
+                                                    <div className={`w-12 h-6 flex items-center bg-slate-200 dark:bg-slate-700 rounded-full p-1 cursor-pointer transition-colors ${midtransIsProduction ? 'bg-blue-500' : ''}`} onClick={() => setMidtransIsProduction(!midtransIsProduction)}>
+                                                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${midtransIsProduction ? 'translate-x-6' : ''}`} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-slate-800 dark:text-white">Production Mode</h4>
+                                                        <p className="text-xs text-slate-500">Aktifkan hanya jika Anda sudah Go-Live (bukan Sandbox).</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-sm text-slate-800 dark:text-white">Production Mode</h4>
-                                                <p className="text-xs text-slate-500">Aktifkan hanya jika Anda sudah Go-Live (bukan Sandbox).</p>
+                                        </div>
+
+                                        {/* Manual E-Wallet */}
+                                        <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                            <div className="flex items-center gap-4 mb-6 relative z-10">
+                                                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shadow-sm">
+                                                    <FiDollarSign size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">DANA / E-Wallet Manual</h3>
+                                                    <p className="text-sm text-slate-500">Informasi pembayaran manual melalui DANA</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor DANA</label>
+                                                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="081234..." value={danaNumber} onChange={e => setDanaNumber(e.target.value)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
+                                                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={danaName} onChange={e => setDanaName(e.target.value)} />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                {/* Manual E-Wallet */}
-                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none" />
-                                    <div className="flex items-center gap-4 mb-6 relative z-10">
-                                        <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center shadow-sm">
-                                            <FiDollarSign size={24} />
+                                        {/* Manual Bank Transfer */}
+                                        <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none" />
+                                            <div className="flex items-center gap-4 mb-6 relative z-10">
+                                                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shadow-sm">
+                                                    <FiBriefcase size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Transfer Bank Manual</h3>
+                                                    <p className="text-sm text-slate-500">Informasi rekening bank operasional</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nama Bank</label>
+                                                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="BCA / MANDIRI" value={bankName} onChange={e => setBankName(e.target.value)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor Rekening</label>
+                                                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="12345678" value={bankAccount} onChange={e => setBankAccount(e.target.value)} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
+                                                    <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={bankAccountName} onChange={e => setBankAccountName(e.target.value)} />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">DANA / E-Wallet Manual</h3>
-                                            <p className="text-sm text-slate-500">Informasi pembayaran manual melalui DANA</p>
+                                        <div className="pb-8">
+                                            <button
+                                                className="flex items-center justify-center w-full gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none"
+                                                onClick={saveSettings}
+                                            >
+                                                <FiSave /> Simpan Pengaturan Pembayaran
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor DANA</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="081234..." value={danaNumber} onChange={e => setDanaNumber(e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={danaName} onChange={e => setDanaName(e.target.value)} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Manual Bank Transfer */}
-                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 p-8 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none" />
-                                    <div className="flex items-center gap-4 mb-6 relative z-10">
-                                        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center shadow-sm">
-                                            <FiBriefcase size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white">Transfer Bank Manual</h3>
-                                            <p className="text-sm text-slate-500">Informasi rekening bank operasional</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nama Bank</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="BCA / MANDIRI" value={bankName} onChange={e => setBankName(e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Nomor Rekening</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all font-mono" placeholder="12345678" value={bankAccount} onChange={e => setBankAccount(e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Atas Nama</label>
-                                            <input className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all uppercase" placeholder="JOHN DOE" value={bankAccountName} onChange={e => setBankAccountName(e.target.value)} />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="pb-8">
-                                    <button
-                                        className="flex items-center justify-center w-full gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none"
-                                        onClick={saveSettings}
-                                    >
-                                        <FiSave /> Simpan Pengaturan Pembayaran
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Backup & Restore */}
-                        {activeTab === 'backup' && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
-                                    <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6 shadow-sm border border-blue-50 dark:border-blue-800/50 mx-auto md:mx-0">
-                                        <FiSave size={28} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pencadangan Data</h3>
-                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Ekspor seluruh data POS (Harga, Log, Member, Transaksi) ke file SQL yang aman.</p>
-                                    <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={handleBackup}>
-                                        <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
-                                    </button>
-                                </div>
-
-                                {user?.username === 'admin' && (
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
-                                        <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 shadow-sm border border-purple-50 dark:border-purple-800/50 mx-auto md:mx-0">
-                                            <FiZap size={28} />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Developer Sync</h3>
-                                        <p className="text-slate-500 text-sm mb-8 leading-relaxed">Fitur khusus SUPRIYANTO untuk update data ke GitHub.</p>
-                                        <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-200 dark:shadow-none group" onClick={async () => {
-                                            const { value: password } = await Swal.fire({
-                                                title: 'Konfirmasi Developer',
-                                                input: 'password',
-                                                inputLabel: 'Masukkan password admin untuk ekspor',
-                                                inputPlaceholder: 'Password...',
-                                                showCancelButton: true,
-                                                background: 'var(--bg-card)',
-                                                color: 'var(--text-primary)'
-                                            });
-                                            if (!password) return;
-
-                                            try {
-                                                showToast('Sedang mengekspor data...', 'info');
-                                                const res = await api.post('/settings/export-project', { password });
-                                                showToast(res.data.message, 'success');
-                                            } catch (e) {
-                                                const msg = e.response?.data?.message || 'Gagal ekspor database';
-                                                showToast(msg, 'error');
-                                            }
-                                        }}>
-                                            <FiSave className="group-hover:scale-110 transition-transform" /> Ekspor ke GitHub
-                                        </button>
                                     </div>
                                 )}
 
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
-                                    <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 mb-6 shadow-sm border border-orange-50 dark:border-orange-800/50 mx-auto md:mx-0">
-                                        <FiUpload size={28} />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pemulihan Data</h3>
-                                    <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup SQL sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
-                                    <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl cursor-pointer transition-all border border-slate-200 dark:border-slate-700">
-                                        <FiFolder /> Pilih File Backup
-                                        <input type="file" accept=".sql,.json,.backup" onChange={handleRestore} className="hidden" />
-                                    </label>
-                                </div>
-
-                                <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-4xl border border-red-100 dark:border-red-900/30 p-8">
-                                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                        <div className="flex items-center gap-4 text-center md:text-left">
-                                            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0 mx-auto md:mx-0">
-                                                <FiAlertCircle size={24} />
+                                {/* Backup & Restore */}
+                                {activeTab === 'backup' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-12">
+                                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                                            <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6 shadow-sm border border-blue-50 dark:border-blue-800/50 mx-auto md:mx-0">
+                                                <FiSave size={28} />
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-red-800 dark:text-red-400">Reset Data Pabrik</h4>
-                                                <p className="text-sm text-red-700/70 dark:text-red-400/70">Hapus semua data transaksi dan pengaturan kembali ke awal.</p>
-                                            </div>
-                                        </div>
-                                        <button className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 dark:shadow-none" onClick={resetData}>
-                                            <FiTrash2 className="inline mr-2" /> Reset Sekarang
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* License Settings */}
-                        {activeTab === 'license' && (
-                            <div className="max-w-4xl mx-auto space-y-6 pb-12">
-                                <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
-
-                                    <div className="p-10 flex flex-col md:flex-row items-center gap-10">
-                                        <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center shrink-0 shadow-2xl ${licenseInfo.activated ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 shadow-slate-500/10'}`}>
-                                            {licenseInfo.activated ? <FiCheckCircle size={64} /> : <FiShield size={64} />}
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pencadangan Data</h3>
+                                            <p className="text-slate-500 text-sm mb-8 leading-relaxed">Ekspor seluruh data POS (Harga, Log, Member, Transaksi) ke file SQL yang aman.</p>
+                                            <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none group" onClick={handleBackup}>
+                                                <FiDownload className="group-hover:-translate-y-1 transition-transform" /> Mulai Backup Sekarang
+                                            </button>
                                         </div>
 
-                                        <div className="flex-1 text-center md:text-left">
-                                            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
-                                                <h3 className="text-3xl font-black text-slate-800 dark:text-white leading-tight">Status Lisensi</h3>
-                                                {licenseInfo.activated ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0">
-                                                        <FiCheck size={16} /> AKTIF
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0 font-mono">
-                                                        BELUM AKTIVASI
-                                                    </span>
-                                                )}
-                                            </div>
+                                        {user?.username === 'admin' && (
+                                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                                                <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 mb-6 shadow-sm border border-purple-50 dark:border-purple-800/50 mx-auto md:mx-0">
+                                                    <FiZap size={28} />
+                                                </div>
+                                                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Developer Sync</h3>
+                                                <p className="text-slate-500 text-sm mb-8 leading-relaxed">Fitur khusus SUPRIYANTO untuk update data.</p>
+                                                <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-purple-200 dark:shadow-none group" onClick={async () => {
+                                                    const { value: password } = await Swal.fire({
+                                                        title: 'Konfirmasi Developer',
+                                                        input: 'password',
+                                                        inputLabel: 'Masukkan password admin untuk ekspor',
+                                                        inputPlaceholder: 'Password...',
+                                                        showCancelButton: true,
+                                                        background: 'var(--bg-card)',
+                                                        color: 'var(--text-primary)'
+                                                    });
+                                                    if (!password) return;
 
-                                            <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl mb-4 text-xs font-mono text-slate-400 flex items-center gap-2 w-fit mx-auto md:mx-0 border border-slate-100 dark:border-slate-700">
-                                                <FiShield size={12} /> HWID: {licenseInfo.hardwareId || 'Mencari...'}
+                                                    try {
+                                                        showToast('Sedang mengekspor data...', 'info');
+                                                        const res = await api.post('/settings/export-project', { password });
+                                                        showToast(res.data.message, 'success');
+                                                    } catch (e) {
+                                                        const msg = e.response?.data?.message || 'Gagal ekspor database';
+                                                        showToast(msg, 'error');
+                                                    }
+                                                }}>
+                                                    <FiSave className="group-hover:scale-110 transition-transform" /> Ekspor ke server
+                                                </button>
                                             </div>
+                                        )}
 
-                                            {licenseInfo.activated ? (
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dilisensikan Kepada</p>
-                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{licenseInfo.clientName}</p>
-                                                        </div>
-                                                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Masa Berlaku Hingga</p>
-                                                            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
-                                                                {licenseInfo.expiryDate
-                                                                    ? new Date(licenseInfo.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
-                                                                    : (licenseInfo.activated ? 'Selamanya / Berlangganan' : 'N/A')
-                                                                }
-                                                            </p>
-                                                        </div>
+                                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 text-center md:text-left">
+                                            <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 mb-6 shadow-sm border border-orange-50 dark:border-orange-800/50 mx-auto md:mx-0">
+                                                <FiUpload size={28} />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Pemulihan Data</h3>
+                                            <p className="text-slate-500 text-sm mb-8 leading-relaxed">Impor data dari file backup SQL sebelumnya. <span className="font-bold text-orange-600">Peringatan:</span> Data saat ini akan ditimpa!</p>
+                                            <label className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl cursor-pointer transition-all border border-slate-200 dark:border-slate-700">
+                                                <FiFolder /> Pilih File Backup
+                                                <input type="file" accept=".sql,.json,.backup" onChange={handleRestore} className="hidden" />
+                                            </label>
+                                        </div>
+
+                                        <div className="md:col-span-2 bg-red-50 dark:bg-red-900/10 rounded-4xl border border-red-100 dark:border-red-900/30 p-8">
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                                <div className="flex items-center gap-4 text-center md:text-left">
+                                                    <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 shrink-0 mx-auto md:mx-0">
+                                                        <FiAlertCircle size={24} />
                                                     </div>
-                                                    <div className="flex flex-wrap gap-4 items-center">
-                                                        <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                                            <FiInfo className="text-indigo-500" />
-                                                            {licenseInfo.isSaaS
-                                                                ? 'Aplikasi dikelola di Cloud. Langganan aktif.'
-                                                                : 'Terima kasih telah menggunakan software orisinil.'}
-                                                        </p>
-                                                        {!licenseInfo.isSaaS && (
-                                                            <button
-                                                                onClick={handleResetLicense}
-                                                                className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 transition-colors"
-                                                            >
-                                                                Reset Lisensi (Ganti PC)
-                                                            </button>
-                                                        )}
+                                                    <div>
+                                                        <h4 className="font-bold text-red-800 dark:text-red-400">Reset Data Pabrik</h4>
+                                                        <p className="text-sm text-red-700/70 dark:text-red-400/70">Hapus semua data transaksi dan pengaturan kembali ke awal.</p>
                                                     </div>
                                                 </div>
-                                            ) : (
-                                                <div className="space-y-6">
-                                                    <p className="text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg mx-auto md:mx-0">
-                                                        Aplikasi Anda saat ini berjalan dalam mode terbatas. Aktivasi diperlukan untuk memastikan dukungan penuh dan pembaruan sistem di masa mendatang.
-                                                    </p>
+                                                <button className="w-full md:w-auto px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 dark:shadow-none" onClick={resetData}>
+                                                    <FiTrash2 className="inline mr-2" /> Reset Sekarang
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* License Settings */}
+                                {activeTab === 'license' && (
+                                    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+                                        <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/80 rounded-[2.5rem] shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden relative">
+                                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-500" />
+
+                                            <div className="p-10 flex flex-col md:flex-row items-center gap-10">
+                                                <div className={`w-32 h-32 rounded-[2rem] flex items-center justify-center shrink-0 shadow-2xl ${licenseInfo.activated ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 shadow-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 shadow-slate-500/10'}`}>
+                                                    {licenseInfo.activated ? <FiCheckCircle size={64} /> : <FiShield size={64} />}
+                                                </div>
+
+                                                <div className="flex-1 text-center md:text-left">
+                                                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+                                                        <h3 className="text-3xl font-black text-slate-800 dark:text-white leading-tight">Status Lisensi</h3>
+                                                        {licenseInfo.activated ? (
+                                                            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0">
+                                                                <FiCheck size={16} /> AKTIF
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold rounded-full w-fit mx-auto md:mx-0 font-mono">
+                                                                BELUM AKTIVASI
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl mb-4 text-xs font-mono text-slate-400 flex items-center gap-2 w-fit mx-auto md:mx-0 border border-slate-100 dark:border-slate-700">
+                                                        <FiShield size={12} /> HWID: {licenseInfo.hardwareId || 'Mencari...'}
+                                                    </div>
+
+                                                    {licenseInfo.activated ? (
+                                                        <div className="space-y-4">
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Dilisensikan Kepada</p>
+                                                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{licenseInfo.clientName}</p>
+                                                                </div>
+                                                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Masa Berlaku Hingga</p>
+                                                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-200">
+                                                                        {licenseInfo.expiryDate
+                                                                            ? new Date(licenseInfo.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                                                                            : (licenseInfo.activated ? 'Selamanya / Berlangganan' : 'N/A')
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-4 items-center">
+                                                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                                    <FiInfo className="text-indigo-500" />
+                                                                    {licenseInfo.isSaaS
+                                                                        ? 'Aplikasi dikelola di Cloud. Langganan aktif.'
+                                                                        : 'Terima kasih telah menggunakan software orisinil.'}
+                                                                </p>
+                                                                {!licenseInfo.isSaaS && (
+                                                                    <button
+                                                                        onClick={handleResetLicense}
+                                                                        className="text-xs font-bold text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 underline underline-offset-4 transition-colors"
+                                                                    >
+                                                                        Reset Lisensi (Ganti PC)
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-6">
+                                                            <p className="text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg mx-auto md:mx-0">
+                                                                Aplikasi Anda saat ini berjalan dalam mode terbatas. Aktivasi diperlukan untuk memastikan dukungan penuh dan pembaruan sistem di masa mendatang.
+                                                            </p>
+                                                            <button
+                                                                onClick={() => setIsActivationModalOpen(true)}
+                                                                className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-lg rounded-2xl transition-all shadow-xl shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-3 group mx-auto md:mx-0"
+                                                            >
+                                                                <FiKey className="group-hover:rotate-12 transition-transform" />
+                                                                Aktivasi Sekarang
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {licenseInfo.activated && (
+                                                <div className="px-10 py-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                        <FiShield size={14} className="text-emerald-500" />
+                                                        Data Lisensi terenkripsi secara aman di server lokal.
+                                                    </div>
                                                     <button
                                                         onClick={() => setIsActivationModalOpen(true)}
-                                                        className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-lg rounded-2xl transition-all shadow-xl shadow-blue-500/25 active:scale-95 flex items-center justify-center gap-3 group mx-auto md:mx-0"
+                                                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                                                     >
-                                                        <FiKey className="group-hover:rotate-12 transition-transform" />
-                                                        Aktivasi Sekarang
+                                                        <FiRefreshCw size={12} /> Perbarui Kode Lisensi
                                                     </button>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
 
-                                    {licenseInfo.activated && (
-                                        <div className="px-10 py-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                            <div className="flex items-center gap-2 text-xs text-slate-400">
-                                                <FiShield size={14} className="text-emerald-500" />
-                                                Data Lisensi terenkripsi secara aman di server lokal.
+                                        <div className="p-8 bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl border border-blue-100/50 dark:border-blue-900/20 flex items-start gap-4">
+                                            <FiAlertCircle className="text-blue-500 shrink-0 mt-1" size={20} />
+                                            <div>
+                                                <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Informasi Hak Cipta</h4>
+                                                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 leading-relaxed">
+                                                    Lisensi ini hanya berlaku untuk 1 instance server. Memindahkan database ke server lain mungkin memerlukan kode aktivasi baru tergantung pada konfigurasi hardware ID. Hubungi dukungan jika Anda melakukan migrasi server.
+                                                </p>
                                             </div>
-                                            <button
-                                                onClick={() => setIsActivationModalOpen(true)}
-                                                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                                            >
-                                                <FiRefreshCw size={12} /> Perbarui Kode Lisensi
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Hardware Settings */}
+                                {/* Hardware Settings */}
+                                {activeTab === 'hardware' && (
+                                    <HardwareSettings
+                                        fingerprintIp={fingerprintIp} setFingerprintIp={setFingerprintIp}
+                                        fingerprintPort={fingerprintPort} setFingerprintPort={setFingerprintPort}
+                                        saveSettings={saveSettings}
+                                    />
+                                )}
+
+                                {activeTab === 'whatsapp' && (
+                                    <WhatsAppSettings
+                                        waGatewayUrl={waGatewayUrl} setWaGatewayUrl={setWaGatewayUrl}
+                                        waApiKey={waApiKey} setWaApiKey={setWaApiKey}
+                                        waSessionName={waSessionName} setWaSessionName={setWaSessionName}
+                                        waSenderNumber={waSenderNumber} setWaSenderNumber={setWaSenderNumber}
+                                        waTemplateInv={waTemplateInv} setWaTemplateInv={setWaTemplateInv}
+                                        waTemplateProcess={waTemplateProcess} setWaTemplateProcess={setWaTemplateProcess}
+                                        waTemplateDone={waTemplateDone} setWaTemplateDone={setWaTemplateDone}
+                                        waTemplateKasir={waTemplateKasir} setWaTemplateKasir={setWaTemplateKasir}
+                                        saveSettings={saveSettings}
+                                    />
+                                )}
+
+                                {activeTab === 'telegram' && (
+                                    <TelegramSettings
+                                        telegramBotToken={telegramBotToken} setTelegramBotToken={setTelegramBotToken}
+                                        telegramChatId={telegramChatId} setTelegramChatId={setTelegramChatId}
+                                        telegramEnabled={telegramEnabled} setTelegramEnabled={setTelegramEnabled}
+                                        telegramStokKritis={telegramStokKritis} setTelegramStokKritis={setTelegramStokKritis}
+                                        telegramLaporanKasir={telegramLaporanKasir} setTelegramLaporanKasir={setTelegramLaporanKasir}
+                                        telegramSecurityAlert={telegramSecurityAlert} setTelegramSecurityAlert={setTelegramSecurityAlert}
+                                        telegramErrorMonitoring={telegramErrorMonitoring} setTelegramErrorMonitoring={setTelegramErrorMonitoring}
+                                        saveSettings={saveSettings}
+                                    />
+                                )}
+
+
+                                {activeTab === 'cdn' && (
+                                    <CDNSettings
+                                        cdnAccountId={cdnAccountId} setCdnAccountId={setCdnAccountId}
+                                        cdnBucketName={cdnBucketName} setCdnBucketName={setCdnBucketName}
+                                        cdnAccessKey={cdnAccessKey} setCdnAccessKey={setCdnAccessKey}
+                                        cdnSecretKey={cdnSecretKey} setCdnSecretKey={setCdnSecretKey}
+                                        cdnCustomDomain={cdnCustomDomain} setCdnCustomDomain={setCdnCustomDomain}
+                                        saveSettings={saveSettings}
+                                    />
+                                )}
+
+                                {activeTab === 'system' && (
+                                    <SystemSettings />
+                                )}
+
+
+                                {/* User Form Modal */}
+                                <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiEdit className="text-blue-500" /> Edit Pengguna</div> : <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiPlus className="text-blue-500" /> Tambah User Baru</div>}>
+                                    <div className="space-y-5 py-2">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lengkap</label>
+                                            <div className="relative">
+                                                <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Masukkan nama lengkap" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Username</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
+                                                <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="username" value={userForm.username} onChange={e => setUserForm(f => ({ ...f, username: e.target.value }))} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Password {editUser && '(opsional)'}</label>
+                                            <div className="relative">
+                                                <FiPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" type="password" placeholder={editUser ? "Kosongkan jika tidak diubah" : "••••••••"} value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Role Akses</label>
+                                                <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="kasir">Kasir</option>
+                                                    <option value="operator">Operator</option>
+                                                    <option value="teknisi">Teknisi</option>
+                                                    <option value="desainer">Desain</option>
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Status Akun</label>
+                                                <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.isActive} onChange={e => setUserForm(f => ({ ...f, isActive: e.target.value === 'true' }))}>
+                                                    <option value="true">Aktif</option>
+                                                    <option value="false">Nonaktif</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center justify-center gap-2 group" onClick={handleSaveUser}>
+                                                <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Konfigurasi User
                                             </button>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="p-8 bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl border border-blue-100/50 dark:border-blue-900/20 flex items-start gap-4">
-                                    <FiAlertCircle className="text-blue-500 shrink-0 mt-1" size={20} />
-                                    <div>
-                                        <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Informasi Hak Cipta</h4>
-                                        <p className="text-xs text-blue-600/70 dark:text-blue-400/70 leading-relaxed">
-                                            Lisensi ini hanya berlaku untuk 1 instance server. Memindahkan database ke server lain mungkin memerlukan kode aktivasi baru tergantung pada konfigurasi hardware ID. Hubungi dukungan jika Anda melakukan migrasi server.
-                                        </p>
                                     </div>
-                                </div>
-                            </div>
-                        )}
+                                </Modal>
 
-                        {/* Hardware Settings */}
-                        {/* Hardware Settings */}
-                        {activeTab === 'hardware' && (
-                            <HardwareSettings 
-                                fingerprintIp={fingerprintIp} setFingerprintIp={setFingerprintIp}
-                                fingerprintPort={fingerprintPort} setFingerprintPort={setFingerprintPort}
-                                saveSettings={saveSettings}
-                            />
-                        )}
-
-                        {activeTab === 'whatsapp' && (
-                            <WhatsAppSettings
-                                waGatewayUrl={waGatewayUrl} setWaGatewayUrl={setWaGatewayUrl}
-                                waApiKey={waApiKey} setWaApiKey={setWaApiKey}
-                                waSessionName={waSessionName} setWaSessionName={setWaSessionName}
-                                waSenderNumber={waSenderNumber} setWaSenderNumber={setWaSenderNumber}
-                                waTemplateInv={waTemplateInv} setWaTemplateInv={setWaTemplateInv}
-                                waTemplateProcess={waTemplateProcess} setWaTemplateProcess={setWaTemplateProcess}
-                                waTemplateDone={waTemplateDone} setWaTemplateDone={setWaTemplateDone}
-                                waTemplateKasir={waTemplateKasir} setWaTemplateKasir={setWaTemplateKasir}
-                                saveSettings={saveSettings}
-                            />
-                        )}
-
-                        {activeTab === 'telegram' && (
-                            <TelegramSettings
-                                telegramBotToken={telegramBotToken} setTelegramBotToken={setTelegramBotToken}
-                                telegramChatId={telegramChatId} setTelegramChatId={setTelegramChatId}
-                                telegramEnabled={telegramEnabled} setTelegramEnabled={setTelegramEnabled}
-                                telegramStokKritis={telegramStokKritis} setTelegramStokKritis={setTelegramStokKritis}
-                                telegramLaporanKasir={telegramLaporanKasir} setTelegramLaporanKasir={setTelegramLaporanKasir}
-                                telegramSecurityAlert={telegramSecurityAlert} setTelegramSecurityAlert={setTelegramSecurityAlert}
-                                telegramErrorMonitoring={telegramErrorMonitoring} setTelegramErrorMonitoring={setTelegramErrorMonitoring}
-                                saveSettings={saveSettings}
-                            />
-                        )}
-
-
-                        {activeTab === 'cdn' && (
-                            <CDNSettings
-                                cdnAccountId={cdnAccountId} setCdnAccountId={setCdnAccountId}
-                                cdnBucketName={cdnBucketName} setCdnBucketName={setCdnBucketName}
-                                cdnAccessKey={cdnAccessKey} setCdnAccessKey={setCdnAccessKey}
-                                cdnSecretKey={cdnSecretKey} setCdnSecretKey={setCdnSecretKey}
-                                cdnCustomDomain={cdnCustomDomain} setCdnCustomDomain={setCdnCustomDomain}
-                                saveSettings={saveSettings}
-                            />
-                        )}
-                        
-                        {activeTab === 'system' && (
-                            <SystemSettings />
-                        )}
-
-
-                        {/* User Form Modal */}
-                        <Modal isOpen={userFormOpen} onClose={() => setUserFormOpen(false)} title={editUser ? <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiEdit className="text-blue-500" /> Edit Pengguna</div> : <div className="flex items-center gap-2 text-slate-800 dark:text-white"><FiPlus className="text-blue-500" /> Tambah User Baru</div>}>
-                            <div className="space-y-5 py-2">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lengkap</label>
-                                    <div className="relative">
-                                        <FiUsers className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="Masukkan nama lengkap" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Username</label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">@</span>
-                                        <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" placeholder="username" value={userForm.username} onChange={e => setUserForm(f => ({ ...f, username: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Password {editUser && '(opsional)'}</label>
-                                    <div className="relative">
-                                        <FiPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                        <input className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" type="password" placeholder={editUser ? "Kosongkan jika tidak diubah" : "••••••••"} value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Role Akses</label>
-                                        <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.role} onChange={e => setUserForm(f => ({ ...f, role: e.target.value }))}>
-                                            <option value="admin">Admin</option>
-                                            <option value="kasir">Kasir</option>
-                                            <option value="operator">Operator</option>
-                                            <option value="teknisi">Teknisi</option>
-                                            <option value="desainer">Desain</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Status Akun</label>
-                                        <select className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white" value={userForm.isActive} onChange={e => setUserForm(f => ({ ...f, isActive: e.target.value === 'true' }))}>
-                                            <option value="true">Aktif</option>
-                                            <option value="false">Nonaktif</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4">
-                                    <button className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-200 dark:shadow-none flex items-center justify-center gap-2 group" onClick={handleSaveUser}>
-                                        <FiSave className="group-hover:scale-110 transition-transform" /> Simpan Konfigurasi User
-                                    </button>
-                                </div>
-                            </div>
-                        </Modal>
-
-                        <ActivationModal
-                            isOpen={isActivationModalOpen}
-                            onClose={() => setIsActivationModalOpen(false)}
-                            onActivated={(info) => setLicenseInfo({ activated: true, ...info })}
-                            hardwareId={licenseInfo.hardwareId}
-                        />
-                    </motion.div>
-                </AnimatePresence>
-                </div>
+                                <ActivationModal
+                                    isOpen={isActivationModalOpen}
+                                    onClose={() => setIsActivationModalOpen(false)}
+                                    onActivated={(info) => setLicenseInfo({ activated: true, ...info })}
+                                    hardwareId={licenseInfo.hardwareId}
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 )}
             </main>
         </div >
