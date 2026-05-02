@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { FiRefreshCw, FiGithub, FiCheckCircle, FiClock, FiActivity, FiTag, FiExternalLink, FiCpu, FiServer, FiAlertTriangle } from 'react-icons/fi';
+import { FiRefreshCw, FiGithub, FiCheckCircle, FiClock, FiActivity, FiTag, FiExternalLink, FiCpu, FiServer, FiAlertTriangle, FiCheck, FiInfo } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 
 export default function SystemSettings() {
@@ -90,7 +90,7 @@ export default function SystemSettings() {
                             <FiRefreshCw className={loading ? 'animate-spin text-blue-600' : 'text-blue-600'} /> 
                             System Update Center
                         </h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest">Pusat pembaruan sistem dan monitoring source code github</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1 uppercase tracking-widest">Pusat kendali versi dan pemeliharaan integritas sistem</p>
                     </div>
                     <button 
                         onClick={checkUpdate}
@@ -118,21 +118,12 @@ export default function SystemSettings() {
                         <div className="space-y-8">
                             <div className="flex flex-col md:flex-row gap-8 items-start">
                                 <div className="w-full md:w-1/2 space-y-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center">
-                                            <FiGithub size={20} />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Source Repository</p>
-                                            <p className="text-sm font-bold text-slate-800 dark:text-white">abadijayacopier/pos-percetakan</p>
-                                        </div>
-                                    </div>
 
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Latest Production Commit</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Informasi Rilis Produksi</p>
                                         <div className="flex items-start gap-4">
                                             <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shrink-0">
-                                                <span className="material-symbols-outlined text-xl">commit</span>
+                                                <FiTag className="text-xl" />
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-slate-900 dark:text-white leading-snug mb-1">
@@ -140,7 +131,7 @@ export default function SystemSettings() {
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-3 mt-3">
                                                     <span className="text-[10px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-600 px-2 py-0.5 rounded uppercase tracking-widest">
-                                                        SHA: {updateInfo.latestCommit.sha.substring(0, 7)}
+                                                        ID: {updateInfo.latestCommit.sha.substring(0, 8)}
                                                     </span>
                                                     <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
                                                         <FiClock /> {new Date(updateInfo.latestCommit.date).toLocaleString('id-ID')}
@@ -166,8 +157,8 @@ export default function SystemSettings() {
                                                     <FiCheck size={32} />
                                                 </div>
                                                 <div>
-                                                    <h5 className="text-xl font-black italic tracking-tighter">SYSTEM IS UP TO DATE</h5>
-                                                    <p className="text-slate-400 text-sm mt-1">Sistem Anda sudah menjalankan versi terbaru dari repository pusat.</p>
+                                                    <h5 className="text-xl font-black italic tracking-tighter">SISTEM VERSI TERBARU</h5>
+                                                    <p className="text-slate-400 text-sm mt-1">Sistem Anda sudah menjalankan versi terbaru dan paling stabil saat ini.</p>
                                                 </div>
                                             </div>
                                         ) : (
@@ -176,20 +167,12 @@ export default function SystemSettings() {
                                                     <FiAlertTriangle size={32} />
                                                 </div>
                                                 <div>
-                                                    <h5 className="text-xl font-black italic tracking-tighter">NEW UPDATE AVAILABLE</h5>
-                                                    <p className="text-slate-400 text-sm mt-1">Ditemukan perubahan pada repository. Silakan lakukan pull atau update manual.</p>
+                                                    <h5 className="text-xl font-black italic tracking-tighter">PEMBARUAN TERSEDIA</h5>
+                                                    <p className="text-slate-400 text-sm mt-1">Versi terbaru telah tersedia di server. Silakan lakukan sinkronisasi untuk memperbarui sistem.</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        <a 
-                                            href={updateInfo.latestCommit.url} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 text-xs font-black bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl transition-all uppercase tracking-widest"
-                                        >
-                                            Lihat di Github <FiExternalLink />
-                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -199,9 +182,9 @@ export default function SystemSettings() {
                                     <FiInfo size={20} />
                                 </div>
                                 <div className="text-sm">
-                                    <p className="font-bold text-slate-800 dark:text-white mb-1">Catatan Pembaruan</p>
+                                    <p className="font-bold text-slate-800 dark:text-white mb-1">Informasi Pemeliharaan</p>
                                     <p className="text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                                        Pembaruan otomatis akan memengaruhi file inti sistem. Pastikan untuk melakukan backup database sebelum melakukan update manual melalui terminal git pull. Sistem notifikasi akan muncul secara otomatis jika commit baru terdeteksi.
+                                        Setiap pembaruan akan mengoptimalkan modul inti sistem untuk performa yang lebih stabil dan aman. Harap melakukan pencadangan data secara berkala demi keamanan informasi Anda. Sistem akan memberikan notifikasi otomatis jika terdapat peningkatan versi yang tersedia.
                                     </p>
                                 </div>
                             </div>

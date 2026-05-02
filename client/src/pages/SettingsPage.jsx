@@ -554,8 +554,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                 { id: 'cdn', title: 'CDN & CLOUD STORAGE', desc: 'Konfigurasi Cloudflare R2 dan custom domain CDN.', icon: <FiDatabase />, color: 'blue' },
                                 { id: 'backup', title: 'BACKUP & RESTORE', desc: 'Cadangkan dan pulihkan database sistem.', icon: <FiSave />, color: 'teal' },
                                 { id: 'license', title: 'LISENSI & KEAMANAN', desc: 'Status aktivasi dan lisensi aplikasi.', icon: <FiShield />, color: 'red' },
-                                { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue' },
-                            ].map((cat, idx) => (
+                                { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue', protected: true },
+                            ].filter(cat => !cat.protected || (cat.protected && licenseInfo.activated)).map((cat, idx) => (
                                 <motion.div
                                     key={cat.id}
                                     initial={{ opacity: 0, y: 20 }}
