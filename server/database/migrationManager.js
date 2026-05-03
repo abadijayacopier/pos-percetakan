@@ -1,4 +1,4 @@
-const { getActivePool, currentDbType } = require('../config/database');
+const { getActivePool, currentDbType, ensureMySQLDatabaseExists } = require('../config/database');
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
@@ -9,6 +9,12 @@ const { getActivePool, currentDbType } = require('../config/database');
 const runMigrations = async () => {
     try {
         console.log('🚀 Checking database integrity & migrations...');
+
+        // 0. Auto-Create MySQL Database if missing
+        if (currentDbType === 'mysql') {
+            await ensureMySQLDatabaseExists();
+        }
+
         const db = await getActivePool();
 
         if (currentDbType === 'sqlite') {

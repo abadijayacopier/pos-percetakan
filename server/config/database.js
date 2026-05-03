@@ -107,7 +107,7 @@ const masterPool = currentMode === 'saas' ? mysql.createPool({
 
 // 2. Standalone Pool (MySQL fallback for Offline mode if chosen by user)
 const standalonePool = currentMode === 'standalone' && currentDbType !== 'sqlite'
-    ? mysql.createPool({ ...dbConfig, database: process.env.DB_NAME || 'pos_abadi' })
+    ? mysql.createPool({ ...dbConfig, database: externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi' })
     : null;
 
 // 3. Tenant Pools Cache (SaaS Mode only)
@@ -135,6 +135,26 @@ const getTenantPool = (dbName) => {
     const pool = mysql.createPool({ ...dbConfig, database: dbName });
     tenantPools.set(dbName, pool);
     return pool;
+};
+
+/**
+ * Helper to ensure MySQL database exists before attempting migration
+ */
+const ensureMySQLDatabaseExists = async () => {
+    try {
+        const connection = await mysql.createConnection({
+            host: dbConfig.host,
+            user: dbConfig.user,
+            password: dbConfig.password
+        });
+        const dbName = externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi';
+        await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        await connection.end();
+        return true;
+    } catch (e) {
+        console.error('❌ Failed to auto-create MySQL database:', e.message);
+        return false;
+    }
 };
 
 const testConnection = async (poolOrDb) => {
@@ -169,5 +189,7 @@ module.exports = {
     initSqlite,
     testConnection,
     currentMode,
-    currentDbType
+    currentDbType,
+    dbConfig,
+    ensureMySQLDatabaseExists
 };
