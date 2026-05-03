@@ -35,18 +35,18 @@ const MENU_GROUPS = [
                 id: 'printing',
                 label: 'Percetakan',
                 icon: <FiPrinter />,
-                roles: ['admin', 'kasir', 'operator'],
+                roles: ['admin', 'operator'],
                 subItems: [
-                    { id: 'digital-printing', label: 'Digital Printing', icon: <FiImage />, roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'digital-printing', label: 'Digital Printing', icon: <FiImage />, roles: ['admin', 'operator'] },
                     { id: 'production-queue', label: 'Antrean Produksi', icon: <HiOutlineCollection />, roles: ['admin', 'operator', 'teknisi'] },
-                    { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'operator'] },
                     { id: 'stok-bahan', label: 'Stok Bahan', icon: <FiBox />, roles: ['admin', 'operator'] },
-                    { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'kasir', 'operator'] },
+                    { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'operator'] },
                     { id: 'manajemen-desainer', label: 'Manajemen Desain', icon: <FiCpu />, roles: ['admin'] },
                 ],
             },
-            { id: 'service', label: 'Service Fotocopy', icon: <FiCpu />, roles: ['admin', 'kasir', 'teknisi'] },
-            { id: 'handover', label: 'Serah Terima', icon: <FiHash />, roles: ['admin', 'kasir'] },
+            { id: 'service', label: 'Service Fotocopy', icon: <FiCpu />, roles: ['admin', 'teknisi'] },
+            { id: 'handover', label: 'Serah Terima', icon: <FiHash />, roles: ['admin'] },
         ]
     },
     {
@@ -54,13 +54,13 @@ const MENU_GROUPS = [
         items: [
             { id: 'dashboard-desainer', label: 'Dashboard Desain', icon: <FiActivity />, roles: ['admin', 'desainer', 'teknisi'] },
             { id: 'dashboard-teknisi', label: 'Dashboard Teknisi', icon: <FiCpu />, roles: ['admin', 'teknisi'] },
-            { id: 'receivables', label: 'Piutang Pelanggan', icon: <FiCreditCard />, roles: ['admin', 'kasir'] },
+            { id: 'receivables', label: 'Piutang Pelanggan', icon: <FiCreditCard />, roles: ['admin'] },
         ]
     },
     {
         title: 'Data Master',
         items: [
-            { id: 'inventory', label: 'Data Inventori / Barang', icon: <FiBox />, roles: ['admin', 'kasir', 'operator'] },
+            { id: 'inventory', label: 'Data Inventori / Barang', icon: <FiBox />, roles: ['admin', 'operator'] },
             { id: 'damaged-goods', label: 'Barang Rusak', icon: <FiAlertTriangle />, roles: ['admin', 'operator'] },
             { id: 'pembelian', label: 'Barang Masuk (Restock)', icon: <FiPackage />, roles: ['admin', 'operator'] },
             { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'operator'] },

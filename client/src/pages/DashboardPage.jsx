@@ -273,8 +273,8 @@ export default function DashboardPage({ onNavigate }) {
                 {[
                     { label: 'Pendapatan Hari Ini', value: formatRupiah(stats.omset), icon: FiDollarSign, color: 'emerald', tag: 'Hari Ini', hidden: !isAdmin },
                     { label: 'Antrean Cetak', value: `${stats.pendingPrintCount} Tugas`, icon: FiPrinter, color: 'cyan', tag: 'Antrean SPK' },
-                    { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiCpu, color: 'amber', tag: 'Servis Berjalan' },
-                    { label: 'Stok Menipis', value: `${stats.lowStockCount} Barang`, icon: FiLayers, color: 'rose', tag: 'Penting' },
+                    { label: 'Servis Aktif', value: `${stats.pendingServiceCount} Tiket`, icon: FiCpu, color: 'amber', tag: 'Servis Berjalan', hidden: userRole === 'kasir' },
+                    { label: 'Stok Menipis', value: `${stats.lowStockCount} Barang`, icon: FiLayers, color: 'rose', tag: 'Penting', hidden: userRole === 'kasir' },
                 ].filter(s => !s.hidden).map(s => (
                     <motion.div
                         variants={itemVariants}

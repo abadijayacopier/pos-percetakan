@@ -5,7 +5,9 @@ export default function UserManagement({
     users,
     setEditUser,
     setUserForm,
-    setUserFormOpen
+    setUserFormOpen,
+    isAdmin,
+    currentUser
 }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -13,11 +15,12 @@ export default function UserManagement({
 
     // Filter Logic
     const filteredUsers = useMemo(() => {
-        return users.filter(u => 
+        const baseUsers = isAdmin ? users : users.filter(u => u.id === currentUser?.id);
+        return baseUsers.filter(u => 
             u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.username.toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [users, searchTerm]);
+    }, [users, searchTerm, isAdmin, currentUser]);
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -41,26 +44,30 @@ export default function UserManagement({
                             <FiUsers size={24} />
                         </div>
                         <div>
-                            <h3 className="font-black text-slate-800 dark:text-white text-xl tracking-tight uppercase">Manajemen Pengguna</h3>
-                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Total: {filteredUsers.length} Account</p>
+                            <h3 className="font-black text-slate-800 dark:text-white text-xl tracking-tight uppercase">{isAdmin ? 'Manajemen Pengguna' : 'Profil Saya'}</h3>
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">{isAdmin ? `Total: ${filteredUsers.length} Account` : 'Informasi Akun Anda'}</p>
                         </div>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full md:w-auto">
                         {/* Search Bar */}
-                        <div className="relative flex-1 md:w-64">
-                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                                type="text"
-                                placeholder="Cari nama/user..."
-                                className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white"
-                                value={searchTerm}
-                                onChange={handleSearch}
-                            />
-                        </div>
-                        <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all text-xs font-black shadow-xl shadow-blue-500/20 uppercase tracking-widest whitespace-nowrap" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}>
-                            <FiPlus size={18} /> Tambah User
-                        </button>
+                        {isAdmin && (
+                            <div className="relative flex-1 md:w-64">
+                                <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input 
+                                    type="text"
+                                    placeholder="Cari nama/user..."
+                                    className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all dark:text-white"
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                />
+                            </div>
+                        )}
+                        {isAdmin && (
+                            <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all text-xs font-black shadow-xl shadow-blue-500/20 uppercase tracking-widest whitespace-nowrap" onClick={() => { setEditUser(null); setUserForm({ name: '', username: '', password: '', role: 'kasir', isActive: true }); setUserFormOpen(true); }}>
+                                <FiPlus size={18} /> Tambah User
+                            </button>
+                        )}
                     </div>
                 </div>
 

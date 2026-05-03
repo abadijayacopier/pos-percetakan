@@ -494,20 +494,20 @@ export default function SettingsPage({ onNavigate, pageState }) {
     };
 
     const TABS = [
-        { id: 'general', icon: <FiSettings />, text: 'Umum' },
-        { id: 'fotocopy', icon: <FiFile />, text: 'Layanan & Harga' },
-        { id: 'landing', icon: <FiImage />, text: 'Landing Page' },
-        { id: 'users', icon: <FiUsers />, text: 'Users' },
-        { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota' },
-        { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas' },
-        { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS' },
-        { id: 'hardware', icon: <FiCpu />, text: 'Perangkat Keras' },
-        { id: 'backup', icon: <FiSave />, text: 'Backup & Restore' },
-        { id: 'whatsapp', icon: <FiMessageCircle />, text: 'WhatsApp Gateway' },
-        { id: 'telegram', icon: <FiSend />, text: 'Telegram Integration' },
-        { id: 'cdn', icon: <FiDatabase />, text: 'CDN & Cloud Storage' },
-        { id: 'license', icon: <FiShield />, text: 'Lisensi' },
-    ];
+        { id: 'general', icon: <FiSettings />, text: 'Umum', adminOnly: true },
+        { id: 'fotocopy', icon: <FiFile />, text: 'Layanan & Harga', adminOnly: true },
+        { id: 'landing', icon: <FiImage />, text: 'Landing Page', adminOnly: true },
+        { id: 'users', icon: <FiUsers />, text: isAdmin ? 'Users' : 'Profil Saya' },
+        { id: 'printer', icon: <FiPrinter />, text: 'Printer & Nota', adminOnly: true },
+        { id: 'log', icon: <FiEdit />, text: 'Log Aktivitas', adminOnly: true },
+        { id: 'payment', icon: <FiDollarSign />, text: 'Pembayaran & QRIS', adminOnly: true },
+        { id: 'hardware', icon: <FiCpu />, text: 'Perangkat Keras', adminOnly: true },
+        { id: 'backup', icon: <FiSave />, text: 'Backup & Restore', adminOnly: true },
+        { id: 'whatsapp', icon: <FiMessageCircle />, text: 'WhatsApp Gateway', adminOnly: true },
+        { id: 'telegram', icon: <FiSend />, text: 'Telegram Integration', adminOnly: true },
+        { id: 'cdn', icon: <FiDatabase />, text: 'CDN & Cloud Storage', adminOnly: true },
+        { id: 'license', icon: <FiShield />, text: 'Lisensi', adminOnly: true },
+    ].filter(t => !t.adminOnly || isAdmin);
 
     return (
         <div className="flex-1 min-w-0 bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 font-display transition-colors pb-10">
@@ -518,8 +518,10 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         <FiSettings size={24} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Pengaturan Sistem</h1>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Kelola harga layanan, identitas toko, dan perangkat keras</p>
+                        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">{isAdmin ? 'Pengaturan Sistem' : 'Profil & Keamanan'}</h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            {isAdmin ? 'Kelola harga layanan, identitas toko, dan perangkat keras' : 'Kelola informasi profil dan kata sandi Anda'}
+                        </p>
                     </div>
                 </div>
             </header>
@@ -532,30 +534,30 @@ export default function SettingsPage({ onNavigate, pageState }) {
                         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div>
                                 <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
-                                    Pengaturan <span className="text-blue-600">Sistem</span>
+                                    {isAdmin ? 'Pengaturan' : 'Profil'} <span className="text-blue-600">{isAdmin ? 'Sistem' : 'Saya'}</span>
                                 </h1>
-                                <p className="text-slate-500 mt-2 font-medium">KONFIGURASI PARAMETER OPERASIONAL POS ABADI JAYA</p>
+                                <p className="text-slate-500 mt-2 font-medium uppercase">{isAdmin ? 'KONFIGURASI PARAMETER OPERASIONAL POS ABADI JAYA' : 'Pusat Keamanan & Informasi Akun'}</p>
                             </div>
                         </div>
 
                         {/* Hub Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {[
-                                { id: 'general', title: 'PENGATURAN UMUM', desc: 'Identitas toko, alamat, dan pengaturan pajak.', icon: <FiHome />, color: 'blue' },
-                                { id: 'fotocopy', title: 'TARIF & BIAYA', desc: 'Harga fotocopy, cetak, desain, dan jilid.', icon: <FiDollarSign />, color: 'indigo' },
-                                { id: 'printer', title: 'PRINTER & NOTA', desc: 'Setting printer, ukuran struk, dan logo nota.', icon: <FiPrinter />, color: 'emerald' },
-                                { id: 'users', title: 'MANAJEMEN PENGGUNA', desc: 'Kelola akun staf, kasir, dan admin.', icon: <FiUsers />, color: 'orange' },
-                                { id: 'landing', title: 'TAMPILAN & LANDING', desc: 'Logo website, favicon, dan galeri depan.', icon: <FiImage />, color: 'rose' },
-                                { id: 'payment', title: 'PEMBAYARAN & QRIS', desc: 'Midtrans, Bank, dan Dana (QRIS Dinamis).', icon: <FiZap />, color: 'cyan' },
-                                { id: 'log', title: 'AUDIT LOG SYSTEM', desc: 'Riwayat aktivitas staf dan sistem.', icon: <FiActivity />, color: 'slate' },
-                                { id: 'hardware', title: 'PERANGKAT KERAS', desc: 'Setting IP Fingerprint dan perangkat.', icon: <FiCpu />, color: 'purple' },
-                                { id: 'whatsapp', title: 'WHATSAPP GATEWAY', desc: 'Konfigurasi API WA & Template Pesan.', icon: <FiMessageCircle />, color: 'emerald' },
-                                { id: 'telegram', title: 'TELEGRAM INTEGRATION', desc: 'Robot Notifikasi & Monitoring Sistem.', icon: <FiSend />, color: 'sky' },
-                                { id: 'cdn', title: 'CDN & CLOUD STORAGE', desc: 'Konfigurasi Cloudflare R2 dan custom domain CDN.', icon: <FiDatabase />, color: 'blue' },
-                                { id: 'backup', title: 'BACKUP & RESTORE', desc: 'Cadangkan dan pulihkan database sistem.', icon: <FiSave />, color: 'teal' },
-                                { id: 'license', title: 'LISENSI & KEAMANAN', desc: 'Status aktivasi dan lisensi aplikasi.', icon: <FiShield />, color: 'red' },
-                                { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue', protected: true },
-                            ].filter(cat => !cat.protected || (cat.protected && licenseInfo.activated)).map((cat, idx) => (
+                                { id: 'general', title: 'PENGATURAN UMUM', desc: 'Identitas toko, alamat, dan pengaturan pajak.', icon: <FiHome />, color: 'blue', adminOnly: true },
+                                { id: 'fotocopy', title: 'TARIF & BIAYA', desc: 'Harga fotocopy, cetak, desain, dan jilid.', icon: <FiDollarSign />, color: 'indigo', adminOnly: true },
+                                { id: 'printer', title: 'PRINTER & NOTA', desc: 'Setting printer, ukuran struk, dan logo nota.', icon: <FiPrinter />, color: 'emerald', adminOnly: true },
+                                { id: 'users', title: isAdmin ? 'MANAJEMEN PENGGUNA' : 'PROFIL SAYA', desc: isAdmin ? 'Kelola akun staf, kasir, dan admin.' : 'Lihat dan ubah informasi akun Anda.', icon: <FiUsers />, color: 'orange' },
+                                { id: 'landing', title: 'TAMPILAN & LANDING', desc: 'Logo website, favicon, dan galeri depan.', icon: <FiImage />, color: 'rose', adminOnly: true },
+                                { id: 'payment', title: 'PEMBAYARAN & QRIS', desc: 'Midtrans, Bank, dan Dana (QRIS Dinamis).', icon: <FiZap />, color: 'cyan', adminOnly: true },
+                                { id: 'log', title: 'AUDIT LOG SYSTEM', desc: 'Riwayat aktivitas staf dan sistem.', icon: <FiActivity />, color: 'slate', adminOnly: true },
+                                { id: 'hardware', title: 'PERANGKAT KERAS', desc: 'Setting IP Fingerprint dan perangkat.', icon: <FiCpu />, color: 'purple', adminOnly: true },
+                                { id: 'whatsapp', title: 'WHATSAPP GATEWAY', desc: 'Konfigurasi API WA & Template Pesan.', icon: <FiMessageCircle />, color: 'emerald', adminOnly: true },
+                                { id: 'telegram', title: 'TELEGRAM INTEGRATION', desc: 'Robot Notifikasi & Monitoring Sistem.', icon: <FiSend />, color: 'sky', adminOnly: true },
+                                { id: 'cdn', title: 'CDN & CLOUD STORAGE', desc: 'Konfigurasi Cloudflare R2 dan custom domain CDN.', icon: <FiDatabase />, color: 'blue', adminOnly: true },
+                                { id: 'backup', title: 'BACKUP & RESTORE', desc: 'Cadangkan dan pulihkan database sistem.', icon: <FiSave />, color: 'teal', adminOnly: true },
+                                { id: 'license', title: 'LISENSI & KEAMANAN', desc: 'Status aktivasi dan lisensi aplikasi.', icon: <FiShield />, color: 'red', adminOnly: true },
+                                { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue', protected: true, adminOnly: true },
+                            ].filter(cat => (!cat.protected || (cat.protected && licenseInfo.activated)) && (!cat.adminOnly || isAdmin)).map((cat, idx) => (
                                 <motion.div
                                     key={cat.id}
                                     initial={{ opacity: 0, y: 20 }}
@@ -667,6 +669,8 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                         setEditUser={setEditUser}
                                         setUserForm={setUserForm}
                                         setUserFormOpen={setUserFormOpen}
+                                        isAdmin={isAdmin}
+                                        currentUser={user}
                                     />
                                 )}
 
