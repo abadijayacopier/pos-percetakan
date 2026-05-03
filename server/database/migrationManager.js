@@ -291,7 +291,31 @@ async function ensureUnifiedTablesMySQL(db) {
             other_deductions DECIMAL(15,2) DEFAULT 0, net_salary DECIMAL(15,2) DEFAULT 0, 
             status VARCHAR(50) DEFAULT 'draft', paid_at DATETIME, 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB`
+        ) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS print_orders (
+            id VARCHAR(50) PRIMARY KEY, order_no VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), 
+            type VARCHAR(50), description TEXT, specs TEXT, qty INT, unit VARCHAR(20), 
+            total_price DECIMAL(15,2) DEFAULT 0, dp_amount DECIMAL(15,2) DEFAULT 0, remaining DECIMAL(15,2) DEFAULT 0, 
+            shipping_cost DECIMAL(15,2) DEFAULT 0, deadline DATETIME, status VARCHAR(50) DEFAULT 'pending', notes TEXT, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS digital_printing (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), price DECIMAL(15,2) DEFAULT 0, unit VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS offset_printing (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), price DECIMAL(15,2) DEFAULT 0, unit VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS offset_products (id VARCHAR(50) PRIMARY KEY, nama_produk VARCHAR(200), deskripsi_singkat TEXT, harga_base DECIMAL(15,2) DEFAULT 0, satuan VARCHAR(20), is_best_seller TINYINT(1) DEFAULT 0, image_url TEXT) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS offset_orders (id VARCHAR(50) PRIMARY KEY, order_number VARCHAR(50) UNIQUE, product_id VARCHAR(50), customer_id VARCHAR(50), qty INT DEFAULT 1, spesifikasi_json TEXT, total_estimasi_produksi DECIMAL(15,2) DEFAULT 0, total_biaya_desain DECIMAL(15,2) DEFAULT 0, grand_total DECIMAL(15,2) DEFAULT 0, status_order VARCHAR(50) DEFAULT 'Pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS design_sessions (id VARCHAR(50) PRIMARY KEY, technician_id VARCHAR(50), order_id VARCHAR(50), start_time DATETIME, end_time DATETIME, current_duration INT DEFAULT 0, hourly_rate DECIMAL(15,2) DEFAULT 50000, status VARCHAR(50) DEFAULT 'Running') ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS spk_logs (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), user_id VARCHAR(50), action VARCHAR(100), description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS service_spareparts (id INT AUTO_INCREMENT PRIMARY KEY, service_order_id INT, name VARCHAR(200), qty INT DEFAULT 1, price DECIMAL(15,2) DEFAULT 0, product_id VARCHAR(50)) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS attendance (id INT AUTO_INCREMENT PRIMARY KEY, employee_id VARCHAR(50), date DATE, clock_in DATETIME, clock_out DATETIME, work_hours DECIMAL(5,2) DEFAULT 0, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS employee_loans (id VARCHAR(50) PRIMARY KEY, employee_id VARCHAR(50), amount DECIMAL(15,2), remaining_amount DECIMAL(15,2), date DATE, description TEXT, status VARCHAR(50) DEFAULT 'unpaid', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS design_assignments (id INT AUTO_INCREMENT PRIMARY KEY, task_id VARCHAR(50), designer_id VARCHAR(50), status VARCHAR(50) DEFAULT 'ditugaskan', started_at DATETIME, finished_at DATETIME, assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, catatan TEXT, file_hasil_desain TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS suppliers (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), contact_person VARCHAR(100), phone VARCHAR(20), address TEXT, notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS purchases (id VARCHAR(50) PRIMARY KEY, invoice_no VARCHAR(50) UNIQUE, supplier_id VARCHAR(50), supplier_name VARCHAR(100), date DATETIME, total_amount DECIMAL(15,2) DEFAULT 0, payment_status VARCHAR(50) DEFAULT 'lunas', notes TEXT, user_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS purchase_items (id INT AUTO_INCREMENT PRIMARY KEY, purchase_id VARCHAR(50), item_type VARCHAR(50), item_id VARCHAR(50), item_name VARCHAR(200), qty DECIMAL(10,2) DEFAULT 0, unit_cost DECIMAL(15,2) DEFAULT 0, subtotal DECIMAL(15,2) DEFAULT 0) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS stock_movements (id INT AUTO_INCREMENT PRIMARY KEY, product_id VARCHAR(50), type VARCHAR(20), qty DECIMAL(10,2), reference VARCHAR(100), notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS material_movements (id INT AUTO_INCREMENT PRIMARY KEY, material_id VARCHAR(50), tipe VARCHAR(20), jumlah DECIMAL(10,2), satuan VARCHAR(20), referensi VARCHAR(100), catatan TEXT, user_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS spk_handovers (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), handover_by VARCHAR(100), received_by VARCHAR(100), \`condition\` TEXT, photo TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`
     ];
 
     for (const sql of schemas) {

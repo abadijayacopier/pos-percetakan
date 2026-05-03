@@ -1,4 +1,4 @@
-const { masterPool, getTenantPool } = require('../config/database');
+const { masterPool, getTenantPool, currentMode, currentDbType } = require('../config/database');
 const jwt = require('jsonwebtoken');
 const LicenseManager = require('../utils/licenseManager');
 
@@ -21,12 +21,12 @@ const licenseGuard = async (req, res, next) => {
 
     try {
         // --- 1. STANDALONE (OFFLINE) MODE ---
-        if (process.env.APP_MODE === 'standalone') {
-            const { getActivePool } = require('../config/database');
+        if (currentMode === 'standalone') {
+            const { getActivePool, currentDbType } = require('../config/database');
             const db = await getActivePool();
 
             let rows;
-            if (process.env.DB_TYPE === 'sqlite') {
+            if (currentDbType === 'sqlite') {
                 rows = await db.all('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
             } else {
                 const [dbRows] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);

@@ -107,7 +107,15 @@ const masterPool = currentMode === 'saas' ? mysql.createPool({
 
 // 2. Standalone Pool (MySQL fallback for Offline mode if chosen by user)
 const standalonePool = currentMode === 'standalone' && currentDbType !== 'sqlite'
-    ? mysql.createPool({ ...dbConfig, database: externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi' })
+    ? (() => {
+        const pool = mysql.createPool({ ...dbConfig, database: externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi' });
+        // Add SQLite-compatible shim for .all()
+        pool.all = async (sql, params) => {
+            const [rows] = await pool.query(sql, params);
+            return rows;
+        };
+        return pool;
+    })()
     : null;
 
 // 3. Tenant Pools Cache (SaaS Mode only)
