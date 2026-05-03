@@ -93,10 +93,14 @@ router.post('/:id/stok', verifyToken, requireRole(['admin', 'operator']), async 
 
         let sql;
         if (tipe === 'masuk') sql = 'UPDATE materials SET stok_saat_ini = stok_saat_ini + ? WHERE id = ?';
-        else if (tipe === 'keluar') sql = 'UPDATE materials SET stok_saat_ini = MAX(0, stok_saat_ini - ?) WHERE id = ?';
+        else if (tipe === 'keluar') sql = 'UPDATE materials SET stok_saat_ini = CASE WHEN stok_saat_ini - ? < 0 THEN 0 ELSE stok_saat_ini - ? END WHERE id = ?';
         else sql = 'UPDATE materials SET stok_saat_ini = ? WHERE id = ?';
 
-        await conn.query(sql, [jumlah, req.params.id]);
+        if (tipe === 'keluar') {
+            await conn.query(sql, [jumlah, jumlah, req.params.id]);
+        } else {
+            await conn.query(sql, [jumlah, req.params.id]);
+        }
 
         const [matRows] = await conn.query('SELECT satuan FROM materials WHERE id = ?', [req.params.id]);
         await conn.query(
@@ -123,7 +127,7 @@ router.get('/:id/movements', verifyToken, async (req, res) => {
              FROM material_movements mm
              LEFT JOIN users u ON mm.user_id = u.id
              WHERE mm.material_id = ?
-             ORDER BY mm.tanggal DESC LIMIT 50`,
+             ORDER BY mm.created_at DESC LIMIT 50`,
             [req.params.id]
         );
         res.json(rows);

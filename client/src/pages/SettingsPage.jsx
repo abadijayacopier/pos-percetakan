@@ -27,6 +27,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
     const { user, updateUser } = useAuth();
     const { showToast } = useToast();
     const themeCtx = useTheme();
+    const isAdmin = user?.role === 'admin' || user?.role === 'pemilik';
 
     // Core states
     const [activeTab, setActiveTab] = React.useState(pageState?.tab || 'hub');

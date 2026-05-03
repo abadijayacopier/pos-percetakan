@@ -322,8 +322,30 @@ async function ensureUnifiedTablesMySQL(db) {
         try {
             await db.query(sql);
         } catch (e) {
-            console.error(`❌ MySQL Migration Error: ${e.message}`);
+            console.error(`❌ MySQL Migration Error on schema: ${e.message}`);
         }
+    }
+
+    // --- Seed Default Users (if empty) ---
+    try {
+        const [userRows] = await db.query('SELECT COUNT(*) as count FROM users');
+        if (userRows[0].count === 0) {
+            console.log('🌱 Seeding default users (Admin, Kasir, Desainer)...');
+            const bcrypt = require('bcryptjs');
+            const adminPass = await bcrypt.hash('admin123', 10);
+            const kasirPass = await bcrypt.hash('kasir123', 10);
+            const desainerPass = await bcrypt.hash('desainer123', 10);
+
+            await db.query(`
+                INSERT INTO users (id, name, username, password, role) VALUES 
+                ('u1', 'Admin Utama', 'admin', ?, 'admin'),
+                ('u2', 'Kasir Depan', 'kasir', ?, 'kasir'),
+                ('u3', 'Desainer Pro', 'desainer', ?, 'desainer')
+            `, [adminPass, kasirPass, desainerPass]);
+            console.log('✅ Default users created successfully!');
+        }
+    } catch (e) {
+        console.error(`❌ MySQL Seed Error: ${e.message}`);
     }
 }
 
