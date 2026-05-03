@@ -825,8 +825,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         'F2': () => setActiveServiceTab('jilid'),
         'F3': () => setActiveServiceTab('print'),
         'F5': () => searchInputRef.current?.focus(),
-        'F8': () => openCashDrawer(),
-        'F9': () => toggleDiscountModal(),
+        'F8': () => (user?.role === 'admin' || user?.role === 'pemilik') && openCashDrawer(),
+        'F9': () => (user?.role === 'admin' || user?.role === 'pemilik') && toggleDiscountModal(),
         'F10': () => openPayment(),
         'F12': () => saveQueue(),
         'Escape': () => {
@@ -868,11 +868,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 shadow-sm z-30 shrink-0">
                     <div className="flex items-center gap-2 p-3 overflow-x-auto no-scrollbar">
                         {[
-                            { id: 'retail', label: 'Retail ATK', icon: 'shopping_bag', key: 'F5', count: filteredProducts.length },
-                            { id: 'fotocopy', label: 'Fotocopy', icon: 'content_copy', key: 'F1', count: fotocopyPrices.length },
-                            { id: 'jilid', label: 'Jilid', icon: 'book', key: 'F2', count: bindingPrices.length },
-                            { id: 'print', label: 'Print', icon: 'print', key: 'F3', count: printPrices.length }
-                        ].map((tab) => (
+                            { id: 'retail', label: 'Retail ATK', icon: 'shopping_bag', key: 'F5', count: filteredProducts.length, roles: ['admin', 'kasir', 'operator', 'pemilik'] },
+                            { id: 'fotocopy', label: 'Fotocopy', icon: 'content_copy', key: 'F1', count: fotocopyPrices.length, roles: ['admin', 'kasir', 'operator', 'pemilik'] },
+                            { id: 'jilid', label: 'Jilid', icon: 'book', key: 'F2', count: bindingPrices.length, roles: ['admin', 'operator', 'pemilik'] },
+                            { id: 'print', label: 'Print', icon: 'print', key: 'F3', count: printPrices.length, roles: ['admin', 'operator', 'pemilik'] }
+                        ].filter(tab => !tab.roles || tab.roles.includes((user?.role || '').toLowerCase())).map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveServiceTab(tab.id)}
@@ -890,20 +890,22 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             </button>
                         ))}
                         {/* Action Buttons */}
-                        <div className="flex items-center gap-2 ml-auto pr-2">
-                            <button
-                                onClick={() => openCashDrawer()}
-                                className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30"
-                                title="Buka Laci Kasir (F8)"
-                            >
-                                <span className="material-symbols-outlined text-[20px]">inbox</span>
-                                <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] uppercase tracking-widest">Buka Laci</span>
-                                    <span className="text-[9px] font-black opacity-70 mt-1">Cash Drawer</span>
-                                </div>
-                                <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded uppercase font-black opacity-70 ml-2">F8</span>
-                            </button>
-                        </div>
+                        {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                            <div className="flex items-center gap-2 ml-auto pr-2">
+                                <button
+                                    onClick={() => openCashDrawer()}
+                                    className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30"
+                                    title="Buka Laci Kasir (F8)"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">inbox</span>
+                                    <div className="flex flex-col items-start leading-none">
+                                        <span className="text-[10px] uppercase tracking-widest">Buka Laci</span>
+                                        <span className="text-[9px] font-black opacity-70 mt-1">Cash Drawer</span>
+                                    </div>
+                                    <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded uppercase font-black opacity-70 ml-2">F8</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
 
@@ -1317,7 +1319,11 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <span className="text-slate-900 dark:text-white">{formatRupiah(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-blue-600 font-black uppercase tracking-[0.2em] text-[9px]">
-                            <button onClick={toggleDiscountModal}>Diskon (F9)</button>
+                            {(user?.role === 'admin' || user?.role === 'pemilik') ? (
+                                <button onClick={toggleDiscountModal} className="hover:underline">Diskon (F9)</button>
+                            ) : (
+                                <span>Diskon</span>
+                            )}
                             <span>-{formatRupiah(globalDiscount)}</span>
                         </div>
                         <div className="flex justify-between items-end border-t-2 border-slate-100 dark:border-slate-800 pt-4">

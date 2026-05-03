@@ -44,7 +44,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 const { logActivity } = require('../utils/logger');
 
 // 3. POST Task Baru
-router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async (req, res) => {
+router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desainer']), async (req, res) => {
     try {
         const {
             id, status, customerName, customerId, title, material_id, material_name,

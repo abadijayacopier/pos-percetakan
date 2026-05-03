@@ -408,13 +408,15 @@ export default function CashierPaymentPage({ onNavigate }) {
                                             </td>
                                             <td className="px-6 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={() => openEdit(t)}
-                                                        className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-xl transition-all"
-                                                        title="Edit Transaksi"
-                                                    >
-                                                        <FiEdit size={16} />
-                                                    </button>
+                                                    {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                        <button
+                                                            onClick={() => openEdit(t)}
+                                                            className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 rounded-xl transition-all"
+                                                            title="Edit Transaksi"
+                                                        >
+                                                            <FiEdit size={16} />
+                                                        </button>
+                                                    )}
 
                                                     {!isLunas && (
                                                         <button
@@ -425,7 +427,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                         </button>
                                                     )}
 
-                                                    {isLunas && user?.role === 'admin' && (
+                                                    {isLunas && (user?.role === 'admin' || user?.role === 'pemilik') && (
                                                         <button
                                                             onClick={() => handleCancelSettle(t)}
                                                             className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 shrink-0"
@@ -450,26 +452,28 @@ export default function CashierPaymentPage({ onNavigate }) {
                                                         <FiMessageCircle size={16} />
                                                     </button>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            if (isLunas) {
-                                                                Swal.fire({
-                                                                    icon: 'warning',
-                                                                    title: 'Transaksi Terkunci',
-                                                                    text: 'Status transaksi ini sudah LUNAS. Data yang sudah lunas terproteksi dan tidak dapat dihapus.',
-                                                                    confirmButtonColor: '#2563eb'
-                                                                });
-                                                            } else {
-                                                                setSelectedDeleteTrx(t);
-                                                            }
-                                                        }}
-                                                        className={`p-2.5 rounded-xl transition-all ${isLunas 
-                                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-50' 
-                                                            : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600'}`}
-                                                        title={isLunas ? 'Transaksi Lunas Terkunci' : 'Hapus Transaksi'}
-                                                    >
-                                                        <FiTrash2 size={16} />
-                                                    </button>
+                                                    {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (isLunas) {
+                                                                    Swal.fire({
+                                                                        icon: 'warning',
+                                                                        title: 'Transaksi Terkunci',
+                                                                        text: 'Status transaksi ini sudah LUNAS. Data yang sudah lunas terproteksi dan tidak dapat dihapus.',
+                                                                        confirmButtonColor: '#2563eb'
+                                                                    });
+                                                                } else {
+                                                                    setSelectedDeleteTrx(t);
+                                                                }
+                                                            }}
+                                                            className={`p-2.5 rounded-xl transition-all ${isLunas 
+                                                                ? 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-50' 
+                                                                : 'bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600'}`}
+                                                            title={isLunas ? 'Transaksi Lunas Terkunci' : 'Hapus Transaksi'}
+                                                        >
+                                                            <FiTrash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </motion.tr>

@@ -458,12 +458,14 @@ export default function ProductionQueuePage({ onNavigate }) {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <button
-                                                    onClick={() => { setCancelTaskModal(task); setCancelFee(0); }}
-                                                    className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-all"
-                                                    title="Batalkan Pesanan">
-                                                    <FiXCircle size={14} />
-                                                </button>
+                                                {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                    <button
+                                                        onClick={() => { setCancelTaskModal(task); setCancelFee(0); }}
+                                                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-all"
+                                                        title="Batalkan Pesanan">
+                                                        <FiXCircle size={14} />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             <h4 className="font-bold text-sm mb-1 text-slate-900 dark:text-white leading-tight">{task.title}</h4>
@@ -485,8 +487,12 @@ export default function ProductionQueuePage({ onNavigate }) {
                                                 </div>
 
                                                 <div className="flex items-center gap-2">
-                                                    <button
+                                                     <button
                                                         onClick={() => {
+                                                            if (user?.role !== 'admin' && user?.role !== 'pemilik') {
+                                                                showToast('Anda tidak memiliki akses untuk mengubah operator secara manual.', 'warn');
+                                                                return;
+                                                            }
                                                             if (task.type === 'offset') {
                                                                 showToast('Fitur penugasan manual untuk Master SPK saat ini dikelola melalui menu Daftar SPK di panel admin.');
                                                                 return;

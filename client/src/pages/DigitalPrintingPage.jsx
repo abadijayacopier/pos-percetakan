@@ -230,6 +230,28 @@ export default function DigitalPrintingPage({ onNavigate }) {
         }
     };
 
+    const handleSelfAssign = async (task) => {
+        if (!user?.id && user?.role !== 'desainer') return;
+        try {
+            await api.post('/designers/assign', {
+                task_id: task.id,
+                designer_id: user.id
+            });
+            await api.put(`/dp_tasks/${task.id}`, { status: 'ditugaskan' });
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Tugas Diambil',
+                text: 'Tugas ini sekarang ada di Dashboard Desain Anda.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            loadData();
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Gagal', text: err.response?.data?.message || 'Gagal mengambil tugas', timer: 3000 });
+        }
+    };
+
     const mat = materials.find(m => m.id === matId);
     const luas = (parseFloat(panjang) || 0) * (parseFloat(lebar) || 0);
     const totalEstimasi = luas * (mat?.sellPrice || 0);
@@ -595,17 +617,27 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                                 <button className="p-2 text-slate-400 hover:text-blue-600 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => { setSelectedTask(d); setShowViewModal(true); }}>
                                                     <FiEye size={16} />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-amber-500 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => openEdit(d)}>
-                                                    <FiEdit2 size={16} />
-                                                </button>
-                                                <button className="p-2 text-slate-400 hover:text-rose-600 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => handleCancelTask(d.id)}>
-                                                    <FiTrash2 size={16} />
-                                                </button>
+                                                {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                    <button className="p-2 text-slate-400 hover:text-amber-500 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => openEdit(d)}>
+                                                        <FiEdit2 size={16} />
+                                                    </button>
+                                                )}
+                                                {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                    <button className="p-2 text-slate-400 hover:text-rose-600 transition-all rounded-lg hover:bg-white dark:hover:bg-slate-900" onClick={() => handleCancelTask(d.id)}>
+                                                        <FiTrash2 size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                             {d.status === 'menunggu_desain' ? (
-                                                <button className="flex-1 sm:flex-none px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-100 dark:shadow-none whitespace-nowrap" onClick={() => openAssignModal(d)}>
-                                                    Tugaskan
-                                                </button>
+                                                user?.role === 'desainer' ? (
+                                                    <button className="flex-1 sm:flex-none px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-100 dark:shadow-none whitespace-nowrap" onClick={() => handleSelfAssign(d)}>
+                                                        Ambil Tugas
+                                                    </button>
+                                                ) : (
+                                                    <button className="flex-1 sm:flex-none px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-100 dark:shadow-none whitespace-nowrap" onClick={() => openAssignModal(d)}>
+                                                        Tugaskan
+                                                    </button>
+                                                )
                                             ) : (
                                                 <div className="flex-1 sm:flex-none px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-center gap-2">
                                                     <FiCheckCircle /> Assigned

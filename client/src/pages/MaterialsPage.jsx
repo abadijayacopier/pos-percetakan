@@ -532,12 +532,14 @@ export default function MaterialsPage({ onNavigate }) {
                     <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all active:scale-95">
                         <FiDownload /> Export
                     </button>
-                    <button
-                        onClick={() => onNavigate('tambah-bahan')}
-                        className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/95 transition-all active:scale-95"
-                    >
-                        <FiPlus /> Tambah Bahan
-                    </button>
+                    {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                        <button
+                            onClick={() => onNavigate('tambah-bahan')}
+                            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/95 transition-all active:scale-95"
+                        >
+                            <FiPlus /> Tambah Bahan
+                        </button>
+                    )}
                 </motion.div>
             </div>
 
@@ -721,20 +723,24 @@ export default function MaterialsPage({ onNavigate }) {
                                                         >
                                                             <FiSettings size={16} />
                                                         </button>
-                                                        <button
-                                                            onClick={() => onNavigate('tambah-bahan', { material: m })}
-                                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 hover:text-emerald-500 transition-all active:scale-95"
-                                                            title="Edit Bahan"
-                                                        >
-                                                            <FiEdit3 size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(m)}
-                                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/20 hover:text-rose-500 transition-all active:scale-95"
-                                                            title="Hapus Bahan"
-                                                        >
-                                                            <FiTrash2 size={16} />
-                                                        </button>
+                                                        {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                            <button
+                                                                onClick={() => onNavigate('tambah-bahan', { material: m })}
+                                                                className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/20 hover:text-emerald-500 transition-all active:scale-95"
+                                                                title="Edit Bahan"
+                                                            >
+                                                                <FiEdit3 size={16} />
+                                                            </button>
+                                                        )}
+                                                        {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                            <button
+                                                                onClick={() => handleDelete(m)}
+                                                                className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/20 hover:text-rose-500 transition-all active:scale-95"
+                                                                title="Hapus Bahan"
+                                                            >
+                                                                <FiTrash2 size={16} />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </motion.tr>

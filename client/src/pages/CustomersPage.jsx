@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { customerSchema } from '../validations/customerSchema';
@@ -18,6 +19,7 @@ const TYPE_MAP = {
 const emptyForm = { name: '', phone: '', address: '', type: 'walkin', company: '' };
 
 export default function CustomersPage() {
+    const { user } = useAuth();
     const [customers, setCustomers] = useState([]);
     const [search, setSearch] = useState('');
     const [filterType, setFilterType] = useState('all');
@@ -309,9 +311,11 @@ export default function CustomersPage() {
                                                     <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all" onClick={() => openEdit(c)} title="Edit Profil">
                                                         <FiEdit size={16} />
                                                     </button>
-                                                    <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all" onClick={() => handleDelete(c)} title="Hapus Data">
-                                                        <FiTrash2 size={16} />
-                                                    </button>
+                                                    {(user?.role === 'admin' || user?.role === 'pemilik') && (
+                                                        <button className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all" onClick={() => handleDelete(c)} title="Hapus Data">
+                                                            <FiTrash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

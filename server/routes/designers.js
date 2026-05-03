@@ -136,7 +136,7 @@ router.get('/assignments', verifyToken, async (req, res) => {
 });
 
 // ── POST tugaskan ─────────────────────────────────────────
-router.post('/assign', verifyToken, requireRole(['admin', 'operator']), async (req, res) => {
+router.post('/assign', verifyToken, requireRole(['admin', 'operator', 'desainer']), async (req, res) => {
     try {
         const { task_id, designer_id } = req.body;
         if (!task_id || !designer_id) return res.status(400).json({ message: 'Lengkapi data' });

@@ -216,24 +216,85 @@ async function patchUnifiedColumnsSQLite(db) {
  * STRUKTUR TABEL UNTUK MYSQL (PRODUCTION)
  */
 async function ensureUnifiedTablesMySQL(db) {
-    // MySQL logic with InnoDB support
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS dp_tasks (
-            id VARCHAR(50) PRIMARY KEY, status VARCHAR(50) DEFAULT 'menunggu_desain',
-            customerName VARCHAR(100), customerId VARCHAR(50), title VARCHAR(200),
-            material_id VARCHAR(50), material_name VARCHAR(100),
-            dimensions_w DECIMAL(10,2) DEFAULT 0, dimensions_h DECIMAL(10,2) DEFAULT 0,
-            material_price DECIMAL(15,2) DEFAULT 0, design_price DECIMAL(15,2) DEFAULT 0,
-            priority VARCHAR(20) DEFAULT 'normal', pesan_desainer TEXT,
-            type VARCHAR(50) DEFAULT 'digital', qty INT DEFAULT 1,
-            dp_amount DECIMAL(15,2) DEFAULT 0, is_paid TINYINT(1) DEFAULT 0,
-            designer_id VARCHAR(50), designer_name VARCHAR(100),
-            operator_id VARCHAR(50), operator_name VARCHAR(100),
+    const schemas = [
+        `CREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), username VARCHAR(50) UNIQUE, password VARCHAR(255), role VARCHAR(50), is_active TINYINT(1) DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS customers (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), phone VARCHAR(20), address TEXT, type VARCHAR(50) DEFAULT 'walkin', company VARCHAR(100), total_trx INT DEFAULT 0, total_spend DECIMAL(15,2) DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS categories (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), type VARCHAR(50), emoji VARCHAR(10)) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS products (id VARCHAR(50) PRIMARY KEY, code VARCHAR(50) UNIQUE, name VARCHAR(200), category_id VARCHAR(50), buy_price DECIMAL(15,2) DEFAULT 0, sell_price DECIMAL(15,2) DEFAULT 0, stock DECIMAL(10,2) DEFAULT 0, min_stock DECIMAL(10,2) DEFAULT 0, unit VARCHAR(20) DEFAULT 'pcs', emoji VARCHAR(10), image TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS transactions (id VARCHAR(50) PRIMARY KEY, invoice_no VARCHAR(50) UNIQUE, date DATETIME, customer_id VARCHAR(50), customer_name VARCHAR(100), user_id VARCHAR(50), user_name VARCHAR(100), type VARCHAR(50), subtotal DECIMAL(15,2), discount DECIMAL(15,2), total DECIMAL(15,2), paid DECIMAL(15,2), change_amount DECIMAL(15,2), payment_type VARCHAR(50), tax_amount DECIMAL(15,2) DEFAULT 0, status VARCHAR(50) DEFAULT 'unpaid', notes TEXT, customer_wa VARCHAR(20)) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS transaction_details (id VARCHAR(50) PRIMARY KEY, transaction_id VARCHAR(50), product_id VARCHAR(50), name VARCHAR(200), qty DECIMAL(10,2), price DECIMAL(15,2), subtotal DECIMAL(15,2), discount DECIMAL(15,2)) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS cash_flow (id VARCHAR(50) PRIMARY KEY, date DATE, type VARCHAR(20), category VARCHAR(100), amount DECIMAL(15,2), description TEXT, reference_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS dp_tasks (
+            id VARCHAR(50) PRIMARY KEY, status VARCHAR(50) DEFAULT 'menunggu_desain', 
+            customerName VARCHAR(100), customerId VARCHAR(50), title VARCHAR(200), 
+            material_id VARCHAR(50), material_name VARCHAR(100), 
+            dimensions_w DECIMAL(10,2) DEFAULT 0, dimensions_h DECIMAL(10,2) DEFAULT 0, 
+            material_price DECIMAL(15,2) DEFAULT 0, design_price DECIMAL(15,2) DEFAULT 0, 
+            priority VARCHAR(20) DEFAULT 'normal', pesan_desainer TEXT, 
+            type VARCHAR(50) DEFAULT 'digital', qty INT DEFAULT 1, 
+            dp_amount DECIMAL(15,2) DEFAULT 0, is_paid TINYINT(1) DEFAULT 0, 
+            file_url TEXT, designer_id VARCHAR(50), designer_name VARCHAR(100), 
+            operator_id VARCHAR(50), operator_name VARCHAR(100), denda_batal DECIMAL(15,2) DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-    `);
-    
-    // Add other critical MySQL schemas as needed...
+        ) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS orders (id VARCHAR(50) PRIMARY KEY, order_number VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), user_id VARCHAR(50), total_harga DECIMAL(15,2), status_pembayaran VARCHAR(50) DEFAULT 'belum_bayar', dp_amount DECIMAL(15,2), remaining DECIMAL(15,2), metode_pembayaran VARCHAR(50), deadline DATE, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS order_items (id VARCHAR(50) PRIMARY KEY, order_id VARCHAR(50), layanan VARCHAR(100), nama_item VARCHAR(200), material_id VARCHAR(50), ukuran_p DECIMAL(10,2), ukuran_l DECIMAL(10,2), luas_total DECIMAL(10,2), quantity INT, harga_satuan DECIMAL(15,2), subtotal DECIMAL(15,2), file_desain TEXT, catatan TEXT) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS materials (id VARCHAR(50) PRIMARY KEY, barcode VARCHAR(50), nama_bahan VARCHAR(200), kategori VARCHAR(100), satuan VARCHAR(20), harga_modal DECIMAL(15,2) DEFAULT 0, harga_jual DECIMAL(15,2) DEFAULT 0, stok_saat_ini DECIMAL(10,2) DEFAULT 0, stok_minimum DECIMAL(10,2) DEFAULT 0, is_active TINYINT(1) DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS design_logs (id INT AUTO_INCREMENT PRIMARY KEY, order_item_id VARCHAR(50), technician_id VARCHAR(50), start_time DATETIME, end_time DATETIME, total_durasi_menit INT, tarif_per_jam DECIMAL(15,2) DEFAULT 50000, total_biaya_desain DECIMAL(15,2), catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS production_status (id INT AUTO_INCREMENT PRIMARY KEY, order_item_id VARCHAR(50) UNIQUE, status VARCHAR(50) DEFAULT 'menunggu', catatan_teknis TEXT, link_file_desain TEXT, foto_sebelum TEXT, foto_sesudah TEXT, operator_id VARCHAR(50), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS spk (
+            id VARCHAR(50) PRIMARY KEY, spk_number VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), 
+            customer_phone VARCHAR(20), customer_company VARCHAR(100),
+            product_name VARCHAR(200), product_qty INT, product_unit VARCHAR(20), kategori VARCHAR(50),
+            specs_material TEXT, specs_finishing TEXT, specs_notes TEXT,
+            biaya_cetak DECIMAL(15,2) DEFAULT 0, biaya_material DECIMAL(15,2) DEFAULT 0, biaya_finishing DECIMAL(15,2) DEFAULT 0, 
+            biaya_desain DECIMAL(15,2) DEFAULT 0, biaya_lainnya DECIMAL(15,2) DEFAULT 0,
+            total_biaya DECIMAL(15,2), dp_amount DECIMAL(15,2), sisa_tagihan DECIMAL(15,2), 
+            status VARCHAR(50) DEFAULT 'Menunggu Antrian', priority VARCHAR(20) DEFAULT 'Normal', 
+            assigned_to VARCHAR(50), created_by VARCHAR(50), deadline DATETIME, completed_at DATETIME,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS spk_payments (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), payment_type VARCHAR(50), method VARCHAR(50), amount DECIMAL(15,2), bank_ref VARCHAR(100), paid_by VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS settings (id INT AUTO_INCREMENT PRIMARY KEY, \`key\` VARCHAR(100) UNIQUE, value TEXT) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS wa_config (id INT AUTO_INCREMENT PRIMARY KEY, config_key VARCHAR(100) UNIQUE, config_value TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS activity_log (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), user_name VARCHAR(100), action VARCHAR(100), target VARCHAR(100), ip_address VARCHAR(45), detail TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        
+        `CREATE TABLE IF NOT EXISTS service_orders (
+            id INT AUTO_INCREMENT PRIMARY KEY, service_no VARCHAR(50) UNIQUE, customer_id VARCHAR(50), 
+            customer_name VARCHAR(100), phone VARCHAR(20), machine_info TEXT, serial_no VARCHAR(100), 
+            complaint TEXT, condition_physic TEXT, diagnosis TEXT, 
+            labor_cost DECIMAL(15,2) DEFAULT 0, dp_amount DECIMAL(15,2) DEFAULT 0, total_cost DECIMAL(15,2) DEFAULT 0, 
+            status VARCHAR(50) DEFAULT 'diterima', technician_id VARCHAR(50), warranty_end DATETIME, 
+            photo TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS employees (
+            id VARCHAR(50) PRIMARY KEY, user_id VARCHAR(50), name VARCHAR(100), nik VARCHAR(50), phone VARCHAR(20), 
+            address TEXT, position VARCHAR(100), salary_type VARCHAR(50) DEFAULT 'monthly', 
+            base_salary DECIMAL(15,2) DEFAULT 0, hourly_rate DECIMAL(15,2) DEFAULT 0, is_active TINYINT(1) DEFAULT 1, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS salaries (
+            id VARCHAR(50) PRIMARY KEY, employee_id VARCHAR(50), period_month INT, period_year INT, 
+            base_processing_salary DECIMAL(15,2) DEFAULT 0, attendance_bonus DECIMAL(15,2) DEFAULT 0, 
+            overtime_pay DECIMAL(15,2) DEFAULT 0, loan_deduction DECIMAL(15,2) DEFAULT 0, 
+            other_deductions DECIMAL(15,2) DEFAULT 0, net_salary DECIMAL(15,2) DEFAULT 0, 
+            status VARCHAR(50) DEFAULT 'draft', paid_at DATETIME, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB`
+    ];
+
+    for (const sql of schemas) {
+        try {
+            await db.query(sql);
+        } catch (e) {
+            console.error(`❌ MySQL Migration Error: ${e.message}`);
+        }
+    }
 }
 
 module.exports = { runMigrations };

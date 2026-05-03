@@ -35,13 +35,13 @@ const MENU_GROUPS = [
                 id: 'printing',
                 label: 'Percetakan',
                 icon: <FiPrinter />,
-                roles: ['admin', 'operator'],
+                roles: ['admin', 'operator', 'desainer'],
                 subItems: [
-                    { id: 'digital-printing', label: 'Digital Printing', icon: <FiImage />, roles: ['admin', 'operator'] },
-                    { id: 'production-queue', label: 'Antrean Produksi', icon: <HiOutlineCollection />, roles: ['admin', 'operator', 'teknisi'] },
-                    { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'operator'] },
-                    { id: 'stok-bahan', label: 'Stok Bahan', icon: <FiBox />, roles: ['admin', 'operator'] },
-                    { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'operator'] },
+                    { id: 'digital-printing', label: 'Digital Printing', icon: <FiImage />, roles: ['admin', 'operator', 'desainer'] },
+                    { id: 'production-queue', label: 'Antrean Produksi', icon: <HiOutlineCollection />, roles: ['admin', 'operator', 'teknisi', 'desainer'] },
+                    { id: 'cetak-offset', label: 'Cetak Offset', icon: <FiLayers />, roles: ['admin', 'operator', 'desainer'] },
+                    { id: 'stok-bahan', label: 'Stok Bahan', icon: <FiBox />, roles: ['admin', 'operator', 'desainer'] },
+                    { id: 'spk-list', label: 'Daftar SPK', icon: <FiSPK />, roles: ['admin', 'operator', 'desainer'] },
                     { id: 'manajemen-desainer', label: 'Manajemen Desain', icon: <FiCpu />, roles: ['admin'] },
                 ],
             },
@@ -64,7 +64,7 @@ const MENU_GROUPS = [
             { id: 'damaged-goods', label: 'Barang Rusak', icon: <FiAlertTriangle />, roles: ['admin', 'operator'] },
             { id: 'pembelian', label: 'Barang Masuk (Restock)', icon: <FiPackage />, roles: ['admin', 'operator'] },
             { id: 'suppliers', label: 'Data Supplier', icon: <FiTruck />, roles: ['admin', 'operator'] },
-            { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir'] },
+            { id: 'customers', label: 'Pelanggan', icon: <FiUsers />, roles: ['admin', 'kasir', 'operator', 'desainer'] },
         ]
     },
     {

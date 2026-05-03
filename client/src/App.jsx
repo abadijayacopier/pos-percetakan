@@ -52,7 +52,12 @@ import AssignmentSettingsPage from './pages/AssignmentSettingsPage';
 
 function App() {
     const { user, loading } = useAuth();
-    const [activePage, setActivePage] = useState('dashboard');
+    const [activePage, setActivePage] = useState(() => {
+        if (!user) return 'dashboard';
+        if (user.role === 'desainer') return 'dashboard-desainer';
+        if (user.role === 'teknisi') return 'dashboard-teknisi';
+        return 'dashboard';
+    });
     const [pageOptions, setPageOptions] = useState({});
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [storeSettings, setStoreSettings] = useState({ name: '', logo: '' });
@@ -113,6 +118,14 @@ function App() {
             localStorage.setItem('theme', 'light');
         }
     }, [isDarkMode]);
+
+    // Role-based initial redirect after login
+    useEffect(() => {
+        if (user && activePage === 'dashboard') {
+            if (user.role === 'desainer') setActivePage('dashboard-desainer');
+            else if (user.role === 'teknisi') setActivePage('dashboard-teknisi');
+        }
+    }, [user]);
 
     if (loading) {
         return (
