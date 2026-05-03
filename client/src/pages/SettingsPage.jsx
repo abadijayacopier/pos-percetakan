@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { formatDateTime, printViaBluetooth, listQZPrinters } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiEyeOff, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey, FiSend, FiDatabase } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiEyeOff, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey, FiSend, FiDatabase, FiCloud } from 'react-icons/fi';
 import ActivationModal from '../components/ActivationModal';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import PrinterSettings from '../components/settings/PrinterSettings';
