@@ -66,7 +66,11 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/purchases', require('./routes/purchases'));
 app.use('/api/qris', require('./routes/qris'));
+// Increase event listener limit to prevent MaxListenersExceededWarning
+require('events').EventEmitter.defaultMaxListeners = 20;
+
 app.use('/api/dp-tasks', require('./routes/dp_tasks'));
+app.use('/api/dp_tasks', require('./routes/dp_tasks')); // Alias for underscore
 app.use('/api/handovers', require('./routes/handovers'));
 app.use('/api/reports', require('./routes/reports'));
 app.use('/api/employees', require('./routes/employees'));
@@ -96,26 +100,7 @@ if (fs.existsSync(clientDistPath)) {
 }
 
 const startServer = async () => {
-    // 1. Auto-Initialize SQLite if in Standalone mode and DB file missing
-    if (currentMode === 'standalone' && currentDbType === 'sqlite') {
-        const dbPath = path.join(__dirname, 'database/pos.sqlite');
-        if (!fs.existsSync(dbPath)) {
-            console.log('📦 Database SQLite tidak ditemukan. Menginisialisasi...');
-            try {
-                // We use require to run the init scripts to ensure they use the correct config
-                // but since they are scripts we might need to spawn or just require them if they export a function
-                // For now, let's just use child_process to be safe or refactor them to functions
-                const { execSync } = require('child_process');
-                execSync(`node ${path.join(__dirname, 'database/init_sqlite.js')}`);
-                execSync(`node ${path.join(__dirname, 'database/seed_sqlite.js')}`);
-                console.log('✅ Inisialisasi Database Berhasil.');
-            } catch (err) {
-                console.error('❌ Gagal inisialisasi database otomatis:', err.message);
-            }
-        }
-    }
-
-    // 2. Run Database Migrations (Auto-Patch)
+    // 1. Run Database Migrations (Auto-Heal & Auto-Patch)
     const { runMigrations } = require('./database/migrationManager');
     await runMigrations();
 

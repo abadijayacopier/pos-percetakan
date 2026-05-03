@@ -6,10 +6,10 @@ import { generateRawReceipt, printViaBluetooth, initQZ, printViaQZ, formatDateTi
 import { FiPrinter, FiArrowLeft, FiPlus, FiCheck } from 'react-icons/fi';
 import ReceiptProMax from '../components/ReceiptProMax';
 
-export default function PrintReceiptPage({ onNavigate, pageState }) {
+export default function PrintReceiptPage({ onNavigate, receipt, transactionId, pageState }) {
     const { user } = useAuth();
-    const [receiptData, setReceiptData] = useState(pageState?.receipt || null);
-    const [isLoading, setIsLoading] = useState(!pageState?.receipt);
+    const [receiptData, setReceiptData] = useState(receipt || pageState?.receipt || null);
+    const [isLoading, setIsLoading] = useState(!(receipt || pageState?.receipt));
     const [printSettings, setPrintSettings] = useState({
         storeName: 'JAYA COPY & PERCETAKAN',
         storeAddress: 'Jl. Pendidikan No. 45, Jakarta Pusat',
@@ -125,11 +125,12 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
                 console.error('Failed to fetch settings:', err);
             }
 
-            if (!pageState?.receipt) {
+            if (!receiptData) {
                 try {
-                    const res = await api.get('/transactions');
-                    if (res.data && res.data.length > 0) {
-                        const trx = res.data[0];
+                    const url = transactionId || pageState?.transactionId ? `/transactions/${transactionId || pageState?.transactionId}` : '/transactions';
+                    const res = await api.get(url);
+                    const trx = (transactionId || pageState?.transactionId) ? res.data : (res.data && res.data.length > 0 ? res.data[0] : null);
+                    if (trx) {
                         setReceiptData({
                             invoiceNo: trx.invoiceNo || trx.invoice_no,
                             date: trx.date, // Pass raw date to let component handle formatting
@@ -399,21 +400,46 @@ export default function PrintReceiptPage({ onNavigate, pageState }) {
 
             {/* Receipt Preview Area */}
             <div className="flex-1 flex flex-col items-center justify-start p-4 sm:p-12 overflow-y-auto bg-slate-100/50 dark:bg-slate-900/50 custom-scrollbar">
-                <ReceiptProMax
-                    receiptData={receiptData}
-                    printSettings={{ ...printSettings, printerSize: effectivePrinterSize }}
-                    formatCurrency={formatCurrency}
-                    printerWidthClass={getPrinterWidthClass()}
-                />
-
-                {/* Additional Guidance (No Print) */}
-                <div className="no-print mt-12 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-12">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-none pt-0.5">Printer Siap Mencetak</p>
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center h-64 gap-4 animate-pulse">
+                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-slate-500 font-black uppercase tracking-widest text-xs">Memuat Data Struk...</p>
                     </div>
-                    <p className="text-slate-400 text-xs text-center max-w-[300px] font-medium leading-relaxed">Gunakan tombol biru di atas untuk mengirim perintah ke printer thermal atau inkjet anda.</p>
-                </div>
+                ) : !receiptData ? (
+                    <div className="flex flex-col items-center justify-center h-64 gap-6 text-center max-w-sm">
+                        <div className="w-20 h-20 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
+                            <FiPrinter size={40} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-800 dark:text-white">Struk Tidak Ditemukan</h3>
+                            <p className="text-slate-500 text-sm mt-2">Data transaksi tidak berhasil dimuat atau ID transaksi tidak valid.</p>
+                        </div>
+                        <button 
+                            onClick={() => onNavigate('pos')}
+                            className="px-8 py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest"
+                        >
+                            Kembali ke POS
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <ReceiptProMax
+                            receiptData={receiptData}
+                            printSettings={{ ...printSettings, printerSize: effectivePrinterSize }}
+                            formatCurrency={formatCurrency}
+                            printerWidthClass={getPrinterWidthClass()}
+                        />
+
+                        {/* Additional Guidance (No Print) */}
+                        <div className="no-print mt-12 flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-12">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 rounded-full shadow-sm border border-slate-200 dark:border-slate-700">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-none pt-0.5">Printer Siap Mencetak</p>
+                            </div>
+                            <p className="text-slate-400 text-xs text-center max-w-[300px] font-medium leading-relaxed">Gunakan tombol biru di atas untuk mengirim perintah ke printer thermal atau inkjet anda.</p>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

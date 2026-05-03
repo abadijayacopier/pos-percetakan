@@ -279,6 +279,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             date: new Date().toISOString(),
             customerId: customerId,
             customerName: selectedCust?.name || 'Pelanggan Umum',
+            customerWa: selectedCust?.phone || null,
             items: [{
                 id: null,
                 name: newTask.title,
@@ -297,7 +298,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
             type: 'digital_printing'
         };
 
-        api.post('/dp_tasks', newTask).then(() => {
+        api.post('/dp-tasks', newTask).then(() => {
             return api.post('/transactions', newTransaction);
         }).then(() => {
             // WhatsApp Notify
@@ -317,46 +318,75 @@ export default function DigitalPrintingPage({ onNavigate }) {
     };
 
     const handleCreateOrderFromCalc = () => {
-        if (!calcOrderData.materialId || calcOrderData.width <= 0 || calcOrderData.height <= 0) return;
+        const widthNum = parseFloat(calcOrderData.width) || 0;
+        const heightNum = parseFloat(calcOrderData.height) || 0;
+        const designFeeNum = parseFloat(calcOrderData.designFee) || 0;
+
+        if (!calcOrderData.materialId || widthNum <= 0 || heightNum <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Tidak Lengkap',
+                text: 'Pastikan bahan, lebar, dan tinggi sudah diisi dengan benar.',
+                timer: 3000
+            });
+            return;
+        }
+
         setLoading(true);
 
         const selectedMat = materials.find(m => m.id === calcOrderData.materialId);
         const selectedCust = customers.find(c => c.id === calcOrderData.customerId);
+        
+        // Final recalculation for safety
+        const luas = widthNum * heightNum;
+        const matPrice = luas * (selectedMat?.sellPrice || 0);
+        const totalAmount = matPrice + designFeeNum;
+
+        const taskId = 'ORD-' + Date.now().toString().slice(-6);
+        const finalCustomerId = calcOrderData.isManualCustomer ? null : (calcOrderData.customerId || (customers.length > 0 ? customers[0].id : null));
 
         const newTask = {
-            id: 'ORD-' + pad(Math.floor(Math.random() * 9999)),
+            id: taskId,
             status: 'menunggu_desain',
             customerName: calcOrderData.isManualCustomer ? calcOrderData.manualCustomerName : (selectedCust?.name || 'Pelanggan Umum'),
-            customerId: calcOrderData.isManualCustomer ? null : (calcOrderData.customerId || (customers.length > 0 ? customers[0].id : '')),
-            title: `${selectedMat?.name} (${calcOrderData.width}x${calcOrderData.height}m)`,
+            customerId: finalCustomerId,
+            title: `${selectedMat?.name || 'Cetak'} (${widthNum}x${heightNum}m)`,
             material_id: calcOrderData.materialId,
-            material_name: selectedMat?.name,
-            dimensions: { width: calcOrderData.width, height: calcOrderData.height },
-            material_price: calcOrderData.estimatedTotal - (parseFloat(calcOrderData.designFee) || 0),
-            design_price: parseFloat(calcOrderData.designFee) || 0,
+            material_name: selectedMat?.name || 'Bahan Digital',
+            dimensions: { width: widthNum, height: heightNum },
+            material_price: matPrice,
+            design_price: designFeeNum,
             priority: 'normal',
             pesan_desainer: calcOrderData.notes || null,
             type: 'digital',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            qty: 1,
+            is_paid: 0
         };
 
         const newTransaction = {
-            invoiceNo: generateInvoice(),
+            invoiceNo: generateInvoice('DP'),
             date: new Date().toISOString(),
-            customerId: newTask.customerId,
+            customerId: finalCustomerId,
             customerName: newTask.customerName,
+            customerWa: calcOrderData.isManualCustomer ? calcOrderData.customerWa : (selectedCust?.phone || null),
             items: [{
                 id: null,
-                name: newTask.title + (newTask.design_price > 0 ? ' + Desain' : ''),
+                name: newTask.title + (designFeeNum > 0 ? ' + Desain' : ''),
                 qty: 1,
-                price: calcOrderData.estimatedTotal,
-                subtotal: calcOrderData.estimatedTotal,
-                source: 'digital'
+                price: totalAmount,
+                subtotal: totalAmount,
+                source: 'digital',
+                meta: {
+                    taskId: taskId,
+                    width: widthNum,
+                    height: heightNum,
+                    materialId: calcOrderData.materialId,
+                    materialName: selectedMat?.name
+                }
             }],
-            subtotal: calcOrderData.estimatedTotal,
+            subtotal: totalAmount,
             discount: 0,
-            total: calcOrderData.estimatedTotal,
+            total: totalAmount,
             paid: 0,
             changeAmount: 0,
             paymentType: 'none',
@@ -364,13 +394,21 @@ export default function DigitalPrintingPage({ onNavigate }) {
             type: 'digital_printing'
         };
 
-        api.post('/dp_tasks', newTask).then(() => {
+        api.post('/dp-tasks', newTask).then(() => {
             return api.post('/transactions', newTransaction);
         }).then(() => {
             // WhatsApp Notify
             if (!calcOrderData.isManualCustomer && selectedCust?.phone) {
                 handleSendWhatsApp(newTask);
             }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Pesanan Berhasil Dibuat',
+                text: `Tugas ${taskId} telah masuk ke antrean desain.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
 
             const walkIn = customers.find(c => c.name.toLowerCase().includes('umum') || c.name.toLowerCase().includes('walk-in'));
             const defaultId = walkIn ? walkIn.id : (customers[0]?.id || '');
@@ -390,7 +428,13 @@ export default function DigitalPrintingPage({ onNavigate }) {
             loadData();
         }).catch(err => {
             setLoading(false);
-            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Gagal memproses kalkulasi orders', timer: 3000 });
+            console.error('Digital Printing Processing Error:', err);
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'Proses Gagal', 
+                text: err.response?.data?.message || 'Gagal memproses kalkulasi orders. Pastikan koneksi server stabil.', 
+                footer: '<p class="text-xs text-slate-400">Error Code: DP_AUTH_ERR_TRANSACTION</p>'
+            });
         });
     };
 

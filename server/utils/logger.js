@@ -1,10 +1,11 @@
-const { pool } = require('../config/database');
+const { getActivePool } = require('../config/database');
 
 /**
  * Log an activity to the database
  */
 async function logActivity(userId, action, target, details, ip, userName = null) {
     try {
+        const pool = await getActivePool();
         const detailsStr = typeof details === 'object' ? JSON.stringify(details) : details;
         await pool.query(
             'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
@@ -18,8 +19,9 @@ async function logActivity(userId, action, target, details, ip, userName = null)
 /**
  * Check if product stock is low and log a warning if needed
  */
-async function checkStockLevels(productId, connection = pool) {
+async function checkStockLevels(productId, pool = null) {
     try {
+        const connection = pool || await getActivePool();
         const [rows] = await connection.query(
             'SELECT name, stock, min_stock FROM products WHERE id = ?',
             [productId]

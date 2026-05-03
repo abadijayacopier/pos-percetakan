@@ -28,6 +28,24 @@ import CashierPaymentPage from './pages/CashierPaymentPage';
 import QRISMonitorPage from './pages/QRISMonitorPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
+import SPKDetailPage from './pages/SPKDetailPage';
+import SPKSettlementPage from './pages/SPKSettlementPage';
+import MaterialFormPage from './pages/MaterialFormPage';
+import StockHistoryPage from './pages/StockHistoryPage';
+import LandingPage from './pages/LandingPage';
+import SuperAdminLoginPage from './pages/SuperAdminLoginPage';
+import SuperAdminDashboardPage from './pages/SuperAdminDashboard';
+import PrintReceiptPage from './pages/PrintReceiptPage';
+import PrintInvoicePage from './pages/PrintInvoicePage';
+import PrintLabelPage from './pages/PrintLabelPage';
+import PrintSPKPage from './pages/PrintSPKPage';
+import PrintSalarySlipPage from './pages/PrintSalarySlipPage';
+import ServiceInvoicePage from './pages/ServiceInvoicePage';
+import ServiceWarrantyStickerPage from './pages/ServiceWarrantyStickerPage';
+import DigitalPrintingCartPage from './pages/DigitalPrintingCartPage';
+import DesignFinalizationPage from './pages/DesignFinalizationPage';
+import AssignmentSettingsPage from './pages/AssignmentSettingsPage';
+
 
 // POS Abadi Jaya - Main Application Entry
 // Version: 1.1.3 (Scroll Fix Edition)
@@ -74,6 +92,7 @@ function App() {
     }, [storeSettings.name]);
 
     const handleNavigate = (page, options = {}) => {
+        console.log(`[Navigation] Navigating to: ${page}`, options);
         setActivePage(page);
         setPageOptions(options || {});
         if (window.innerWidth < 1024) setSidebarOpen(false);
@@ -106,6 +125,9 @@ function App() {
             case 'dashboard': return <DashboardPage {...props} />;
             case 'pos': return <IntegratedPos {...props} />;
             case 'digital-printing': return <DigitalPrintingPage {...props} />;
+            case 'digital-printing-cart': return <DigitalPrintingCartPage {...props} />;
+            case 'design-finalization': return <DesignFinalizationPage {...props} />;
+            case 'assignment-settings': return <AssignmentSettingsPage {...props} />;
             case 'production-queue': return <ProductionQueuePage {...props} />;
             case 'cetak-offset': return <OffsetPrintingPage {...props} />;
             case 'stok-bahan': return <MaterialsPage {...props} />;
@@ -127,6 +149,25 @@ function App() {
             case 'qris-monitor': return <QRISMonitorPage {...props} />;
             case 'reports': return <ReportsPage {...props} />;
             case 'settings': return <SettingsPage {...props} />;
+            
+            // Missing routes fix
+            case 'spk-detail': return <SPKDetailPage {...props} />;
+            case 'spk-settlement': return <SPKSettlementPage {...props} />;
+            case 'tambah-bahan': return <MaterialFormPage {...props} />;
+            case 'stock-history': return <StockHistoryPage {...props} />;
+            case 'landing': return <LandingPage {...props} />;
+            case 'superadmin-login': return <SuperAdminLoginPage {...props} />;
+            case 'superadmin-dashboard': return <SuperAdminDashboardPage {...props} />;
+            
+            // Print routes
+            case 'print-receipt': return <PrintReceiptPage {...props} />;
+            case 'print-invoice': return <PrintInvoicePage {...props} />;
+            case 'print-label': return <PrintLabelPage {...props} />;
+            case 'print-spk': return <PrintSPKPage {...props} />;
+            case 'print-salary-slip': return <PrintSalarySlipPage {...props} />;
+            case 'print-service-invoice': return <ServiceInvoicePage {...props} />;
+            case 'print-warranty-sticker': return <ServiceWarrantyStickerPage {...props} />;
+            
             default: return <DashboardPage {...props} />;
         }
     };

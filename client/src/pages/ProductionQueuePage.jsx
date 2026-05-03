@@ -92,7 +92,7 @@ export default function ProductionQueuePage({ onNavigate }) {
         const idToUpdate = cancelTaskModal.real_id || cancelTaskModal.id;
 
         try {
-            await api.put(`/dp_tasks/${idToUpdate}`, {
+            await api.put(`/dp-tasks/${idToUpdate}`, {
                 status: 'batal',
                 denda_batal: finalFee
             });
@@ -106,7 +106,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
     const handleAssignTechnician = async (taskId, techId, techName) => {
         try {
-            await api.put(`/dp_tasks/${taskId}`, {
+            await api.put(`/dp-tasks/${taskId}`, {
                 technician_id: techId,
                 technician_name: techName
             });
@@ -154,7 +154,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
         let prodTasks = [];
         try {
-            const { data: allTasks } = await api.get('/dp_tasks');
+            const { data: allTasks } = await api.get('/dp-tasks');
             prodTasks = allTasks.filter(t => !['checkout', 'batal'].includes(t.status))
                 .map(t => ({
                     ...t,
@@ -204,7 +204,7 @@ export default function ProductionQueuePage({ onNavigate }) {
 
     const moveTask = async (taskId, newStatus) => {
         try {
-            await api.patch(`/dp_tasks/${taskId}/status`, { status: newStatus });
+            await api.patch(`/dp-tasks/${taskId}/status`, { status: newStatus });
             loadProductionData();
         } catch (e) { console.error(e); }
     };
