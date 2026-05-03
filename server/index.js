@@ -25,6 +25,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Database Middleware (Must be before routes)
+const dbMiddleware = require('./middleware/dbMiddleware');
+app.use(dbMiddleware);
+
 // License Guard (Melindungi seluruh API kecuali rute aktivasi/auth)
 app.use(licenseGuard);
 
