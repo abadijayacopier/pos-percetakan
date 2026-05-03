@@ -105,16 +105,42 @@ router.get('/license', verifyToken, async (req, res) => {
     try {
         // --- 1. STANDALONE (OFFLINE) MODE ---
         if (process.env.APP_MODE === 'standalone') {
-            const [rows] = await req.db.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
+            const { currentDbType } = require('../config/database');
+            
+            let rows;
+            let installDateRows;
+
+            if (currentDbType === 'sqlite') {
+                rows = await req.db.all('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
+                installDateRows = await req.db.all('SELECT `value` FROM settings WHERE `key` = ?', ['install_date']);
+            } else {
+                const [dbRows] = await req.db.query('SELECT `value` FROM settings WHERE `key` = ?', ['license_key']);
+                rows = dbRows;
+                const [idRows] = await req.db.query('SELECT `value` FROM settings WHERE `key` = ?', ['install_date']);
+                installDateRows = idRows;
+            }
+
             const manager = new LicenseManager();
-            const result = manager.verifyLicense(rows[0]?.value || '');
+            const result = manager.verifyLicense(rows && rows[0] ? rows[0].value : '');
+
+            let installDate = installDateRows && installDateRows.length > 0 ? new Date(installDateRows[0].value) : null;
+            if (!installDate) {
+                installDate = new Date(); // Fallback if missing
+            }
+            
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const daysSinceInstall = (new Date() - installDate) / msPerDay;
+            const isTrial = daysSinceInstall <= 3;
+            const trialDaysLeft = Math.max(0, Math.ceil(3 - daysSinceInstall));
 
             return res.json({
                 activated: result.isValid,
                 message: result.message || 'Status Lisensi Offline',
                 expiryDate: result.expiryDate,
                 clientName: result.clientName,
-                hardwareId: LicenseManager.getHardwareId()
+                hardwareId: LicenseManager.getHardwareId(),
+                isTrial: !result.isValid && isTrial,
+                trialDaysLeft: !result.isValid && isTrial ? trialDaysLeft : 0
             });
         }
 

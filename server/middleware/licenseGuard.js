@@ -33,10 +33,41 @@ const licenseGuard = async (req, res, next) => {
                 rows = dbRows;
             }
 
+            // --- Cek Masa Trial 3 Hari ---
+            let installDateRows;
+            if (currentDbType === 'sqlite') {
+                installDateRows = await db.all('SELECT `value` FROM settings WHERE `key` = ?', ['install_date']);
+            } else {
+                const [idRows] = await db.query('SELECT `value` FROM settings WHERE `key` = ?', ['install_date']);
+                installDateRows = idRows;
+            }
+
+            let installDate = installDateRows && installDateRows.length > 0 ? new Date(installDateRows[0].value) : null;
+            if (!installDate) {
+                // Set pertama kali diinstal
+                installDate = new Date();
+                if (currentDbType === 'sqlite') {
+                    await db.run('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['install_date', installDate.toISOString()]);
+                } else {
+                    await db.query('INSERT INTO settings (`key`, `value`) VALUES (?, ?)', ['install_date', installDate.toISOString()]);
+                }
+            }
+
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const daysSinceInstall = (new Date() - installDate) / msPerDay;
+            const isTrial = daysSinceInstall <= 3;
+            const trialDaysLeft = Math.max(0, Math.ceil(3 - daysSinceInstall));
+
             if (!rows || rows.length === 0 || !rows[0].value) {
+                if (isTrial) {
+                    req.license = { isValid: true, isTrial: true, trialDaysLeft, message: `Mode Trial Aktif (${trialDaysLeft} Hari Tersisa)` };
+                    return next();
+                }
+
                 return res.status(403).json({
                     error: 'LICENSE_REQUIRED',
-                    message: 'Aplikasi belum diaktivasi (Offline Mode). Silakan hubungi pengembang. Developer: Supriyanto WA 085655620979'
+                    message: 'Masa trial 3 hari telah habis. Aplikasi belum diaktivasi (Offline Mode). Silakan hubungi pengembang. Developer: Supriyanto WA 085655620979',
+                    trialExpired: true
                 });
             }
 
@@ -44,13 +75,19 @@ const licenseGuard = async (req, res, next) => {
             const result = manager.verifyLicense(rows[0].value);
 
             if (!result.isValid) {
+                if (isTrial) {
+                    req.license = { isValid: true, isTrial: true, trialDaysLeft, message: `Lisensi Invalid. Mode Trial Aktif (${trialDaysLeft} Hari Tersisa)` };
+                    return next();
+                }
+
                 return res.status(403).json({
                     error: 'LICENSE_INVALID',
-                    message: result.message
+                    message: result.message + '. Masa trial juga telah habis.',
+                    trialExpired: true
                 });
             }
 
-            req.license = result;
+            req.license = { ...result, isTrial: false };
             return next();
         }
 

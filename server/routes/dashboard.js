@@ -102,6 +102,10 @@ router.get('/stats', verifyToken, async (req, res) => {
         if (printAlerts[0]?.processing > 0) alerts.push(`🖨️ ${printAlerts[0].processing} Pesanan cetak sedang dalam antrean/pengerjaan.`);
         if (printAlerts[0]?.ready > 0) alerts.push(`✅ ${printAlerts[0].ready} Pesanan cetak sudah selesai & siap diambil.`);
 
+        if (req.license && req.license.isTrial) {
+            alerts.unshift(`🎁 Status Aplikasi: ${req.license.message}. Silakan hubungi tim developer untuk melakukan aktivasi penuh.`);
+        }
+
         if (alerts.length < 2) {
             alerts.push("💡 Tips: Gunakan shortcut F2 untuk transaksi jilid cepat.");
             alerts.push("✅ Berikan struk bukti service ke pelanggan saat unit diterima.");

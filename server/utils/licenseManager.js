@@ -33,11 +33,15 @@ class LicenseManager {
 
     verifyLicense(key) {
         try {
+            if (!key || key.trim() === '') {
+                return { isValid: false, message: 'Belum ada lisensi yang terdaftar' };
+            }
+
             const decoded = Buffer.from(key, 'base64').toString('ascii');
             const parts = decoded.split(':::');
 
             if (parts.length !== 5) {
-                return { isValid: false, message: 'Format lisensi rusak' };
+                return { isValid: false, message: 'Kode Lisensi tidak sesuai standar sistem' };
             }
 
             const [client, expiry, hwid, feat, signature] = parts;

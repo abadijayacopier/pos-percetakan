@@ -161,6 +161,20 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
         };
     }, []);
 
+    // Check Trial Status
+    const [trialInfo, setTrialInfo] = useState(null);
+    useEffect(() => {
+        const checkTrial = async () => {
+            try {
+                const res = await api.get('/settings/license');
+                if (res.data && res.data.isTrial) {
+                    setTrialInfo(res.data);
+                }
+            } catch (err) {}
+        };
+        checkTrial();
+    }, []);
+
     const PAGE_TITLES = {
         dashboard: 'Dasbor Utama',
         pos: 'Transaksi Baru',
@@ -205,6 +219,12 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
             )}
 
             <main className={`flex-1 relative flex flex-col min-w-0 print:overflow-visible print:p-0 print:m-0 print:h-auto print:block ${isFullscreen ? 'ml-0' : ''} transition-all duration-300`}>
+                {trialInfo && (
+                    <div className="bg-amber-500 text-amber-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-center flex items-center justify-center gap-2 print:hidden z-[60]">
+                        <span className="material-symbols-outlined text-sm animate-pulse">info</span>
+                        Status: {trialInfo.message} - Sisa Waktu Trial: {trialInfo.trialDaysLeft} Hari. Silakan hubungi tim developer untuk aktivasi penuh.
+                    </div>
+                )}
                 {!['pos', 'pos-v1'].includes(activePage) && (
                     <header className="print:hidden h-[72px] border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0 sticky top-0 z-50 shadow-sm">
                         <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto overflow-hidden">
