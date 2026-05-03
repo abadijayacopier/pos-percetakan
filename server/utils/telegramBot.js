@@ -4,6 +4,7 @@ const { sendDailyReport, sendStockReport, sendTelegramNotification } = require('
 
 let lastUpdateId = 0;
 let isPolling = false;
+let isPollingStarted = false;
 let pollingInterval = null;
 
 /**
@@ -135,11 +136,16 @@ const startPolling = async () => {
             const isEnabled = enabledRes[0]?.value === 'true' || enabledRes[0]?.value === true;
 
             if (!token || !isEnabled) {
-                if (!token) console.warn('⚠️ Telegram Bot Token tidak ditemukan di database.');
-                if (!isEnabled) console.log('💤 Telegram Bot dinonaktifkan di pengaturan.');
-                await new Promise(r => setTimeout(r, 10000));
+                if (!isPollingStarted) { // Add this flag to log only once
+                    if (!token) console.warn('⚠️ Telegram Bot Token tidak ditemukan di database. Polling ditunda.');
+                    if (!isEnabled) console.log('💤 Telegram Bot dinonaktifkan di pengaturan.');
+                    isPollingStarted = true;
+                }
+                await new Promise(r => setTimeout(r, 60000)); // Wait longer (1 min) if disabled
                 continue;
             }
+            
+            isPollingStarted = false; // Reset if it becomes active
 
             const updates = await fetchUpdates(token);
             

@@ -8,28 +8,35 @@ const { sendInvoiceNotification, checkCriticalStock } = require('../utils/notifi
 router.get('/', verifyToken, async (req, res) => {
     try {
         const [rows] = await req.db.query('SELECT * FROM transactions ORDER BY date DESC');
+        console.log(`[Transactions] Found ${rows ? rows.length : 0} rows in DB`);
 
-        const trxIds = rows.map(r => r.id);
+        const trxIds = rows ? rows.map(r => r.id) : [];
         let detailsMap = {};
         if (trxIds.length > 0) {
+            const placeholders = trxIds.map(() => '?').join(',');
             const [details] = await req.db.query(
-                'SELECT * FROM transaction_details WHERE transaction_id IN (?)',
-                [trxIds]
+                `SELECT * FROM transaction_details WHERE transaction_id IN (${placeholders})`,
+                trxIds
             );
-            details.forEach(d => {
-                if (!detailsMap[d.transaction_id]) detailsMap[d.transaction_id] = [];
-                detailsMap[d.transaction_id].push({
-                    productId: d.product_id,
-                    name: d.name,
-                    qty: d.qty,
-                    price: d.price,
-                    subtotal: d.subtotal,
-                    discount: d.discount
+            console.log(`[Transactions] Found ${details ? details.length : 0} details for ${trxIds.length} transactions`);
+            
+            if (details) {
+                details.forEach(d => {
+                    const trxId = d.transaction_id;
+                    if (!detailsMap[trxId]) detailsMap[trxId] = [];
+                    detailsMap[trxId].push({
+                        productId: d.product_id,
+                        name: d.name,
+                        qty: d.qty,
+                        price: d.price,
+                        subtotal: d.subtotal,
+                        discount: d.discount
+                    });
                 });
-            });
+            }
         }
 
-        const result = rows.map(t => ({
+        const result = rows ? rows.map(t => ({
             ...t,
             invoiceNo: t.invoice_no || t.invoiceNo,
             invoiceNumber: t.invoice_no || t.invoiceNo,
@@ -41,9 +48,12 @@ router.get('/', verifyToken, async (req, res) => {
             paidAmount: t.paid || 0,
             createdAt: t.date,
             items: detailsMap[t.id] || []
-        }));
+        })) : [];
+        
+        console.log(`[Transactions] Sending ${result.length} mapped transactions to frontend`);
         res.json(result);
     } catch (error) {
+        console.error('[Transactions] Error:', error);
         res.status(500).json({ message: 'Gagal mengambil data transaksi', error: error.message });
     }
 });
@@ -330,10 +340,11 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
             [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, notes || trx.notes, id]);
 
         const cashFlowId = 'cf' + Date.now();
+        const todayDate = new Date().toISOString().slice(0, 10);
         await connection.query(`
             INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
-            VALUES (?, CURDATE(), 'in', 'Penjualan', ?, ?, ?)
-        `, [cashFlowId, paidAmount, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
+            VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
+        `, [cashFlowId, todayDate, paidAmount, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
 
         await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
             [req.user.id, req.user.name, 'payment', 'Transaction', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`, req.ip || null]);

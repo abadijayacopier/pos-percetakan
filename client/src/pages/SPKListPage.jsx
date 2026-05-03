@@ -515,7 +515,7 @@ export default function SPKListPage({ onNavigate }) {
                             <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                             <div className="flex items-start justify-between p-6 pb-2 border-slate-100 dark:border-slate-800/60 shrink-0 relative z-10">
                                 <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                                    <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-50/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                                         <FiAlertCircle size={24} />
                                     </div>
                                     <div>
@@ -523,6 +523,12 @@ export default function SPKListPage({ onNavigate }) {
                                         <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Master SPK #{cancelModal.spk_number}</p>
                                     </div>
                                 </div>
+                                <button
+                                    onClick={() => setCancelModal(null)}
+                                    className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all text-slate-400 hover:text-rose-500"
+                                >
+                                    <FiX size={20} />
+                                </button>
                             </div>
                             <div className="p-6 pt-2 space-y-4 relative z-10 bg-transparent">
                                 <div className="bg-rose-50 dark:bg-rose-500/10 p-4 rounded-2xl border border-rose-200 dark:border-rose-500/20 text-center">

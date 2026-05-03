@@ -122,7 +122,9 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET'))
             );
             setActiveDesigns(designs);
-            const logs = [...allTasks].filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')));
+            const logs = [...allTasks]
+                .filter(t => t.type !== 'offset' && (!t.title?.toUpperCase().includes('OFFSET')))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setRecentLogs(logs);
 
             // WhatsApp Status Check
@@ -961,9 +963,8 @@ export default function DigitalPrintingPage({ onNavigate }) {
                                     <td className="px-6 py-4 text-right">
                                         <button
                                             onClick={() => {
-                                                if (['desain', 'menunggu_desain', 'ditugaskan', 'dikerjakan'].includes(log.status)) onNavigate('design-finalization', { taskId: log.id });
-                                                else if (log.status === 'checkout') onNavigate('dp-cart', { taskId: log.id });
-                                                else onNavigate('production-queue');
+                                                setSelectedTask(log);
+                                                setShowViewModal(true);
                                             }}
                                             className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-600 dark:text-slate-400 shadow-sm"
                                         >
@@ -1010,6 +1011,14 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 onClose={() => setShowViewModal(false)}
                 title="Detail Operasional"
                 icon={<FiEye className="text-blue-600" />}
+                footer={(
+                    <button 
+                        className="w-full py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
+                        onClick={() => setShowViewModal(false)}
+                    >
+                        Tutup Jendela
+                    </button>
+                )}
             >
                 {selectedTask && (
                     <div className="space-y-6">
@@ -1158,7 +1167,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 confirmText="Ya, Batalkan"
                 cancelText="Tutup"
                 onConfirm={confirmCancelTask}
-                onCancel={() => { setShowCancelModal(false); setCancelTaskId(null); }}
+                onClose={() => { setShowCancelModal(false); setCancelTaskId(null); }}
                 type="danger"
             />
         </div>
@@ -1169,7 +1178,7 @@ export default function DigitalPrintingPage({ onNavigate }) {
 const AssignModal = ({ isOpen, onClose, selectedTask, availableDesigners, loadingDesigners, handleAssignDesigner }) => {
     if (!selectedTask) return null;
     return (
-        <div className={`fixed inset-0 z-100 flex items-center justify-center p-4 transition-all ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+        <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={onClose}></div>
             <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                 <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">

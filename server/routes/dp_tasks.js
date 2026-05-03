@@ -156,6 +156,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
             } else if (status === 'produksi' || status === 'proses') {
                 sendProcessNotification(rows[0]);
             } else if (status === 'selesai') {
+                await req.db.query("UPDATE design_assignments SET status = 'selesai' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
                 sendDoneNotification(rows[0]);
             }
         }
@@ -173,6 +174,7 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
         const taskInfo = taskArr.length > 0 ? `${taskArr[0].title} (${taskArr[0].id})` : req.params.id;
 
         await req.db.query('DELETE FROM dp_tasks WHERE id = ?', [req.params.id]);
+        await req.db.query('DELETE FROM design_assignments WHERE task_id = ?', [req.params.id]);
 
         // Log activity
         await logActivity(req.user.id, 'DELETE_TASK', 'Percetakan', `Hapus pesanan cetak: ${taskInfo}`, req.ip, req.user.name);
@@ -191,6 +193,7 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
         const { totalAmount, dpAmount, title } = req.body;
 
         await connection.query("UPDATE dp_tasks SET is_paid = 1, status = 'diambil' WHERE id = ?", [req.params.id]);
+        await connection.query("UPDATE design_assignments SET status = 'selesai' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
 
         const sisa = totalAmount - dpAmount;
         if (sisa > 0) {

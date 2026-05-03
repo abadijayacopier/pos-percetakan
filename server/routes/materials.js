@@ -93,7 +93,7 @@ router.post('/:id/stok', verifyToken, requireRole(['admin', 'operator']), async 
 
         let sql;
         if (tipe === 'masuk') sql = 'UPDATE materials SET stok_saat_ini = stok_saat_ini + ? WHERE id = ?';
-        else if (tipe === 'keluar') sql = 'UPDATE materials SET stok_saat_ini = GREATEST(0, stok_saat_ini - ?) WHERE id = ?';
+        else if (tipe === 'keluar') sql = 'UPDATE materials SET stok_saat_ini = MAX(0, stok_saat_ini - ?) WHERE id = ?';
         else sql = 'UPDATE materials SET stok_saat_ini = ? WHERE id = ?';
 
         await conn.query(sql, [jumlah, req.params.id]);

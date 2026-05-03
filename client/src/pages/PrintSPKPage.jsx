@@ -1,41 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
-export default function PrintSPKPage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || null;
+export default function PrintSPKPage({ onNavigate, ...props }) {
+    const spkId = props.pageState?.spkId || props.spkId;
     const [spk, setSpk] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDetail = async () => {
-            if (!spkId) {
-                setLoading(false);
-                return;
-            }
-            try {
-                const res = await api.get(`/spk/${spkId}`);
-                setSpk(res.data);
-            } catch (err) {
-                console.error('Gagal fetch detail SPK:', err);
-                // Fallback dummy data if API fails so UI can still be seen
-                setSpk({
-                    spk_number: spkId,
-                    customer_company: 'PT Maju Jaya',
-                    deadline: '2023-10-15T17:00:00Z',
-                    product_name: 'Banner Digital Printing',
-                    specs_material: 'Frontlite 280gr',
-                    product_qty: 1,
-                    product_unit: 'Pcs',
-                    specs_finishing: 'Lubang Mata Ayam (4 Pojok)',
-                    specs_notes: 'Pastikan warna sesuai dengan profil printer. Cek kembali kebersihan bahan sebelum proses cetak. Packing digulung, jangan dilipat untuk menghindari bekas lipatan pada bahan frontlite.',
-                    created_at: new Date().toISOString()
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDetail();
+    const fetchDetail = useCallback(async () => {
+        if (!spkId) {
+            setLoading(false);
+            return;
+        }
+        try {
+            const res = await api.get(`/spk/${spkId}`);
+            setSpk(res.data);
+        } catch (err) {
+            console.error('Gagal fetch detail SPK:', err);
+            // Fallback dummy data if API fails so UI can still be seen
+            setSpk({
+                spk_number: spkId,
+                customer_company: 'PT Maju Jaya (Offline)',
+                deadline: new Date().toISOString(),
+                product_name: 'Produk SPK',
+                specs_material: 'Bahan Standar',
+                product_qty: 1,
+                product_unit: 'Pcs',
+                specs_finishing: '-',
+                specs_notes: 'Data dimuat dari offline cache atau ID tidak ditemukan.',
+                created_at: new Date().toISOString()
+            });
+        } finally {
+            setLoading(false);
+        }
     }, [spkId]);
+
+    useEffect(() => {
+        fetchDetail();
+    }, [fetchDetail]);
 
     // Tambahkan style cetak format A4 dan handler mode gelap
     useEffect(() => {

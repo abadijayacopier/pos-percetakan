@@ -11,7 +11,7 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         // 1. Omset & Trx Count Hari Ini (Derived from Transactions for better accuracy)
         const [trxStats] = await req.db.query(
-            "SELECT SUM(CASE WHEN status IN ('paid', 'completed') THEN total ELSE paid END) as omset, COUNT(id) as trxCount FROM transactions WHERE date LIKE ?",
+            "SELECT SUM(CASE WHEN t.status IN ('paid', 'completed') THEN t.total ELSE t.paid END) as omset, COUNT(t.id) as trxCount FROM transactions t WHERE t.date LIKE ?",
             [`${today}%`]
         );
 
@@ -47,7 +47,7 @@ router.get('/stats', verifyToken, async (req, res) => {
         const startDate = thirtyDaysAgo.toISOString().split('T')[0];
 
         const [periodTrx] = await req.db.query(
-            "SELECT DATE(date) as date, SUM(CASE WHEN status IN ('paid', 'completed') THEN total ELSE paid END) as total FROM transactions WHERE date >= ? GROUP BY DATE(date) ORDER BY DATE(date)",
+            "SELECT DATE(t.date) as date, SUM(CASE WHEN t.status IN ('paid', 'completed') THEN t.total ELSE t.paid END) as total FROM transactions t WHERE t.date >= ? GROUP BY DATE(t.date) ORDER BY DATE(t.date)",
             [`${startDate} 00:00:00`]
         );
 
@@ -109,9 +109,9 @@ router.get('/stats', verifyToken, async (req, res) => {
 
         // 9. Top Selling Products
         const [topProducts] = await req.db.query(`
-            SELECT name, SUM(qty) as count, SUM(subtotal) as revenue 
-            FROM transaction_details 
-            GROUP BY product_id, name 
+            SELECT td.name, SUM(td.qty) as count, SUM(td.subtotal) as revenue 
+            FROM transaction_details td
+            GROUP BY td.product_id, td.name 
             ORDER BY count DESC 
             LIMIT 5
         `);
@@ -119,17 +119,17 @@ router.get('/stats', verifyToken, async (req, res) => {
         // 10. Category Distribution (Improved with LEFT JOIN and Fallback)
         const [categorySalesRaw] = await req.db.query(`
             SELECT 
-                COALESCE(c.name, 'Jasa & Lainnya') as name, 
+                COALESCE(c.name, 'Jasa & Lainnya') as categoryName, 
                 SUM(td.subtotal) as value
             FROM transaction_details td
             LEFT JOIN products p ON td.product_id = p.id
             LEFT JOIN categories c ON p.category_id = c.id
-            GROUP BY name
+            GROUP BY categoryName
             ORDER BY value DESC
         `);
 
         const categorySales = categorySalesRaw.map(item => ({
-            name: item.name,
+            name: item.categoryName,
             value: parseFloat(item.value || 0)
         }));
 

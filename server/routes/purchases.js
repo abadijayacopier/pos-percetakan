@@ -124,9 +124,9 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
         const [items] = await conn.query('SELECT * FROM purchase_items WHERE purchase_id = ?', [purchaseId]);
         for (const item of items) {
             if (item.item_type === 'product') {
-                await conn.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [item.qty, item.item_id]);
+                await conn.query('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [item.qty, item.item_id]);
             } else if (item.item_type === 'material') {
-                await conn.query('UPDATE materials SET stok_saat_ini = GREATEST(0, stok_saat_ini - ?) WHERE id = ?', [item.qty, item.item_id]);
+                await conn.query('UPDATE materials SET stok_saat_ini = MAX(0, stok_saat_ini - ?) WHERE id = ?', [item.qty, item.item_id]);
             }
         }
 

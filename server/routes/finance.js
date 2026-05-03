@@ -18,19 +18,23 @@ const cashFlowSchema = z.object({
 // 1. GET Semua Data Arus Kas (Buku Kas)
 router.get('/', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        // Self-healing: Fix inconsistent PENJUALAN amounts that are greater than transaction totals (caused by old gross payment logging)
+        // Self-healing: Fix inconsistent PENJUALAN amounts in SQLite compatible way
         await req.db.query(`
-            UPDATE cash_flow cf
-            JOIN transactions t ON cf.reference_id = t.id
-            SET cf.amount = t.total
-            WHERE cf.category = 'Penjualan' 
-            AND cf.amount > t.total 
-            AND t.status IN ('paid', 'completed')
+            UPDATE cash_flow 
+            SET amount = (SELECT total FROM transactions WHERE transactions.id = cash_flow.reference_id)
+            WHERE category = 'Penjualan' 
+            AND EXISTS (
+                SELECT 1 FROM transactions 
+                WHERE transactions.id = cash_flow.reference_id 
+                AND transactions.total < cash_flow.amount
+                AND transactions.status IN ('paid', 'completed')
+            )
         `);
 
         const [rows] = await req.db.query('SELECT * FROM cash_flow ORDER BY date DESC, created_at DESC');
         res.json(rows);
     } catch (error) {
+        console.error('Finance GET error:', error);
         res.status(500).json({ message: 'Gagal mengambil data arus kas' });
     }
 });
@@ -51,11 +55,11 @@ router.get('/stats', verifyToken, async (req, res) => {
         const [[pendingService]] = await req.db.query('SELECT COUNT(*) as val FROM service_orders WHERE status NOT IN ("selesai", "diambil", "batal")');
         const [[lowStock]] = await req.db.query('SELECT COUNT(*) as val FROM products WHERE stock <= min_stock');
 
-        // Data Grafik Seminggu Terakhir
+        // Data Grafik Seminggu Terakhir (SQLite compatible)
         const [chartData] = await req.db.query(`
             SELECT DATE(date) as label, SUM(total) as total 
             FROM transactions 
-            WHERE date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND status = 'paid'
+            WHERE date >= date('now', '-7 days') AND status = 'paid'
             GROUP BY DATE(date) 
             ORDER BY DATE(date) ASC
         `);
@@ -64,16 +68,16 @@ router.get('/stats', verifyToken, async (req, res) => {
         const [recentActivity] = await req.db.query('SELECT * FROM activity_log ORDER BY timestamp DESC LIMIT 10');
 
         res.json({
-            saldo: (cashFlow.totalIn || 0) - (cashFlow.totalOut || 0),
-            todaySales: todaySales.val || 0,
-            todayIn: todayIn.val || 0,
-            trxCount: trxCount.val || 0,
-            pendingPrint: pendingPrint.val || 0,
-            pendingService: pendingService.val || 0,
-            lowStock: lowStock.val || 0,
+            saldo: (cashFlow?.totalIn || 0) - (cashFlow?.totalOut || 0),
+            todaySales: todaySales?.val || 0,
+            todayIn: todayIn?.val || 0,
+            trxCount: trxCount?.val || 0,
+            pendingPrint: pendingPrint?.val || 0,
+            pendingService: pendingService?.val || 0,
+            lowStock: lowStock?.val || 0,
             chartData: chartData.map(c => ({
                 label: new Date(c.label).toLocaleDateString('id-ID', { weekday: 'short' }),
-                total: parseInt(c.total)
+                total: parseInt(c.total || 0)
             })),
             activityLog: recentActivity
         });
@@ -138,6 +142,68 @@ router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
         res.json({ message: 'Entri kas berhasil dihapus!' });
     } catch (error) {
         res.status(500).json({ message: 'Gagal menghapus entri kas' });
+    }
+});
+
+// 6. POST Reconcile (Sync Transactions with Cash Flow)
+router.post('/reconcile', verifyToken, requireRole(['admin']), async (req, res) => {
+    const connection = await req.db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Get all relevant transactions
+        const [transactions] = await connection.query(`
+            SELECT id, invoice_no, date, paid, total, status 
+            FROM transactions 
+            WHERE status IN ('paid', 'debt', 'completed', 'pending')
+        `);
+
+        let fixedCount = 0;
+        let totalFixedAmount = 0;
+
+        for (const trx of transactions) {
+            // 2. Get existing cash flow entries for this transaction
+            const [cashEntries] = await connection.query(
+                'SELECT SUM(amount) as totalActual FROM cash_flow WHERE reference_id = ? AND type = "in"',
+                [trx.id]
+            );
+
+            const actualAmount = cashEntries[0]?.totalActual || 0;
+            const expectedAmount = trx.paid || 0;
+
+            // 3. If there's a discrepancy, fix it
+            if (expectedAmount > actualAmount) {
+                const diff = expectedAmount - actualAmount;
+                const cashFlowId = 'sync-' + trx.id + '-' + Date.now();
+                
+                await connection.query(`
+                    INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                    VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
+                `, [
+                    cashFlowId, 
+                    trx.date.slice(0, 10), 
+                    diff, 
+                    `Sync - Penjualan ${trx.invoice_no || trx.id}`, 
+                    trx.id
+                ]);
+
+                fixedCount++;
+                totalFixedAmount += diff;
+            }
+        }
+
+        await connection.commit();
+        res.json({ 
+            message: `Rekonsiliasi selesai. ${fixedCount} transaksi diperbaiki.`,
+            fixedCount,
+            totalFixedAmount
+        });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('Reconciliation error:', error);
+        res.status(500).json({ message: 'Gagal menjalankan rekonsiliasi' });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

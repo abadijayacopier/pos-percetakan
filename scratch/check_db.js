@@ -1,29 +1,31 @@
-const mysql = require('mysql2/promise');
-async function check() {
-    const connection = await mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: 'abadijaya',
-        database: 'pos_percetakan'
-    });
-    try {
-        const [tables] = await connection.query('SHOW TABLES');
-        console.log('Tables:', tables);
-        
-        const [ordersDesc] = await connection.query('DESCRIBE orders');
-        console.log('Orders Table:', ordersDesc);
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const dbPath = path.join(__dirname, '..', 'server', 'database', 'pos.sqlite');
+const db = new sqlite3.Database(dbPath);
 
-        const [printOrdersDesc] = await connection.query('DESCRIBE print_orders');
-        console.log('Print Orders Table:', printOrdersDesc);
+console.log('Checking database:', dbPath);
 
-        const [results] = await connection.query(`
-            SELECT customer_id, SUM(total_harga) as sum_val FROM orders GROUP BY customer_id LIMIT 5
-        `);
-        console.log('Sample Data Orders:', results);
-    } catch (err) {
-        console.error(err);
-    } finally {
-        await connection.end();
+db.all('SELECT COUNT(*) as count FROM transactions', [], (err, rows) => {
+    if (err) {
+        console.error('Error transactions:', err.message);
+    } else {
+        console.log('Transactions Count:', rows[0].count);
+        db.all('SELECT * FROM transactions LIMIT 5', [], (err, data) => {
+            if (err) console.error(err);
+            else console.log('Sample Transactions:', JSON.stringify(data, null, 2));
+            
+            db.all('SELECT COUNT(*) as count FROM cash_flow', [], (err, rows) => {
+                if (err) {
+                    console.error('Error cash_flow:', err.message);
+                } else {
+                    console.log('Cash Flow Count:', rows[0].count);
+                    db.all('SELECT * FROM cash_flow LIMIT 5', [], (err, data) => {
+                        if (err) console.error(err);
+                        else console.log('Sample Cash Flow:', JSON.stringify(data, null, 2));
+                        db.close();
+                    });
+                }
+            });
+        });
     }
-}
-check();
+});

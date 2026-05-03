@@ -8,7 +8,7 @@ router.get('/stock-movements', verifyToken, async (req, res) => {
     try {
         const { dateFrom, dateTo, productId, categoryId } = req.query;
         let query = `
-            SELECT sm.*, p.name as product_name, p.code as product_code, p.unit, 
+            SELECT sm.*, sm.created_at AS date, p.name as product_name, p.code as product_code, p.unit, 
                    c.name as category_name
             FROM stock_movements sm
             JOIN products p ON sm.product_id = p.id

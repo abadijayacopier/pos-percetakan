@@ -27,7 +27,7 @@ const Toast = ({ msg, type, onClose }) => (
 
 const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
-export default function MaterialFormPage({ onNavigate, pageState }) {
+export default function MaterialFormPage({ onNavigate, pageState, storeSettings }) {
     const initial = pageState?.material || null;
     const [form, setForm] = useState({
         nama_bahan: initial?.nama_bahan || '',
@@ -51,6 +51,84 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
     const [promptModal, setPromptModal] = useState({ isOpen: false, type: '', title: '', value: '' });
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+    const handlePrintLabel = () => {
+        if (!form.nama_bahan || !form.barcode) {
+            alert('Lengkapi nama bahan dan barcode/SKU terlebih dahulu!');
+            return;
+        }
+
+        const windowPrint = window.open('', '', 'width=900,height=1100');
+        const codeData = form.barcode;
+        const codeDisplay = `*${codeData}*`;
+        
+        const labelsHtml = `
+            <div class="label-card">
+                <div class="store-name">${storeSettings?.name || 'ABADI JAYA'}</div>
+                <div class="product-name">${form.nama_bahan}</div>
+                <div class="price">${fmt(form.harga_jual)}</div>
+                <div class="barcode">${codeDisplay}</div>
+                <div class="sku">${codeData}</div>
+            </div>
+        `;
+
+        windowPrint.document.write(`
+            <html>
+                <head>
+                    <title>Cetak Label Produk</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+                    <style>
+                        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: white; }
+                        .print-container { 
+                            display: flex;
+                            flex-direction: column;
+                            width: 50mm;
+                            margin: 0 auto;
+                        }
+                        .label-card { 
+                            width: 50mm; 
+                            height: 30mm; 
+                            border: 0.1mm dashed #ccc; 
+                            padding: 2mm;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: center;
+                            align-items: center;
+                            text-align: center;
+                            page-break-inside: avoid;
+                            box-sizing: border-box;
+                            overflow: hidden;
+                            background: white;
+                        }
+                        .store-name { font-size: 6px; font-weight: 900; color: #64748b; margin-bottom: 1px; text-transform: uppercase; white-space: nowrap; }
+                        .product-name { font-size: 8px; font-weight: 800; margin-bottom: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1; color: #000; }
+                        .price { font-size: 10px; font-weight: 900; color: #000; margin-bottom: 2px; }
+                        .barcode { font-family: 'Libre Barcode 39'; font-size: 30px; margin: 0; line-height: 1; color: black; }
+                        .sku { font-size: 6px; font-weight: bold; color: #64748b; margin-top: 1px; }
+                        @media print {
+                            @page { size: 50mm 30mm; margin: 0; }
+                            body { -webkit-print-color-adjust: exact; }
+                            .print-container { width: auto; margin: 0; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-container">
+                        ${labelsHtml}
+                    </div>
+                    <script>
+                        window.onload = () => {
+                            setTimeout(() => {
+                                window.print();
+                                window.close();
+                            }, 1000);
+                        };
+                    </script>
+                </body>
+            </html>
+        `);
+        windowPrint.document.close();
+    };
 
     const toast = useCallback((msg, type = 'success') => {
         setToastMsg({ msg, type });
@@ -461,7 +539,11 @@ export default function MaterialFormPage({ onNavigate, pageState }) {
                                         className={`w-full px-4 py-3 rounded-xl text-center font-black text-sm tracking-widest ${form.autoBarcode ? 'bg-slate-800/50 text-slate-500' : 'bg-slate-800 text-white border border-slate-700'} outline-none transition-all placeholder:text-slate-600`}
                                         placeholder="INPUT SKU MANUAL"
                                     />
-                                    <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs transition-colors">
+                                    <button 
+                                        type="button"
+                                        onClick={handlePrintLabel}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs transition-colors"
+                                    >
                                         <FiPrinter /> Cetak Label Barcode
                                     </button>
                                 </div>

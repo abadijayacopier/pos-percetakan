@@ -51,7 +51,8 @@ async function ensureUnifiedTablesSQLite(db) {
             type TEXT DEFAULT 'digital', qty INTEGER DEFAULT 1, 
             dp_amount REAL DEFAULT 0, is_paid INTEGER DEFAULT 0, 
             file_url TEXT, designer_id TEXT, designer_name TEXT, 
-            operator_id TEXT, operator_name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            operator_id TEXT, operator_name TEXT, denda_batal REAL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
         
         // 4. PRINTING (MULTI-ITEM ARCHITECTURE)
@@ -60,6 +61,15 @@ async function ensureUnifiedTablesSQLite(db) {
         `CREATE TABLE IF NOT EXISTS materials (id TEXT PRIMARY KEY, barcode TEXT, nama_bahan TEXT, kategori TEXT, satuan TEXT, harga_modal INTEGER DEFAULT 0, harga_jual INTEGER DEFAULT 0, stok_saat_ini REAL DEFAULT 0, stok_minimum REAL DEFAULT 0, is_active INTEGER DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS design_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, order_item_id TEXT, technician_id TEXT, start_time DATETIME, end_time DATETIME, total_durasi_menit INTEGER, tarif_per_jam INTEGER DEFAULT 50000, total_biaya_desain INTEGER, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS production_status (id INTEGER PRIMARY KEY AUTOINCREMENT, order_item_id TEXT UNIQUE, status TEXT DEFAULT 'menunggu', catatan_teknis TEXT, link_file_desain TEXT, foto_sebelum TEXT, foto_sesudah TEXT, operator_id TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS print_orders (
+            id TEXT PRIMARY KEY, order_no TEXT UNIQUE, customer_id TEXT, customer_name TEXT, 
+            type TEXT, description TEXT, specs TEXT, qty INTEGER, unit TEXT, 
+            total_price REAL DEFAULT 0, dp_amount REAL DEFAULT 0, remaining REAL DEFAULT 0, 
+            shipping_cost REAL DEFAULT 0, deadline DATETIME, status TEXT DEFAULT 'pending', notes TEXT, 
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS digital_printing (id TEXT PRIMARY KEY, name TEXT, price REAL DEFAULT 0, unit TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS offset_printing (id TEXT PRIMARY KEY, name TEXT, price REAL DEFAULT 0, unit TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         
         // 5. OFFSET PRINTING
         `CREATE TABLE IF NOT EXISTS offset_products (id TEXT PRIMARY KEY, nama_produk TEXT, deskripsi_singkat TEXT, harga_base REAL DEFAULT 0, satuan TEXT, is_best_seller INTEGER DEFAULT 0, image_url TEXT)`,
@@ -67,21 +77,114 @@ async function ensureUnifiedTablesSQLite(db) {
         `CREATE TABLE IF NOT EXISTS design_sessions (id TEXT PRIMARY KEY, technician_id TEXT, order_id TEXT, start_time DATETIME, end_time DATETIME, current_duration INTEGER DEFAULT 0, hourly_rate REAL DEFAULT 50000, status TEXT DEFAULT 'Running')`,
         
         // 6. SPK WORKFLOW
-        `CREATE TABLE IF NOT EXISTS spk (id TEXT PRIMARY KEY, spk_number TEXT UNIQUE, customer_id TEXT, customer_name TEXT, product_name TEXT, product_qty INTEGER, product_unit TEXT, total_biaya REAL, dp_amount REAL, sisa_tagihan REAL, status TEXT DEFAULT 'Menunggu Antrian', priority TEXT DEFAULT 'Normal', assigned_to TEXT, deadline DATETIME, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS spk (
+            id TEXT PRIMARY KEY, spk_number TEXT UNIQUE, customer_id TEXT, customer_name TEXT, 
+            customer_phone TEXT, customer_company TEXT,
+            product_name TEXT, product_qty INTEGER, product_unit TEXT, kategori TEXT,
+            specs_material TEXT, specs_finishing TEXT, specs_notes TEXT,
+            biaya_cetak REAL DEFAULT 0, biaya_material REAL DEFAULT 0, biaya_finishing REAL DEFAULT 0, 
+            biaya_desain REAL DEFAULT 0, biaya_lainnya REAL DEFAULT 0,
+            total_biaya REAL, dp_amount REAL, sisa_tagihan REAL, 
+            status TEXT DEFAULT 'Menunggu Antrian', priority TEXT DEFAULT 'Normal', 
+            assigned_to TEXT, created_by TEXT, deadline DATETIME, completed_at DATETIME,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
         `CREATE TABLE IF NOT EXISTS spk_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, user_id TEXT, action TEXT, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS spk_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, payment_type TEXT, method TEXT, amount REAL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS spk_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, payment_type TEXT, method TEXT, amount REAL, bank_ref TEXT, paid_by TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         
         // 7. SYSTEM & CONFIG
         `CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT UNIQUE, value TEXT)`,
         `CREATE TABLE IF NOT EXISTS wa_config (id INTEGER PRIMARY KEY AUTOINCREMENT, config_key TEXT UNIQUE, config_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        `CREATE TABLE IF NOT EXISTS activity_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, user_name TEXT, action TEXT, target TEXT, ip_address TEXT, detail TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)`
-    ];
+        `CREATE TABLE IF NOT EXISTS activity_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, user_name TEXT, action TEXT, target TEXT, ip_address TEXT, detail TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+ 
+        // 8. SERVICE MODULE (SERVICE_ORDERS)
+        `CREATE TABLE IF NOT EXISTS service_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, service_no TEXT UNIQUE, customer_id TEXT, 
+            customer_name TEXT, phone TEXT, machine_info TEXT, serial_no TEXT, 
+            complaint TEXT, condition_physic TEXT, diagnosis TEXT, 
+            labor_cost REAL DEFAULT 0, dp_amount REAL DEFAULT 0, total_cost REAL DEFAULT 0, 
+            status TEXT DEFAULT 'diterima', technician_id TEXT, warranty_end DATETIME, 
+            photo TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS service_spareparts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, service_order_id INTEGER, 
+            name TEXT, qty INTEGER DEFAULT 1, price REAL DEFAULT 0, product_id TEXT
+        )`,
 
+        // 9. HR & PAYROLL MODULE
+        `CREATE TABLE IF NOT EXISTS employees (
+            id TEXT PRIMARY KEY, user_id TEXT, name TEXT, nik TEXT, phone TEXT, 
+            address TEXT, position TEXT, salary_type TEXT DEFAULT 'monthly', 
+            base_salary REAL DEFAULT 0, hourly_rate REAL DEFAULT 0, is_active INTEGER DEFAULT 1, 
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, employee_id TEXT, date DATE, 
+            clock_in DATETIME, clock_out DATETIME, work_hours REAL DEFAULT 0, 
+            notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS employee_loans (
+            id TEXT PRIMARY KEY, employee_id TEXT, amount REAL, remaining_amount REAL, 
+            date DATE, description TEXT, status TEXT DEFAULT 'unpaid', 
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS salaries (
+            id TEXT PRIMARY KEY, employee_id TEXT, period_month INTEGER, period_year INTEGER, 
+            base_processing_salary REAL DEFAULT 0, attendance_bonus REAL DEFAULT 0, 
+            overtime_pay REAL DEFAULT 0, loan_deduction REAL DEFAULT 0, 
+            other_deductions REAL DEFAULT 0, net_salary REAL DEFAULT 0, 
+            status TEXT DEFAULT 'draft', paid_at DATETIME, 
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+
+        // 10. DESIGNER ASSIGNMENTS
+        `CREATE TABLE IF NOT EXISTS design_assignments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT, designer_id TEXT, 
+            status TEXT DEFAULT 'ditugaskan', started_at DATETIME, 
+            finished_at DATETIME, assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+            catatan TEXT, file_hasil_desain TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS suppliers (
+            id TEXT PRIMARY KEY, name TEXT, contact_person TEXT, phone TEXT, 
+            address TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS purchases (
+            id TEXT PRIMARY KEY, invoice_no TEXT UNIQUE, supplier_id TEXT, supplier_name TEXT, 
+            date DATETIME, total_amount REAL DEFAULT 0, payment_status TEXT DEFAULT 'lunas', 
+            notes TEXT, user_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS purchase_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_id TEXT, item_type TEXT, 
+            item_id TEXT, item_name TEXT, qty REAL DEFAULT 0, unit_cost REAL DEFAULT 0, 
+            subtotal REAL DEFAULT 0
+        )`,
+        `CREATE TABLE IF NOT EXISTS stock_movements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, product_id TEXT, type TEXT, 
+            qty REAL, reference TEXT, notes TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS material_movements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, material_id TEXT, tipe TEXT, 
+            jumlah REAL, satuan TEXT, referensi TEXT, catatan TEXT, 
+            user_id TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS spk_handovers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, handover_by TEXT, 
+            received_by TEXT, condition TEXT, photo TEXT, 
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`
+    ];
+ 
     for (const sql of schemas) {
-        await db.exec(sql);
+        try {
+            const tableName = sql.match(/IF NOT EXISTS (\w+)/)?.[1];
+            await db.exec(sql);
+            if (tableName) console.log(`✅ Table checked/created: ${tableName}`);
+        } catch (e) {
+            console.error(`❌ SQL Error during table creation: ${e.message}`);
+        }
     }
 }
-
+ 
 /**
  * AUTO-PATCH KOLOM UNTUK SQLITE
  */
@@ -89,8 +192,11 @@ async function patchUnifiedColumnsSQLite(db) {
     const patches = [
         { table: 'customers', columns: ['total_trx', 'total_spend'] },
         { table: 'transactions', columns: ['customer_wa', 'tax_amount', 'notes'] },
-        { table: 'dp_tasks', columns: ['customerName', 'customerId', 'dimensions_w', 'dimensions_h', 'dp_amount', 'pesan_desainer'] },
-        { table: 'materials', columns: ['is_active', 'harga_modal', 'harga_jual'] }
+        { table: 'dp_tasks', columns: ['customerName', 'customerId', 'dimensions_w', 'dimensions_h', 'dp_amount', 'pesan_desainer', 'denda_batal'] },
+        { table: 'materials', columns: ['is_active', 'harga_modal', 'harga_jual'] },
+        { table: 'service_orders', columns: ['dp_amount'] },
+        { table: 'spk', columns: ['kategori', 'customer_phone', 'customer_company', 'specs_material', 'specs_finishing', 'specs_notes', 'biaya_cetak', 'biaya_material', 'biaya_finishing', 'biaya_desain', 'biaya_lainnya', 'created_by', 'completed_at'] },
+        { table: 'spk_payments', columns: ['bank_ref', 'paid_by'] }
     ];
 
     for (const patch of patches) {

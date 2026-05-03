@@ -318,7 +318,7 @@ export default function CashierPaymentPage({ onNavigate }) {
                         />
                     </div>
                     <div className="flex bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 items-center">
-                        <span className="px-3 text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest border-r border-slate-200 dark:border-slate-800 mr-1.5">v1.1.3</span>
+                        <span className="px-3 text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest border-r border-slate-200 dark:border-slate-800 mr-1.5">v1.1.4</span>
                         {[
                             { key: 'all', label: 'Semua' },
                             { key: 'belum', label: `Belum Lunas (${totalUnpaid})` },

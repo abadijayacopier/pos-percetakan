@@ -204,9 +204,24 @@ export default function ProductionQueuePage({ onNavigate }) {
 
     const moveTask = async (taskId, newStatus) => {
         try {
-            await api.patch(`/dp-tasks/${taskId}/status`, { status: newStatus });
+            const task = tasks.find(t => t.id === taskId);
+            if (task && task.type === 'offset') {
+                const spkStatusMap = {
+                    'produksi': 'Menunggu Antrian',
+                    'cetak': 'Proses Cetak',
+                    'finishing': 'Finishing',
+                    'qc': 'QC',
+                    'selesai': 'Selesai'
+                };
+                await api.patch(`/spk/${task.real_id}/status`, { status: spkStatusMap[newStatus] || newStatus });
+            } else {
+                await api.patch(`/dp-tasks/${taskId}/status`, { status: newStatus });
+            }
             loadProductionData();
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error('Failed to move task:', e);
+            showToast('Gagal memindahkan tugas. Silakan coba lagi.', 'error');
+        }
     };
 
     const getTasksByStatus = (status) => {

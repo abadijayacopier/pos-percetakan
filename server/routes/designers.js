@@ -19,9 +19,14 @@ router.get('/', verifyToken, async (req, res) => {
             LEFT JOIN design_assignments da
                 ON da.designer_id = u.id
                 AND da.status IN ('ditugaskan','dikerjakan')
-            LEFT JOIN dp_tasks dt ON da.task_id = dt.id
+            LEFT JOIN dp_tasks dt 
+                ON da.task_id = dt.id 
+                AND dt.status NOT IN ('batal', 'selesai', 'diambil', 'produksi', 'cetak', 'finishing')
+            LEFT JOIN spk s
+                ON da.task_id = s.id
+                AND s.status NOT IN ('Batal', 'batal', 'Selesai', 'Diambil', 'Proses Cetak', 'Finishing')
             WHERE u.role = 'desainer'
-              AND (dt.id IS NULL OR dt.status NOT IN ('batal'))
+              AND u.is_active = 1
             ORDER BY u.name
         `);
 
@@ -137,7 +142,14 @@ router.post('/assign', verifyToken, requireRole(['admin', 'operator']), async (r
         if (!task_id || !designer_id) return res.status(400).json({ message: 'Lengkapi data' });
 
         const [busy] = await req.db.query(
-            `SELECT id FROM design_assignments WHERE designer_id = ? AND status IN ('ditugaskan','dikerjakan')`,
+            `SELECT da.id 
+             FROM design_assignments da
+             LEFT JOIN dp_tasks dt ON da.task_id = dt.id
+             LEFT JOIN spk s ON da.task_id = s.id
+             WHERE da.designer_id = ? 
+               AND da.status IN ('ditugaskan','dikerjakan')
+               AND (dt.status IS NULL OR dt.status NOT IN ('batal'))
+               AND (s.status IS NULL OR s.status NOT IN ('Batal', 'batal'))`,
             [designer_id]
         );
         if (busy.length > 0) return res.status(400).json({ message: 'Operator desain sedang sibuk' });
@@ -167,14 +179,20 @@ router.get('/my-tasks', verifyToken, async (req, res) => {
     try {
         const role = (req.user.role || '').toLowerCase();
         let query = `
-            SELECT da.*, u.name as designer_name,
-                   dt.customerName, dt.title, dt.material_name, 
-                   dt.dimensions_w, dt.dimensions_h, dt.pesan_desainer
+             SELECT da.*, u.name as designer_name,
+                   COALESCE(dt.customerName, s.customer_name) as customerName,
+                   COALESCE(dt.title, s.product_name) as title,
+                   COALESCE(dt.material_name, s.specs_material) as material_name, 
+                   dt.dimensions_w, dt.dimensions_h,
+                   COALESCE(dt.pesan_desainer, s.specs_notes) as pesan_desainer,
+                   CASE WHEN dt.id IS NOT NULL THEN 'digital' ELSE 'offset' END as task_type
             FROM design_assignments da
             LEFT JOIN users u ON da.designer_id = u.id
-            INNER JOIN dp_tasks dt ON da.task_id = dt.id
-            WHERE da.status NOT IN ('dibatalkan')
-              AND dt.status NOT IN ('batal')
+            LEFT JOIN dp_tasks dt ON da.task_id = dt.id
+            LEFT JOIN spk s ON da.task_id = s.id
+            WHERE da.status NOT IN ('dibatalkan', 'selesai')
+              AND (dt.id IS NULL OR dt.status NOT IN ('batal', 'selesai', 'diambil', 'produksi', 'cetak', 'finishing'))
+              AND (s.id IS NULL OR s.status NOT IN ('Batal', 'batal', 'Selesai', 'Diambil', 'Proses Cetak', 'Finishing'))
         `;
         let params = [];
 
@@ -209,7 +227,7 @@ router.patch('/tasks/:id/start', verifyToken, async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ message: 'Penugasan tidak ditemukan' });
         if (rows[0].status !== 'ditugaskan') return res.status(400).json({ message: 'Tugas tidak bisa dimulai' });
 
-        await req.db.query(`UPDATE design_assignments SET status = 'dikerjakan', started_at = NOW() WHERE id = ?`, [req.params.id]);
+        await req.db.query(`UPDATE design_assignments SET status = 'dikerjakan', started_at = CURRENT_TIMESTAMP WHERE id = ?`, [req.params.id]);
         await req.db.query(
             `INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)`,
             [req.user.id, req.user.name, 'Mulai Desain', `Operator mulai mengerjakan pesanan ${rows[0].task_id}`]
@@ -229,7 +247,7 @@ router.patch('/tasks/:id/finish', verifyToken, async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ message: 'Penugasan tidak ditemukan' });
         if (rows[0].status !== 'dikerjakan') return res.status(400).json({ message: 'Tugas tidak bisa diselesaikan' });
 
-        await req.db.query(`UPDATE design_assignments SET status = 'selesai', finished_at = NOW(), catatan = ?, file_hasil_desain = ? WHERE id = ?`, [catatan || null, file_hasil_desain || null, req.params.id]);
+        await req.db.query(`UPDATE design_assignments SET status = 'selesai', finished_at = CURRENT_TIMESTAMP, catatan = ?, file_hasil_desain = ? WHERE id = ?`, [catatan || null, file_hasil_desain || null, req.params.id]);
         await req.db.query(
             `INSERT INTO activity_log (user_id, user_name, action, detail) VALUES (?, ?, ?, ?)`,
             [req.user.id, req.user.name, 'Selesai Desain', `Operator menyelesaikan desain pesanan ${rows[0].task_id}`]

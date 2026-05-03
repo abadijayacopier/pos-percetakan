@@ -294,16 +294,27 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
     };
 
     const doPrintLabel = () => {
-        const windowPrint = window.open('', '', 'width=900,height=1100');
+        if (selectedItems.length === 0 && !selectedLabelItem) return;
         
+        const itemsToPrint = selectedLabelItem 
+            ? [{ ...selectedLabelItem, qty: labelQty }] 
+            : products.filter(p => selectedItems.includes(p.id)).map(p => ({ ...p, qty: parseInt(selectedQuantities[p.id]) || 1 }));
+
+        if (itemsToPrint.length === 0) return;
+
+        const windowPrint = window.open('', '', 'width=900,height=1100');
         let labelsHtml = '';
-        const itemsToPrint = selectedLabelItem ? [{ ...selectedLabelItem, qty: labelQty }] : products.filter(p => selectedItems.includes(p.id)).map(p => ({ ...p, qty: parseInt(selectedQuantities[p.id]) || 1 }));
 
         itemsToPrint.forEach(item => {
-            for (let i = 0; i < item.qty; i++) {
-                const codeData = item.code || item.id?.toString().slice(-6);
+            const qty = parseInt(item.qty) || 1;
+            for (let i = 0; i < qty; i++) {
+                // Barcode 39 validation: Only A-Z, 0-9, and - . $ / + % SPACE
+                let codeData = (item.sku || item.code || item.id?.toString().slice(-6) || '').toUpperCase();
+                // Replace invalid characters with dash
+                codeData = codeData.replace(/[^A-Z0-9\-\.\$\/\+\%\s]/g, '-');
+                
                 const codeDisplay = labelType === 'barcode' ? `*${codeData}*` : '';
-                const qrUrl = labelType === 'qrcode' ? `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${codeData}` : '';
+                const qrUrl = labelType === 'qrcode' ? `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(codeData)}` : '';
 
                 labelsHtml += `
                     <div class="label-card">
@@ -323,15 +334,16 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
         windowPrint.document.write(`
             <html>
                 <head>
-                    <title>Cetak Label Produk</title>
+                    <title>Cetak Label Produk - ${storeSettings?.name || 'POS'}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
                     <style>
-                        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: white; }
+                        @import url('https://fonts.googleapis.com/css2?family=Libre+Barcode+39&family=Inter:wght@400;700;900&display=swap');
                         
-                        /* Layout Base */
+                        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; background: white; -webkit-print-color-adjust: exact; }
+                        
                         .print-container { 
                             display: ${labelPaperSize === 'a4' ? 'grid' : 'flex'};
-                            ${labelPaperSize === 'a4' ? 'grid-template-columns: repeat(4, 1fr); gap: 0;' : 'flex-direction: column;'}
+                            ${labelPaperSize === 'a4' ? 'grid-template-columns: repeat(4, 1fr);' : 'flex-direction: column;'}
                             width: ${labelPaperSize === 'a4' ? '210mm' : '50mm'};
                             margin: 0 auto;
                         }
@@ -352,23 +364,31 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                             background: white;
                         }
 
-                        .store-name { font-size: 6px; font-weight: 900; color: #64748b; margin-bottom: 1px; text-transform: uppercase; white-space: nowrap; }
-                        .product-name { font-size: 8px; font-weight: 800; margin-bottom: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1; color: #000; }
-                        .price { font-size: 10px; font-weight: 900; color: #000; margin-bottom: 2px; }
+                        .store-name { font-size: 7px; font-weight: 900; color: #475569; margin-bottom: 2px; text-transform: uppercase; white-space: nowrap; }
+                        .product-name { font-size: 9px; font-weight: 800; margin-bottom: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1; color: #000; }
+                        .price { font-size: 11px; font-weight: 900; color: #000; margin-bottom: 3px; }
                         
-                        .barcode { font-family: 'Libre Barcode 39'; font-size: 30px; margin: 0; line-height: 1; color: black; }
-                        .qrcode { width: 12mm; height: 12mm; margin: 1px 0; }
+                        .barcode { 
+                            font-family: 'Libre Barcode 39', cursive; 
+                            font-size: 38px; 
+                            margin: 0; 
+                            line-height: 1; 
+                            color: black;
+                            margin-top: -2px;
+                        }
+                        .qrcode { width: 14mm; height: 14mm; margin: 1px 0; }
                         .qrcode img { width: 100%; height: 100%; }
                         
-                        .sku { font-size: 6px; font-weight: bold; color: #64748b; margin-top: 1px; }
+                        .sku { font-size: 7px; font-weight: bold; color: #64748b; margin-top: 1px; letter-spacing: 0.5px; }
 
                         @media print {
                             @page { 
                                 size: ${labelPaperSize === 'a4' ? 'A4' : '50mm 30mm'}; 
                                 margin: 0; 
                             }
-                            body { -webkit-print-color-adjust: exact; }
+                            body { margin: 0; }
                             .print-container { width: auto; margin: 0; }
+                            .label-card { border: ${useCutLines ? '0.05mm solid #eee' : 'none'}; }
                         }
                     </style>
                 </head>
@@ -378,20 +398,21 @@ export default function InventoryPage({ onNavigate, storeSettings }) {
                     </div>
                     <script>
                         window.onload = () => {
+                            // Wait for fonts to load
                             setTimeout(() => {
+                                window.focus();
                                 window.print();
-                                window.close();
-                            }, 1000);
+                                // Close window after print dialog is closed
+                                window.onafterprint = () => window.close();
+                                // Fallback for browsers that don't support onafterprint
+                                setTimeout(() => { if (!window.closed) window.close(); }, 3000);
+                            }, 800);
                         };
                     </script>
                 </body>
             </html>
         `);
         windowPrint.document.close();
-    };
-
-    const handleReportDamaged = (item) => {
-        onNavigate('damaged-goods', { preSelectedProductId: item.id });
     };
 
     const handlePrintDeliveryNote = () => {

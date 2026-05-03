@@ -66,7 +66,7 @@ router.post('/start', verifyToken, async (req, res) => {
         const tarif = await getTarif(req.db);
         const [result] = await req.db.query(
             `INSERT INTO design_logs (order_item_id, technician_id, start_time, tarif_per_jam, catatan)
-             VALUES (?, ?, NOW(), ?, ?)`,
+             VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?)`,
             [order_item_id, req.user.id, tarif, catatan || null]
         );
 
@@ -102,7 +102,7 @@ router.patch('/:id/stop', verifyToken, async (req, res) => {
 
         await req.db.query(
             `UPDATE design_logs 
-             SET end_time = NOW(), catatan = COALESCE(?, catatan),
+             SET end_time = CURRENT_TIMESTAMP, catatan = COALESCE(?, catatan),
                  total_durasi_menit = COALESCE(total_durasi_menit, 0) + ?,
                  total_biaya_desain = COALESCE(total_biaya_desain, 0) + ?
              WHERE id = ?`,
@@ -132,7 +132,7 @@ router.patch('/:id/stop', verifyToken, async (req, res) => {
 router.patch('/:id/pause', verifyToken, async (req, res) => {
     try {
         await req.db.query(
-            'UPDATE design_logs SET end_time = NOW() WHERE id = ? AND technician_id = ? AND end_time IS NULL',
+            'UPDATE design_logs SET end_time = CURRENT_TIMESTAMP WHERE id = ? AND technician_id = ? AND end_time IS NULL',
             [req.params.id, req.user.id]
         );
         res.json({ message: 'Timer dijeda.' });

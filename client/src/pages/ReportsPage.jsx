@@ -11,7 +11,7 @@ import {
     FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight, FiSend
 } from 'react-icons/fi';
 
-export default function ReportsPage() {
+export default function ReportsPage({ user }) {
     const [activeTab, setActiveTab] = useState('sales');
     const [dateFrom, setDateFrom] = useState(() => {
         const d = new Date(); d.setMonth(d.getMonth() - 1);
@@ -88,23 +88,43 @@ export default function ReportsPage() {
     // Filter transactions by date range
     const transactions = useMemo(() => {
         return allTransactions.filter(t => {
-            const d = t.date ? t.date.slice(0, 10) : '';
+            const d = t.date ? new Date(t.date).toISOString().slice(0, 10) : '';
             return d >= dateFrom && d <= dateTo;
         }).sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
     }, [allTransactions, dateFrom, dateTo]);
 
-    // Sales metrics
-    const totalRevenue = transactions.reduce((s, t) => s + (t.total || 0), 0);
-    const totalTrx = transactions.length;
-    const avgTrx = totalTrx > 0 ? Math.round(totalRevenue / totalTrx) : 0;
-    const cashIn = allCashFlow.filter(c => c.type === 'in').reduce((s, c) => s + (c.amount || 0), 0);
-    const _cashOut = allCashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (c.amount || 0), 0);
+    const products = useMemo(() => {
+        return allProducts.filter(p => !p.is_deleted);
+    }, [allProducts]);
 
-    // Product metrics
-    const lowStockProducts = allProducts.filter(p => p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0);
-    const totalStockValue = allProducts.reduce((s, p) => s + (p.sellPrice || 0) * (p.stock || 0), 0);
+    const stats = useMemo(() => {
+        return {
+            revenue: transactions.reduce((s, t) => s + (t.total || 0), 0),
+            sales: transactions.length,
+            customers: allCustomers.length,
+            products: products.length,
+            lowStock: allProducts.filter(p => p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0).length
+        };
+    }, [transactions, products, allCustomers, allProducts]);
 
-    // Best selling products from transactions
+    const filteredTransactions = useMemo(() => {
+        return allTransactions.filter(t => {
+            const d = t.date ? new Date(t.date).toISOString().slice(0, 10) : '';
+            if (d < dateFrom || d > dateTo) return false;
+            if (activeTab === 'profit-loss') return true; // Show all for P&L logic
+            return true;
+        }).sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt));
+    }, [allTransactions, dateFrom, dateTo, activeTab]);
+
+    const totals = useMemo(() => {
+        const cashIn = allCashFlow.filter(c => c.type === 'in').reduce((s, c) => s + (c.amount || 0), 0);
+        const cashOut = allCashFlow.filter(c => c.type === 'out').reduce((s, c) => s + (c.amount || 0), 0);
+        const lowStockProducts = allProducts.filter(p => p.stock <= (p.minStock || 0) && (p.minStock || 0) > 0);
+        const totalStockValue = allProducts.reduce((s, p) => s + (p.sellPrice || 0) * (p.stock || 0), 0);
+
+        return { cashIn, cashOut, lowStockProducts, totalStockValue };
+    }, [allProducts, allCashFlow]);
+
     const productSales = useMemo(() => {
         const map = {};
         transactions.forEach(t => {
@@ -118,17 +138,20 @@ export default function ReportsPage() {
         return Object.values(map).sort((a, b) => b.revenue - a.revenue);
     }, [transactions]);
 
-    // Customer metrics
-    // Top Customer metrics (Internal use)
-    const _topCustomers = useMemo(() => {
-        return [...allCustomers].sort((a, b) => (b.totalSpend || 0) - (a.totalSpend || 0)).slice(0, 10);
-    }, [allCustomers]);
+    // Simple derived constants for UI and Exports
+    const totalRevenue = stats.revenue;
+    const totalTrx = stats.sales;
+    const avgTrx = totalTrx > 0 ? Math.round(totalRevenue / totalTrx) : 0;
+    const cashIn = totals.cashIn;
+    const lowStockProducts = totals.lowStockProducts;
+    const totalStockValue = totals.totalStockValue;
 
     const stockMovements = useMemo(() => {
         return allStockMovements.filter(sm => {
-            const d = sm.date ? sm.date.slice(0, 10) : '';
+            const dateStr = sm.date || sm.created_at;
+            const d = dateStr ? new Date(dateStr).toISOString().slice(0, 10) : '';
             return d >= dateFrom && d <= dateTo;
-        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+        }).sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
     }, [allStockMovements, dateFrom, dateTo]);
 
     // Payment method breakdown

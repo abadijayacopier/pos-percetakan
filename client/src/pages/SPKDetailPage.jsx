@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function SPKDetailPage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || null;
+export default function SPKDetailPage({ onNavigate, spkId = null }) {
     const [spk, setSpk] = useState(null);
     const [loading, setLoading] = useState(true);
     const [autoNotify, setAutoNotify] = useState(true);

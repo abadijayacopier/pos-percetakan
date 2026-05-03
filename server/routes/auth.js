@@ -27,12 +27,18 @@ router.post('/login', async (req, res) => {
             resolvedShopId = shopResult.shopId;
         }
 
-        // 2. Get Tenant Connection Pool
-        const tenantDb = getTenantPool(dbName);
+        // 2. Get Database Connection
+        const { getActivePool, getTenantPool } = require('../config/database');
+        let db;
+        
+        if (isStandalone) {
+            db = await getActivePool(); // This handles SQLite correctly
+        } else {
+            db = getTenantPool(dbName);
+        }
 
-        // 3. User Lookup in Tenant DB
-        // We use the tenantDb directly for login
-        const [rows] = await tenantDb.query('SELECT * FROM users WHERE username = ? AND is_active = true', [username]);
+        // 3. User Lookup
+        const [rows] = await db.query('SELECT * FROM users WHERE username = ? AND is_active = true', [username]);
 
         if (rows.length === 0) {
             return res.status(401).json({ message: 'Username tidak ditemukan di toko ini.' });
@@ -55,7 +61,7 @@ router.post('/login', async (req, res) => {
                     const hwidLock = shops[0].hwid_lock;
                     if (!hwidLock) {
                         // Pertama kali login, kunci perangkat ini
-                        await masterPool.query('UPDATE shops SET hwid_lock = ?, last_hwid_update = NOW() WHERE id = ?', [hwid, resolvedShopId]);
+                        await masterPool.query('UPDATE shops SET hwid_lock = ?, last_hwid_update = CURRENT_TIMESTAMP WHERE id = ?', [hwid, resolvedShopId]);
                         console.log(`🔒 Shop ${resolvedShopId} locked to Hardware ID: ${hwid}`);
                     } else if (hwidLock !== hwid) {
                         return res.status(403).json({
@@ -86,14 +92,14 @@ router.post('/login', async (req, res) => {
         // Activity Log & Security Alert
         try {
             const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
-            await tenantDb.query(
-                'INSERT INTO activity_log (user_id, user_name, action, detail, timestamp) VALUES (?, ?, ?, ?, NOW())',
+            await db.query(
+                'INSERT INTO activity_log (user_id, user_name, action, detail, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
                 [user.id, user.name, 'LOGIN', `Login sukses ke Toko ID: ${resolvedShopId} via IP: ${userIp}`]
             );
 
             // Send Security Alert via Telegram
             const { sendSecurityAlert } = require('../utils/notificationHelper');
-            await sendSecurityAlert(tenantDb, {
+            await sendSecurityAlert(db, {
                 name: user.name,
                 username: user.username,
                 role: user.role,

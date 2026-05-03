@@ -321,6 +321,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             }
             return [...prev, { ...productWithPrice, quantity: 1 }];
         });
+        if (isMobile) setIsCartOpen(true);
     };
 
     const updateQty = (id, delta, isAbsolute = false) => {
@@ -412,6 +413,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setCart(prev => [...prev, newItem]);
         showToast('Ditambahkan ke keranjang!', 'success');
         setFcConfig(prev => ({ ...prev, quantity: 1 }));
+        if (isMobile) setIsCartOpen(true);
     };
 
     const addJilidToCart = (item, qty) => {
@@ -438,6 +440,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             setCart(prev => [...prev, newItem]);
             showToast('Jilid ditambahkan ke keranjang!', 'success');
         }
+        if (isMobile) setIsCartOpen(true);
     };
 
     const addPrintToCart = (item, qty) => {
@@ -459,6 +462,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             setCart(prev => [...prev, newItem]);
             showToast('Print ditambahkan ke keranjang!', 'success');
         }
+        if (isMobile) setIsCartOpen(true);
     };
 
     const addDigitalToCart = (matId, w, h, qty, notes) => {
@@ -483,6 +487,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         showToast('Order Digital ditambahkan!', 'success');
         setDigitalWidth(''); setDigitalHeight(''); setDigitalNotes('');
         setDigitalDesignFee(0);
+        if (isMobile) setIsCartOpen(true);
     };
 
     const addServiceToCart = (device, issue, cost) => {
@@ -498,11 +503,21 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         setCart(prev => [...prev, newItem]);
         showToast('Order Service ditambahkan!', 'success');
         setServiceDevice(''); setServiceIssue(''); setServiceCost('');
+        if (isMobile) setIsCartOpen(true);
     };
 
     // Modals
     const toggleDiscountModal = () => setDiscountModalOpen(!isDiscountModalOpen);
     const openPayment = () => { if (cart.length > 0) setPaymentModalOpen(true); };
+    const openCashDrawer = async () => {
+        try {
+            if (!printerSettings.printerName) return;
+            await api.post('/print/open-drawer', { printerName: printerSettings.printerName });
+        } catch (err) {
+            console.error('Failed to open cash drawer:', err);
+        }
+    };
+
     const closePaymentModal = () => {
         setPaymentModalOpen(false);
         if (transactionComplete) {
@@ -680,7 +695,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             paymentType: paymentMethod,
             paid: paid,
             changeAmount: Math.max(0, paid - finalTotal),
-            status: paymentMethod === 'pending' ? 'pending' : (paid < finalTotal ? 'pending' : 'paid'),
+            status: paymentMethod === 'pending' ? 'debt' : (paid < finalTotal ? 'debt' : 'paid'),
             customerWa: customerWa, // Kirim WA ke backend
             notes: transactionNotes // Simpan catatan transaksi
         };
@@ -846,7 +861,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     });
 
     return (
-        <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-950 overflow-y-auto font-sans">
+        <div className="flex h-full w-full bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 relative">
                 {/* Unified Tab Navigation */}
@@ -993,7 +1008,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     {/* Fotocopy Tab */}
                     {activeServiceTab === 'fotocopy' && (
                         <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none">
+                            <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-none">
                                 <div className="flex flex-col lg:flex-row">
                                     <div className="flex-1 p-8 md:p-12 space-y-10">
                                         <div className="flex items-center gap-4">
@@ -1074,7 +1089,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         </div>
                                     </div>
 
-                                    <div className="w-full lg:w-[400px] bg-gradient-to-br from-blue-600 to-indigo-700 p-12 flex flex-col items-center justify-center text-center space-y-8 relative overflow-hidden">
+                                    <div className="w-full lg:w-[400px] bg-gradient-to-br from-blue-700 to-indigo-900 p-12 flex flex-col items-center justify-center text-center space-y-8 relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-900/20 rounded-full -ml-32 -mb-32 blur-3xl"></div>
                                         
@@ -1202,8 +1217,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 </div>
 
                 {/* Bottom Bar */}
-                <footer className="h-14 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 z-30 shrink-0">
-                    <div className="flex items-center gap-8 text-[9px] font-black text-slate-400 tracking-[0.2em]">
+                <footer className="h-14 bg-white dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 z-30 shrink-0">
+                    <div className="flex items-center gap-8 text-[9px] font-black text-slate-500 tracking-[0.2em]">
                         <div className="flex items-center gap-3">
                             <div className="size-2 bg-emerald-500 rounded-full animate-pulse"></div>
                             SERVER READY
@@ -1222,8 +1237,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             </main>
 
             {/* Right Sidebar: Checkout */}
-            <aside className={`${isMobile ? (isCartOpen ? 'fixed inset-y-0 right-0 z-50' : 'hidden') : 'relative'} w-[380px] shrink-0 bg-white dark:bg-slate-900 flex flex-col h-full shadow-[-20px_0_60px_rgba(0,0,0,0.04)] z-40`}>
-                <div className="p-8 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <aside className={`${isMobile ? (isCartOpen ? 'fixed inset-0 z-[100]' : 'hidden') : 'relative'} w-full lg:w-[380px] shrink-0 bg-white dark:bg-slate-900 flex flex-col h-full shadow-[-20px_0_80px_rgba(0,0,0,0.1)] z-40 border-l-2 border-slate-100 dark:border-slate-800`}>
+                <div className="p-8 pb-6 border-b border-slate-100 dark:border-slate-800 relative">
+                    {isMobile && (
+                        <button 
+                            onClick={() => setIsCartOpen(false)}
+                            className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X size={24} />
+                        </button>
+                    )}
                     <h2 className="text-3xl font-black text-slate-800 dark:text-white italic tracking-tighter mb-6">
                         RINGKASAN <span className="text-blue-600">ORDER</span>
                     </h2>
@@ -1289,17 +1312,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
 
                 <div className="p-8 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[0_-40px_80px_rgba(0,0,0,0.06)] rounded-t-[3.5rem]">
                     <div className="space-y-4 mb-8">
-                        <div className="flex justify-between items-center text-slate-400 font-black uppercase tracking-[0.2em] text-[9px]">
+                        <div className="flex justify-between items-center text-slate-500 font-black uppercase tracking-[0.2em] text-[9px]">
                             <span>Subtotal</span>
-                            <span>{formatRupiah(subtotal)}</span>
+                            <span className="text-slate-900 dark:text-white">{formatRupiah(subtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center text-blue-600 font-black uppercase tracking-[0.2em] text-[9px]">
                             <button onClick={toggleDiscountModal}>Diskon (F9)</button>
                             <span>-{formatRupiah(globalDiscount)}</span>
                         </div>
-                        <div className="flex justify-between items-end border-t border-slate-100 dark:border-slate-800 pt-4">
-                            <div className="text-slate-400 font-black text-[10px] uppercase tracking-[0.4em]">Total Akhir</div>
-                            <div className="text-5xl font-black text-blue-600 tracking-tighter">{formatRupiah(subtotal - globalDiscount)}</div>
+                        <div className="flex justify-between items-end border-t-2 border-slate-100 dark:border-slate-800 pt-4">
+                            <div className="text-slate-500 font-black text-[10px] uppercase tracking-[0.4em]">Total Akhir</div>
+                            <div className="text-5xl font-black text-blue-700 dark:text-blue-500 tracking-tighter">{formatRupiah(subtotal - globalDiscount)}</div>
                         </div>
                     </div>
 

@@ -89,7 +89,13 @@ function App() {
         if (storeSettings.name) {
             document.title = `${storeSettings.name} - POS Percetakan`;
         }
-    }, [storeSettings.name]);
+        if (storeSettings.logo) {
+            const favicon = document.getElementById('app-favicon');
+            if (favicon) {
+                favicon.href = storeSettings.logo;
+            }
+        }
+    }, [storeSettings]);
 
     const handleNavigate = (page, options = {}) => {
         console.log(`[Navigation] Navigating to: ${page}`, options);

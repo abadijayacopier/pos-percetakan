@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function PrintLabelPage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || 'SPK-2023-00452';
+export default function PrintLabelPage({ onNavigate, pageState, spkId: directSpkId }) {
+    const spkId = directSpkId || pageState?.spkId;
 
     const [storeInfo, setStoreInfo] = useState({ name: 'ABADI JAYA', address: 'Buka Pengaturan untuk ubah alamat' });
     const [spk, setSpk] = useState(null);

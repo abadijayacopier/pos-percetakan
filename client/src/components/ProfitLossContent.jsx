@@ -38,7 +38,7 @@ export function ProfitLossContent({ dateFrom, dateTo, storeInfo }) {
     // Filter data by date range
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => {
-            const d = t.date ? t.date.slice(0, 10) : '';
+            const d = t.date ? new Date(t.date).toISOString().slice(0, 10) : '';
             return d >= dateFrom && d <= dateTo;
         });
     }, [transactions, dateFrom, dateTo]);

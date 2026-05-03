@@ -124,7 +124,7 @@ router.post('/', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), async 
                 `, [newId, sp.name, sp.qty, sp.price, sp.productId || null]);
 
                 if (sp.productId) {
-                    await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [sp.qty, sp.productId]);
+                    await connection.query('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [sp.qty, sp.productId]);
                     await connection.query(
                         `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
                          VALUES (?, 'out', ?, ?, ?)`,
@@ -198,7 +198,7 @@ router.put('/:id', verifyToken, requireRole(['teknisi', 'admin', 'kasir']), asyn
                 `, [req.params.id, sp.name, sp.qty, sp.price, sp.productId || null]);
 
                 if (sp.productId) {
-                    await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [sp.qty, sp.productId]);
+                    await connection.query('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [sp.qty, sp.productId]);
                 }
                 totalSparepartCost += (sp.qty * sp.price);
             }

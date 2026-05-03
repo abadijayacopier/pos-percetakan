@@ -195,13 +195,17 @@ router.patch('/:id/status', verifyToken, requireRole(['admin', 'kasir', 'operato
         if (!current.length) return res.status(404).json({ message: 'SPK tidak ditemukan' });
 
         const oldStatus = current[0].status;
-        const updates = { status };
-        if (status === 'Selesai') updates.completed_at = new Date();
-
-        await conn.query('UPDATE spk SET ? WHERE id = ?', [updates, req.params.id]);
+        
+        if (status === 'Selesai' || status === 'selesai') {
+            await conn.query('UPDATE spk SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
+        } else {
+            await conn.query('UPDATE spk SET status = ? WHERE id = ?', [status, req.params.id]);
+        }
 
         if (status === 'Batal' || status === 'batal') {
             await conn.query("UPDATE design_assignments SET status = 'dibatalkan' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
+        } else if (status === 'Selesai' || status === 'selesai') {
+            await conn.query("UPDATE design_assignments SET status = 'selesai' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
         }
 
         await conn.query(

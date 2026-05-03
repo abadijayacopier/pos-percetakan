@@ -133,7 +133,7 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
                     ? (parseFloat(luasTotal) * (parseInt(item.quantity) || 1))
                     : (parseInt(item.quantity) || 1);
 
-                await conn.query(`UPDATE materials SET stok_saat_ini = GREATEST(0, stok_saat_ini - ?) WHERE id = ?`, [deduction, safeMaterialId]);
+                await conn.query(`UPDATE materials SET stok_saat_ini = MAX(0, stok_saat_ini - ?) WHERE id = ?`, [deduction, safeMaterialId]);
                 await conn.query(
                     `INSERT INTO material_movements (material_id, tipe, jumlah, satuan, referensi, catatan, user_id)
                      SELECT ?, 'keluar', ?, satuan, ?, ?, ? FROM materials WHERE id = ?`,

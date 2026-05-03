@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { formatRupiah, formatDateTime, formatDate } from '../utils';
 import Modal from '../components/Modal';
-import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown, FiLoader, FiPrinter } from 'react-icons/fi';
+import { FiDollarSign, FiPlus, FiEdit, FiTrash2, FiSearch, FiSave, FiX, FiArrowUpCircle, FiArrowDownCircle, FiBookOpen, FiChevronLeft, FiChevronRight, FiCalendar, FiTrendingUp, FiTrendingDown, FiLoader, FiPrinter, FiRefreshCw } from 'react-icons/fi';
 
 const CATEGORIES_IN = ['Penjualan', 'Setoran Modal', 'Piutang Masuk', 'Pendapatan Lain'];
 const CATEGORIES_OUT = ['Pembelian Stok', 'Gaji', 'Listrik & Air', 'Sewa', 'Operasional', 'Pengeluaran Lain'];
@@ -99,6 +99,21 @@ export default function FinancePage({ storeSettings }) {
 
     const handleSearch = (v) => { setSearch(v); setPage(1); };
     const handleTab = (v) => { setActiveTab(v); setPage(1); };
+
+    const handleReconcile = async () => {
+        if (!window.confirm('Jalankan Sinkronisasi Data? Ini akan mengecek transaksi yang belum tercatat di Kas Umum.')) return;
+        try {
+            setLoading(true);
+            const res = await api.post('/finance/reconcile');
+            showToast(res.data.message || 'Sinkronisasi berhasil!', 'success');
+            loadData();
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal sinkronisasi data', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handlePrintJournal = () => {
         const windowPrint = window.open('', '', 'width=1000,height=800');
@@ -224,11 +239,18 @@ export default function FinancePage({ storeSettings }) {
                 <div>
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
                         <span className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-200 dark:shadow-none"><FiDollarSign /></span>
-                        Kas & Keuangan
+                        Kas & Keuangan <span className="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded-lg ml-2">v1.1.4</span>
                     </h1>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-1">Jurnal umum, kas masuk & keluar</p>
                 </div>
                 <div className="flex w-full sm:w-auto gap-3">
+                    <button 
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-100 dark:shadow-none"
+                        onClick={handleReconcile}
+                        title="Sinkronisasi Data Transaksi ke Kas Umum"
+                    >
+                        <FiRefreshCw className={loading ? 'animate-spin' : ''} /> Sinkron Data
+                    </button>
                     <button 
                         className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800"
                         onClick={handlePrintJournal}

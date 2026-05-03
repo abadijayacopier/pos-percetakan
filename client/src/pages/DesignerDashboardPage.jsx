@@ -31,13 +31,16 @@ export default function DesignerDashboardPage() {
             const res = await api.get('/designers/my-tasks');
             const enriched = res.data.map(t => ({
                 ...t,
-                dpTask: t.title ? {
-                    title: t.title,
-                    customerName: t.customerName,
-                    material_name: t.material_name,
-                    dimensions: { width: t.dimensions_w, height: t.dimensions_h },
-                    pesan_desainer: t.pesan_desainer
-                } : null
+                dpTask: {
+                    title: t.title || `Pesanan #${t.task_id}`,
+                    customerName: t.customerName || 'Pelanggan Umum',
+                    material_name: t.material_name || 'Bahan Tidak Spesifik',
+                    dimensions: { 
+                        width: t.dimensions_w || 0, 
+                        height: t.dimensions_h || 0 
+                    },
+                    pesan_desainer: t.pesan_desainer || null
+                }
             }));
             setTasks(enriched);
         } catch {
@@ -91,8 +94,13 @@ export default function DesignerDashboardPage() {
                 catatan: catatanDesain || null
             });
             // Update backend status
+            // Update parent task status based on type
             if (finishingTask.task_id) {
-                await api.put(`/dp_tasks/${finishingTask.task_id}`, { status: 'produksi' });
+                if (finishingTask.task_type === 'offset') {
+                    await api.patch(`/spk/${finishingTask.task_id}/status`, { status: 'Menunggu Antrian' });
+                } else {
+                    await api.patch(`/dp-tasks/${finishingTask.task_id}/status`, { status: 'produksi' });
+                }
             }
             setShowFinishModal(false);
             setFinishingTask(null);
