@@ -283,6 +283,8 @@ ipcMain.handle('check-mariadb', async () => {
     return new Promise(resolve => {
         const locations = [
             'mysql',
+            'C:\\xampp\\mysql\\bin\\mysql.exe',
+            'C:\\laragon\\bin\\mysql\\mysql-8.0\\bin\\mysql.exe',
             'C:\\Program Files\\MariaDB 10.11\\bin\\mysql.exe',
             'C:\\Program Files\\MariaDB 11.4\\bin\\mysql.exe',
             'C:\\Program Files\\MariaDB 10.6\\bin\\mysql.exe',

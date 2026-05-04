@@ -47,8 +47,9 @@
     },
     "publish": [
       {
-        "provider": "generic",
-        "url": "https://pos.abadijaya.com/update"
+        "provider": "github",
+        "owner": "abadijayacopier",
+        "repo": "pos-percetakan"
       }
     ],
     "win": {
