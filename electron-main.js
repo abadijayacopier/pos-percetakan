@@ -422,8 +422,14 @@ ipcMain.handle('backup-database', async (event) => {
     const dbHost = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
 
     try {
-        // Use mysqldump npm package (no CLI dependency needed)
-        const mysqldumpPkg = require(path.join(__dirname, 'server', 'node_modules', 'mysqldump'));
+        // Use mysqldump package (try server/node_modules first, then root)
+        let mysqldumpPkg;
+        try {
+            const serverPath = path.join(__dirname, 'server', 'node_modules', 'mysqldump');
+            mysqldumpPkg = fs.existsSync(serverPath) ? require(serverPath) : require('mysqldump');
+        } catch {
+            mysqldumpPkg = require('mysqldump');
+        }
         const mysqldump = mysqldumpPkg.default || mysqldumpPkg;
 
         log(`Mengekspor database "${dbName}" dari ${dbHost}...`);
@@ -491,24 +497,12 @@ async function importDatabase(log, customPath) {
 
     // ─── SQLite Mode ───
     if (mode === 'sqlite') {
-        log && log('Mode SQLite: menjalankan init script...');
+        log && log('Mode SQLite: menjalankan migration & seed...');
         try {
-            const initScript = app.isPackaged
-                ? path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'init_sqlite.js')
-                : path.join(__dirname, 'server', 'database', 'init_sqlite.js');
-            const seedScript = app.isPackaged
-                ? path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'seed_sqlite.js')
-                : path.join(__dirname, 'server', 'database', 'seed_sqlite.js');
-
-            if (fs.existsSync(initScript)) {
-                require('child_process').execSync(`"${process.execPath}" "${initScript}"`, {
-                    timeout: 30000,
-                    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
-                });
-                log && log('✓ Init SQLite berhasil');
-            } else {
-                log && log('⚠ File init_sqlite.js tidak ditemukan');
-            }
+            const serverDbDir = app.isPackaged
+                ? path.join(process.resourcesPath, 'app.asar', 'server', 'database')
+                : path.join(__dirname, 'server', 'database');
+            const seedScript = path.join(serverDbDir, 'seed.js');
 
             if (fs.existsSync(seedScript)) {
                 require('child_process').execSync(`"${process.execPath}" "${seedScript}"`, {
@@ -516,12 +510,15 @@ async function importDatabase(log, customPath) {
                     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }
                 });
                 log && log('✓ Seed SQLite berhasil');
+            } else {
+                log && log('⚠ File seed.js tidak ditemukan di: ' + seedScript);
             }
 
             return { success: true };
         } catch (e) {
             log && log('✗ Gagal init SQLite: ' + e.message);
             return { success: false, error: e.message };
+
         }
     }
 
@@ -533,9 +530,14 @@ async function importDatabase(log, customPath) {
 
     // MySQL Mode
     try {
-        // Load mysql2 specifically from the server directory
-        const serverNodeModules = path.join(__dirname, 'server', 'node_modules', 'mysql2', 'promise.js');
-        const mysql = fs.existsSync(serverNodeModules) ? require(serverNodeModules) : require('mysql2/promise');
+        // Load mysql2 (try server/node_modules first, then root)
+        let mysql;
+        try {
+            const serverMysql = path.join(__dirname, 'server', 'node_modules', 'mysql2', 'promise.js');
+            mysql = fs.existsSync(serverMysql) ? require(serverMysql) : require('mysql2/promise');
+        } catch {
+            mysql = require('mysql2/promise');
+        }
         
         const dbName = cfg.DB_NAME || (cfg.mysql && cfg.mysql.database) || 'pos_abadi';
         const dbHost = cfg.DB_HOST || (cfg.mysql && cfg.mysql.host) || 'localhost';
@@ -590,6 +592,36 @@ function startBackend() {
 
     if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
+    // Auto-create db-config.json for first run (MySQL mode by default)
+    const dbConfigPath = path.join(dbDir, 'db-config.json');
+    if (!fs.existsSync(dbConfigPath)) {
+        // Check if there's a config in the app resources first
+        const appConfigPath = path.join(process.resourcesPath || __dirname, 'app.asar', 'server', 'database', 'db-config.json');
+        if (isPackaged && fs.existsSync(appConfigPath)) {
+            fs.copyFileSync(appConfigPath, dbConfigPath);
+        } else {
+            // Create default MySQL config
+            const defaultConfig = {
+                APP_MODE: 'standalone',
+                mode: 'mysql',
+                DB_TYPE: 'mysql',
+                DB_HOST: '127.0.0.1',
+                DB_USER: 'root',
+                DB_PASS: 'root',
+                DB_NAME: 'pos_abadi',
+                mysql: {
+                    host: '127.0.0.1',
+                    port: 3306,
+                    user: 'root',
+                    password: 'root',
+                    database: 'pos_abadi'
+                }
+            };
+            fs.writeFileSync(dbConfigPath, JSON.stringify(defaultConfig, null, 2));
+        }
+        console.log('✅ Auto-created db-config.json at:', dbConfigPath);
+    }
+
     serverProcess = spawn(process.execPath, [serverPath], {
         env: {
             ...process.env,
@@ -597,10 +629,12 @@ function startBackend() {
             PORT: SERVER_PORT,
             NODE_ENV: isPackaged ? 'production' : 'development',
             SQLITE_PATH: path.join(dbDir, 'pos.sqlite'),
+            DB_CONFIG_PATH: dbConfigPath,
             APP_MODE: 'standalone',
         },
         stdio: 'inherit',
     });
+
 
     serverProcess.on('error', err => {
         console.error('Backend error:', err);

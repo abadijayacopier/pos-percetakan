@@ -5,21 +5,27 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-// Path Resolution for EXE (Standalone) vs Dev
+// Path Resolution for Electron / EXE / Dev
 const isExe = process.pkg ? true : false;
 const basePath = isExe ? path.dirname(process.execPath) : path.join(__dirname, '..');
 
-// Ensure database relative paths work in both modes
-const configPath = path.join(basePath, 'database', 'db-config.json');
+// Config path: prefer env var (set by Electron), then basePath, then dev default
+const configPath = process.env.DB_CONFIG_PATH
+    || (fs.existsSync(path.join(basePath, 'database', 'db-config.json'))
+        ? path.join(basePath, 'database', 'db-config.json')
+        : path.join(__dirname, '..', 'database', 'db-config.json'));
+
 let externalConfig = {};
 
 try {
     if (fs.existsSync(configPath)) {
         externalConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        console.log('📦 DB config loaded from:', configPath, '→ mode:', externalConfig.DB_TYPE || externalConfig.mode || 'auto');
     }
 } catch (e) {
     console.warn('⚠️ db-config.json invalid or missing, using .env defaults.');
 }
+
 
 const dbConfig = {
     host: externalConfig.DB_HOST || process.env.DB_HOST || '127.0.0.1',
