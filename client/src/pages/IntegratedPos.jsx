@@ -943,7 +943,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                                 {filteredProducts.map((product) => (
                                     <button
                                         key={product.id}
@@ -1230,6 +1230,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <span>F3 PRINT</span>
                             <span>F5 RETAIL</span>
                             <span>F10 BAYAR</span>
+                            <span className="text-blue-400">F11 LAYAR PENUH</span>
                         </div>
                     </div>
                     <div className="text-[9px] font-black text-blue-600 uppercase italic tracking-[0.3em] opacity-80">

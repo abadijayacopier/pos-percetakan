@@ -27,10 +27,28 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
                     margin: 0 !important; 
                 }
                 @media print {
+                    /* Reset flex/scroll containers to prevent Chrome page-break bugs */
+                    html, body, #root, main, 
+                    div[class*="min-h-screen"], 
+                    div[class*="overflow-y-auto"], 
+                    div[class*="flex-1"],
+                    div[class*="custom-scrollbar"] {
+                        display: block !important;
+                        height: auto !important;
+                        min-height: 0 !important;
+                        overflow: visible !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        width: 100% !important;
+                    }
                     body * { visibility: hidden !important; background: white !important; }
-                    #${printId}, #${printId} * { visibility: visible !important; }
+                    #${printId}, #${printId} * { 
+                        visibility: visible !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
                     #${printId} { 
-                        position: absolute !important; 
+                        position: relative !important; 
                         left: 0 !important; 
                         top: 0 !important; 
                         width: 100% !important; 
@@ -39,6 +57,7 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
                         font-family: 'Courier New', Courier, monospace !important;
                         color: black !important;
                         background: white !important;
+                        z-index: 99999 !important;
                     }
                     .dm-border-t { border-top: 1px dashed black !important; }
                     .dm-border-b { border-bottom: 1px dashed black !important; }
