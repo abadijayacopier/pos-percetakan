@@ -707,18 +707,16 @@ export const printViaQZ = async (data, printerName = 'LX-310') => {
     const printer = await qz.printers.find(printerName);
 
     // Determine paper dimensions based on paperSize
-    let paperSizeConfig = { width: 4.72, height: 5.51 }; // Wartel default
     const pSize = (data && data.paperSize) || 'wartel';
 
-    if (pSize === 'standard' || pSize === '9.5x11') paperSizeConfig = { width: 9.5, height: 11 };
-    else if (pSize === 'half' || pSize === '9.5x5.5') paperSizeConfig = { width: 9.5, height: 5.5 };
-    else if (pSize === 'wartel' || pSize === '12x14') paperSizeConfig = { width: 4.72, height: 5.51 };
-
+    // For raw ESC/P printing, paper size is controlled by ESC/P init codes (\x1bC),
+    // NOT by QZ Tray's config. Passing size to QZ can cause the driver to override
+    // the ESC/P page length and default to "Faktur/Slip" form.
     const config = qz.configs.create(printer, {
-      size: paperSizeConfig,
       units: 'in',
-      margins: 0, // Removed margins for raw dot matrix printing to avoid misalignment
-      interpolation: 'nearest-neighbor'
+      margins: 0,
+      interpolation: 'nearest-neighbor',
+      rasterize: false  // Ensure raw mode, no image conversion
     });
 
     // Send raw data (ESC/P or Text) directly to the printer
