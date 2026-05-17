@@ -26,7 +26,10 @@ export default function BottomNav({ activePage, onNavigate }) {
                 <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mt-0.5">0856-5562-0979</p>
             </div>
             {items.map(item => {
-                const isActive = activePage === item.id;
+                // Profile tab should highlight when on settings page
+                const isActive = item.id === 'profile'
+                    ? activePage === 'settings'
+                    : activePage === item.id;
                 return (
                     <button
                         key={item.id}

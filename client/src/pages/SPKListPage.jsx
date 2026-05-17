@@ -163,7 +163,7 @@ export default function SPKListPage({ onNavigate }) {
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#0b0f1a] font-display">
             {/* Header Section */}
-            <div className="px-8 py-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div className="px-4 md:px-8 py-6 md:py-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                     className="space-y-1"
@@ -212,7 +212,7 @@ export default function SPKListPage({ onNavigate }) {
             </div>
 
             {/* Quick Stats Grid */}
-            <div className="px-8 grid grid-cols-2 lg:grid-cols-4 gap-4 pb-8">
+            <div className="px-4 md:px-8 grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 pb-6 md:pb-8">
                 {[
                     { label: 'Total Antrian', value: summary.byStatus?.['Menunggu Antrian'] || 0, icon: <FiClock />, color: 'slate' },
                     { label: 'Proses Produksi', value: (summary.byStatus?.['Dalam Proses Cetak'] || 0) + (summary.byStatus?.['Finishing'] || 0), icon: <FiActivity />, color: 'amber' },
@@ -239,7 +239,7 @@ export default function SPKListPage({ onNavigate }) {
             </div>
 
             {/* Main Content Area */}
-            <div className="px-8 pb-12 flex-1">
+            <div className="px-4 md:px-8 pb-12 flex-1">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                     className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-full ring-8 ring-slate-100/50 dark:ring-slate-900/30"
@@ -298,19 +298,116 @@ export default function SPKListPage({ onNavigate }) {
                                 <p className="text-slate-500 dark:text-slate-400 font-bold animate-pulse text-sm">Menghubungkan ke server produksi...</p>
                             </div>
                         ) : displayedSPK.length === 0 ? (
-                            <div className="p-32 flex flex-col items-center justify-center gap-4 text-center">
-                                <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300">
-                                    <FiFileText size={48} />
+                            <div className="p-16 md:p-32 flex flex-col items-center justify-center gap-4 text-center">
+                                <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300">
+                                    <FiFileText size={40} />
                                 </div>
                                 <div>
-                                    <p className="text-slate-800 dark:text-white font-black text-xl">Data Tidak Ditemukan</p>
+                                    <p className="text-slate-800 dark:text-white font-black text-lg md:text-xl">Data Tidak Ditemukan</p>
                                     <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xs mx-auto">
                                         {search ? `Tidak ada hasil untuk "${search}"` : 'Belum ada Surat Perintah Kerja untuk kategori ini.'}
                                     </p>
                                 </div>
                             </div>
                         ) : (
-                            <table className="w-full text-left border-collapse">
+                            <>
+                            {/* Mobile Card View */}
+                            <div className="md:hidden p-3 space-y-3">
+                                {displayedSPK.map((spk, idx) => {
+                                    const sc = STATUS_COLORS[spk.status] || STATUS_COLORS['Menunggu Antrian'];
+                                    const dl = getDeadlineBadge(spk.deadline);
+                                    const ready = isReadyForBilling(spk);
+
+                                    return (
+                                        <motion.div
+                                            key={spk.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.04 }}
+                                            className={`rounded-2xl border p-4 transition-colors ${ready
+                                                ? 'bg-emerald-50/30 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-500/20'
+                                                : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50'
+                                            }`}
+                                        >
+                                            {/* Card Header: SPK number + Status */}
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span
+                                                    className="text-sm font-black text-primary cursor-pointer flex items-center gap-1.5"
+                                                    onClick={() => onNavigate('spk-detail', { spkId: spk.id })}
+                                                >
+                                                    #{spk.spk_number} <FiArrowRight size={12} />
+                                                </span>
+                                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${sc.bg} ${sc.text}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                                                    <span className="text-[10px] font-black uppercase tracking-wider">{sc.label}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Card Body: Customer + Product */}
+                                            <div className="mb-2">
+                                                <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">
+                                                    {spk.customer_company || spk.customer_name}
+                                                </p>
+                                                <p className="text-[11px] font-medium text-slate-400 uppercase mt-0.5 line-clamp-1">
+                                                    {spk.product_name}
+                                                </p>
+                                            </div>
+
+                                            {/* Card Info Row: Qty + Deadline + Date */}
+                                            <div className="flex items-center flex-wrap gap-2 mb-3">
+                                                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                                                    {spk.product_qty} <span className="text-[10px] text-slate-400 uppercase">{spk.product_unit}</span>
+                                                </span>
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${dl.color}`}>
+                                                    <span className="text-xs">{dl.icon}</span> {dl.text}
+                                                </div>
+                                                <span className="text-[10px] font-medium text-slate-400 ml-auto">
+                                                    {formatDate(spk.created_at)}
+                                                </span>
+                                            </div>
+
+                                            {/* Card Actions */}
+                                            <div className="flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+                                                <button onClick={() => onNavigate('spk-detail', { spkId: spk.id })} className="p-2 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95" title="Detail">
+                                                    <FiEye size={16} />
+                                                </button>
+                                                <button onClick={() => onNavigate('spk-detail', { spkId: spk.id })} className="p-2 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95" title="Edit">
+                                                    <FiEdit size={16} />
+                                                </button>
+                                                {spk.status !== 'Batal' && (
+                                                    <button onClick={() => onNavigate('print-spk', { spkId: spk.id })} className="p-2 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95" title="Cetak">
+                                                        <FiPrinter size={16} />
+                                                    </button>
+                                                )}
+                                                <div className="flex-1" />
+                                                {ready ? (
+                                                    <button onClick={() => onNavigate('spk-settlement', { spkId: spk.id })} className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all active:scale-95" title="Pelunasan">
+                                                        <FiDollarSign size={16} />
+                                                    </button>
+                                                ) : (
+                                                    !['Batal', 'Selesai', 'Siap Diambil', 'Diambil'].includes(spk.status) && (
+                                                        <button onClick={() => handleCancelSPK(spk.id, spk.spk_number)} className="p-2 bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95" title="Batalkan">
+                                                            <FiXCircle size={16} />
+                                                        </button>
+                                                    )
+                                                )}
+                                                <button onClick={() => handleDeleteSPK(spk.id, spk.spk_number)} className="p-2 bg-rose-100 dark:bg-rose-900/20 text-rose-500 rounded-xl transition-all active:scale-95" title="Hapus">
+                                                    <FiTrash2 size={16} />
+                                                </button>
+                                            </div>
+
+                                            {ready && (
+                                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-[9px] uppercase tracking-[0.15em] mt-2">
+                                                    <FiCheckCircle size={10} /> Billing Ready
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Desktop Table View */}
+                            <table className="w-full text-left border-collapse hidden md:table">
                                 <thead className="sticky top-0 z-10">
                                     <tr className="bg-slate-50/80 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Nomor & Tanggal</th>
@@ -333,7 +430,7 @@ export default function SPKListPage({ onNavigate }) {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.04 }}
-                                                className={`hover:bg-slate-50/80 dark:hover:bg-blue-500/2 transition-all group ${ready ? 'bg-emerald-50/30 dark:bg-emerald-500/2' : ''}`}
+                                                className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-all group ${ready ? 'bg-emerald-50/30 dark:bg-emerald-900/10' : ''}`}
                                             >
                                                 <td className="px-6 py-5">
                                                     <div className="flex flex-col">
@@ -448,6 +545,7 @@ export default function SPKListPage({ onNavigate }) {
                                     })}
                                 </tbody>
                             </table>
+                            </>
                         )}
                     </div>
 

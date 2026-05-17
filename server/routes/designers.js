@@ -14,7 +14,9 @@ router.get('/', verifyToken, async (req, res) => {
                    da.task_id AS active_task_id,
                    da.status AS assignment_status,
                    da.started_at,
-                   da.assigned_at
+                   da.assigned_at,
+                   dt.id AS dp_task_exists,
+                   s.id AS spk_task_exists
             FROM users u
             LEFT JOIN design_assignments da
                 ON da.designer_id = u.id
@@ -43,7 +45,8 @@ router.get('/', verifyToken, async (req, res) => {
                     active_task: null
                 };
             }
-            if (row.active_assignment_id) {
+            // Only mark as busy if the assignment references a valid, existing task
+            if (row.active_assignment_id && (row.dp_task_exists || row.spk_task_exists)) {
                 map[row.id].status_kerja = 'sibuk';
                 map[row.id].active_task = {
                     assignment_id: row.active_assignment_id,
@@ -191,6 +194,7 @@ router.get('/my-tasks', verifyToken, async (req, res) => {
             LEFT JOIN dp_tasks dt ON da.task_id = dt.id
             LEFT JOIN spk s ON da.task_id = s.id
             WHERE da.status NOT IN ('dibatalkan', 'selesai')
+              AND (dt.id IS NOT NULL OR s.id IS NOT NULL)
               AND (dt.id IS NULL OR dt.status NOT IN ('batal', 'selesai', 'diambil', 'produksi', 'cetak', 'finishing'))
               AND (s.id IS NULL OR s.status NOT IN ('Batal', 'batal', 'Selesai', 'Diambil', 'Proses Cetak', 'Finishing'))
         `;

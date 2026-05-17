@@ -876,17 +876,17 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveServiceTab(tab.id)}
-                                className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 ${activeServiceTab === tab.id
+                                className={`flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 rounded-xl md:rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 shrink-0 ${activeServiceTab === tab.id
                                     ? `bg-blue-600 text-white shadow-lg shadow-blue-500/30`
                                     : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-800 shadow-sm'
                                     }`}
                             >
-                                <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                                <span className="material-symbols-outlined text-[18px] md:text-[20px]">{tab.icon}</span>
                                 <div className="flex flex-col items-start leading-none">
-                                    <span className="text-[10px] uppercase tracking-widest">{tab.label}</span>
-                                    <span className="text-[9px] font-black opacity-50 mt-1">{tab.count} Items</span>
+                                    <span className="text-[9px] md:text-[10px] uppercase tracking-widest">{tab.label}</span>
+                                    <span className="text-[8px] md:text-[9px] font-black opacity-50 mt-0.5 md:mt-1 hidden sm:block">{tab.count} Items</span>
                                 </div>
-                                <span className="text-[10px] bg-black/10 px-1.5 py-0.5 rounded uppercase font-black opacity-50 ml-2">{tab.key}</span>
+                                <span className="text-[9px] md:text-[10px] bg-black/10 px-1 md:px-1.5 py-0.5 rounded uppercase font-black opacity-50 ml-1 md:ml-2 hidden sm:inline">{tab.key}</span>
                             </button>
                         ))}
                         {/* Action Buttons */}
@@ -894,15 +894,15 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <div className="flex items-center gap-2 ml-auto pr-2">
                                 <button
                                     onClick={() => openCashDrawer()}
-                                    className="flex items-center gap-3 px-6 py-4 rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30"
+                                    className="flex items-center gap-2 md:gap-3 px-3 py-2.5 md:px-6 md:py-4 rounded-xl md:rounded-2xl font-black transition-all duration-300 whitespace-nowrap active:scale-95 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30 shrink-0"
                                     title="Buka Laci Kasir (F8)"
                                 >
-                                    <span className="material-symbols-outlined text-[20px]">inbox</span>
+                                    <span className="material-symbols-outlined text-[18px] md:text-[20px]">inbox</span>
                                     <div className="flex flex-col items-start leading-none">
-                                        <span className="text-[10px] uppercase tracking-widest">Buka Laci</span>
-                                        <span className="text-[9px] font-black opacity-70 mt-1">Cash Drawer</span>
+                                        <span className="text-[9px] md:text-[10px] uppercase tracking-widest">Buka Laci</span>
+                                        <span className="text-[8px] md:text-[9px] font-black opacity-70 mt-0.5 md:mt-1 hidden sm:block">Cash Drawer</span>
                                     </div>
-                                    <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded uppercase font-black opacity-70 ml-2">F8</span>
+                                    <span className="text-[9px] md:text-[10px] bg-black/20 px-1 md:px-1.5 py-0.5 rounded uppercase font-black opacity-70 ml-1 md:ml-2 hidden sm:inline">F8</span>
                                 </button>
                             </div>
                         )}
@@ -1219,13 +1219,13 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                 </div>
 
                 {/* Bottom Bar */}
-                <footer className="h-14 bg-white dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 z-30 shrink-0">
-                    <div className="flex items-center gap-8 text-[9px] font-black text-slate-500 tracking-[0.2em]">
-                        <div className="flex items-center gap-3">
+                <footer className="h-auto md:h-14 bg-white dark:bg-slate-900 border-t-2 border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between px-3 md:px-8 py-2 md:py-0 gap-2 z-30 shrink-0">
+                    <div className="flex items-center gap-3 md:gap-8 text-[8px] md:text-[9px] font-black text-slate-500 tracking-[0.15em] md:tracking-[0.2em] flex-wrap">
+                        <div className="flex items-center gap-2">
                             <div className="size-2 bg-emerald-500 rounded-full animate-pulse"></div>
                             SERVER READY
                         </div>
-                        <div className="flex items-center gap-6 opacity-60">
+                        <div className="flex items-center gap-3 md:gap-6 opacity-60">
                             <span>F1 FOTOCOPY</span>
                             <span>F3 PRINT</span>
                             <span>F5 RETAIL</span>
@@ -1233,7 +1233,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                             <span className="text-blue-400">F11 LAYAR PENUH</span>
                         </div>
                     </div>
-                    <div className="text-[9px] font-black text-blue-600 uppercase italic tracking-[0.3em] opacity-80">
+                    <div className="text-[8px] md:text-[9px] font-black text-blue-600 uppercase italic tracking-[0.2em] md:tracking-[0.3em] opacity-80">
                         Integrated POS v3.0
                     </div>
                 </footer>

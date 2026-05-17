@@ -60,6 +60,7 @@ function App() {
     });
     const [pageOptions, setPageOptions] = useState({});
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
     const [storeSettings, setStoreSettings] = useState({ name: '', logo: '' });
     const [isDarkMode, setIsDarkMode] = useState(() => {
         const saved = localStorage.getItem('theme');
@@ -102,10 +103,25 @@ function App() {
         }
     }, [storeSettings]);
 
+    // Track fullscreen state changes (from IntegratedPos F11 or browser)
+    useEffect(() => {
+        const handleFsChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFsChange);
+        return () => document.removeEventListener('fullscreenchange', handleFsChange);
+    }, []);
+
     const handleNavigate = (page, options = {}) => {
         console.log(`[Navigation] Navigating to: ${page}`, options);
-        setActivePage(page);
-        setPageOptions(options || {});
+        // Handle 'profile' from BottomNav → redirect to settings/users
+        if (page === 'profile') {
+            setActivePage('settings');
+            setPageOptions({ tab: 'users' });
+        } else {
+            setActivePage(page);
+            setPageOptions(options || {});
+        }
         if (window.innerWidth < 1024) setSidebarOpen(false);
     };
 
@@ -195,6 +211,7 @@ function App() {
         <Layout 
             activePage={activePage} 
             onNavigate={handleNavigate} 
+            isFullscreen={isFullscreen}
             isSidebarOpen={isSidebarOpen} 
             setSidebarOpen={setSidebarOpen}
             storeSettings={storeSettings}

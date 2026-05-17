@@ -134,22 +134,28 @@ router.put('/fotocopy-prices/:id', verifyToken, requireRole(['admin', 'kasir']),
 router.post('/fotocopy-prices/bulk', verifyToken, requireRole(['admin']), async (req, res) => {
     const connection = await req.db.getConnection();
     try {
-        await connection.beginTransaction();
         const prices = req.body; // Expecting array of {id, paper, color, side, price}
+
+        if (!Array.isArray(prices) || prices.length === 0) {
+            connection.release();
+            return res.status(400).json({ message: 'Data harga tidak boleh kosong' });
+        }
+
+        await connection.beginTransaction();
 
         // Clear existing prices
         await connection.query('DELETE FROM fotocopy_prices');
 
-        if (Array.isArray(prices) && prices.length > 0) {
-            for (const p of prices) {
-                const id = p.id && !String(p.id).includes('.') ? p.id : 'fc' + Date.now() + Math.random().toString(36).slice(2, 7);
-                const label = `${p.paper} - ${p.color === 'bw' ? 'B/W' : 'Warna'} - ${p.side === '1' ? '1 Sisi' : 'Bolak-balik'}`;
-                
-                await connection.query(
-                    'INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES (?, ?, ?, ?, ?, ?)',
-                    [id, p.paper, p.color, p.side, p.price || 0, label]
-                );
-            }
+        for (let i = 0; i < prices.length; i++) {
+            const p = prices[i];
+            // Generate truly unique ID: prefix + timestamp + index + random suffix
+            const id = p.id && String(p.id).startsWith('fc') ? p.id : `fc${Date.now()}${i}${Math.random().toString(36).slice(2, 7)}`;
+            const label = `${p.paper} - ${p.color === 'bw' ? 'B/W' : 'Warna'} - ${p.side === '1' ? '1 Sisi' : 'Bolak-balik'}`;
+            
+            await connection.query(
+                'INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES (?, ?, ?, ?, ?, ?)',
+                [id, p.paper, p.color, p.side, p.price || 0, label]
+            );
         }
 
         await connection.commit();

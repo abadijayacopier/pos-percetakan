@@ -63,7 +63,7 @@ export default function PricingSettings({
                         <button 
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-xl transition-all text-sm font-bold border border-indigo-100 dark:border-indigo-800" 
                             onClick={() => {
-                                setFotocopyPrices([...fotocopyPrices, { id: Date.now().toString(), paper: 'HVS A4', color: 'bw', side: '1', price: 0 }]);
+                                setFotocopyPrices([...fotocopyPrices, { id: 'fc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), paper: 'HVS A4', color: 'bw', side: '1', price: 0 }]);
                             }}
                         >
                             <FiPlus /> Tambah Data
