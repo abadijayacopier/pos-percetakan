@@ -117,11 +117,49 @@ router.get('/fotocopy-prices', verifyToken, async (req, res) => {
 // 2b. PUT Update Harga Fotocopy
 router.put('/fotocopy-prices/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     try {
-        const { price } = req.body;
-        await req.db.query('UPDATE fotocopy_prices SET price = ? WHERE id = ?', [price, req.params.id]);
+        const { price, paper, color, side } = req.body;
+        const label = `${paper || ''} - ${color === 'bw' ? 'B/W' : 'Warna'} - ${side === '1' ? '1 Sisi' : 'Bolak-balik'}`;
+        await req.db.query(
+            'UPDATE fotocopy_prices SET price = ?, paper = COALESCE(?, paper), color = COALESCE(?, color), side = COALESCE(?, side), label = ? WHERE id = ?',
+            [price, paper, color, side, label, req.params.id]
+        );
         res.json({ message: 'Harga fotocopy diupdate!' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Gagal update harga' });
+    }
+});
+
+// 2c. POST Bulk Save Harga Fotocopy
+router.post('/fotocopy-prices/bulk', verifyToken, requireRole(['admin']), async (req, res) => {
+    const connection = await req.db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const prices = req.body; // Expecting array of {id, paper, color, side, price}
+
+        // Clear existing prices
+        await connection.query('DELETE FROM fotocopy_prices');
+
+        if (Array.isArray(prices) && prices.length > 0) {
+            for (const p of prices) {
+                const id = p.id && !String(p.id).includes('.') ? p.id : 'fc' + Date.now() + Math.random().toString(36).slice(2, 7);
+                const label = `${p.paper} - ${p.color === 'bw' ? 'B/W' : 'Warna'} - ${p.side === '1' ? '1 Sisi' : 'Bolak-balik'}`;
+                
+                await connection.query(
+                    'INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES (?, ?, ?, ?, ?, ?)',
+                    [id, p.paper, p.color, p.side, p.price || 0, label]
+                );
+            }
+        }
+
+        await connection.commit();
+        res.json({ message: 'Semua harga fotocopy berhasil disimpan!' });
+    } catch (error) {
+        if (connection) await connection.rollback();
+        console.error('Bulk Save Error:', error);
+        res.status(500).json({ message: 'Gagal menyimpan harga: ' + error.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

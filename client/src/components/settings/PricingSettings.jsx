@@ -10,7 +10,7 @@ export default function PricingSettings({
     bindPrices, setBindPrices,
     bindPage, setBindPage,
     fcDiscounts, setFcDiscounts,
-    saveSettings, pageSize
+    saveSettings, saveAllFotocopyPrices, pageSize
 }) {
     return (
         <div className="space-y-8 pb-12">
@@ -70,7 +70,7 @@ export default function PricingSettings({
                         </button>
                         <button 
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all text-sm font-bold shadow-lg shadow-emerald-200 dark:shadow-none active:scale-95" 
-                            onClick={saveSettings}
+                            onClick={saveAllFotocopyPrices}
                         >
                             <FiSave /> Simpan Harga
                         </button>

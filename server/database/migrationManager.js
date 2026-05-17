@@ -177,7 +177,8 @@ async function ensureUnifiedTablesSQLite(db) {
             id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, handover_by TEXT, 
             received_by TEXT, condition TEXT, photo TEXT, 
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`
+        )`,
+        `CREATE TABLE IF NOT EXISTS fotocopy_prices (id TEXT PRIMARY KEY, paper TEXT, color TEXT, side TEXT, price REAL DEFAULT 0, label TEXT)`
     ];
  
     for (const sql of schemas) {
@@ -188,6 +189,28 @@ async function ensureUnifiedTablesSQLite(db) {
         } catch (e) {
             console.error(`❌ SQL Error during table creation: ${e.message}`);
         }
+    }
+
+    // --- Seed Fotocopy Prices (if empty) ---
+    try {
+        const [fcRows] = await db.query('SELECT COUNT(*) as count FROM fotocopy_prices');
+        if (fcRows[0].count === 0) {
+            console.log('🌱 Seeding default fotocopy prices...');
+            const fcValues = [
+                ['fc1', 'HVS A4', 'bw', '1', 200, 'HVS A4 - B/W - 1 Sisi'],
+                ['fc2', 'HVS A4', 'bw', '2', 350, 'HVS A4 - B/W - Bolak-balik'],
+                ['fc3', 'HVS F4', 'bw', '1', 250, 'HVS F4 - B/W - 1 Sisi'],
+                ['fc4', 'HVS F4', 'bw', '2', 400, 'HVS F4 - B/W - Bolak-balik'],
+                ['fc5', 'HVS A3', 'bw', '1', 500, 'HVS A3 - B/W - 1 Sisi'],
+                ['fc6', 'HVS A4', 'color', '1', 1500, 'HVS A4 - Warna - 1 Sisi']
+            ];
+            for (const v of fcValues) {
+                await db.run('INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES (?, ?, ?, ?, ?, ?)', v);
+            }
+            console.log('✅ Default fotocopy prices created!');
+        }
+    } catch (e) {
+        console.error(`❌ SQLite Seed Error: ${e.message}`);
     }
 }
  
@@ -315,7 +338,8 @@ async function ensureUnifiedTablesMySQL(db) {
         `CREATE TABLE IF NOT EXISTS purchase_items (id INT AUTO_INCREMENT PRIMARY KEY, purchase_id VARCHAR(50), item_type VARCHAR(50), item_id VARCHAR(50), item_name VARCHAR(200), qty DECIMAL(10,2) DEFAULT 0, unit_cost DECIMAL(15,2) DEFAULT 0, subtotal DECIMAL(15,2) DEFAULT 0) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS stock_movements (id INT AUTO_INCREMENT PRIMARY KEY, product_id VARCHAR(50), type VARCHAR(20), qty DECIMAL(10,2), reference VARCHAR(100), notes TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS material_movements (id INT AUTO_INCREMENT PRIMARY KEY, material_id VARCHAR(50), tipe VARCHAR(20), jumlah DECIMAL(10,2), satuan VARCHAR(20), referensi VARCHAR(100), catatan TEXT, user_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        `CREATE TABLE IF NOT EXISTS spk_handovers (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), handover_by VARCHAR(100), received_by VARCHAR(100), \`condition\` TEXT, photo TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`
+        `CREATE TABLE IF NOT EXISTS spk_handovers (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), handover_by VARCHAR(100), received_by VARCHAR(100), \`condition\` TEXT, photo TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
+        `CREATE TABLE IF NOT EXISTS fotocopy_prices (id VARCHAR(50) PRIMARY KEY, paper VARCHAR(50), color VARCHAR(20), side VARCHAR(10), price DECIMAL(15,2) DEFAULT 0, label VARCHAR(255)) ENGINE=InnoDB`
     ];
 
     for (const sql of schemas) {
@@ -343,6 +367,26 @@ async function ensureUnifiedTablesMySQL(db) {
                 ('u3', 'Desainer Pro', 'desainer', ?, 'desainer')
             `, [adminPass, kasirPass, desainerPass]);
             console.log('✅ Default users created successfully!');
+        }
+    } catch (e) {
+        console.error(`❌ MySQL Seed Error: ${e.message}`);
+    }
+
+    // --- Seed Fotocopy Prices (if empty) ---
+    try {
+        const [fcRows] = await db.query('SELECT COUNT(*) as count FROM fotocopy_prices');
+        if (fcRows[0].count === 0) {
+            console.log('🌱 Seeding default fotocopy prices...');
+            await db.query(`
+                INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES 
+                ('fc1', 'HVS A4', 'bw', '1', 200, 'HVS A4 - B/W - 1 Sisi'),
+                ('fc2', 'HVS A4', 'bw', '2', 350, 'HVS A4 - B/W - Bolak-balik'),
+                ('fc3', 'HVS F4', 'bw', '1', 250, 'HVS F4 - B/W - 1 Sisi'),
+                ('fc4', 'HVS F4', 'bw', '2', 400, 'HVS F4 - B/W - Bolak-balik'),
+                ('fc5', 'HVS A3', 'bw', '1', 500, 'HVS A3 - B/W - 1 Sisi'),
+                ('fc6', 'HVS A4', 'color', '1', 1500, 'HVS A4 - Warna - 1 Sisi')
+            `);
+            console.log('✅ Default fotocopy prices created!');
         }
     } catch (e) {
         console.error(`❌ MySQL Seed Error: ${e.message}`);

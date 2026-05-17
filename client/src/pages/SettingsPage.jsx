@@ -304,13 +304,14 @@ export default function SettingsPage({ onNavigate, pageState }) {
 
     const saveAllFotocopyPrices = async () => {
         try {
-            for (const p of fotocopyPrices) {
-                await api.put(`/transactions/fotocopy-prices/${p.id}`, { price: parseInt(p.price), paper: p.paper, color: p.color, side: p.side });
-            }
+            await api.post('/transactions/fotocopy-prices/bulk', fotocopyPrices);
             showToast('Semua harga fotocopy berhasil disimpan!', 'success');
             const res = await api.get('/transactions/fotocopy-prices');
             setFotocopyPrices(res.data);
-        } catch { showToast('Gagal menyimpan harga fotocopy', 'error'); }
+        } catch (error) {
+            console.error(error);
+            showToast('Gagal menyimpan harga fotocopy', 'error');
+        }
     };
 
     const saveSettings = async () => {
@@ -658,6 +659,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                         bindPage={bindPage} setBindPage={setBindPage}
                                         fcDiscounts={fcDiscounts} setFcDiscounts={setFcDiscounts}
                                         saveSettings={saveSettings}
+                                        saveAllFotocopyPrices={saveAllFotocopyPrices}
                                         pageSize={pageSize}
                                     />
                                 )}
