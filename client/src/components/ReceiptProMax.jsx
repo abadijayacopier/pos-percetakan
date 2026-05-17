@@ -196,10 +196,25 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
             {/* Print Style Injector - CLEAN & PRO */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-                @page { size: ${currentDim.size}; margin: 15mm !important; }
+                @page { size: ${currentDim.size}; margin: 5mm !important; }
                 @media print {
+                    /* Reset all flex and scroll containers during print to prevent Chrome page-break bugs */
+                    html, body, #root, main, 
+                    div[class*="min-h-screen"], 
+                    div[class*="overflow-y-auto"], 
+                    div[class*="flex-1"],
+                    div[class*="custom-scrollbar"] {
+                        display: block !important;
+                        height: auto !important;
+                        min-height: 0 !important;
+                        overflow: visible !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        width: 100% !important;
+                    }
+
                     /* Hide everything in the page body */
-                    body * { visibility: hidden !important; background-color: white !important; }
+                    body * { visibility: hidden !important; }
                     /* Target only this SPECIFIC invoice to be visible */
                     #${printId}, #${printId} * { 
                         visibility: visible !important; 
@@ -213,25 +228,42 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                         width: 100% !important;
                         display: block !important;
                         background: white !important;
-                        padding: 0 !important;
+                        padding: 8mm 10mm 0 !important;
                         margin: 0 !important;
                         z-index: 99999 !important;
                         box-shadow: none !important;
                         border: none !important;
-                    }
-                    /* Ensure no other backgrounds interfere */
-                    html, body { 
-                        background: white !important; 
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
+                        color: #0f172a !important;
                     }
                     
-                    /* Clean UI: Border instead of heavy black backgrounds */
-                    .print-clean-bg {
-                        background-color: transparent !important;
-                        border: 1.5pt solid #000000 !important;
-                        color: #000000 !important;
+                    /* Protect original color badges from aggressive print black-and-white resets */
+                    #${printId} .text-red-600 { color: #dc2626 !important; }
+                    #${printId} .text-emerald-600 { color: #059669 !important; }
+                    #${printId} .bg-red-50 { background-color: #fee2e2 !important; }
+                    #${printId} .bg-emerald-50 { background-color: #d1fae5 !important; }
+                    #${printId} .border-red-200 { border-color: #fca5a5 !important; }
+                    #${printId} .border-emerald-200 { border-color: #6ee7b7 !important; }
+                    
+                    /* Premium Print: Preserve original dark backgrounds */
+                    #${printId} .print-clean-bg {
+                        background-color: #0f172a !important;
+                        color: #ffffff !important;
+                        border: none !important;
                     }
+                    #${printId} .print-clean-bg * {
+                        color: #ffffff !important;
+                    }
+                    
+                    /* Preserve tinted backgrounds in print (stronger tints for paper visibility) */
+                    #${printId} .bg-slate-50 { background-color: #eef2f7 !important; }
+                    #${printId} .bg-slate-100 { background-color: #e2e8f0 !important; }
+                    #${printId} .bg-blue-50 { background-color: #dbeafe !important; }
+                    
+                    /* Preserve rounded corners */
+                    #${printId} .rounded-2xl { border-radius: 1rem !important; }
+                    #${printId} .rounded-full { border-radius: 9999px !important; }
+                    #${printId} .rounded-lg { border-radius: 0.5rem !important; }
+                    
                     .print-text-black { color: #000000 !important; }
                     .print-border-black { border-color: #000000 !important; }
                     
@@ -241,14 +273,14 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                 }
             ` }} />
 
-            <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-8 print:border-b-2 print:border-black">
+            <div className="flex justify-between items-start border-b-4 border-slate-900 pb-8 mb-8 print:border-b-2 print:border-black print:pb-3 print:mb-3">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight mb-2 print:text-2xl">{printSettings.storeName}</h1>
                     <p className="text-[11px] font-medium text-slate-500 max-w-[400px] leading-relaxed uppercase tracking-wider print:text-slate-700">{printSettings.storeAddress}</p>
                     {printSettings.storePhone && <p className="text-[11px] font-bold text-slate-700 mt-3 tracking-widest leading-none uppercase print:text-black">TELP: {printSettings.storePhone}</p>}
                 </div>
                 <div className="text-right flex flex-col items-end">
-                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print-clean-bg">FAKTUR PENJUALAN</div>
+                    <div className="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-xs font-black mb-4 uppercase tracking-[0.2em] print-clean-bg print:rounded-lg">FAKTUR PENJUALAN</div>
                     <div className="flex flex-col gap-1.5 text-[12px] font-bold text-slate-600 print:text-black">
                         <div className="flex justify-between gap-10">
                             <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black print:text-slate-500">No. Invoice</span>
@@ -262,7 +294,7 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                 </div>
             </div>
 
-            <div className="flex justify-between mb-8 text-[12px] bg-slate-50 p-6 rounded-2xl border border-slate-100 print:bg-white print:border-slate-300 print:p-4">
+            <div className="flex justify-between mb-8 text-[12px] bg-slate-50 p-6 rounded-2xl border border-slate-100 print:border-slate-200 print:p-3 print:mb-3">
                 <div className="flex flex-col gap-1">
                     <span className="text-slate-400 uppercase tracking-widest text-[9px] mb-1 font-black print:text-slate-500">Tagihan Untuk:</span>
                     <span className="text-lg font-black text-slate-900 uppercase print:text-black">{receiptData.customerName || 'UMUM'}</span>
@@ -272,21 +304,21 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                     <span className={`text-lg font-black px-5 py-1 rounded-full border border-current print:text-sm ${(Number(receiptData.paid) < Number(receiptData.total) ||
                         ['pending', 'debt'].includes(String(receiptData.status).toLowerCase()))
                         ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                        } print:bg-white`}>
+                        }`}>
                         {(Number(receiptData.paid) < Number(receiptData.total) ||
                             ['pending', 'debt'].includes(String(receiptData.status).toLowerCase())) ? 'BELUM LUNAS' : 'LUNAS'}
                     </span>
                 </div>
             </div>
 
-            <table className="w-full text-left mb-10 border-collapse">
+            <table className="w-full text-left mb-10 border-collapse print:mb-3">
                 <thead>
                     <tr className="border-b-2 border-slate-900 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 print:border-black print:text-black">
-                        <th className="py-4 pr-4 w-12 text-center">NO</th>
-                        <th className="py-4 pr-4">DESKRIPSI ITEM</th>
-                        <th className="py-4 px-4 text-center">QTY</th>
-                        <th className="py-4 px-4 text-right">HARGA</th>
-                        <th className="py-4 pl-4 text-right">SUBTOTAL</th>
+                        <th className="py-4 pr-4 w-12 text-center print:py-1.5">NO</th>
+                        <th className="py-4 pr-4 print:py-1.5">DESKRIPSI ITEM</th>
+                        <th className="py-4 px-4 text-center print:py-1.5">QTY</th>
+                        <th className="py-4 px-4 text-right print:py-1.5">HARGA</th>
+                        <th className="py-4 pl-4 text-right print:py-1.5">SUBTOTAL</th>
                     </tr>
                 </thead>
                 <tbody className="text-[12px] font-medium text-slate-800">
@@ -296,8 +328,8 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                         const itemSubtotal = item.subtotal || (qty * price);
                         return (
                             <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors print:border-slate-200">
-                                <td className="py-4 pr-4 text-center font-bold text-slate-400 print:text-black">{idx + 1}</td>
-                                <td className="py-4 pr-4">
+                                <td className="py-4 pr-4 text-center font-bold text-slate-400 print:text-black print:py-1.5">{idx + 1}</td>
+                                <td className="py-4 pr-4 print:py-1.5">
                                     <p className="font-black text-slate-900 text-[13px] mb-0.5 uppercase tracking-tight print:text-black">{item.name}</p>
                                     {item.meta && (
                                         <div className="flex flex-wrap gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest print:text-slate-700">
@@ -317,17 +349,17 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                                         </div>
                                     )}
                                 </td>
-                                <td className="py-4 px-4 text-center font-black text-base print:text-black">{qty}</td>
-                                <td className="py-4 px-4 text-right font-code print:text-black">{formatCurrency(price)}</td>
-                                <td className="py-4 pl-4 text-right font-black text-slate-900 text-base font-code print:text-black">{formatCurrency(itemSubtotal)}</td>
+                                <td className="py-4 px-4 text-center font-black text-base print:text-black print:py-1.5">{qty}</td>
+                                <td className="py-4 px-4 text-right font-code print:text-black print:py-1.5">{formatCurrency(price)}</td>
+                                <td className="py-4 pl-4 text-right font-black text-slate-900 text-base font-code print:text-black print:py-1.5">{formatCurrency(itemSubtotal)}</td>
                             </tr>
                         );
                     })}
                 </tbody>
             </table>
 
-            <div className="flex justify-end mb-16 break-inside-avoid">
-                <div className="w-[320px] flex flex-col gap-3">
+            <div className="flex justify-end mb-16 break-inside-avoid print:mb-4">
+                <div className="w-[320px] flex flex-col gap-2">
                     <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest print:text-slate-500">
                         <span>Subtotal Pesanan</span>
                         <span className="text-slate-900 print:text-black">{formatCurrency(receiptData.subtotal)}</span>
@@ -338,16 +370,16 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                             <span>- {formatCurrency(receiptData.discount)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between items-center text-2xl font-black bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-900/10 print-clean-bg print:p-3 print:text-xl">
+                    <div className="flex justify-between items-center text-2xl font-black bg-slate-900 text-white p-5 rounded-2xl shadow-xl shadow-slate-900/10 print-clean-bg print:p-3 print:text-xl print:rounded-2xl">
                         <span className="tracking-tighter">TOTAL</span>
                         <span className="font-code">Rp {formatCurrency(receiptData.total)}</span>
                     </div>
-                    <div className="mt-2 flex flex-col gap-3 p-6 bg-slate-50 rounded-2xl border border-slate-200 text-[11px] font-bold uppercase text-slate-500 tracking-widest print:bg-white print:p-4 print:border-slate-300">
-                        <div className="flex justify-between border-b border-slate-200 pb-2 print:border-slate-200 print:text-slate-700">
+                    <div className="mt-1 flex flex-col gap-2 p-5 bg-slate-50 rounded-2xl border border-slate-200 text-[11px] font-bold uppercase text-slate-500 tracking-widest print:p-3 print:border-slate-300 print:gap-1">
+                        <div className="flex justify-between border-b border-slate-200 pb-1.5 print:border-slate-200 print:text-slate-700">
                             <span>Metode / Kasir</span>
                             <span className="text-slate-900 print:text-black">{receiptData.paymentType || receiptData.paymentMethod || 'Tunai'} / {receiptData.userName || receiptData.cashier || 'Staf'}</span>
                         </div>
-                        <div className="flex justify-between border-b border-slate-200 pb-2 print:border-slate-200 print:text-slate-700">
+                        <div className="flex justify-between border-b border-slate-200 pb-1.5 print:border-slate-200 print:text-slate-700">
                             <span>Jumlah Dibayar</span>
                             <span className="text-slate-900 font-black text-xs print:text-black">{formatCurrency(receiptData.paid)}</span>
                         </div>
@@ -359,20 +391,20 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-40 mb-12 px-10 break-inside-avoid print:gap-10 print:px-0">
+            <div className="grid grid-cols-2 gap-40 mb-12 px-10 break-inside-avoid print:gap-10 print:px-0 print:mb-3">
                 <div className="text-center flex flex-col items-center">
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20 print:text-slate-500 print:mb-16">Penerima / Pelanggan</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20 print:text-slate-500 print:mb-6">Penerima / Pelanggan</p>
                     <div className="w-48 h-[2px] bg-slate-200 mb-2 print:bg-black" />
                     <p className="font-black text-slate-900 text-xs uppercase print:text-black">( {receiptData.customerName || '....................'} )</p>
                 </div>
                 <div className="text-center flex flex-col items-center">
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20 print:text-slate-500 print:mb-16">Hormat Kami,</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-20 print:text-slate-500 print:mb-6">Hormat Kami,</p>
                     <div className="w-48 h-[2px] bg-slate-200 mb-2 print:bg-black" />
                     <p className="font-black text-slate-900 text-xs uppercase print:text-black">{printSettings.storeName}</p>
                 </div>
             </div>
 
-            <div className="text-center pt-8 border-t border-slate-100 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-relaxed break-inside-avoid print:border-slate-200 print:text-slate-500">
+            <div className="text-center pt-8 border-t border-slate-100 text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] leading-relaxed break-inside-avoid print:border-slate-200 print:text-slate-500 print:pt-3">
                 <p className="mb-2 text-slate-900 print:text-black">{printSettings.receiptFooter || 'Terima kasih atas kunjungan Anda!'}</p>
                 <p className="max-w-2xl mx-auto font-medium normal-case italic">Barang yang sudah dibeli tidak dapat ditukar atau dikembalikan tanpa perjanjian sebelumnya.</p>
             </div>
@@ -381,12 +413,17 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
 };
 
 const ReceiptProMax = ({
-    receiptData,
+    receiptData: rawReceiptData,
     printSettings,
     formatCurrency = (num) => Number(num).toLocaleString('id-ID'),
     printerWidthClass = "w-[380px]" // Default for 80mm
 }) => {
-    if (!receiptData) return null;
+    if (!rawReceiptData) return null;
+
+    const receiptData = {
+        ...rawReceiptData,
+        customerName: rawReceiptData.customerName || rawReceiptData.customer || 'UMUM'
+    };
 
     const items = receiptData.items || [];
     
@@ -574,7 +611,7 @@ const ReceiptProMax = ({
                     <p className="text-[10px] font-bold text-slate-400 mt-4 leading-relaxed max-w-[90%] font-display">Barang yang sudah dibeli tidak dapat ditukar kecuali ada perjanjian khusus.</p>
 
                     {/* Aesthetic Barcode Mockup */}
-                    <div className="mt-8 flex justify-center h-14 w-full items-end pb-1 overflow-hidden opacity-90 hover:opacity-100 transition-opacity">
+                    <div className="mt-8 flex justify-center h-14 w-full items-end pb-1 overflow-hidden opacity-90 hover:opacity-100 transition-opacity print:hidden">
                         {[2, 4, 1, 3, 2, 5, 1, 2, 4, 3, 1, 2, 5, 2, 1, 4, 2, 3, 1, 2, 4, 1, 2, 3, 2, 1, 4, 2, 2, 5, 1, 3, 2].map((w, i) => (
                             <div key={i} className="bg-slate-900 h-full rounded-sm" style={{ width: `${w}px`, minWidth: `${w}px`, marginRight: `${(i % 3 === 0) ? 3 : 1.5}px` }}></div>
                         ))}
