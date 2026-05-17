@@ -1,42 +1,77 @@
 services:
   db:
-    image: mysql:8.0
+    image: mariadb:10.11
     restart: always
     environment:
       MYSQL_DATABASE: ${DB_NAME:-pos_abadi}
       MYSQL_ROOT_PASSWORD: ${DB_PASS:-admin}
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./build/pos_abadi.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max-connections=200
+    networks:
+      - pos_network
 
   backend:
-    build: ./server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     environment:
+      NODE_ENV: production
+      APP_MODE: standalone
+      DB_TYPE: mysql
       DB_HOST: db
       DB_USER: root
       DB_PASS: ${DB_PASS:-admin}
       DB_NAME: ${DB_NAME:-pos_abadi}
-      JWT_SECRET: ${JWT_SECRET:-rahasia_super_kuat_pos_abadi_jaya_2025}
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME_IN_PRODUCTION_abadi_jaya_2026}
       PORT: 5001
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
       FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
-      - ./server/public/uploads:/app/public/uploads
+      - upload_data:/app/public/uploads
+      - backup_data:/app/backups
+    networks:
+      - pos_network
 
   frontend:
-    build: ./client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
+    volumes:
+      - ./deploy/ssl:/etc/nginx/ssl:ro
+    networks:
+      - pos_network
 
 volumes:
   mysql_data:
+  upload_data:
+  backup_data:
+
+networks:
+  pos_network:
+    driver: bridge

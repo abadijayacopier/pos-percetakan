@@ -20,8 +20,14 @@ process.on('uncaughtException', (err) => {
 
 const PORT = process.env.PORT || 5001;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? [process.env.CORS_ORIGIN || 'http://localhost'].filter(Boolean)
+        : true, // Allow all in development
+    credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
