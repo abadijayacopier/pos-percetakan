@@ -224,12 +224,14 @@ export default function PrintReceiptPage({ onNavigate, receipt, transactionId, p
             }
 
             if (effectivePrinterSize === 'lx310') {
-                // PrintReceiptPage already renders DotMatrixLayout with correct @page CSS.
-                // Use window.print() so the browser handles paper size via CSS, which works
-                // with BOTH dot matrix AND inkjet printers (e.g. L3110).
-                // Raw ESC/P via QZ Tray is only for quick print (IntegratedPos.jsx).
-                window.print();
-                console.log('DotMatrix layout printed via browser (CSS @page)');
+                const isQZConnected = await initQZ();
+                if (isQZConnected) {
+                    await printViaQZ({ data: receiptText, paperSize: printSettings.paperSize }, printSettings.printerName || 'LX-310');
+                    console.log('DotMatrix receipt printed via QZ Tray');
+                } else {
+                    window.print();
+                    console.log('Fallback: DotMatrix layout printed via browser (CSS @page) because QZ Tray is not connected');
+                }
                 return;
             }
 

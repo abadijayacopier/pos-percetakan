@@ -95,19 +95,30 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 38; // Reduced to 38 to prevent cutoff
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 34; // Reduced to 34 to avoid perforated edges
     else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
     else W = 85; // Standard 9.5x11
   }
 
   const wrapText = (text, maxWidth) => {
     if (!text) return [];
-    const words = text.split(' ');
     const lines = [];
     let currentLine = '';
+    const words = text.split(' ');
 
     words.forEach(word => {
-      if ((currentLine + word).length > maxWidth) {
+      // Force split if a single word is longer than the max width
+      if (word.length > maxWidth) {
+        if (currentLine) { lines.push(currentLine.trim()); currentLine = ''; }
+        for (let i = 0; i < word.length; i += maxWidth) {
+          const chunk = word.substring(i, i + maxWidth);
+          if (chunk.length === maxWidth) {
+            lines.push(chunk);
+          } else {
+            currentLine = chunk + ' ';
+          }
+        }
+      } else if ((currentLine + word).length > maxWidth) {
         if (currentLine) lines.push(currentLine.trim());
         currentLine = word + ' ';
       } else {
@@ -227,8 +238,8 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   const visibleLength = (str) => str.replace(/\x1b[A-Za-z@]/g, '').length;
 
   // Margin calculation for centering LX-310
-  // Increased to 8 spaces for Wartel to shift it significantly to the RIGHT as requested
-  const MARGIN = (printerType === 'lx310' && paperSize === 'wartel') ? '        ' : (printerType === 'lx310' ? '  ' : '');
+  // 2 spaces padding to avoid the left perforated edge when tray is maxed right
+  const MARGIN = printerType === 'lx310' ? '  ' : '';
   const rightAlignText = (left, right) => {
     const sp = W - visibleLength(left) - visibleLength(right);
     return left + ' '.repeat(sp > 0 ? sp : 1) + right;
@@ -300,7 +311,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
       }
     }
 
-    lines.push(rightAlignText(`  ${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
+    lines.push(rightAlignText(`${qty}x ${formatRupiah(price)}`, formatRupiah(subtotal)));
   });
   lines.push('-'.repeat(W));
 
@@ -308,19 +319,19 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   const totalTx = receipt.total ?? (subtotalTx - (receipt.discount ?? 0));
 
   if ((receipt.discount ?? 0) > 0) {
-    lines.push(rightAlignText('Subtotal :', formatRupiah(subtotalTx)));
-    lines.push(rightAlignText('Diskon   :', '-' + formatRupiah(receipt.discount)));
+    lines.push(rightAlignText('Subtotal:', formatRupiah(subtotalTx)));
+    lines.push(rightAlignText('Diskon:', '-' + formatRupiah(receipt.discount)));
   }
 
-  lines.push(rightAlignText(boldText('TOTAL    :'), formatRupiah(totalTx)));
-  lines.push(rightAlignText('BAYAR    :', formatRupiah(receipt.paid ?? totalTx)));
+  lines.push(rightAlignText(boldText('TOTAL:'), formatRupiah(totalTx)));
+  lines.push(rightAlignText('BAYAR:', formatRupiah(receipt.paid ?? totalTx)));
   if ((receipt.change ?? 0) > 0) {
-    lines.push(rightAlignText('KEMBALI  :', formatRupiah(receipt.change)));
+    lines.push(rightAlignText('KEMBALI:', formatRupiah(receipt.change)));
   }
   const isUnpaidRaw = (Number(receipt.paid) < Number(totalTx)) ||
     ['pending', 'debt'].includes(String(receipt.status || '').toLowerCase()) ||
     ['pending', 'debt'].includes(String(receipt.paymentType || '').toLowerCase());
-  lines.push(rightAlignText('STATUS   :', isUnpaidRaw ? boldText('BELUM LUNAS') : boldText('LUNAS')));
+  lines.push(rightAlignText('STATUS:', isUnpaidRaw ? boldText('BELUM LUNAS') : boldText('LUNAS')));
 
   // Add Notes section if exists
   if (receipt.notes) {
@@ -337,7 +348,7 @@ export const generateRawReceipt = (receipt, storeInfo, printerType = '58mm', for
   const now = new Date();
   const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
   const dateStrShort = now.toLocaleDateString('id-ID');
-  lines.push(`Dicetak: ${dateStrShort}, ${timeStr}`);
+  lines.push(centerTextExact(`Dicetak: ${dateStrShort}, ${timeStr}`));
 
   let textResult = lines.map(l => MARGIN + l).join('\n') + '\n';
   if (printerType === 'lx310') {
@@ -370,7 +381,7 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   if (printerType === '80mm') W = 42;
   else if (printerType === 'inkjet') W = 80;
   else if (printerType === 'lx310') {
-    if (paperSize === 'wartel' || paperSize === '12x14') W = 38;
+    if (paperSize === 'wartel' || paperSize === '12x14') W = 34; // Reduced to 34 to avoid perforated edges
     else if (paperSize === 'half' || paperSize === '9.5x5.5') W = 85;
     else W = 85; // Standard 
   }
@@ -486,13 +497,13 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   lines.push(`SELESAI: ${formatDate(order.deadline).toUpperCase()}`);
   lines.push('-'.repeat(W));
 
-  lines.push(rightAlign('TOTAL HARGA :', formatRupiah(order.totalPrice || order.total || 0)));
+  lines.push(rightAlign('TOTAL HARGA:', formatRupiah(order.totalPrice || order.total || 0)));
   if (order.shippingCost > 0) {
-    lines.push(rightAlign('ONGKIR      :', formatRupiah(order.shippingCost)));
+    lines.push(rightAlign('ONGKIR:', formatRupiah(order.shippingCost)));
   }
-  lines.push(rightAlign('DP / BAYAR  :', formatRupiah(order.dpAmount || order.paid || 0)));
+  lines.push(rightAlign('DP / BAYAR:', formatRupiah(order.dpAmount || order.paid || 0)));
   lines.push('-'.repeat(W));
-  lines.push(rightAlign(boldText('SISA BAYAR  :'), formatRupiah(order.remaining || ((order.totalPrice || 0) - (order.dpAmount || 0)))));
+  lines.push(rightAlign(boldText('SISA BAYAR:'), formatRupiah(order.remaining || ((order.totalPrice || 0) - (order.dpAmount || 0)))));
 
   lines.push('\n' + centerTextExact(storeInfo.footer || 'Terima kasih telah memesan'));
   lines.push(centerTextExact(`DICETAK: ${formatDateTime(new Date())}`));
@@ -500,8 +511,8 @@ export const generateOrderReceipt = (order, storeInfo, printerType = '58mm', for
   let text = lines.join('\n');
 
   if (printerType === 'lx310') {
-    // Pad text with spaces for left margin on LX-310 (8 spaces for Wartel)
-    const margin = paperSize === 'wartel' ? '        ' : '    ';
+    // Pad text with spaces for left margin on LX-310 (2 spaces to avoid perforated edges)
+    const margin = '  ';
     text = text.split('\n').map(l => margin + l).join('\n');
 
     // Standard initialization for LX-310
