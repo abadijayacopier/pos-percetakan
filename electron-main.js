@@ -269,13 +269,28 @@ ipcMain.handle('save-config', (_, config) => {
 
 // ---------- IPC: Test Connection ----------
 ipcMain.handle('test-connection', async (_, cfg) => {
-    return new Promise(resolve => {
-        const cmd = `mysql -h ${cfg.host} -P ${cfg.port} -u ${cfg.user} ${cfg.password ? '-p' + cfg.password : ''} -e "SELECT 1" 2>&1`;
-        exec(cmd, { timeout: 5000 }, (err, stdout) => {
-            if (err) return resolve({ success: false, error: stdout || err.message });
-            resolve({ success: true });
+    try {
+        let mysql;
+        try {
+            const serverMysql = path.join(__dirname, 'server', 'node_modules', 'mysql2', 'promise.js');
+            mysql = fs.existsSync(serverMysql) ? require(serverMysql) : require('mysql2/promise');
+        } catch {
+            mysql = require('mysql2/promise');
+        }
+        
+        const conn = await mysql.createConnection({
+            host: cfg.host,
+            port: parseInt(cfg.port) || 3306,
+            user: cfg.user,
+            password: cfg.password || '',
+            connectTimeout: 5000
         });
-    });
+        await conn.query('SELECT 1');
+        await conn.end();
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 });
 
 // ---------- IPC: Check MariaDB ----------

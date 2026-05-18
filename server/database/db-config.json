@@ -1,8 +1,10 @@
 {
-  "APP_MODE": "standalone",
-  "DB_TYPE": "mysql",
-  "DB_HOST": "127.0.0.1",
-  "DB_USER": "root",
-  "DB_PASS": "admin",
-  "DB_NAME": "pos_abadi"
+  "mode": "mysql",
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "",
+    "database": "pos_abadi"
+  }
 }
