@@ -24,6 +24,38 @@ const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } 
 
 const { logActivity } = require('../utils/logger');
 
+// DEBUG DATABASE SCHEMA FOR SERVICE
+router.get('/debug-db', async (req, res) => {
+    try {
+        const db = req.db;
+        const [columns] = await db.query('SHOW COLUMNS FROM service_orders');
+        const [sparepartsColumns] = await db.query('SHOW COLUMNS FROM service_spareparts');
+        const [rows] = await db.query('SELECT id, service_no, customer_name FROM service_orders LIMIT 10');
+        
+        let migrationError = null;
+        let migrationSuccess = false;
+        try {
+            await db.query('SET FOREIGN_KEY_CHECKS = 0');
+            await db.query('ALTER TABLE `service_orders` MODIFY `id` INT AUTO_INCREMENT');
+            await db.query('ALTER TABLE `service_spareparts` MODIFY `service_order_id` INT');
+            await db.query('SET FOREIGN_KEY_CHECKS = 1');
+            migrationSuccess = true;
+        } catch (err) {
+            migrationError = err.message;
+        }
+
+        res.json({
+            columns,
+            sparepartsColumns,
+            existingRows: rows,
+            migrationSuccess,
+            migrationError
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // 7. DELETE Order Service
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     const connection = await req.db.getConnection();

@@ -22,6 +22,7 @@ const runMigrations = async () => {
             await patchUnifiedColumnsSQLite(db);
         } else {
             await ensureUnifiedTablesMySQL(db);
+            await patchUnifiedColumnsMySQL(db);
         }
 
         console.log('✅ Database unified & locked!');
@@ -238,6 +239,126 @@ async function patchUnifiedColumnsSQLite(db) {
                 await db.exec(`ALTER TABLE ${patch.table} ADD COLUMN ${col} ${type}`);
             }
         }
+    }
+}
+
+/**
+ * AUTO-PATCH KOLOM UNTUK MYSQL (PRODUCTION)
+ * Memastikan kolom yang baru ditambahkan di skema otomatis terbuat di database MySQL yang sudah ada.
+ */
+async function patchUnifiedColumnsMySQL(db) {
+    const conn = typeof db.getConnection === 'function' ? await db.getConnection() : db;
+    try {
+        const patches = [
+            { table: 'customers', columns: [
+                { name: 'total_trx', type: 'INT DEFAULT 0' },
+                { name: 'total_spend', type: 'DECIMAL(15,2) DEFAULT 0' }
+            ]},
+            { table: 'transactions', columns: [
+                { name: 'customer_wa', type: 'VARCHAR(20) DEFAULT NULL' },
+                { name: 'tax_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'notes', type: 'TEXT DEFAULT NULL' }
+            ]},
+            { table: 'dp_tasks', columns: [
+                { name: 'customerName', type: 'VARCHAR(100) DEFAULT NULL' },
+                { name: 'customerId', type: 'VARCHAR(50) DEFAULT NULL' },
+                { name: 'dimensions_w', type: 'DECIMAL(10,2) DEFAULT 0' },
+                { name: 'dimensions_h', type: 'DECIMAL(10,2) DEFAULT 0' },
+                { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'pesan_desainer', type: 'TEXT DEFAULT NULL' },
+                { name: 'denda_batal', type: 'DECIMAL(15,2) DEFAULT 0' }
+            ]},
+            { table: 'materials', columns: [
+                { name: 'is_active', type: 'TINYINT(1) DEFAULT 1' },
+                { name: 'harga_modal', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'harga_jual', type: 'DECIMAL(15,2) DEFAULT 0' }
+            ]},
+            { table: 'service_orders', columns: [
+                { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0 AFTER labor_cost' }
+            ]},
+            { table: 'spk', columns: [
+                { name: 'kategori', type: 'VARCHAR(50) DEFAULT NULL' },
+                { name: 'customer_phone', type: 'VARCHAR(20) DEFAULT NULL' },
+                { name: 'customer_company', type: 'VARCHAR(100) DEFAULT NULL' },
+                { name: 'specs_material', type: 'TEXT DEFAULT NULL' },
+                { name: 'specs_finishing', type: 'TEXT DEFAULT NULL' },
+                { name: 'specs_notes', type: 'TEXT DEFAULT NULL' },
+                { name: 'biaya_cetak', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'biaya_material', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'biaya_finishing', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'biaya_desain', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'biaya_lainnya', type: 'DECIMAL(15,2) DEFAULT 0' },
+                { name: 'created_by', type: 'VARCHAR(50) DEFAULT NULL' },
+                { name: 'completed_at', type: 'DATETIME DEFAULT NULL' }
+            ]},
+            { table: 'spk_payments', columns: [
+                { name: 'bank_ref', type: 'VARCHAR(100) DEFAULT NULL' },
+                { name: 'paid_by', type: 'VARCHAR(100) DEFAULT NULL' }
+            ]}
+        ];
+
+        for (const patch of patches) {
+            try {
+                // Periksa apakah tabel ada di database
+                const [tables] = await conn.query(`SHOW TABLES LIKE ?`, [patch.table]);
+                if (tables.length === 0) continue;
+
+                const [columns] = await conn.query(`SHOW COLUMNS FROM \`${patch.table}\``);
+                const existing = columns.map(c => c.Field);
+
+                // Periksa apakah service_orders.id sudah AUTO_INCREMENT
+                if (patch.table === 'service_orders') {
+                    const idCol = columns.find(c => c.Field === 'id');
+                    if (idCol && !idCol.Extra.toLowerCase().includes('auto_increment')) {
+                        console.log(`➕ [MySQL] Fixing service_orders.id: Adding AUTO_INCREMENT...`);
+                        
+                        // 1. Drop foreign key constraint
+                        try {
+                            console.log(`➕ [MySQL] Dropping foreign key constraint service_spareparts_ibfk_1...`);
+                            await conn.query('ALTER TABLE `service_spareparts` DROP FOREIGN KEY `service_spareparts_ibfk_1`');
+                        } catch (fkDropErr) {
+                            console.warn(`⚠️ [MySQL] Warning dropping FK constraint (might not exist): ${fkDropErr.message}`);
+                        }
+
+                        await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+                        
+                        // 2. Convert service_orders.id to INT AUTO_INCREMENT
+                        await conn.query('ALTER TABLE `service_orders` MODIFY `id` INT AUTO_INCREMENT');
+                        
+                        // 3. Convert service_spareparts.service_order_id to INT
+                        try {
+                            console.log(`➕ [MySQL] Fixing service_spareparts.service_order_id to INT...`);
+                            await conn.query('ALTER TABLE `service_spareparts` MODIFY `service_order_id` INT');
+                        } catch (spareErr) {
+                            console.warn(`⚠️ [MySQL] Warning fixing service_spareparts.service_order_id: ${spareErr.message}`);
+                        }
+                        
+                        await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+
+                        // 4. Re-add foreign key constraint
+                        try {
+                            console.log(`➕ [MySQL] Re-adding foreign key constraint service_spareparts_ibfk_1...`);
+                            await conn.query('ALTER TABLE `service_spareparts` ADD CONSTRAINT `service_spareparts_ibfk_1` FOREIGN KEY (`service_order_id`) REFERENCES `service_orders` (`id`) ON DELETE CASCADE');
+                        } catch (fkAddErr) {
+                            console.warn(`⚠️ [MySQL] Warning re-adding FK constraint: ${fkAddErr.message}`);
+                        }
+                        
+                        console.log(`✅ [MySQL] Successfully converted service_orders.id to AUTO_INCREMENT`);
+                    }
+                }
+
+                for (const col of patch.columns) {
+                    if (!existing.includes(col.name)) {
+                        console.log(`➕ [MySQL] Patching ${patch.table}: Adding ${col.name}...`);
+                        await conn.query(`ALTER TABLE \`${patch.table}\` ADD COLUMN \`${col.name}\` ${col.type}`);
+                    }
+                }
+            } catch (e) {
+                console.error(`❌ [MySQL] Error patching table ${patch.table}: ${e.message}`);
+            }
+        }
+    } finally {
+        if (typeof db.getConnection === 'function') conn.release();
     }
 }
 
