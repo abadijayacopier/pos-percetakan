@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FiCheck, FiX, FiSave, FiSearch, FiPlus, FiBox,
@@ -221,7 +222,7 @@ function FormBahanModal({ initial, onClose, onSaved, toast }) {
                         disabled={saving}
                         className="px-8 py-3 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
-                        {saving ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><LU_AVATARS.loading /></motion.div> : <FiSave />}
+                        {saving ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}><FiActivity /></motion.div> : <FiSave />}
                         {saving ? 'Menyimpan...' : 'Simpan Bahan'}
                     </button>
                 </div>
@@ -410,6 +411,7 @@ function StokModal({ bahan, onClose, onSaved, toast }) {
 
 /* ── MAIN PAGE ───────────────────────────────────────────────────────── */
 export default function MaterialsPage({ onNavigate }) {
+    const { user } = useAuth();
     const [materials, setMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');

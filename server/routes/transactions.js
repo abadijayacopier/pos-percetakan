@@ -58,41 +58,6 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// 1c. GET Transaksi Berdasarkan ID
-router.get('/:id', verifyToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const [rows] = await req.db.query('SELECT * FROM transactions WHERE id = ? OR invoice_no = ?', [id, id]);
-        
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
-        }
-
-        const trx = rows[0];
-        const [details] = await req.db.query('SELECT * FROM transaction_details WHERE transaction_id = ?', [trx.id]);
-        
-        const result = {
-            ...trx,
-            invoiceNo: trx.invoice_no || trx.invoiceNo,
-            customerName: trx.customer_name || trx.customerName,
-            customerWa: trx.customer_wa || trx.customerPhone,
-            userName: trx.user_name || trx.userName,
-            items: details.map(d => ({
-                productId: d.product_id,
-                name: d.name,
-                qty: d.qty,
-                price: d.price,
-                subtotal: d.subtotal,
-                discount: d.discount
-            }))
-        };
-        
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ message: 'Gagal mengambil detail transaksi', error: error.message });
-    }
-});
-
 // 1b. GET Transaksi Hari Ini
 router.get('/history/today', verifyToken, async (req, res) => {
     try {
@@ -110,6 +75,7 @@ router.get('/fotocopy-prices', verifyToken, async (req, res) => {
         const [rows] = await req.db.query('SELECT * FROM fotocopy_prices');
         res.json(rows);
     } catch (error) {
+        console.error('GET /fotocopy-prices Error:', error);
         res.status(500).json({ message: 'Gagal memuat harga' });
     }
 });
@@ -143,8 +109,8 @@ router.post('/fotocopy-prices/bulk', verifyToken, requireRole(['admin']), async 
 
         await connection.beginTransaction();
 
-        // Clear existing prices
-        await connection.query('DELETE FROM fotocopy_prices');
+        // Clear existing prices (WHERE 1=1 bypasses MySQL Safe Updates)
+        await connection.query('DELETE FROM fotocopy_prices WHERE 1=1');
 
         for (let i = 0; i < prices.length; i++) {
             const p = prices[i];
@@ -428,6 +394,41 @@ router.put('/:id/cancel-settlement', verifyToken, requireRole(['admin']), async 
         res.status(500).json({ message: 'Gagal membatalkan pelunasan' });
     } finally {
         if (connection) connection.release();
+    }
+});
+
+// 1c. GET Transaksi Berdasarkan ID (MUST BE AT THE BOTTOM)
+router.get('/:id', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await req.db.query('SELECT * FROM transactions WHERE id = ? OR invoice_no = ?', [id, id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
+        }
+
+        const trx = rows[0];
+        const [details] = await req.db.query('SELECT * FROM transaction_details WHERE transaction_id = ?', [trx.id]);
+        
+        const result = {
+            ...trx,
+            invoiceNo: trx.invoice_no || trx.invoiceNo,
+            customerName: trx.customer_name || trx.customerName,
+            customerWa: trx.customer_wa || trx.customerPhone,
+            userName: trx.user_name || trx.userName,
+            items: details.map(d => ({
+                productId: d.product_id,
+                name: d.name,
+                qty: d.qty,
+                price: d.price,
+                subtotal: d.subtotal,
+                discount: d.discount
+            }))
+        };
+        
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal mengambil detail transaksi', error: error.message });
     }
 });
 

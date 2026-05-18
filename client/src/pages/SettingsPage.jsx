@@ -309,8 +309,9 @@ export default function SettingsPage({ onNavigate, pageState }) {
             const res = await api.get('/transactions/fotocopy-prices');
             setFotocopyPrices(res.data);
         } catch (error) {
-            console.error(error);
-            showToast('Gagal menyimpan harga fotocopy', 'error');
+            console.error('Error in saveAllFotocopyPrices:', error);
+            const errMsg = error.response?.data?.message || error.message || 'Unknown error';
+            showToast(`Gagal: ${errMsg}`, 'error');
         }
     };
 

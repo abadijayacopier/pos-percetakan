@@ -41,12 +41,12 @@ async function ensureUnifiedTablesSQLite(db) {
         `CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, name TEXT, phone TEXT, address TEXT, type TEXT DEFAULT 'walkin', company TEXT, total_trx INTEGER DEFAULT 0, total_spend INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, name TEXT, type TEXT, emoji TEXT)`,
         `CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, code TEXT UNIQUE, name TEXT, category_id TEXT, buy_price INTEGER DEFAULT 0, sell_price INTEGER DEFAULT 0, stock INTEGER DEFAULT 0, min_stock INTEGER DEFAULT 0, unit TEXT DEFAULT 'pcs', emoji TEXT, image TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-        
+
         // 2. TRANSACTION & FINANCE
         `CREATE TABLE IF NOT EXISTS transactions (id TEXT PRIMARY KEY, invoice_no TEXT UNIQUE, date DATETIME, customer_id TEXT, customer_name TEXT, user_id TEXT, user_name TEXT, type TEXT, subtotal INTEGER, discount INTEGER, total INTEGER, paid INTEGER, change_amount INTEGER, payment_type TEXT, tax_amount INTEGER DEFAULT 0, status TEXT DEFAULT 'unpaid', notes TEXT, customer_wa TEXT)`,
         `CREATE TABLE IF NOT EXISTS transaction_details (id TEXT PRIMARY KEY, transaction_id TEXT, product_id TEXT, name TEXT, qty INTEGER, price INTEGER, subtotal INTEGER, discount INTEGER)`,
         `CREATE TABLE IF NOT EXISTS cash_flow (id TEXT PRIMARY KEY, date DATE, type TEXT, category TEXT, amount INTEGER, description TEXT, reference_id TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-        
+
         // 3. DIGITAL PRINTING (TASK-BASED)
         `CREATE TABLE IF NOT EXISTS dp_tasks (
             id TEXT PRIMARY KEY, status TEXT DEFAULT 'menunggu_desain', 
@@ -61,7 +61,7 @@ async function ensureUnifiedTablesSQLite(db) {
             operator_id TEXT, operator_name TEXT, denda_batal REAL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`,
-        
+
         // 4. PRINTING (MULTI-ITEM ARCHITECTURE)
         `CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, order_number TEXT UNIQUE, customer_id TEXT, customer_name TEXT, user_id TEXT, total_harga INTEGER, status_pembayaran TEXT DEFAULT 'belum_bayar', dp_amount INTEGER, remaining INTEGER, metode_pembayaran TEXT, deadline DATE, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS order_items (id TEXT PRIMARY KEY, order_id TEXT, layanan TEXT, nama_item TEXT, material_id TEXT, ukuran_p REAL, ukuran_l REAL, luas_total REAL, quantity INTEGER, harga_satuan INTEGER, subtotal INTEGER, file_desain TEXT, catatan TEXT)`,
@@ -77,12 +77,12 @@ async function ensureUnifiedTablesSQLite(db) {
         )`,
         `CREATE TABLE IF NOT EXISTS digital_printing (id TEXT PRIMARY KEY, name TEXT, price REAL DEFAULT 0, unit TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS offset_printing (id TEXT PRIMARY KEY, name TEXT, price REAL DEFAULT 0, unit TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-        
+
         // 5. OFFSET PRINTING
         `CREATE TABLE IF NOT EXISTS offset_products (id TEXT PRIMARY KEY, nama_produk TEXT, deskripsi_singkat TEXT, harga_base REAL DEFAULT 0, satuan TEXT, is_best_seller INTEGER DEFAULT 0, image_url TEXT)`,
         `CREATE TABLE IF NOT EXISTS offset_orders (id TEXT PRIMARY KEY, order_number TEXT UNIQUE, product_id TEXT, customer_id TEXT, qty INTEGER DEFAULT 1, spesifikasi_json TEXT, total_estimasi_produksi REAL DEFAULT 0, total_biaya_desain REAL DEFAULT 0, grand_total REAL DEFAULT 0, status_order TEXT DEFAULT 'Pending', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS design_sessions (id TEXT PRIMARY KEY, technician_id TEXT, order_id TEXT, start_time DATETIME, end_time DATETIME, current_duration INTEGER DEFAULT 0, hourly_rate REAL DEFAULT 50000, status TEXT DEFAULT 'Running')`,
-        
+
         // 6. SPK WORKFLOW
         `CREATE TABLE IF NOT EXISTS spk (
             id TEXT PRIMARY KEY, spk_number TEXT UNIQUE, customer_id TEXT, customer_name TEXT, 
@@ -98,12 +98,12 @@ async function ensureUnifiedTablesSQLite(db) {
         )`,
         `CREATE TABLE IF NOT EXISTS spk_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, user_id TEXT, action TEXT, description TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS spk_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, spk_id TEXT, payment_type TEXT, method TEXT, amount REAL, bank_ref TEXT, paid_by TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-        
+
         // 7. SYSTEM & CONFIG
         `CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT UNIQUE, value TEXT)`,
         `CREATE TABLE IF NOT EXISTS wa_config (id INTEGER PRIMARY KEY AUTOINCREMENT, config_key TEXT UNIQUE, config_value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS activity_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, user_name TEXT, action TEXT, target TEXT, ip_address TEXT, detail TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)`,
- 
+
         // 8. SERVICE MODULE (SERVICE_ORDERS)
         `CREATE TABLE IF NOT EXISTS service_orders (
             id INTEGER PRIMARY KEY AUTOINCREMENT, service_no TEXT UNIQUE, customer_id TEXT, 
@@ -181,7 +181,7 @@ async function ensureUnifiedTablesSQLite(db) {
         )`,
         `CREATE TABLE IF NOT EXISTS fotocopy_prices (id TEXT PRIMARY KEY, paper TEXT, color TEXT, side TEXT, price REAL DEFAULT 0, label TEXT)`
     ];
- 
+
     for (const sql of schemas) {
         try {
             const tableName = sql.match(/IF NOT EXISTS (\w+)/)?.[1];
@@ -214,7 +214,7 @@ async function ensureUnifiedTablesSQLite(db) {
         console.error(`❌ SQLite Seed Error: ${e.message}`);
     }
 }
- 
+
 /**
  * AUTO-PATCH KOLOM UNTUK SQLITE
  */
@@ -250,51 +250,65 @@ async function patchUnifiedColumnsMySQL(db) {
     const conn = typeof db.getConnection === 'function' ? await db.getConnection() : db;
     try {
         const patches = [
-            { table: 'customers', columns: [
-                { name: 'total_trx', type: 'INT DEFAULT 0' },
-                { name: 'total_spend', type: 'DECIMAL(15,2) DEFAULT 0' }
-            ]},
-            { table: 'transactions', columns: [
-                { name: 'customer_wa', type: 'VARCHAR(20) DEFAULT NULL' },
-                { name: 'tax_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'notes', type: 'TEXT DEFAULT NULL' }
-            ]},
-            { table: 'dp_tasks', columns: [
-                { name: 'customerName', type: 'VARCHAR(100) DEFAULT NULL' },
-                { name: 'customerId', type: 'VARCHAR(50) DEFAULT NULL' },
-                { name: 'dimensions_w', type: 'DECIMAL(10,2) DEFAULT 0' },
-                { name: 'dimensions_h', type: 'DECIMAL(10,2) DEFAULT 0' },
-                { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'pesan_desainer', type: 'TEXT DEFAULT NULL' },
-                { name: 'denda_batal', type: 'DECIMAL(15,2) DEFAULT 0' }
-            ]},
-            { table: 'materials', columns: [
-                { name: 'is_active', type: 'TINYINT(1) DEFAULT 1' },
-                { name: 'harga_modal', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'harga_jual', type: 'DECIMAL(15,2) DEFAULT 0' }
-            ]},
-            { table: 'service_orders', columns: [
-                { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0 AFTER labor_cost' }
-            ]},
-            { table: 'spk', columns: [
-                { name: 'kategori', type: 'VARCHAR(50) DEFAULT NULL' },
-                { name: 'customer_phone', type: 'VARCHAR(20) DEFAULT NULL' },
-                { name: 'customer_company', type: 'VARCHAR(100) DEFAULT NULL' },
-                { name: 'specs_material', type: 'TEXT DEFAULT NULL' },
-                { name: 'specs_finishing', type: 'TEXT DEFAULT NULL' },
-                { name: 'specs_notes', type: 'TEXT DEFAULT NULL' },
-                { name: 'biaya_cetak', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'biaya_material', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'biaya_finishing', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'biaya_desain', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'biaya_lainnya', type: 'DECIMAL(15,2) DEFAULT 0' },
-                { name: 'created_by', type: 'VARCHAR(50) DEFAULT NULL' },
-                { name: 'completed_at', type: 'DATETIME DEFAULT NULL' }
-            ]},
-            { table: 'spk_payments', columns: [
-                { name: 'bank_ref', type: 'VARCHAR(100) DEFAULT NULL' },
-                { name: 'paid_by', type: 'VARCHAR(100) DEFAULT NULL' }
-            ]}
+            {
+                table: 'customers', columns: [
+                    { name: 'total_trx', type: 'INT DEFAULT 0' },
+                    { name: 'total_spend', type: 'DECIMAL(15,2) DEFAULT 0' }
+                ]
+            },
+            {
+                table: 'transactions', columns: [
+                    { name: 'customer_wa', type: 'VARCHAR(20) DEFAULT NULL' },
+                    { name: 'tax_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'notes', type: 'TEXT DEFAULT NULL' }
+                ]
+            },
+            {
+                table: 'dp_tasks', columns: [
+                    { name: 'customerName', type: 'VARCHAR(100) DEFAULT NULL' },
+                    { name: 'customerId', type: 'VARCHAR(50) DEFAULT NULL' },
+                    { name: 'dimensions_w', type: 'DECIMAL(10,2) DEFAULT 0' },
+                    { name: 'dimensions_h', type: 'DECIMAL(10,2) DEFAULT 0' },
+                    { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'pesan_desainer', type: 'TEXT DEFAULT NULL' },
+                    { name: 'denda_batal', type: 'DECIMAL(15,2) DEFAULT 0' }
+                ]
+            },
+            {
+                table: 'materials', columns: [
+                    { name: 'is_active', type: 'TINYINT(1) DEFAULT 1' },
+                    { name: 'harga_modal', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'harga_jual', type: 'DECIMAL(15,2) DEFAULT 0' }
+                ]
+            },
+            {
+                table: 'service_orders', columns: [
+                    { name: 'dp_amount', type: 'DECIMAL(15,2) DEFAULT 0 AFTER labor_cost' }
+                ]
+            },
+            {
+                table: 'spk', columns: [
+                    { name: 'kategori', type: 'VARCHAR(50) DEFAULT NULL' },
+                    { name: 'customer_phone', type: 'VARCHAR(20) DEFAULT NULL' },
+                    { name: 'customer_company', type: 'VARCHAR(100) DEFAULT NULL' },
+                    { name: 'specs_material', type: 'TEXT DEFAULT NULL' },
+                    { name: 'specs_finishing', type: 'TEXT DEFAULT NULL' },
+                    { name: 'specs_notes', type: 'TEXT DEFAULT NULL' },
+                    { name: 'biaya_cetak', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'biaya_material', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'biaya_finishing', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'biaya_desain', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'biaya_lainnya', type: 'DECIMAL(15,2) DEFAULT 0' },
+                    { name: 'created_by', type: 'VARCHAR(50) DEFAULT NULL' },
+                    { name: 'completed_at', type: 'DATETIME DEFAULT NULL' }
+                ]
+            },
+            {
+                table: 'spk_payments', columns: [
+                    { name: 'bank_ref', type: 'VARCHAR(100) DEFAULT NULL' },
+                    { name: 'paid_by', type: 'VARCHAR(100) DEFAULT NULL' }
+                ]
+            }
         ];
 
         for (const patch of patches) {
@@ -311,7 +325,7 @@ async function patchUnifiedColumnsMySQL(db) {
                     const idCol = columns.find(c => c.Field === 'id');
                     if (idCol && !idCol.Extra.toLowerCase().includes('auto_increment')) {
                         console.log(`➕ [MySQL] Fixing service_orders.id: Adding AUTO_INCREMENT...`);
-                        
+
                         // 1. Drop foreign key constraint
                         try {
                             console.log(`➕ [MySQL] Dropping foreign key constraint service_spareparts_ibfk_1...`);
@@ -321,10 +335,10 @@ async function patchUnifiedColumnsMySQL(db) {
                         }
 
                         await conn.query('SET FOREIGN_KEY_CHECKS = 0');
-                        
+
                         // 2. Convert service_orders.id to INT AUTO_INCREMENT
                         await conn.query('ALTER TABLE `service_orders` MODIFY `id` INT AUTO_INCREMENT');
-                        
+
                         // 3. Convert service_spareparts.service_order_id to INT
                         try {
                             console.log(`➕ [MySQL] Fixing service_spareparts.service_order_id to INT...`);
@@ -332,7 +346,7 @@ async function patchUnifiedColumnsMySQL(db) {
                         } catch (spareErr) {
                             console.warn(`⚠️ [MySQL] Warning fixing service_spareparts.service_order_id: ${spareErr.message}`);
                         }
-                        
+
                         await conn.query('SET FOREIGN_KEY_CHECKS = 1');
 
                         // 4. Re-add foreign key constraint
@@ -342,7 +356,7 @@ async function patchUnifiedColumnsMySQL(db) {
                         } catch (fkAddErr) {
                             console.warn(`⚠️ [MySQL] Warning re-adding FK constraint: ${fkAddErr.message}`);
                         }
-                        
+
                         console.log(`✅ [MySQL] Successfully converted service_orders.id to AUTO_INCREMENT`);
                     }
                 }
@@ -371,11 +385,11 @@ async function ensureUnifiedTablesMySQL(db) {
         `CREATE TABLE IF NOT EXISTS customers (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), phone VARCHAR(20), address TEXT, type VARCHAR(50) DEFAULT 'walkin', company VARCHAR(100), total_trx INT DEFAULT 0, total_spend DECIMAL(15,2) DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS categories (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), type VARCHAR(50), emoji VARCHAR(10)) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS products (id VARCHAR(50) PRIMARY KEY, code VARCHAR(50) UNIQUE, name VARCHAR(200), category_id VARCHAR(50), buy_price DECIMAL(15,2) DEFAULT 0, sell_price DECIMAL(15,2) DEFAULT 0, stock DECIMAL(10,2) DEFAULT 0, min_stock DECIMAL(10,2) DEFAULT 0, unit VARCHAR(20) DEFAULT 'pcs', emoji VARCHAR(10), image TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS transactions (id VARCHAR(50) PRIMARY KEY, invoice_no VARCHAR(50) UNIQUE, date DATETIME, customer_id VARCHAR(50), customer_name VARCHAR(100), user_id VARCHAR(50), user_name VARCHAR(100), type VARCHAR(50), subtotal DECIMAL(15,2), discount DECIMAL(15,2), total DECIMAL(15,2), paid DECIMAL(15,2), change_amount DECIMAL(15,2), payment_type VARCHAR(50), tax_amount DECIMAL(15,2) DEFAULT 0, status VARCHAR(50) DEFAULT 'unpaid', notes TEXT, customer_wa VARCHAR(20)) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS transaction_details (id VARCHAR(50) PRIMARY KEY, transaction_id VARCHAR(50), product_id VARCHAR(50), name VARCHAR(200), qty DECIMAL(10,2), price DECIMAL(15,2), subtotal DECIMAL(15,2), discount DECIMAL(15,2)) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS cash_flow (id VARCHAR(50) PRIMARY KEY, date DATE, type VARCHAR(20), category VARCHAR(100), amount DECIMAL(15,2), description TEXT, reference_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS dp_tasks (
             id VARCHAR(50) PRIMARY KEY, status VARCHAR(50) DEFAULT 'menunggu_desain', 
             customerName VARCHAR(100), customerId VARCHAR(50), title VARCHAR(200), 
@@ -389,13 +403,13 @@ async function ensureUnifiedTablesMySQL(db) {
             operator_id VARCHAR(50), operator_name VARCHAR(100), denda_batal DECIMAL(15,2) DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS orders (id VARCHAR(50) PRIMARY KEY, order_number VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), user_id VARCHAR(50), total_harga DECIMAL(15,2), status_pembayaran VARCHAR(50) DEFAULT 'belum_bayar', dp_amount DECIMAL(15,2), remaining DECIMAL(15,2), metode_pembayaran VARCHAR(50), deadline DATE, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS order_items (id VARCHAR(50) PRIMARY KEY, order_id VARCHAR(50), layanan VARCHAR(100), nama_item VARCHAR(200), material_id VARCHAR(50), ukuran_p DECIMAL(10,2), ukuran_l DECIMAL(10,2), luas_total DECIMAL(10,2), quantity INT, harga_satuan DECIMAL(15,2), subtotal DECIMAL(15,2), file_desain TEXT, catatan TEXT) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS materials (id VARCHAR(50) PRIMARY KEY, barcode VARCHAR(50), nama_bahan VARCHAR(200), kategori VARCHAR(100), satuan VARCHAR(20), harga_modal DECIMAL(15,2) DEFAULT 0, harga_jual DECIMAL(15,2) DEFAULT 0, stok_saat_ini DECIMAL(10,2) DEFAULT 0, stok_minimum DECIMAL(10,2) DEFAULT 0, is_active TINYINT(1) DEFAULT 1, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS design_logs (id INT AUTO_INCREMENT PRIMARY KEY, order_item_id VARCHAR(50), technician_id VARCHAR(50), start_time DATETIME, end_time DATETIME, total_durasi_menit INT, tarif_per_jam DECIMAL(15,2) DEFAULT 50000, total_biaya_desain DECIMAL(15,2), catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS production_status (id INT AUTO_INCREMENT PRIMARY KEY, order_item_id VARCHAR(50) UNIQUE, status VARCHAR(50) DEFAULT 'menunggu', catatan_teknis TEXT, link_file_desain TEXT, foto_sebelum TEXT, foto_sesudah TEXT, operator_id VARCHAR(50), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS spk (
             id VARCHAR(50) PRIMARY KEY, spk_number VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), 
             customer_phone VARCHAR(20), customer_company VARCHAR(100),
@@ -409,11 +423,11 @@ async function ensureUnifiedTablesMySQL(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS spk_payments (id INT AUTO_INCREMENT PRIMARY KEY, spk_id VARCHAR(50), payment_type VARCHAR(50), method VARCHAR(50), amount DECIMAL(15,2), bank_ref VARCHAR(100), paid_by VARCHAR(100), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS settings (id INT AUTO_INCREMENT PRIMARY KEY, \`key\` VARCHAR(100) UNIQUE, value TEXT) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS wa_config (id INT AUTO_INCREMENT PRIMARY KEY, config_key VARCHAR(100) UNIQUE, config_value TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB`,
         `CREATE TABLE IF NOT EXISTS activity_log (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), user_name VARCHAR(100), action VARCHAR(100), target VARCHAR(100), ip_address VARCHAR(45), detail TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS service_orders (
             id INT AUTO_INCREMENT PRIMARY KEY, service_no VARCHAR(50) UNIQUE, customer_id VARCHAR(50), 
             customer_name VARCHAR(100), phone VARCHAR(20), machine_info TEXT, serial_no VARCHAR(100), 
@@ -436,7 +450,7 @@ async function ensureUnifiedTablesMySQL(db) {
             status VARCHAR(50) DEFAULT 'draft', paid_at DATETIME, 
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB`,
-        
+
         `CREATE TABLE IF NOT EXISTS print_orders (
             id VARCHAR(50) PRIMARY KEY, order_no VARCHAR(50) UNIQUE, customer_id VARCHAR(50), customer_name VARCHAR(100), 
             type VARCHAR(50), description TEXT, specs TEXT, qty INT, unit VARCHAR(20), 
@@ -500,8 +514,8 @@ async function ensureUnifiedTablesMySQL(db) {
             console.log('🌱 Seeding default fotocopy prices...');
             await db.query(`
                 INSERT INTO fotocopy_prices (id, paper, color, side, price, label) VALUES 
-                ('fc1', 'HVS A4', 'bw', '1', 200, 'HVS A4 - B/W - 1 Sisi'),
-                ('fc2', 'HVS A4', 'bw', '2', 350, 'HVS A4 - B/W - Bolak-balik'),
+                ('fc1', 'HVS A4', 'bw', '1', 250, 'HVS A4 - B/W - 1 Sisi'),
+                ('fc2', 'HVS A4', 'bw', '2', 400, 'HVS A4 - B/W - Bolak-balik'),
                 ('fc3', 'HVS F4', 'bw', '1', 250, 'HVS F4 - B/W - 1 Sisi'),
                 ('fc4', 'HVS F4', 'bw', '2', 400, 'HVS F4 - B/W - Bolak-balik'),
                 ('fc5', 'HVS A3', 'bw', '1', 500, 'HVS A3 - B/W - 1 Sisi'),

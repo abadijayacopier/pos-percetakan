@@ -28,16 +28,16 @@ try {
 
 
 const dbConfig = {
-    host: externalConfig.DB_HOST || process.env.DB_HOST || '127.0.0.1',
-    user: externalConfig.DB_USER || process.env.DB_USER || 'root',
-    password: externalConfig.DB_PASS || process.env.DB_PASS || '',
+    host: externalConfig.DB_HOST || (externalConfig.mysql && externalConfig.mysql.host) || process.env.DB_HOST || '127.0.0.1',
+    user: externalConfig.DB_USER || (externalConfig.mysql && externalConfig.mysql.user) || process.env.DB_USER || 'root',
+    password: externalConfig.DB_PASS || (externalConfig.mysql && externalConfig.mysql.password) || process.env.DB_PASS || '',
     multipleStatements: true,
     charset: 'utf8mb4'
 };
 
 // Mode Logic: Prioritize external config (Switcher) over .env
-const currentMode = externalConfig.APP_MODE || process.env.APP_MODE || 'standalone';
-const currentDbType = externalConfig.DB_TYPE || process.env.DB_TYPE || 'sqlite';
+const currentMode = externalConfig.APP_MODE || (externalConfig.mode === 'saas' ? 'saas' : 'standalone') || process.env.APP_MODE || 'standalone';
+const currentDbType = externalConfig.DB_TYPE || externalConfig.mode || process.env.DB_TYPE || 'sqlite';
 
 let sqliteDb = null;
 
@@ -114,7 +114,7 @@ const masterPool = currentMode === 'saas' ? mysql.createPool({
 // 2. Standalone Pool (MySQL fallback for Offline mode if chosen by user)
 const standalonePool = currentMode === 'standalone' && currentDbType !== 'sqlite'
     ? (() => {
-        const pool = mysql.createPool({ ...dbConfig, database: externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi' });
+        const pool = mysql.createPool({ ...dbConfig, database: externalConfig.DB_NAME || (externalConfig.mysql && externalConfig.mysql.database) || process.env.DB_NAME || 'pos_abadi' });
         // Add SQLite-compatible shim for .all()
         pool.all = async (sql, params) => {
             const [rows] = await pool.query(sql, params);
@@ -161,7 +161,7 @@ const ensureMySQLDatabaseExists = async () => {
             user: dbConfig.user,
             password: dbConfig.password
         });
-        const dbName = externalConfig.DB_NAME || process.env.DB_NAME || 'pos_abadi';
+        const dbName = externalConfig.DB_NAME || (externalConfig.mysql && externalConfig.mysql.database) || process.env.DB_NAME || 'pos_abadi';
         await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
         await connection.end();
         return true;
