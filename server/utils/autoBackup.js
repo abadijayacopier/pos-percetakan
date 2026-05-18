@@ -17,7 +17,7 @@ if (!fs.existsSync(BACKUP_DIR)) {
 
 async function runBackup() {
     try {
-        const { currentDbType } = require('../config/database');
+        const { currentDbType, dbConfig } = require('../config/database');
         const today = new Date().toISOString().split('T')[0];
         
         if (currentDbType === 'sqlite') {
@@ -41,11 +41,24 @@ async function runBackup() {
         }
 
         // MySQL Mode
-        const dbConfig = {
-            host: process.env.DB_HOST || 'localhost',
-            user: process.env.DB_USER || 'root',
-            password: process.env.DB_PASS ? process.env.DB_PASS.trim() : '',
-            database: process.env.DB_NAME || 'pos_abadi'
+        // Load external config to get DB name dynamically
+        const dbDir = path.join(__dirname, '..', 'database');
+        const dbConfigPath = process.env.DB_CONFIG_PATH || path.join(dbDir, 'db-config.json');
+        let dbName = 'pos_abadi';
+        try {
+            if (fs.existsSync(dbConfigPath)) {
+                const extCfg = JSON.parse(fs.readFileSync(dbConfigPath, 'utf8'));
+                dbName = extCfg.DB_NAME || (extCfg.mysql && extCfg.mysql.database) || dbName;
+            }
+        } catch (e) {
+            dbName = process.env.DB_NAME || 'pos_abadi';
+        }
+
+        const connConfig = {
+            host: dbConfig.host,
+            user: dbConfig.user,
+            password: dbConfig.password,
+            database: dbName
         };
 
         const fileName = `backup_${today}.sql`;
@@ -56,10 +69,10 @@ async function runBackup() {
             return;
         }
 
-        console.log(`[Backup] Starting daily backup for ${dbConfig.database}...`);
+        console.log(`[Backup] Starting daily backup for ${connConfig.database} (MySQL)...`);
 
         await mysqldump({
-            connection: dbConfig,
+            connection: connConfig,
             dumpToFile: filePath,
         });
 
