@@ -355,16 +355,45 @@ export default function ReportsPage({ user }) {
         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         const tabNames = { 'sales': 'Penjualan', 'products': 'Stok Produk', 'movements': 'Mutasi Stok', 'customers': 'Pelanggan', 'profit-loss': 'Laba Rugi' };
 
+        // Step 1: Pick period type with custom styled cards
         const { value: periodType } = await Swal.fire({
             title: 'Generate Laporan',
-            html: `<p style="color:#64748b;font-size:13px;margin-top:4px">Generate laporan <b>${tabNames[activeTab]}</b> dalam format PDF</p>`,
-            input: 'radio',
-            inputOptions: { 'monthly': '📅 Laporan Bulanan', 'yearly': '📆 Laporan Tahunan' },
-            inputValidator: (value) => { if (!value) return 'Pilih salah satu periode!'; },
+            html: `
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:20px">Generate laporan <b style="color:#f59e0b">${tabNames[activeTab]}</b> dalam format PDF</p>
+                <div id="period-cards" style="display:flex;gap:14px;justify-content:center">
+                    <div data-value="monthly" class="period-card" style="flex:1;padding:20px 16px;border-radius:16px;border:2px solid #334155;background:#1e293b;cursor:pointer;text-align:center;transition:all .2s ease">
+                        <div style="font-size:32px;margin-bottom:8px">📅</div>
+                        <div style="font-size:14px;font-weight:800;color:#f1f5f9;letter-spacing:0.5px">BULANAN</div>
+                        <div style="font-size:11px;color:#64748b;margin-top:4px">Per bulan</div>
+                    </div>
+                    <div data-value="yearly" class="period-card" style="flex:1;padding:20px 16px;border-radius:16px;border:2px solid #334155;background:#1e293b;cursor:pointer;text-align:center;transition:all .2s ease">
+                        <div style="font-size:32px;margin-bottom:8px">📆</div>
+                        <div style="font-size:14px;font-weight:800;color:#f1f5f9;letter-spacing:0.5px">TAHUNAN</div>
+                        <div style="font-size:11px;color:#64748b;margin-top:4px">Per tahun</div>
+                    </div>
+                </div>
+                <input type="hidden" id="swal-period-type" value="">
+            `,
             showCancelButton: true,
             cancelButtonText: 'Batal',
             confirmButtonText: 'Lanjut →',
             confirmButtonColor: '#f59e0b',
+            didOpen: () => {
+                const cards = document.querySelectorAll('.period-card');
+                cards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        cards.forEach(c => { c.style.border = '2px solid #334155'; c.style.background = '#1e293b'; });
+                        card.style.border = '2px solid #f59e0b';
+                        card.style.background = '#292524';
+                        document.getElementById('swal-period-type').value = card.dataset.value;
+                    });
+                });
+            },
+            preConfirm: () => {
+                const val = document.getElementById('swal-period-type').value;
+                if (!val) { Swal.showValidationMessage('Pilih salah satu periode!'); return false; }
+                return val;
+            }
         });
 
         if (!periodType) return;
@@ -375,11 +404,12 @@ export default function ReportsPage({ user }) {
             const { value: formValues } = await Swal.fire({
                 title: '📅 Pilih Bulan',
                 html: `
-                    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
-                        <select id="swal-month" class="swal2-select" style="flex:1;padding:12px;border-radius:16px;border:2px solid #e2e8f0;font-weight:700;font-size:14px;outline:none">
+                    <p style="color:#94a3b8;font-size:12px;margin-bottom:16px">Pilih bulan dan tahun untuk laporan</p>
+                    <div style="display:flex;gap:12px;justify-content:center">
+                        <select id="swal-month" style="flex:1;padding:14px;border-radius:12px;border:2px solid #334155;font-weight:700;font-size:14px;outline:none;background:#1e293b;color:#f1f5f9;cursor:pointer;appearance:auto">
                             ${months.map((m, i) => `<option value="${i}" ${i === currentMonth ? 'selected' : ''}>${m}</option>`).join('')}
                         </select>
-                        <select id="swal-year" class="swal2-select" style="width:110px;padding:12px;border-radius:16px;border:2px solid #e2e8f0;font-weight:700;font-size:14px;outline:none">
+                        <select id="swal-year" style="width:120px;padding:14px;border-radius:12px;border:2px solid #334155;font-weight:700;font-size:14px;outline:none;background:#1e293b;color:#f1f5f9;cursor:pointer;appearance:auto">
                             ${Array.from({ length: 5 }, (_, i) => currentYear - i).map(y => `<option value="${y}">${y}</option>`).join('')}
                         </select>
                     </div>
@@ -405,19 +435,40 @@ export default function ReportsPage({ user }) {
             to = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
             periodLabel = `${months[monthIdx]} ${year}`;
         } else {
-            const yearOptions = {};
-            for (let y = currentYear; y >= currentYear - 5; y--) yearOptions[y] = `Tahun ${y}`;
-
             const { value: year } = await Swal.fire({
                 title: '📆 Pilih Tahun',
-                html: '<p style="color:#64748b;font-size:13px">Pilih tahun untuk laporan tahunan</p>',
-                input: 'select',
-                inputOptions: yearOptions,
-                inputValue: currentYear.toString(),
+                html: `
+                    <p style="color:#94a3b8;font-size:12px;margin-bottom:16px">Pilih tahun untuk laporan tahunan</p>
+                    <div style="display:flex;flex-direction:column;gap:8px;max-width:280px;margin:0 auto">
+                        ${Array.from({ length: 6 }, (_, i) => currentYear - i).map(y => `
+                            <div data-year="${y}" class="year-option" style="padding:14px 20px;border-radius:12px;border:2px solid #334155;background:#1e293b;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .2s ease">
+                                <span style="font-size:16px;font-weight:800;color:#f1f5f9">${y}</span>
+                                <span style="font-size:11px;color:#64748b;font-weight:600">${y === currentYear ? 'Tahun ini' : ''}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="swal-year-val" value="">
+                `,
                 showCancelButton: true,
                 cancelButtonText: 'Batal',
                 confirmButtonText: '⚡ Generate PDF',
                 confirmButtonColor: '#f59e0b',
+                didOpen: () => {
+                    const opts = document.querySelectorAll('.year-option');
+                    opts.forEach(opt => {
+                        opt.addEventListener('click', () => {
+                            opts.forEach(o => { o.style.border = '2px solid #334155'; o.style.background = '#1e293b'; });
+                            opt.style.border = '2px solid #f59e0b';
+                            opt.style.background = '#292524';
+                            document.getElementById('swal-year-val').value = opt.dataset.year;
+                        });
+                    });
+                },
+                preConfirm: () => {
+                    const val = document.getElementById('swal-year-val').value;
+                    if (!val) { Swal.showValidationMessage('Pilih tahun terlebih dahulu!'); return false; }
+                    return val;
+                }
             });
 
             if (!year) return;
@@ -431,7 +482,7 @@ export default function ReportsPage({ user }) {
 
         await Swal.fire({
             title: 'Menyiapkan Data...',
-            html: `<p style="font-size:13px;color:#64748b">Memproses laporan <b>${tabNames[activeTab]}</b> periode <b>${periodLabel}</b></p>`,
+            html: `<p style="font-size:13px;color:#94a3b8">Memproses laporan <b style="color:#f59e0b">${tabNames[activeTab]}</b><br/>periode <b style="color:#f1f5f9">${periodLabel}</b></p>`,
             allowOutsideClick: false,
             timer: 1200,
             timerProgressBar: true,
