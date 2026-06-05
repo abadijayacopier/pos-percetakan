@@ -8,7 +8,7 @@ import PrintReportLayout from '../components/PrintReportLayout';
 import {
     FiFileText, FiDollarSign, FiShoppingCart, FiUsers, FiPrinter,
     FiDownload, FiCalendar, FiTrendingUp, FiBox, FiAlertTriangle, FiActivity,
-    FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight, FiSend
+    FiChevronLeft, FiChevronRight, FiPieChart, FiArrowUpRight, FiArrowDownRight, FiSend, FiZap
 } from 'react-icons/fi';
 
 export default function ReportsPage({ user }) {
@@ -349,6 +349,99 @@ export default function ReportsPage({ user }) {
         });
     };
 
+    const handleGenerateReport = async () => {
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth();
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const tabNames = { 'sales': 'Penjualan', 'products': 'Stok Produk', 'movements': 'Mutasi Stok', 'customers': 'Pelanggan', 'profit-loss': 'Laba Rugi' };
+
+        const { value: periodType } = await Swal.fire({
+            title: 'Generate Laporan',
+            html: `<p style="color:#64748b;font-size:13px;margin-top:4px">Generate laporan <b>${tabNames[activeTab]}</b> dalam format PDF</p>`,
+            input: 'radio',
+            inputOptions: { 'monthly': '📅 Laporan Bulanan', 'yearly': '📆 Laporan Tahunan' },
+            inputValidator: (value) => { if (!value) return 'Pilih salah satu periode!'; },
+            showCancelButton: true,
+            cancelButtonText: 'Batal',
+            confirmButtonText: 'Lanjut →',
+            confirmButtonColor: '#f59e0b',
+        });
+
+        if (!periodType) return;
+
+        let from, to, periodLabel;
+
+        if (periodType === 'monthly') {
+            const { value: formValues } = await Swal.fire({
+                title: '📅 Pilih Bulan',
+                html: `
+                    <div style="display:flex;gap:12px;justify-content:center;margin-top:12px">
+                        <select id="swal-month" class="swal2-select" style="flex:1;padding:12px;border-radius:16px;border:2px solid #e2e8f0;font-weight:700;font-size:14px;outline:none">
+                            ${months.map((m, i) => `<option value="${i}" ${i === currentMonth ? 'selected' : ''}>${m}</option>`).join('')}
+                        </select>
+                        <select id="swal-year" class="swal2-select" style="width:110px;padding:12px;border-radius:16px;border:2px solid #e2e8f0;font-weight:700;font-size:14px;outline:none">
+                            ${Array.from({ length: 5 }, (_, i) => currentYear - i).map(y => `<option value="${y}">${y}</option>`).join('')}
+                        </select>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                cancelButtonText: 'Batal',
+                confirmButtonText: '⚡ Generate PDF',
+                confirmButtonColor: '#f59e0b',
+                preConfirm: () => ({
+                    month: document.getElementById('swal-month').value,
+                    year: document.getElementById('swal-year').value
+                })
+            });
+
+            if (!formValues) return;
+
+            const monthIdx = Number(formValues.month);
+            const year = formValues.year;
+            const monthStr = String(monthIdx + 1).padStart(2, '0');
+            from = `${year}-${monthStr}-01`;
+            const lastDay = new Date(year, monthIdx + 1, 0).getDate();
+            to = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+            periodLabel = `${months[monthIdx]} ${year}`;
+        } else {
+            const yearOptions = {};
+            for (let y = currentYear; y >= currentYear - 5; y--) yearOptions[y] = `Tahun ${y}`;
+
+            const { value: year } = await Swal.fire({
+                title: '📆 Pilih Tahun',
+                html: '<p style="color:#64748b;font-size:13px">Pilih tahun untuk laporan tahunan</p>',
+                input: 'select',
+                inputOptions: yearOptions,
+                inputValue: currentYear.toString(),
+                showCancelButton: true,
+                cancelButtonText: 'Batal',
+                confirmButtonText: '⚡ Generate PDF',
+                confirmButtonColor: '#f59e0b',
+            });
+
+            if (!year) return;
+            from = `${year}-01-01`;
+            to = `${year}-12-31`;
+            periodLabel = `Tahun ${year}`;
+        }
+
+        setDateFrom(from);
+        setDateTo(to);
+
+        await Swal.fire({
+            title: 'Menyiapkan Data...',
+            html: `<p style="font-size:13px;color:#64748b">Memproses laporan <b>${tabNames[activeTab]}</b> periode <b>${periodLabel}</b></p>`,
+            allowOutsideClick: false,
+            timer: 1200,
+            timerProgressBar: true,
+            didOpen: () => Swal.showLoading(),
+            showConfirmButton: false,
+        });
+
+        handleExportPDF();
+    };
+
     const renderPagination = (tab, total) => {
         const totalPages = Math.ceil(total / PER_PAGE);
         const currentPage = pages[tab];
@@ -395,7 +488,14 @@ export default function ReportsPage({ user }) {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 ml-1 italic opacity-75 underline decoration-blue-500/30 underline-offset-4">Real-time Financial & Operational Intelligence</p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                    <button
+                        onClick={handleGenerateReport}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-7 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl font-black transition-all shadow-xl shadow-amber-500/25 active:scale-95 text-sm group"
+                    >
+                        <FiZap className="text-lg group-hover:rotate-12 transition-transform" />
+                        Generate Laporan
+                    </button>
                     <div className="flex gap-3 w-full sm:w-auto">
                         <button
                             onClick={() => window.print()}
