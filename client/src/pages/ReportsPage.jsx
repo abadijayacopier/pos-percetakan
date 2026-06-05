@@ -34,11 +34,11 @@ export default function ReportsPage({ user }) {
         const loadData = async () => {
             try {
                 const [trxRes, prdRes, cstRes, cfRes, smRes, setRes] = await Promise.all([
-                    api.get('/transactions'),
-                    api.get('/products'),
+                    api.get('/transactions').catch(e => { console.error('Failed to load transactions:', e.message); return { data: [] }; }),
+                    api.get('/products').catch(e => { console.error('Failed to load products:', e.message); return { data: [] }; }),
                     api.get('/customers').catch(() => ({ data: [] })),
-                    api.get('/finance'),
-                    api.get('/reports/stock-movements'),
+                    api.get('/finance').catch(e => { console.error('Failed to load finance:', e.message); return { data: [] }; }),
+                    api.get('/reports/stock-movements').catch(e => { console.error('Failed to load stock movements:', e.message); return { data: [] }; }),
                     api.get('/settings').catch(() => ({ data: [] }))
                 ]);
                 setAllTransactions(Array.isArray(trxRes.data) ? trxRes.data : []);
