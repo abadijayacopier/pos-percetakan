@@ -148,8 +148,11 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator']), async
 
         const id = crypto.randomUUID();
         const year = new Date().getFullYear();
-        const [countRows] = await conn.query("SELECT COUNT(*) as cnt FROM spk WHERE spk_number LIKE ?", [`SPK-${year}-%`]);
-        const nextNum = String((countRows[0].cnt || 0) + 1).padStart(5, '0');
+        const [maxRows] = await conn.query(
+            "SELECT MAX(CAST(SUBSTRING(spk_number, LENGTH(?) + 1) AS UNSIGNED)) as max_num FROM spk WHERE spk_number LIKE ?",
+            [`SPK-${year}-`, `SPK-${year}-%`]
+        );
+        const nextNum = String((maxRows[0].max_num || 0) + 1).padStart(5, '0');
         const spk_number = `SPK-${year}-${nextNum}`;
 
         await conn.query(`

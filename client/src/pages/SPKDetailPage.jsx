@@ -102,6 +102,7 @@ export default function SPKDetailPage({ onNavigate, spkId = null }) {
                                 <option className="text-slate-900 dark:text-white">Finishing</option>
                                 <option className="text-slate-900 dark:text-white">Quality Control</option>
                                 <option className="text-slate-900 dark:text-white">Selesai</option>
+                                <option className="text-slate-900 dark:text-white text-red-600">Batal</option>
                             </select>
                         </div>
                         <div className="flex items-center gap-2 mt-auto pb-1">

@@ -18,18 +18,32 @@ let tray = null;
 const SERVER_PORT = 5001;
 
 // ---------- Resolve paths ----------
+
+// Writable directory for db-config.json (userData in production, source in dev)
+function getWritableDbDir() {
+    if (app.isPackaged) {
+        const dir = path.join(app.getPath('userData'), 'database');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        return dir;
+    }
+    return path.join(__dirname, 'server', 'database');
+}
+
 function getDbConfigPath() {
-    const isPackaged = app.isPackaged;
     const paths = [
-        path.join(app.getPath('userData'), 'database', 'db-config.json'),
+        path.join(app.isPackaged ? app.getPath('userData') : __dirname, app.isPackaged ? 'database' : path.join('server', 'database'), 'db-config.json'),
         path.join(__dirname, 'server', 'database', 'db-config.json'),
-        path.join(process.resourcesPath, 'server', 'database', 'db-config.json'),
-        path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'db-config.json')
     ];
+    if (app.isPackaged) {
+        paths.push(
+            path.join(process.resourcesPath, 'server', 'database', 'db-config.json'),
+            path.join(process.resourcesPath, 'app.asar', 'server', 'database', 'db-config.json')
+        );
+    }
     for (const p of paths) {
         if (fs.existsSync(p)) return p;
     }
-    return paths[1]; // fallback to dev path
+    return paths[0]; // fallback to writable path
 }
 
 function resPath(...parts) {
@@ -225,7 +239,7 @@ ipcMain.handle('open-in-browser', () => {
 
 // ---------- IPC: DB Status ----------
 ipcMain.handle('get-db-status', () => {
-    const p = resPath('server', 'database', 'db-config.json');
+    const p = getDbConfigPath();
     if (fs.existsSync(p)) {
         try {
             const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
@@ -236,30 +250,29 @@ ipcMain.handle('get-db-status', () => {
 });
 
 ipcMain.handle('switch-db-mode', async (_, mode) => {
-    const dir = resPath('server', 'database');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const dir = getWritableDbDir();
 
-    const p = path.join(dir, 'db-config.json');
+    // Read existing config (from writable or asar fallback)
+    const existingPath = getDbConfigPath();
     let cfg = {};
-    try { if (fs.existsSync(p)) cfg = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { }
+    try { if (fs.existsSync(existingPath)) cfg = JSON.parse(fs.readFileSync(existingPath, 'utf8')); } catch { }
 
     cfg.mode = mode;
     cfg.DB_TYPE = mode;
-    fs.writeFileSync(p, JSON.stringify(cfg, null, 2));
+    fs.writeFileSync(path.join(dir, 'db-config.json'), JSON.stringify(cfg, null, 2));
     return { success: true };
 });
 
 // ---------- IPC: Config ----------
 ipcMain.handle('get-config', () => {
-    const p = resPath('server', 'database', 'db-config.json');
+    const p = getDbConfigPath();
     if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
     return null;
 });
 
 ipcMain.handle('save-config', (_, config) => {
     try {
-        const dir = resPath('server', 'database');
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const dir = getWritableDbDir();
         fs.writeFileSync(path.join(dir, 'db-config.json'), JSON.stringify(config, null, 2));
         return { success: true };
     } catch (e) {

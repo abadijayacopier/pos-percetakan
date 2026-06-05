@@ -39,7 +39,13 @@ export default function OffsetPrintingPage({ onNavigate }) {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [selectedSize, setSelectedSize] = useState('A4');
-    const [selectedMaterial, setSelectedMaterial] = useState('HVS 80gr');
+    const [selectedMaterial, setSelectedMaterial] = useState('');
+
+    // Ref to prevent stale closure in 10s polling interval
+    const selectedProductRef = useRef(null);
+    useEffect(() => {
+        selectedProductRef.current = selectedProduct;
+    }, [selectedProduct]);
 
     // Pagination
     const [page, setPage] = useState(1);
@@ -78,8 +84,19 @@ export default function OffsetPrintingPage({ onNavigate }) {
             );
             setActiveOrders(offsetSPKs);
 
-            if (formRes.data.products?.length > 0 && !selectedProduct) {
-                setSelectedProduct(formRes.data.products[0]);
+            const freshProducts = formRes.data.products || [];
+            if (freshProducts.length > 0) {
+                const currentSel = selectedProductRef.current;
+                if (currentSel) {
+                    const freshProduct = freshProducts.find(p => String(p.id) === String(currentSel.id));
+                    if (freshProduct) {
+                        setSelectedProduct(freshProduct);
+                    } else {
+                        setSelectedProduct(freshProducts[0]);
+                    }
+                } else {
+                    setSelectedProduct(freshProducts[0]);
+                }
             }
             setSystemStatus('online');
         } catch (err) {
@@ -88,7 +105,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedProduct]);
+    }, []);
 
     useEffect(() => {
         fetchOffsetData();
@@ -141,6 +158,13 @@ export default function OffsetPrintingPage({ onNavigate }) {
         setTax(calculatedTax);
         setTotal(calculatedSubtotal + calculatedTax);
     }, [selectedProduct, quantity, selectedSize, selectedMaterial]);
+
+    // Automatically sync selectedMaterial when product is chosen
+    useEffect(() => {
+        if (selectedProduct) {
+            setSelectedMaterial(selectedProduct.nama_produk);
+        }
+    }, [selectedProduct]);
 
     // Handle Pesanan Baru (Simpan ke DB lalu navigasi)
     const handleBuatPesanan = async () => {
@@ -283,14 +307,19 @@ export default function OffsetPrintingPage({ onNavigate }) {
                             ) : products.map(p => (
                                 <div
                                     key={p.id}
-                                    onClick={() => setSelectedProduct(p)}
+                                    onClick={() => {
+                                        setSelectedProduct(p);
+                                        setSelectedMaterial(p.nama_produk);
+                                    }}
                                     className={`relative group bg-white dark:bg-slate-900 border rounded-3xl p-6 transition-all duration-300 cursor-pointer overflow-hidden ${selectedProduct?.id === p.id ? 'border-indigo-600 ring-4 ring-indigo-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'}`}
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 dark:bg-indigo-900/10 rounded-full -mr-12 -mt-12 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                                     <div className={`size-14 rounded-2xl flex items-center justify-center mb-5 transition-all transform group-hover:scale-110 shadow-sm ${p.is_best_seller ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-500' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600'}`}>
                                         <span className="material-symbols-outlined text-2xl!">
-                                            {p.nama_produk.toLowerCase().includes('nota') ? 'receipt_long' : p.nama_produk.toLowerCase().includes('kalender') ? 'calendar_month' : 'menu_book'}
+                                            {p.nama_produk.toLowerCase().includes('nota') ? 'receipt_long' : 
+                                             p.nama_produk.toLowerCase().includes('kalender') ? 'calendar_month' : 
+                                             p.nama_produk.toLowerCase().includes('paper') || p.nama_produk.toLowerCase().includes('kertas') || p.nama_produk.toLowerCase().includes('art') ? 'layers' : 'menu_book'}
                                         </span>
                                     </div>
                                     <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-sm mb-1">{p.nama_produk}</h3>
@@ -452,7 +481,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
                                     <select
                                         value={selectedProduct?.id || ''}
                                         onChange={(e) => {
-                                            const p = products.find(p => p.id === parseInt(e.target.value));
+                                            const p = products.find(p => String(p.id) === String(e.target.value));
                                             setSelectedProduct(p);
                                         }}
                                         className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl py-3.5 pl-10 pr-4 text-xs font-bold focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer"
@@ -528,6 +557,7 @@ export default function OffsetPrintingPage({ onNavigate }) {
                             </div>
 
                             <button
+                                type="button"
                                 onClick={handleBuatPesanan}
                                 className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 active:scale-[0.98] mt-4"
                             >

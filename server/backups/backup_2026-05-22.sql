@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE
   SET
   NULL
-) ENGINE = InnoDB AUTO_INCREMENT = 229 DEFAULT CHARSET = utf8;
+) ENGINE = InnoDB AUTO_INCREMENT = 236 DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: attendance
@@ -32,16 +32,14 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
 
 CREATE TABLE IF NOT EXISTS `attendance` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `employee_id` varchar(50) NOT NULL,
-  `date` date NOT NULL,
+  `employee_id` varchar(50) DEFAULT NULL,
+  `date` date DEFAULT NULL,
   `clock_in` datetime DEFAULT NULL,
   `clock_out` datetime DEFAULT NULL,
   `work_hours` decimal(5, 2) DEFAULT '0.00',
   `notes` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `employee_id` (`employee_id`),
-  CONSTRAINT `attendance_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
@@ -164,6 +162,19 @@ CREATE TABLE IF NOT EXISTS `design_sessions` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COMMENT = 'Timer Desain per order offset';
 
 # ------------------------------------------------------------
+# SCHEMA DUMP FOR TABLE: digital_printing
+# ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `digital_printing` (
+  `id` varchar(50) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `price` decimal(15, 2) DEFAULT '0.00',
+  `unit` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
+
+# ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: dp_tasks
 # ------------------------------------------------------------
 
@@ -194,6 +205,7 @@ CREATE TABLE IF NOT EXISTS `dp_tasks` (
   `is_paid` tinyint(1) DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `denda_batal` decimal(15, 2) DEFAULT '0.00',
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COMMENT = 'Digital Printing tasks (formerly from localStorage)';
 
@@ -203,16 +215,14 @@ CREATE TABLE IF NOT EXISTS `dp_tasks` (
 
 CREATE TABLE IF NOT EXISTS `employee_loans` (
   `id` varchar(50) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `amount` decimal(15, 2) NOT NULL,
-  `remaining_amount` decimal(15, 2) NOT NULL,
-  `date` date NOT NULL,
+  `employee_id` varchar(50) DEFAULT NULL,
+  `amount` decimal(15, 2) DEFAULT NULL,
+  `remaining_amount` decimal(15, 2) DEFAULT NULL,
+  `date` date DEFAULT NULL,
   `description` text,
-  `status` enum('unpaid', 'partially_paid', 'paid') DEFAULT 'unpaid',
+  `status` varchar(50) DEFAULT 'unpaid',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `employee_id` (`employee_id`),
-  CONSTRAINT `employee_loans_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
@@ -222,21 +232,17 @@ CREATE TABLE IF NOT EXISTS `employee_loans` (
 CREATE TABLE IF NOT EXISTS `employees` (
   `id` varchar(50) NOT NULL,
   `user_id` varchar(50) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
   `nik` varchar(50) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text,
   `position` varchar(100) DEFAULT NULL,
-  `salary_type` enum('monthly', 'hourly', 'daily') NOT NULL DEFAULT 'monthly',
+  `salary_type` varchar(50) DEFAULT 'monthly',
   `base_salary` decimal(15, 2) DEFAULT '0.00',
   `hourly_rate` decimal(15, 2) DEFAULT '0.00',
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `user_id` (`user_id`),
-  CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE
-  SET
-  NULL
+  PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
@@ -296,22 +302,6 @@ CREATE TABLE IF NOT EXISTS `handovers` (
   `handover_by` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
-
-# ------------------------------------------------------------
-# SCHEMA DUMP FOR TABLE: log_notifikasi_wa
-# ------------------------------------------------------------
-
-CREATE TABLE IF NOT EXISTS `log_notifikasi_wa` (
-  `id_log` int(11) NOT NULL AUTO_INCREMENT,
-  `id_transaksi` varchar(50) DEFAULT NULL,
-  `status_kirim` enum('pending', 'sent', 'failed') DEFAULT 'pending',
-  `pesan_error` text,
-  `waktu_kirim` datetime DEFAULT CURRENT_TIMESTAMP,
-  `jumlah_percobaan` int(11) DEFAULT '0',
-  PRIMARY KEY (`id_log`),
-  KEY `id_transaksi` (`id_transaksi`),
-  CONSTRAINT `log_notifikasi_wa_ibfk_1` FOREIGN KEY (`id_transaksi`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: material_movements
@@ -386,6 +376,19 @@ CREATE TABLE IF NOT EXISTS `offset_orders` (
   SET
   NULL
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COMMENT = 'Pesanan cetak offset';
+
+# ------------------------------------------------------------
+# SCHEMA DUMP FOR TABLE: offset_printing
+# ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `offset_printing` (
+  `id` varchar(50) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `price` decimal(15, 2) DEFAULT '0.00',
+  `unit` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: offset_products
@@ -660,21 +663,19 @@ CREATE TABLE IF NOT EXISTS `purchases` (
 
 CREATE TABLE IF NOT EXISTS `salaries` (
   `id` varchar(50) NOT NULL,
-  `employee_id` varchar(50) NOT NULL,
-  `period_month` tinyint(2) NOT NULL,
-  `period_year` smallint(4) NOT NULL,
+  `employee_id` varchar(50) DEFAULT NULL,
+  `period_month` int(11) DEFAULT NULL,
+  `period_year` int(11) DEFAULT NULL,
   `base_processing_salary` decimal(15, 2) DEFAULT '0.00',
   `attendance_bonus` decimal(15, 2) DEFAULT '0.00',
   `overtime_pay` decimal(15, 2) DEFAULT '0.00',
   `loan_deduction` decimal(15, 2) DEFAULT '0.00',
   `other_deductions` decimal(15, 2) DEFAULT '0.00',
-  `net_salary` decimal(15, 2) NOT NULL,
-  `status` enum('draft', 'paid') DEFAULT 'draft',
+  `net_salary` decimal(15, 2) DEFAULT '0.00',
+  `status` varchar(50) DEFAULT 'draft',
   `paid_at` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `employee_id` (`employee_id`),
-  CONSTRAINT `salaries_ibfk_1` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
@@ -682,7 +683,7 @@ CREATE TABLE IF NOT EXISTS `salaries` (
 # ------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `service_orders` (
-  `id` varchar(50) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `service_no` varchar(50) NOT NULL,
   `customer_id` varchar(50) DEFAULT NULL,
   `customer_name` varchar(100) NOT NULL,
@@ -693,6 +694,7 @@ CREATE TABLE IF NOT EXISTS `service_orders` (
   `condition_physic` text,
   `diagnosis` text,
   `labor_cost` int(11) DEFAULT '0',
+  `dp_amount` decimal(15, 2) DEFAULT '0.00',
   `total_cost` int(11) DEFAULT '0',
   `status` enum(
   'diterima',
@@ -727,7 +729,7 @@ CREATE TABLE IF NOT EXISTS `service_orders` (
 
 CREATE TABLE IF NOT EXISTS `service_spareparts` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `service_order_id` varchar(50) NOT NULL,
+  `service_order_id` int(11) DEFAULT NULL,
   `name` varchar(100) NOT NULL,
   `qty` int(11) NOT NULL,
   `price` int(11) NOT NULL,
@@ -751,7 +753,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `value` text,
   PRIMARY KEY (`id`),
   UNIQUE KEY `key` (`key`)
-) ENGINE = InnoDB AUTO_INCREMENT = 71 DEFAULT CHARSET = utf8;
+) ENGINE = InnoDB AUTO_INCREMENT = 58 DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: spk
@@ -5679,11 +5681,11 @@ VALUES
     213,
     'u1',
     'Admin Utama',
-    'ACTIVATE_LICENSE',
-    'License',
-    'Aktivasi produk untuk Abadi Jaya Copier & Percetakan',
+    'RESTORE_DB',
+    'System',
+    'Memulihkan database MySQL',
     '::1',
-    '2026-05-02 23:35:15'
+    '2026-05-18 20:49:00'
   );
 INSERT INTO
   `activity_log` (
@@ -5701,11 +5703,11 @@ VALUES
     214,
     'u1',
     'Admin Utama',
-    'UPDATE_SETTINGS',
-    'System',
-    'Update 49 pengaturan sistem',
+    'ACTIVATE_LICENSE',
+    'License',
+    'Aktivasi produk untuk Abadi Jaya Copier',
     '::1',
-    '2026-05-02 23:42:23'
+    '2026-05-18 20:49:13'
   );
 INSERT INTO
   `activity_log` (
@@ -5727,7 +5729,7 @@ VALUES
     'System',
     'Update 49 pengaturan sistem',
     '::1',
-    '2026-05-02 23:45:42'
+    '2026-05-21 16:57:25'
   );
 INSERT INTO
   `activity_log` (
@@ -5745,11 +5747,11 @@ VALUES
     216,
     'u1',
     'Admin Utama',
-    'ADD_TRANSACTION',
-    'Transaction',
-    'Invoice TRX-202605-8284 total 1250',
+    'CREATE_CUSTOMER',
+    'KPRI  LEMBEYAN',
+    'Tambah pelanggan: KPRI  LEMBEYAN',
     '::1',
-    '2026-05-03 00:02:18'
+    '2026-05-21 17:02:03'
   );
 INSERT INTO
   `activity_log` (
@@ -5767,11 +5769,11 @@ VALUES
     217,
     'u1',
     'Admin Utama',
-    'cancel_payment',
-    'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202605-8284',
+    'CREATE_PRODUCT',
+    'CETAK ID CARD',
+    'Tambah produk: CETAK ID CARD (PRD-MPFBRITS)',
     '::1',
-    '2026-05-03 00:03:42'
+    '2026-05-21 17:05:21'
   );
 INSERT INTO
   `activity_log` (
@@ -5789,11 +5791,11 @@ VALUES
     218,
     'u1',
     'Admin Utama',
-    'cancel_payment',
-    'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202605-8284',
+    'UPDATE_PRODUCT',
+    'CETAK ID CARD',
+    'Update produk: CETAK ID CARD',
     '::1',
-    '2026-05-03 00:03:54'
+    '2026-05-21 17:05:52'
   );
 INSERT INTO
   `activity_log` (
@@ -5811,11 +5813,11 @@ VALUES
     219,
     'u1',
     'Admin Utama',
-    'cancel_payment',
+    'ADD_TRANSACTION',
     'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202605-8284',
+    'Invoice TRX-202605-5898 total 1584000',
     '::1',
-    '2026-05-03 00:04:10'
+    '2026-05-21 17:06:30'
   );
 INSERT INTO
   `activity_log` (
@@ -5833,11 +5835,11 @@ VALUES
     220,
     'u1',
     'Admin Utama',
-    'cancel_payment',
-    'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202605-8284',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
     '::1',
-    '2026-05-03 00:11:56'
+    '2026-05-21 17:07:25'
   );
 INSERT INTO
   `activity_log` (
@@ -5855,11 +5857,11 @@ VALUES
     221,
     'u1',
     'Admin Utama',
-    'payment',
+    'ADD_TRANSACTION',
     'Transaction',
-    'Pelunasan TRX-202605-8284: 0 via tunai',
+    'Invoice TRX-202605-3936 total 21250',
     '::1',
-    '2026-05-03 00:12:12'
+    '2026-05-21 17:09:13'
   );
 INSERT INTO
   `activity_log` (
@@ -5881,7 +5883,7 @@ VALUES
     'Transaction',
     'Pelunasan TRX-202604-8791: 0 via tunai',
     '::1',
-    '2026-05-03 00:12:18'
+    '2026-05-21 17:24:36'
   );
 INSERT INTO
   `activity_log` (
@@ -5903,7 +5905,7 @@ VALUES
     'Transaction',
     'Pelunasan TRX-202604-4887: 0 via tunai',
     '::1',
-    '2026-05-03 00:12:21'
+    '2026-05-21 17:24:39'
   );
 INSERT INTO
   `activity_log` (
@@ -5925,7 +5927,7 @@ VALUES
     'Transaction',
     'Pelunasan TRX-202604-3417: 0 via tunai',
     '::1',
-    '2026-05-03 00:12:25'
+    '2026-05-21 17:24:42'
   );
 INSERT INTO
   `activity_log` (
@@ -5943,11 +5945,11 @@ VALUES
     225,
     'u1',
     'Admin Utama',
-    'cancel_payment',
+    'payment',
     'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202605-8284',
+    'Pelunasan TRX-202604-1522: 0 via tunai',
     '::1',
-    '2026-05-03 00:12:50'
+    '2026-05-21 17:24:44'
   );
 INSERT INTO
   `activity_log` (
@@ -5965,11 +5967,11 @@ VALUES
     226,
     'u1',
     'Admin Utama',
-    'cancel_payment',
+    'payment',
     'Transaction',
-    'BATAL PELUNASAN (Admin) - Invoice TRX-202604-8791',
+    'Pelunasan TRX-202603-8009: 0 via tunai',
     '::1',
-    '2026-05-03 00:17:34'
+    '2026-05-21 17:24:46'
   );
 INSERT INTO
   `activity_log` (
@@ -5987,11 +5989,11 @@ VALUES
     227,
     'u1',
     'Admin Utama',
-    'delete_transaction',
+    'payment',
     'Transaction',
-    'Hapus & Void TRX t1777741338557',
+    'Pelunasan TRX-202603-1505: -500 via tunai',
     '::1',
-    '2026-05-03 00:25:33'
+    '2026-05-21 17:24:48'
   );
 INSERT INTO
   `activity_log` (
@@ -6011,9 +6013,163 @@ VALUES
     'Admin Utama',
     'payment',
     'Transaction',
-    'Pelunasan TRX-202604-8791: 0 via tunai',
+    'Pelunasan TRX-202603-9989: 0 via tunai',
     '::1',
-    '2026-05-03 00:26:46'
+    '2026-05-21 17:24:49'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    229,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-6443: 0 via tunai',
+    '::1',
+    '2026-05-21 17:24:51'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    230,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-2545: -500 via tunai',
+    '::1',
+    '2026-05-21 17:24:54'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    231,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-2987: -500 via tunai',
+    '::1',
+    '2026-05-21 17:24:55'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    232,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-7418: 0 via tunai',
+    '::1',
+    '2026-05-21 17:24:56'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    233,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-2152: 0 via tunai',
+    '::1',
+    '2026-05-21 17:24:58'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    234,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-2662: 0 via tunai',
+    '::1',
+    '2026-05-21 17:25:01'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    235,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202603-9586: 0 via tunai',
+    '::1',
+    '2026-05-21 17:25:03'
   );
 
 # ------------------------------------------------------------
@@ -6214,14 +6370,14 @@ INSERT INTO
   )
 VALUES
   (
-    'cf1777741938833',
-    '2026-05-03',
+    'cf1779358153483',
+    '2026-05-21',
     'in',
     'Penjualan',
-    0,
-    'Pelunasan TRX-202604-8791',
-    't1775124939081',
-    '2026-05-03 00:12:18'
+    21250,
+    'Penjualan Cetak - TRX-202605-3936',
+    't1779358153481',
+    '2026-05-21 17:09:13'
   );
 INSERT INTO
   `cash_flow` (
@@ -6236,14 +6392,36 @@ INSERT INTO
   )
 VALUES
   (
-    'cf1777741941864',
-    '2026-05-03',
+    'cf1779359076473',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202604-8791',
+    't1775124939081',
+    '2026-05-21 17:24:36'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359079410',
+    '2026-05-21',
     'in',
     'Penjualan',
     0,
     'Pelunasan TRX-202604-4887',
     't1775124143835',
-    '2026-05-03 00:12:21'
+    '2026-05-21 17:24:39'
   );
 INSERT INTO
   `cash_flow` (
@@ -6258,14 +6436,14 @@ INSERT INTO
   )
 VALUES
   (
-    'cf1777741945109',
-    '2026-05-03',
+    'cf1779359082848',
+    '2026-05-21',
     'in',
     'Penjualan',
     0,
     'Pelunasan TRX-202604-3417',
     't1775058124133',
-    '2026-05-03 00:12:25'
+    '2026-05-21 17:24:42'
   );
 INSERT INTO
   `cash_flow` (
@@ -6280,14 +6458,234 @@ INSERT INTO
   )
 VALUES
   (
-    'cf1777742806181',
-    '2026-05-03',
+    'cf1779359084468',
+    '2026-05-21',
     'in',
     'Penjualan',
     0,
-    'Pelunasan TRX-202604-8791',
-    't1775124939081',
-    '2026-05-03 00:26:46'
+    'Pelunasan TRX-202604-1522',
+    't1775058089937',
+    '2026-05-21 17:24:44'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359086796',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-8009',
+    't1774971468692',
+    '2026-05-21 17:24:46'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359088097',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    -500,
+    'Pelunasan TRX-202603-1505',
+    't1774438411959',
+    '2026-05-21 17:24:48'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359089812',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-9989',
+    't1774432502919',
+    '2026-05-21 17:24:49'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359091710',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-6443',
+    't1774416180876',
+    '2026-05-21 17:24:51'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359094074',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    -500,
+    'Pelunasan TRX-202603-2545',
+    't1774173465448',
+    '2026-05-21 17:24:54'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359095460',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    -500,
+    'Pelunasan TRX-202603-2987',
+    't1774173510749',
+    '2026-05-21 17:24:55'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359096974',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-7418',
+    't1774183855102',
+    '2026-05-21 17:24:56'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359098609',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-2152',
+    't1774183908254',
+    '2026-05-21 17:24:58'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359101652',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-2662',
+    't1774374277322',
+    '2026-05-21 17:25:01'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1779359103619',
+    '2026-05-21',
+    'in',
+    'Penjualan',
+    0,
+    'Pelunasan TRX-202603-9586',
+    't1774374922291',
+    '2026-05-21 17:25:03'
   );
 
 # ------------------------------------------------------------
@@ -6307,6 +6705,10 @@ VALUES
     'percetakan_supply',
     NULL
   );
+INSERT INTO
+  `categories` (`id`, `name`, `type`, `emoji`)
+VALUES
+  ('idcard-1857', 'IDCARD', 'atk', '?');
 INSERT INTO
   `categories` (`id`, `name`, `type`, `emoji`)
 VALUES
@@ -6343,6 +6745,30 @@ VALUES
     0,
     0,
     '2026-04-02 12:19:46'
+  );
+INSERT INTO
+  `customers` (
+    `id`,
+    `name`,
+    `phone`,
+    `address`,
+    `type`,
+    `company`,
+    `total_trx`,
+    `total_spend`,
+    `created_at`
+  )
+VALUES
+  (
+    'c1779357723907',
+    'KPRI  LEMBEYAN',
+    '08133134322',
+    'LEMBEYAN',
+    'walkin',
+    'KOP MART',
+    1,
+    0,
+    '2026-05-21 17:02:03'
   );
 
 # ------------------------------------------------------------
@@ -6719,6 +7145,11 @@ VALUES
 
 
 # ------------------------------------------------------------
+# DATA DUMP FOR TABLE: digital_printing
+# ------------------------------------------------------------
+
+
+# ------------------------------------------------------------
 # DATA DUMP FOR TABLE: dp_tasks
 # ------------------------------------------------------------
 
@@ -6749,7 +7180,8 @@ INSERT INTO
     `dp_amount`,
     `is_paid`,
     `created_at`,
-    `updated_at`
+    `updated_at`,
+    `denda_batal`
   )
 VALUES
   (
@@ -6778,7 +7210,8 @@ VALUES
     0.00,
     0,
     '2026-03-23 17:02:36',
-    '2026-03-24 00:51:19'
+    '2026-03-24 00:51:19',
+    0.00
   );
 INSERT INTO
   `dp_tasks` (
@@ -6807,7 +7240,8 @@ INSERT INTO
     `dp_amount`,
     `is_paid`,
     `created_at`,
-    `updated_at`
+    `updated_at`,
+    `denda_batal`
   )
 VALUES
   (
@@ -6836,7 +7270,8 @@ VALUES
     0.00,
     0,
     '2026-03-24 00:56:31',
-    '2026-03-24 00:56:38'
+    '2026-03-24 00:56:38',
+    0.00
   );
 INSERT INTO
   `dp_tasks` (
@@ -6865,7 +7300,8 @@ INSERT INTO
     `dp_amount`,
     `is_paid`,
     `created_at`,
-    `updated_at`
+    `updated_at`,
+    `denda_batal`
   )
 VALUES
   (
@@ -6894,7 +7330,8 @@ VALUES
     0.00,
     0,
     '2026-03-24 00:53:44',
-    '2026-03-24 00:54:12'
+    '2026-03-24 00:54:12',
+    0.00
   );
 
 # ------------------------------------------------------------
@@ -7035,11 +7472,6 @@ VALUES
     '2026-04-01 15:37:35',
     'Admin'
   );
-
-# ------------------------------------------------------------
-# DATA DUMP FOR TABLE: log_notifikasi_wa
-# ------------------------------------------------------------
-
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: material_movements
@@ -7458,9 +7890,82 @@ VALUES
     '2026-03-15 12:25:14',
     '2026-03-15 12:25:14'
   );
+INSERT INTO
+  `materials` (
+    `id`,
+    `barcode`,
+    `nama_bahan`,
+    `kategori`,
+    `satuan`,
+    `harga_modal`,
+    `harga_jual`,
+    `stok_saat_ini`,
+    `stok_minimum`,
+    `lokasi_rak`,
+    `supplier_id`,
+    `is_active`,
+    `created_at`,
+    `updated_at`
+  )
+VALUES
+  (
+    'mat1779357661900',
+    'SKU-589555',
+    'ID CARD',
+    'digital',
+    'pcs',
+    4500,
+    8000,
+    500.00,
+    0.00,
+    NULL,
+    '5b0aed99-f413-423d-bdb0-b67670636438',
+    0,
+    '2026-05-21 17:01:01',
+    '2026-05-21 17:03:31'
+  );
+INSERT INTO
+  `materials` (
+    `id`,
+    `barcode`,
+    `nama_bahan`,
+    `kategori`,
+    `satuan`,
+    `harga_modal`,
+    `harga_jual`,
+    `stok_saat_ini`,
+    `stok_minimum`,
+    `lokasi_rak`,
+    `supplier_id`,
+    `is_active`,
+    `created_at`,
+    `updated_at`
+  )
+VALUES
+  (
+    'mat1779357849021',
+    'SKU-817888',
+    'ID CARD',
+    'offset',
+    'pcs',
+    4500,
+    8000,
+    500.00,
+    5.00,
+    NULL,
+    '5b0aed99-f413-423d-bdb0-b67670636438',
+    1,
+    '2026-05-21 17:04:09',
+    '2026-05-21 17:04:09'
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: offset_orders
+# ------------------------------------------------------------
+
+
+# ------------------------------------------------------------
+# DATA DUMP FOR TABLE: offset_printing
 # ------------------------------------------------------------
 
 
@@ -7947,6 +8452,36 @@ INSERT INTO
   )
 VALUES
   (
+    'p1779357921608',
+    'PRD-MPFBRITS',
+    'CETAK ID CARD',
+    'idcard-1857',
+    4500,
+    8000,
+    500,
+    4,
+    'pcs',
+    '?',
+    '2026-05-21 17:05:52',
+    '/uploads/products/product-1779357921279-429680326.jpg'
+  );
+INSERT INTO
+  `products` (
+    `id`,
+    `code`,
+    `name`,
+    `category_id`,
+    `buy_price`,
+    `sell_price`,
+    `stock`,
+    `min_stock`,
+    `unit`,
+    `emoji`,
+    `updated_at`,
+    `image`
+  )
+VALUES
+  (
     'prod-dummy-1',
     'SIDU32',
     'Buku Tulis SIDU 32',
@@ -8109,11 +8644,19 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (9, 'store_maps_url', '');
+  (
+    9,
+    'store_maps_url',
+    'https://maps.app.goo.gl/DD3kUGfTmqaZ9iDd7'
+  );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (10, 'store_logo', '');
+  (
+    10,
+    'store_logo',
+    'data:image/webp;base64,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'
+  );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
@@ -8129,15 +8672,15 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (14, 'printer_size', '80mm');
+  (14, 'printer_size', 'lx310');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (15, 'printer_name', '');
+  (15, 'printer_name', 'EPSON LX-310');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (16, 'paper_size', 'A4');
+  (16, 'paper_size', 'wartel');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
@@ -8165,15 +8708,15 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (22, 'dana_number', '');
+  (22, 'dana_number', '085655620979');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (23, 'dana_name', '');
+  (23, 'dana_name', 'SUPRIYANTO');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (24, 'bank_name', '');
+  (24, 'bank_name', 'BANK BCA');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
@@ -8181,15 +8724,23 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (26, 'bank_account_name', '');
+  (26, 'bank_account_name', 'SUPRIYANTO');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (27, 'print_prices', '[]');
+  (
+    27,
+    'print_prices',
+    '[{\"id\":\"1774179838786\",\"paper\":\"HVS A4 EPSON\",\"color\":\"bw\",\"price\":\"500\"},{\"id\":\"1774179843217\",\"paper\":\"HVS A4 EPSON\",\"color\":\"color\",\"price\":\"1000\"},{\"id\":\"1774179893993\",\"paper\":\"PRIN KERTAS COVER EPSON\",\"color\":\"bw\",\"price\":\"1500\"},{\"id\":\"1774179915393\",\"paper\":\"PRINT COPY A4 F4 CANON\",\"color\":\"bw\",\"price\":\"250\"},{\"id\":\"1774328770287\",\"paper\":\"CETAK FOTO 3R\",\"color\":\"color\",\"price\":\"3000\"}]'
+  );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (28, 'binding_prices', '[]');
+  (
+    28,
+    'binding_prices',
+    '[{\"id\":\"1774179864153\",\"name\":\"JILID BIASA PLASTIK\",\"price\":\"3500\"},{\"id\":\"1774179879153\",\"name\":\"JILID BIASA COVER\",\"price\":\"3500\"},{\"id\":\"1775124089100\",\"name\":\"Laminating A4 & F4\",\"price\":\"4000\"}]'
+  );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
@@ -8209,84 +8760,84 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
+  (31, 'install_date', '2026-05-18T13:39:05.059Z');
+INSERT INTO
+  `settings` (`id`, `key`, `value`)
+VALUES
   (
-    31,
+    32,
     'license_key',
-    'QWJhZGkgSmF5YSBDb3BpZXIgJiBQZXJjZXRha2FuOjo6MjA5OS0xMi0zMTo6Ojk4Q0E5RjA5RDc3NzRDNDgzNEJBQ0FGMEUyMkQxQjI5Ojo6eyJ0eXBlIjoicHJlbWl1bSIsIm1heF90cmFuc2FjdGlvbnMiOjk5OTk5OX06OjowOTVlNjZiNDE1OTZkZDRj'
+    'QWJhZGkgSmF5YSBDb3BpZXI6OjoyMDMwLTEyLTMxOjo6OThDQTlGMDlENzc3NEM0ODM0QkFDQUYwRTIyRDFCMjk6Ojp7fTo6OjA2OWU3ODhjNTQ3N2I1Y2M='
   );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (32, 'store_email', '');
+  (33, 'store_email', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (33, 'tax_enabled', 'false');
+  (34, 'tax_enabled', 'false');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (34, 'tax_percentage', '11');
+  (35, 'tax_percentage', '11');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (35, 'fingerprint_ip', '192.168.1.201');
+  (36, 'fingerprint_ip', '192.168.1.201');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (36, 'fingerprint_port', '4370');
+  (37, 'fingerprint_port', '4370');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (
-    37,
-    'telegram_bot_token',
-    '8522284679:AAHCnttItLVW1D27VUItp_JHlbWxe5ydi1E'
-  );
+  (38, 'telegram_bot_token', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (38, 'telegram_chat_id', '5145397788');
+  (39, 'telegram_chat_id', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (39, 'telegram_enabled', 'true');
+  (40, 'telegram_enabled', 'false');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (40, 'telegram_stok_kritis', 'true');
+  (41, 'telegram_stok_kritis', 'true');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (41, 'telegram_laporan_kasir', 'true');
+  (42, 'telegram_laporan_kasir', 'true');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (42, 'telegram_security_alert', 'true');
+  (43, 'telegram_security_alert', 'false');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (43, 'telegram_error_monitoring', 'true');
+  (44, 'telegram_error_monitoring', 'false');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (44, 'wa_gateway_url', '');
+  (45, 'wa_gateway_url', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (45, 'wa_api_key', '');
+  (46, 'wa_api_key', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (46, 'wa_session_name', 'default');
+  (47, 'wa_session_name', 'default');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (47, 'wa_sender_number', '');
+  (48, 'wa_sender_number', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
   (
-    48,
+    49,
     'wa_template_inv',
     'Halo *{{name}}*, pesanan Anda *#{{invoice}}* sebesar *{{total}}* sedang kami proses. Terima kasih!'
   );
@@ -8294,7 +8845,7 @@ INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
   (
-    49,
+    50,
     'wa_template_process',
     'Halo *{{name}}*, pesanan *#{{invoice}}* sedang dalam proses produksi/pengerjaan.'
   );
@@ -8302,7 +8853,7 @@ INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
   (
-    50,
+    51,
     'wa_template_done',
     'Halo *{{name}}*, pesanan *#{{invoice}}* sudah selesai dan siap diambil. Silakan datang ke toko.'
   );
@@ -8310,30 +8861,30 @@ INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
   (
-    51,
+    52,
     'wa_template_kasir',
     'LAPORAN KASIR: Transaksi baru *#{{invoice}}* senilai *{{total}}* oleh *{{user}}*.'
   );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (52, 'cdn_account_id', '');
+  (53, 'cdn_account_id', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (53, 'cdn_bucket_name', '');
+  (54, 'cdn_bucket_name', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (54, 'cdn_access_key', '');
+  (55, 'cdn_access_key', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (55, 'cdn_secret_key', '');
+  (56, 'cdn_secret_key', '');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (56, 'cdn_custom_domain', '');
+  (57, 'cdn_custom_domain', '');
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: spk
@@ -10009,6 +10560,28 @@ INSERT INTO
   )
 VALUES
   (
+    '5b0aed99-f413-423d-bdb0-b67670636438',
+    'PERCETAKAN AN NUR MEDIA',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    '2026-05-21 17:00:56',
+    '2026-05-21 17:00:56'
+  );
+INSERT INTO
+  `suppliers` (
+    `id`,
+    `name`,
+    `contact_person`,
+    `phone`,
+    `address`,
+    `notes`,
+    `created_at`,
+    `updated_at`
+  )
+VALUES
+  (
     'b8c0a98b-e476-44a3-a54e-f27e490eaba1',
     'ATLANTIK PONOROGO',
     'ANING',
@@ -10518,6 +11091,50 @@ VALUES
     4000,
     0
   );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1779357990463194',
+    't1779357990460',
+    NULL,
+    'CETAK ID CARD',
+    198,
+    8000,
+    1584000,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1779358153482406',
+    't1779358153481',
+    NULL,
+    'Print PRINT COPY A4 F4 CANON BW (1 Sisi)',
+    85,
+    250,
+    21250,
+    0
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: transactions
@@ -10559,10 +11176,10 @@ VALUES
     0,
     0,
     500,
-    1000,
+    500,
     500,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10601,10 +11218,10 @@ VALUES
     0,
     0,
     500,
-    1000,
+    500,
     500,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10646,7 +11263,7 @@ VALUES
     1000,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10688,7 +11305,7 @@ VALUES
     1000,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10772,7 +11389,7 @@ VALUES
     1000,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10814,7 +11431,7 @@ VALUES
     1000,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10856,7 +11473,7 @@ VALUES
     1000,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10898,7 +11515,7 @@ VALUES
     6250,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10937,10 +11554,10 @@ VALUES
     0,
     0,
     7500,
-    8000,
+    7500,
     500,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -10982,7 +11599,7 @@ VALUES
     750,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -11024,7 +11641,7 @@ VALUES
     750,
     0,
     'tunai',
-    'completed',
+    'paid',
     NULL
   );
 INSERT INTO
@@ -11152,6 +11769,90 @@ VALUES
     'tunai',
     'paid',
     NULL
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1779357990460',
+    'TRX-202605-5898',
+    '2026-05-21 17:06:30',
+    'c1779357723907',
+    'KPRI  LEMBEYAN',
+    '08133134322',
+    'u1',
+    'Admin Utama',
+    '',
+    1584000,
+    0,
+    0,
+    1584000,
+    1000000,
+    0,
+    'hutang',
+    'pending',
+    'ID CARD KOP MART'
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1779358153481',
+    'TRX-202605-3936',
+    '2026-05-21 17:09:13',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    21250,
+    0,
+    0,
+    21250,
+    21250,
+    0,
+    'tunai',
+    'paid',
+    ''
   );
 
 # ------------------------------------------------------------

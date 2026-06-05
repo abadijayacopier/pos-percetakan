@@ -7,7 +7,8 @@ const { verifyToken } = require('../middleware/auth');
 router.get('/form-data', verifyToken, async (req, res) => {
     try {
         const [customers] = await req.db.query('SELECT id, name, phone FROM customers ORDER BY name ASC');
-        const [products] = await req.db.query('SELECT id, nama_produk, harga_base, satuan, is_best_seller FROM offset_products ORDER BY nama_produk ASC');
+        // Fetch products directly from materials table where kategori = 'offset'
+        const [products] = await req.db.query("SELECT id, nama_bahan AS nama_produk, harga_jual AS harga_base, satuan, 0 AS is_best_seller FROM materials WHERE kategori = 'offset' AND is_active = TRUE ORDER BY nama_bahan ASC");
         const [materials] = await req.db.query('SELECT id, nama_bahan, kategori, satuan, harga_modal, harga_jual, stok_saat_ini FROM materials WHERE is_active = TRUE ORDER BY nama_bahan ASC');
         res.json({ customers, products, materials });
     } catch (error) {

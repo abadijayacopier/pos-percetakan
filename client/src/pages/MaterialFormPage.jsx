@@ -27,8 +27,8 @@ const Toast = ({ msg, type, onClose }) => (
 
 const fmt = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v || 0);
 
-export default function MaterialFormPage({ onNavigate, pageState, storeSettings }) {
-    const initial = pageState?.material || null;
+export default function MaterialFormPage({ onNavigate, pageState, material, storeSettings }) {
+    const initial = material || pageState?.material || null;
     const [form, setForm] = useState({
         nama_bahan: initial?.nama_bahan || '',
         kategori: initial?.kategori || '',
@@ -204,7 +204,7 @@ export default function MaterialFormPage({ onNavigate, pageState, storeSettings 
                 harga_jual: form.harga_jual || 0,
                 stok_saat_ini: form.stok_saat_ini || 0,
                 stok_minimum: form.stok_minimum || 0,
-                is_active: 1
+                is_active: initial?.is_active !== undefined ? initial.is_active : 1
             };
             if (initial) {
                 await api.put(`/materials/${initial.id}`, payload);

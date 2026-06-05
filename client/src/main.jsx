@@ -6,6 +6,15 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 
+// Force unregister service workers to avoid stale caching during development/local run
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister();
+    }
+  }).catch(err => console.warn('Service Worker unregistration failed:', err));
+}
+
 // Set default theme
 if (!document.documentElement.getAttribute('data-theme')) {
   document.documentElement.setAttribute('data-theme', localStorage.getItem('pos_theme') || 'dark');

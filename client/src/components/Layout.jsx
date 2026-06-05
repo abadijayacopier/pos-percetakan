@@ -202,6 +202,7 @@ export default function Layout({ activePage, onNavigate, children, isFullscreen,
         'manajemen-desainer': 'Manajemen Operator Desain',
         'dashboard-desainer': 'Dashboard Desainer',
         'production-queue': 'Antrean Produksi',
+        'tambah-bahan': 'Stok Bahan Cetak',
     };
 
     return (
