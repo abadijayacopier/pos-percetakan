@@ -7,7 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { formatDateTime, printViaBluetooth, listQZPrinters } from '../utils';
 import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiEyeOff, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey, FiSend, FiDatabase, FiCloud } from 'react-icons/fi';
+import { FiSettings, FiFile, FiUsers, FiPrinter, FiEdit, FiTrash2, FiPlus, FiSave, FiPackage, FiCpu, FiDollarSign, FiFileText, FiSearch, FiClock, FiCheckCircle, FiAlertCircle, FiX, FiDownload, FiUpload, FiRefreshCw, FiCheck, FiTruck, FiCalendar, FiMessageCircle, FiHome, FiBriefcase, FiStar, FiBox, FiActivity, FiLayers, FiList, FiChevronRight, FiChevronDown, FiEye, FiEyeOff, FiBook, FiTag, FiInfo, FiFolder, FiZap, FiSun, FiMoon, FiMonitor, FiImage, FiShield, FiKey, FiSend, FiDatabase, FiCloud, FiCreditCard } from 'react-icons/fi';
 import ActivationModal from '../components/ActivationModal';
 import GeneralSettings from '../components/settings/GeneralSettings';
 import PrinterSettings from '../components/settings/PrinterSettings';
@@ -20,6 +20,7 @@ import WhatsAppSettings from '../components/settings/WhatsAppSettings';
 import TelegramSettings from '../components/settings/TelegramSettings';
 import CDNSettings from '../components/settings/CDNSettings';
 import SystemSettings from '../components/settings/SystemSettings';
+import MemberCardSettings from '../components/settings/MemberCardSettings';
 import { resizeImage } from '../utils';
 
 
@@ -510,6 +511,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
         { id: 'telegram', icon: <FiSend />, text: 'Telegram Integration', adminOnly: true },
         { id: 'cdn', icon: <FiDatabase />, text: 'CDN & Cloud Storage', adminOnly: true },
         { id: 'license', icon: <FiShield />, text: 'Lisensi', adminOnly: true },
+        { id: 'member-card', icon: <FiCreditCard />, text: 'Kartu Member', adminOnly: true },
     ].filter(t => !t.adminOnly || isAdmin);
 
     return (
@@ -559,6 +561,7 @@ export default function SettingsPage({ onNavigate, pageState }) {
                                 { id: 'cdn', title: 'CDN & CLOUD STORAGE', desc: 'Konfigurasi Cloudflare R2 dan custom domain CDN.', icon: <FiDatabase />, color: 'blue', adminOnly: true },
                                 { id: 'backup', title: 'BACKUP & RESTORE', desc: 'Cadangkan dan pulihkan database sistem.', icon: <FiSave />, color: 'teal', adminOnly: true },
                                 { id: 'license', title: 'LISENSI & KEAMANAN', desc: 'Status aktivasi dan lisensi aplikasi.', icon: <FiShield />, color: 'red', adminOnly: true },
+                                { id: 'member-card', title: 'KARTU MEMBER', desc: 'Cetak kartu member pelanggan (ID Card 86×54mm).', icon: <FiCreditCard />, color: 'sky', adminOnly: true },
                                 { id: 'system', title: 'SYSTEM UPDATE', desc: 'Cek pembaruan sistem dan versi aplikasi.', icon: <FiRefreshCw />, color: 'blue', protected: true, adminOnly: true },
                             ].filter(cat => (!cat.protected || (cat.protected && licenseInfo.activated)) && (!cat.adminOnly || isAdmin)).map((cat, idx) => (
                                 <motion.div
@@ -1054,6 +1057,16 @@ export default function SettingsPage({ onNavigate, pageState }) {
 
                                 {activeTab === 'system' && (
                                     <SystemSettings />
+                                )}
+
+                                {activeTab === 'member-card' && (
+                                    <MemberCardSettings
+                                        storeName={storeName}
+                                        storeAddress={storeAddress}
+                                        storePhone={storePhone}
+                                        storeEmail={storeEmail}
+                                        storeLogo={storeLogo}
+                                    />
                                 )}
 
 
