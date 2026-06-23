@@ -335,6 +335,10 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }).filter(item => item.quantity > 0));
     };
 
+    const updateItemNote = (id, note) => {
+        setCart(prev => prev.map(item => item.id === id ? { ...item, note } : item));
+    };
+
     const removeAll = async () => {
         if (cart.length === 0) return;
         const { isConfirmed } = await Swal.fire({
@@ -1305,9 +1309,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                                         <X size={20} />
                                     </button>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right mb-3">
                                     <div className="text-2xl font-black text-slate-800 dark:text-white tracking-tighter">{formatRupiah(item.sellPrice * item.quantity)}</div>
                                 </div>
+                                <input
+                                    type="text"
+                                    value={item.note || ''}
+                                    onChange={(e) => updateItemNote(item.id, e.target.value)}
+                                    placeholder="✏ Catatan item..."
+                                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-[11px] text-slate-500 dark:text-slate-400 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                />
                             </div>
                         ))
                     )}

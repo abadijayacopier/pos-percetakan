@@ -120,6 +120,9 @@ const DotMatrixLayout = ({ receiptData, printSettings, formatCurrency, safeDate 
                                 <td className="py-1 px-1 text-center">{idx + 1}</td>
                                 <td className="py-1 px-1 uppercase">
                                     <div className="font-bold">{item.name}</div>
+                                    {item.note && (
+                                        <div className="text-[9px] italic opacity-70 normal-case">* {item.note}</div>
+                                    )}
                                     {item.meta && (
                                         <div className="text-[9px] lowercase italic opacity-70">
                                             {item.type === 'fotocopy' && `${item.meta.paper} | ${item.meta.color === 'bw' ? 'B/W' : 'Warna'} | ${item.meta.side} Sisi`}
@@ -350,6 +353,9 @@ const InvoiceLayout = ({ receiptData, printSettings, formatCurrency, safeDate })
                                 <td className="py-4 pr-4 text-center font-bold text-slate-400 print:text-black print:py-1.5">{idx + 1}</td>
                                 <td className="py-4 pr-4 print:py-1.5">
                                     <p className="font-black text-slate-900 text-[13px] mb-0.5 uppercase tracking-tight print:text-black">{item.name}</p>
+                                    {item.note && (
+                                        <p className="text-[10px] italic text-slate-500 font-medium normal-case print:text-slate-700">* {item.note}</p>
+                                    )}
                                     {item.meta && (
                                         <div className="flex flex-wrap gap-2 text-[9px] text-slate-500 font-bold uppercase tracking-widest print:text-slate-700">
                                             {item.type === 'fotocopy' && (
@@ -568,6 +574,9 @@ const ReceiptProMax = ({
                                 <div className="text-[10px] font-bold text-slate-400 font-code">
                                     {qty} x {formatCurrency(price)}
                                 </div>
+                                {item.note && (
+                                    <div className="text-[10px] italic text-slate-400 mt-1">* {item.note}</div>
+                                )}
                             </div>
                         );
                     })}
@@ -622,6 +631,13 @@ const ReceiptProMax = ({
                     </div>
                 </div>
 
+                {/* Notes Section */}
+                {receiptData.notes && (
+                    <div className="mt-6 pt-4 border-t border-dashed border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Catatan:</p>
+                        <p className="text-[10px] leading-relaxed whitespace-pre-wrap text-slate-600">{receiptData.notes}</p>
+                    </div>
+                )}
 
                 {/* Footer */}
                 <div className="mt-10 text-center flex flex-col items-center">

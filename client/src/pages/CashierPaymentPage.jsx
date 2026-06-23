@@ -8,7 +8,7 @@ import {
     FiCreditCard, FiSearch, FiCheckCircle, FiClock,
     FiDollarSign, FiChevronLeft, FiChevronRight,
     FiPrinter, FiAlertTriangle, FiInfo, FiTrendingUp,
-    FiEdit, FiTrash2, FiMessageCircle
+    FiEdit, FiTrash2, FiMessageCircle, FiPlus, FiFileText
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,6 +26,8 @@ export default function CashierPaymentPage({ onNavigate }) {
 
     const [selectedEditTrx, setSelectedEditTrx] = useState(null);
     const [editForm, setEditForm] = useState({ customerName: '', paidAmount: '', paymentType: '', notes: '' });
+    const [editItems, setEditItems] = useState([]);
+    const [editDiscount, setEditDiscount] = useState(0);
     const [selectedDeleteTrx, setSelectedDeleteTrx] = useState(null);
     const [settleNotes, setSettleNotes] = useState('');
 
@@ -74,13 +76,22 @@ export default function CashierPaymentPage({ onNavigate }) {
             date: formatDateTime(trx.settledAt || trx.date || new Date().toISOString()),
             cashier: user?.name || 'Kasir',
             customer: trx.customerName || 'Umum',
-            items: trx.items || [],
+            items: (trx.items || []).map(i => ({
+                name: i.name || 'Item',
+                qty: i.qty || 1,
+                price: i.price || 0,
+                subtotal: i.subtotal || (i.qty * i.price) || 0,
+                note: i.note || ''
+            })),
             subtotal: trx.subtotal || trx.total,
-            tax: trx.tax || 0,
+            discount: trx.discount || 0,
+            tax: trx.tax || trx.tax_amount || 0,
             total: trx.total,
             paymentMethod: trx.paymentType || 'Tunai',
             paid: paid,
-            change: paid > trx.total ? paid - trx.total : 0
+            changeAmount: trx.change_amount || trx.changeAmount || (paid > trx.total ? paid - trx.total : 0),
+            notes: trx.notes || '',
+            status: trx.status || (paid >= trx.total ? 'paid' : 'debt')
         };
         onNavigate('print-receipt', { receipt: receiptData });
     };
@@ -193,14 +204,65 @@ export default function CashierPaymentPage({ onNavigate }) {
             paymentType: trx.paymentType || 'tunai',
             notes: trx.notes || ''
         });
+        setEditDiscount(trx.discount || 0);
+        setEditItems((trx.items || []).map((item, idx) => ({
+            _key: `ei-${idx}-${Date.now()}`,
+            productId: item.productId || null,
+            name: item.name || '',
+            qty: item.qty || 1,
+            price: item.price || 0,
+            note: item.note || '',
+            discount: item.discount || 0
+        })));
+    };
+
+    const editSubtotal = editItems.reduce((s, i) => s + ((i.qty || 0) * (i.price || 0)), 0);
+    const editTotal = editSubtotal - editDiscount;
+
+    const addEditItem = () => {
+        setEditItems(prev => [...prev, {
+            _key: `new-${Date.now()}-${Math.random()}`,
+            productId: null,
+            name: '',
+            qty: 1,
+            price: 0,
+            note: '',
+            discount: 0
+        }]);
+    };
+
+    const updateEditItem = (key, field, value) => {
+        setEditItems(prev => prev.map(i => i._key === key ? { ...i, [field]: value } : i));
+    };
+
+    const removeEditItem = (key) => {
+        setEditItems(prev => prev.filter(i => i._key !== key));
     };
 
     const handleEdit = async () => {
         if (!selectedEditTrx) return;
+        if (editItems.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Kosong', text: 'Minimal harus ada 1 item', timer: 2500 });
+            return;
+        }
         try {
-            await api.put(`/transactions/${selectedEditTrx.id}`, editForm);
+            await api.put(`/transactions/${selectedEditTrx.id}`, {
+                ...editForm,
+                items: editItems.map(i => ({
+                    productId: i.productId,
+                    name: i.name,
+                    qty: Number(i.qty) || 1,
+                    price: Number(i.price) || 0,
+                    note: i.note || '',
+                    discount: i.discount || 0
+                })),
+                subtotal: editSubtotal,
+                discount: editDiscount,
+                total: editTotal
+            });
             setSelectedEditTrx(null);
             reload();
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Transaksi berhasil diupdate!', timer: 2000, showConfirmButton: false });
         } catch (e) {
             console.error(e);
             Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengedit transaksi', timer: 3000 });
@@ -662,51 +724,166 @@ export default function CashierPaymentPage({ onNavigate }) {
                     </div>
                 }
             >
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">Nama Pelanggan / Catatan</label>
-                        <input
-                            type="text"
-                            value={editForm.customerName}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, customerName: e.target.value }))}
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">Keterangan / Catatan Transaksi</label>
-                        <textarea
-                            value={editForm.notes}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 min-h-[80px] resize-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">Nominal Dibayar (Lunas jika ≥ Total)</label>
-                        <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none group-focus-within:text-blue-500 transition-colors">Rp</div>
+                <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+                    {/* Customer & Notes */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nama Pelanggan</label>
                             <input
                                 type="text"
-                                value={editForm.paidAmount !== '' ? Number(editForm.paidAmount).toLocaleString('id-ID') : ''}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                    setEditForm(prev => ({ ...prev, paidAmount: val }));
-                                }}
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 transition-all"
+                                value={editForm.customerName}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, customerName: e.target.value }))}
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 font-bold text-sm"
                             />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Metode Pembayaran</label>
+                            <select
+                                value={editForm.paymentType}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, paymentType: e.target.value }))}
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 appearance-none font-bold text-sm"
+                            >
+                                <option value="tunai">Tunai</option>
+                                <option value="transfer">Transfer Bank</option>
+                                <option value="qris">QRIS</option>
+                                <option value="hutang">Hutang / Pending</option>
+                            </select>
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-bold text-slate-500 mb-1 block">Metode Pembayaran</label>
-                        <select
-                            value={editForm.paymentType}
-                            onChange={(e) => setEditForm(prev => ({ ...prev, paymentType: e.target.value }))}
-                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 appearance-none"
-                        >
-                            <option value="tunai">Tunai</option>
-                            <option value="transfer">Transfer Bank</option>
-                            <option value="qris">QRIS</option>
-                            <option value="hutang">Hutang / Pending</option>
-                        </select>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Catatan Transaksi</label>
+                        <textarea
+                            value={editForm.notes}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 min-h-[60px] resize-none text-sm font-bold"
+                            placeholder="Catatan umum transaksi..."
+                        />
+                    </div>
+
+                    {/* Items Editor */}
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <FiFileText size={14} /> Daftar Barang ({editItems.length})
+                            </h4>
+                            <button
+                                onClick={addEditItem}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all"
+                            >
+                                <FiPlus size={14} /> Tambah
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {editItems.map((item, idx) => (
+                                <div key={item._key} className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 space-y-3 group relative">
+                                    <button
+                                        onClick={() => removeEditItem(item._key)}
+                                        className="absolute top-3 right-3 p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all opacity-60 group-hover:opacity-100"
+                                        title="Hapus item"
+                                    >
+                                        <FiTrash2 size={14} />
+                                    </button>
+                                    <div className="flex items-start gap-3 pr-8">
+                                        <span className="text-[10px] font-black text-slate-300 mt-3 w-5 text-center">{idx + 1}</span>
+                                        <div className="flex-1 space-y-2">
+                                            <input
+                                                type="text"
+                                                value={item.name}
+                                                onChange={(e) => updateEditItem(item._key, 'name', e.target.value)}
+                                                placeholder="Nama barang / jasa"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                                            />
+                                            <div className="flex gap-2">
+                                                <div className="w-20">
+                                                    <label className="text-[8px] font-bold text-slate-400 uppercase">Qty</label>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.qty}
+                                                        onChange={(e) => updateEditItem(item._key, 'qty', parseInt(e.target.value) || 1)}
+                                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm font-bold text-center focus:border-blue-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <label className="text-[8px] font-bold text-slate-400 uppercase">Harga Satuan</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">Rp</span>
+                                                        <input
+                                                            type="text"
+                                                            value={item.price !== '' ? Number(item.price).toLocaleString('id-ID') : ''}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                updateEditItem(item._key, 'price', parseInt(val) || 0);
+                                                            }}
+                                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="w-28 text-right pt-4">
+                                                    <span className="text-sm font-black text-blue-600">{formatRupiah((item.qty || 0) * (item.price || 0))}</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={item.note}
+                                                onChange={(e) => updateEditItem(item._key, 'note', e.target.value)}
+                                                placeholder="Catatan item (opsional)"
+                                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-[11px] text-slate-500 focus:border-blue-500 outline-none transition-all italic"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {editItems.length === 0 && (
+                                <div className="text-center py-8 text-slate-300 dark:text-slate-600">
+                                    <FiFileText size={32} className="mx-auto mb-2 opacity-30" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">Belum ada item</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Totals */}
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Subtotal</span>
+                            <span className="font-black text-slate-700 dark:text-slate-200">{formatRupiah(editSubtotal)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Diskon</span>
+                            <div className="relative w-40">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-rose-400 font-bold">-Rp</span>
+                                <input
+                                    type="text"
+                                    value={editDiscount !== '' ? Number(editDiscount).toLocaleString('id-ID') : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setEditDiscount(parseInt(val) || 0);
+                                    }}
+                                    className="w-full bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg pl-11 pr-3 py-1.5 text-sm font-black text-rose-600 text-right focus:border-rose-500 outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
+                            <span className="font-black text-slate-500 uppercase tracking-widest text-[10px]">Total Akhir</span>
+                            <span className="text-2xl font-black text-blue-600 tracking-tighter">{formatRupiah(editTotal)}</span>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Nominal Dibayar (Lunas jika ≥ Total)</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                                <input
+                                    type="text"
+                                    value={editForm.paidAmount !== '' ? Number(editForm.paidAmount).toLocaleString('id-ID') : ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/[^0-9]/g, '');
+                                        setEditForm(prev => ({ ...prev, paidAmount: val }));
+                                    }}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </Modal>

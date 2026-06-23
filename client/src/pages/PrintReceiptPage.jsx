@@ -133,22 +133,26 @@ export default function PrintReceiptPage({ onNavigate, receipt, transactionId, p
                     if (trx) {
                         setReceiptData({
                             invoiceNo: trx.invoiceNo || trx.invoice_no,
-                            date: trx.date, // Pass raw date to let component handle formatting
+                            date: trx.date,
                             cashier: trx.userName || trx.user_name || user?.name || 'Kasir',
                             customer: trx.customer_name || trx.customerName || trx.customer || 'Umum',
                             items: (trx.items || []).map(i => ({
-                                desc: i.name || 'Item Cetak',
+                                name: i.name || i.desc || 'Item Cetak',
+                                desc: i.name || i.desc || 'Item Cetak',
                                 qty: i.qty || 1,
+                                price: i.price || 0,
                                 total: i.subtotal || 0,
-                                note: ''
+                                subtotal: i.subtotal || 0,
+                                note: i.note || ''
                             })),
                             subtotal: trx.subtotal || trx.total,
-                            tax: trx.tax || 0,
+                            discount: trx.discount || 0,
+                            tax: trx.tax || trx.taxAmount || trx.tax_amount || 0,
                             total: trx.total,
                             paymentType: trx.paymentType || trx.payment_type || 'Tunai',
                             paid: trx.paid || 0,
                             changeAmount: trx.changeAmount || trx.change_amount || 0,
-                            notes: trx.notes || '', // Added missing notes
+                            notes: trx.notes || '',
                             status: trx.status || (trx.paid >= trx.total ? 'paid' : 'debt')
                         });
                     }

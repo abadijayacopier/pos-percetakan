@@ -4,6 +4,19 @@ const { masterPool } = require('../config/database');
 const { verifyToken, requireRole } = require('../middleware/auth');
 const { sendInvoiceNotification, checkCriticalStock } = require('../utils/notificationHelper');
 
+// Auto-migrate: add note column to transaction_details (safe to re-run)
+const _migrated = new Set();
+router.use(async (req, res, next) => {
+    try {
+        const k = req.db?.pool?.config?.connectionConfig?.database || 'default';
+        if (!_migrated.has(k)) {
+            _migrated.add(k);
+            await req.db.query('ALTER TABLE transaction_details ADD COLUMN note TEXT DEFAULT NULL').catch(() => {});
+        }
+    } catch(e) {}
+    next();
+});
+
 // 1. GET Semua Transaksi
 router.get('/', verifyToken, async (req, res) => {
     try {
@@ -30,7 +43,8 @@ router.get('/', verifyToken, async (req, res) => {
                         qty: d.qty,
                         price: d.price,
                         subtotal: d.subtotal,
-                        discount: d.discount
+                        discount: d.discount,
+                        note: d.note || ''
                     });
                 });
             }
@@ -182,9 +196,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
 
             await connection.query(`
         INSERT INTO transaction_details 
-        (id, transaction_id, product_id, name, qty, price, subtotal, discount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [detailId, newTrxId, productId, item.name, item.qty, item.price, item.subtotal, item.discount || 0]);
+        (id, transaction_id, product_id, name, qty, price, subtotal, discount, note)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [detailId, newTrxId, productId, item.name, item.qty, item.price, item.subtotal, item.discount || 0, item.note || null]);
 
             if (item.source === 'atk' && productId) {
                 await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [item.qty, productId]);
@@ -266,7 +280,7 @@ router.get('/:id', verifyToken, async (req, res) => {
         if (trx.length === 0) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
 
         const [items] = await req.db.query(`
-            SELECT product_id AS productId, name, qty, price, subtotal, discount, CASE WHEN product_id IS NOT NULL THEN 'atk' ELSE 'fc' END as source
+            SELECT product_id AS productId, name, qty, price, subtotal, discount, note, CASE WHEN product_id IS NOT NULL THEN 'atk' ELSE 'fc' END as source
             FROM transaction_details WHERE transaction_id = ?
         `, [req.params.id]);
 
@@ -311,23 +325,54 @@ router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, 
     }
 });
 
-// 5b. Update Transaksi (Edit General)
+// 5b. Update Transaksi (Edit General + Items)
 router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
+    const connection = await req.db.getConnection();
     try {
-        const { customerName, paidAmount, paymentType, notes, status } = req.body;
-        
-        // Map frontend status 'Lunas'/'Cicil' to backend status 'paid'/'debt' if provided
+        await connection.beginTransaction();
+        const { customerName, paidAmount, paymentType, notes, status, items, subtotal: reqSubtotal, total: reqTotal, discount: reqDiscount } = req.body;
+
         let dbStatus = status;
         if (status === 'Lunas') dbStatus = 'paid';
         if (status === 'Cicil') dbStatus = 'debt';
 
-        await req.db.query(
-            'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status) WHERE id = ?',
-            [customerName, paidAmount, paymentType, notes, dbStatus || null, req.params.id]
-        );
+        if (items && items.length > 0) {
+            const newSubtotal = reqSubtotal || items.reduce((s, i) => s + ((i.qty || 1) * (i.price || 0)), 0);
+            const newDiscount = reqDiscount !== undefined ? reqDiscount : 0;
+            const newTotal = reqTotal || (newSubtotal - newDiscount);
+
+            await connection.query(
+                'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status), subtotal = ?, discount = ?, total = ? WHERE id = ?',
+                [customerName, paidAmount, paymentType, notes, dbStatus || null, newSubtotal, newDiscount, newTotal, req.params.id]
+            );
+
+            await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
+
+            for (const item of items) {
+                const detailId = 'td' + Date.now() + Math.floor(Math.random() * 10000);
+                await connection.query(
+                    'INSERT INTO transaction_details (id, transaction_id, product_id, name, qty, price, subtotal, discount, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [detailId, req.params.id, item.productId || null, item.name, item.qty || 1, item.price || 0, (item.qty || 1) * (item.price || 0), item.discount || 0, item.note || null]
+                );
+            }
+        } else {
+            await connection.query(
+                'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status) WHERE id = ?',
+                [customerName, paidAmount, paymentType, notes, dbStatus || null, req.params.id]
+            );
+        }
+
+        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'edit_transaction', 'Transaction', `Edit TRX ${req.params.id}`, req.ip || null]).catch(() => {});
+
+        await connection.commit();
         res.json({ message: 'Transaksi diupdate!' });
     } catch (error) {
-        res.status(500).json({ message: 'Gagal update transaksi' });
+        if (connection) await connection.rollback();
+        console.error('Edit transaction error:', error);
+        res.status(500).json({ message: 'Gagal update transaksi: ' + error.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
