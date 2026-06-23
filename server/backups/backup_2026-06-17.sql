@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `activity_log` (
   CONSTRAINT `activity_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE
   SET
   NULL
-) ENGINE = InnoDB AUTO_INCREMENT = 238 DEFAULT CHARSET = utf8;
+) ENGINE = InnoDB AUTO_INCREMENT = 275 DEFAULT CHARSET = utf8;
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: attendance
@@ -858,7 +858,7 @@ CREATE TABLE IF NOT EXISTS `spk_logs` (
   CONSTRAINT `fk_spklog_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE
   SET
   NULL
-) ENGINE = InnoDB AUTO_INCREMENT = 51 DEFAULT CHARSET = utf8 COMMENT = 'Log aktivitas produksi SPK';
+) ENGINE = InnoDB AUTO_INCREMENT = 52 DEFAULT CHARSET = utf8 COMMENT = 'Log aktivitas produksi SPK';
 
 # ------------------------------------------------------------
 # SCHEMA DUMP FOR TABLE: spk_payments
@@ -6215,6 +6215,820 @@ VALUES
     '::1',
     '2026-05-22 19:15:52'
   );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    238,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::1',
+    NULL,
+    '2026-05-25 21:46:22'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    239,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::1',
+    NULL,
+    '2026-06-05 11:48:42'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    240,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-1953 total 5000',
+    '::1',
+    '2026-06-05 11:54:28'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    241,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::ffff:127.0.0.1',
+    NULL,
+    '2026-06-05 12:22:47'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    242,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202605-5898: 584000 via tunai',
+    '::ffff:127.0.0.1',
+    '2026-06-05 12:24:28'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    243,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::ffff:127.0.0.1',
+    NULL,
+    '2026-06-05 12:31:14'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    244,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::ffff:127.0.0.1',
+    '2026-06-05 13:16:27'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    245,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::ffff:127.0.0.1',
+    '2026-06-05 13:23:09'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    246,
+    'u1',
+    'Admin Utama',
+    'CREATE_PRODUCT',
+    'Gantungan Kunci',
+    'Tambah produk: Gantungan Kunci (PRD-MQ29DUZ3)',
+    '::1',
+    '2026-06-06 18:17:26'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    247,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-4394 total 10000',
+    '::1',
+    '2026-06-06 18:18:02'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    248,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::ffff:100.100.30.7',
+    NULL,
+    '2026-06-07 00:28:53'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    249,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::ffff:100.100.30.17',
+    NULL,
+    '2026-06-07 00:29:53'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    250,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-2685 total 1750',
+    '::1',
+    '2026-06-07 06:41:21'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    251,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-8389 total 18750',
+    '::1',
+    '2026-06-07 11:37:14'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    252,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-6437 total 3500',
+    '::1',
+    '2026-06-08 22:34:31'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    253,
+    'u1',
+    'Admin Utama',
+    'LOGIN',
+    NULL,
+    'Login sukses ke Toko ID: 1 via IP: ::1',
+    NULL,
+    '2026-06-15 09:20:10'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    254,
+    'u1',
+    'Admin Utama',
+    'CREATE_PRODUCT',
+    'PIGORA 10 R (20X30)',
+    'Tambah produk: PIGORA 10 R (20X30) (PRD-MQEL7TKG)',
+    '::1',
+    '2026-06-15 09:21:54'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    255,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-6375 total 18750',
+    '::1',
+    '2026-06-16 14:48:21'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    256,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 14:49:12'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    257,
+    'u1',
+    'Admin Utama',
+    'CREATE_CUSTOMER',
+    'MBAK ERNA PAUD',
+    'Tambah pelanggan: MBAK ERNA PAUD',
+    '::1',
+    '2026-06-16 14:50:47'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    258,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-8675 total 97500',
+    '::1',
+    '2026-06-16 14:51:13'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    259,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202606-4394: 10000 via tunai',
+    '::1',
+    '2026-06-16 14:51:32'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    260,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202606-2685: 1750 via tunai',
+    '::1',
+    '2026-06-16 14:51:34'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    261,
+    'u1',
+    'Admin Utama',
+    'payment',
+    'Transaction',
+    'Pelunasan TRX-202606-8389: 18750 via tunai',
+    '::1',
+    '2026-06-16 14:51:36'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    262,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 14:53:13'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    263,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:05:30'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    264,
+    'u1',
+    'Admin Utama',
+    'CREATE_CUSTOMER',
+    'ENI SULISTIANA PAUD',
+    'Tambah pelanggan: ENI SULISTIANA PAUD',
+    '::1',
+    '2026-06-16 15:26:15'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    265,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-2662 total 67500',
+    '::1',
+    '2026-06-16 15:26:52'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    266,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:30:17'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    267,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:30:25'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    268,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:30:39'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    269,
+    'u1',
+    'Admin Utama',
+    'ADD_TRANSACTION',
+    'Transaction',
+    'Invoice TRX-202606-2766 total 15000',
+    '::1',
+    '2026-06-16 15:31:14'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    270,
+    'u1',
+    'Admin Utama',
+    'CREATE_CUSTOMER',
+    'ANJAR PAUD',
+    'Tambah pelanggan: ANJAR PAUD',
+    '::1',
+    '2026-06-16 15:34:39'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    271,
+    'u1',
+    'Admin Utama',
+    'UPDATE_CUSTOMER',
+    'ENI SULISTIANA TK',
+    'Update pelanggan: ENI SULISTIANA TK',
+    '::1',
+    '2026-06-16 15:34:50'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    272,
+    'u1',
+    'Admin Utama',
+    'UPDATE_CUSTOMER',
+    'MBAK ERNA TK',
+    'Update pelanggan: MBAK ERNA TK',
+    '::1',
+    '2026-06-16 15:35:03'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    273,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:35:54'
+  );
+INSERT INTO
+  `activity_log` (
+    `id`,
+    `user_id`,
+    `user_name`,
+    `action`,
+    `target`,
+    `detail`,
+    `ip_address`,
+    `timestamp`
+  )
+VALUES
+  (
+    274,
+    'u1',
+    'Admin Utama',
+    'UPDATE_SETTINGS',
+    'System',
+    'Update 49 pengaturan sistem',
+    '::1',
+    '2026-06-16 15:41:20'
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: attendance
@@ -6731,6 +7545,160 @@ VALUES
     't1774374922291',
     '2026-05-21 17:25:03'
   );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1780635268895',
+    '2026-06-05',
+    'in',
+    'Penjualan',
+    5000,
+    'Penjualan Cetak - TRX-202606-1953',
+    't1780635268889',
+    '2026-06-05 11:54:28'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1780637068601',
+    '2026-06-05',
+    'in',
+    'Penjualan',
+    584000,
+    'Pelunasan TRX-202605-5898',
+    't1779357990460',
+    '2026-06-05 12:24:28'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1780932871661',
+    '2026-06-08',
+    'in',
+    'Penjualan',
+    3500,
+    'Penjualan Cetak - TRX-202606-6437',
+    't1780932871652',
+    '2026-06-08 22:34:31'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1781596101114',
+    '2026-06-16',
+    'in',
+    'Penjualan',
+    18750,
+    'Penjualan Cetak - TRX-202606-6375',
+    't1781596101102',
+    '2026-06-16 14:48:21'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1781596292716',
+    '2026-06-16',
+    'in',
+    'Penjualan',
+    10000,
+    'Pelunasan TRX-202606-4394',
+    't1780744682670',
+    '2026-06-16 14:51:32'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1781596294366',
+    '2026-06-16',
+    'in',
+    'Penjualan',
+    1750,
+    'Pelunasan TRX-202606-2685',
+    't1780789281303',
+    '2026-06-16 14:51:34'
+  );
+INSERT INTO
+  `cash_flow` (
+    `id`,
+    `date`,
+    `type`,
+    `category`,
+    `amount`,
+    `description`,
+    `reference_id`,
+    `created_at`
+  )
+VALUES
+  (
+    'cf1781596296032',
+    '2026-06-16',
+    'in',
+    'Penjualan',
+    18750,
+    'Pelunasan TRX-202606-8389',
+    't1780807034360',
+    '2026-06-16 14:51:36'
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: categories
@@ -6757,6 +7725,10 @@ INSERT INTO
   `categories` (`id`, `name`, `type`, `emoji`)
 VALUES
   ('kertas-2867', 'KERTAS', 'atk', '?');
+INSERT INTO
+  `categories` (`id`, `name`, `type`, `emoji`)
+VALUES
+  ('pigora-7038', 'PIGORA', 'atk', '?');
 INSERT INTO
   `categories` (`id`, `name`, `type`, `emoji`)
 VALUES
@@ -6813,6 +7785,78 @@ VALUES
     1,
     0,
     '2026-05-21 17:02:03'
+  );
+INSERT INTO
+  `customers` (
+    `id`,
+    `name`,
+    `phone`,
+    `address`,
+    `type`,
+    `company`,
+    `total_trx`,
+    `total_spend`,
+    `created_at`
+  )
+VALUES
+  (
+    'c1781596247440',
+    'MBAK ERNA TK',
+    '6285895773474',
+    'Kediren Rt 02',
+    'walkin',
+    'TK  Kediren',
+    2,
+    0,
+    '2026-06-16 14:50:47'
+  );
+INSERT INTO
+  `customers` (
+    `id`,
+    `name`,
+    `phone`,
+    `address`,
+    `type`,
+    `company`,
+    `total_trx`,
+    `total_spend`,
+    `created_at`
+  )
+VALUES
+  (
+    'c1781598375864',
+    'ENI SULISTIANA TK',
+    '085755632262',
+    'Kediren Ledok',
+    'walkin',
+    'TK Kediren',
+    1,
+    0,
+    '2026-06-16 15:26:15'
+  );
+INSERT INTO
+  `customers` (
+    `id`,
+    `name`,
+    `phone`,
+    `address`,
+    `type`,
+    `company`,
+    `total_trx`,
+    `total_spend`,
+    `created_at`
+  )
+VALUES
+  (
+    'c1781598879393',
+    'ANJAR PAUD',
+    '085236606785',
+    'Kediren',
+    'walkin',
+    'PAUD Kediren',
+    0,
+    0,
+    '2026-06-16 15:34:39'
   );
 
 # ------------------------------------------------------------
@@ -7416,7 +8460,7 @@ VALUES
     'HVS A4',
     'bw',
     '2',
-    400,
+    200,
     'HVS A4 - B/W - Bolak-balik'
   );
 INSERT INTO
@@ -7438,7 +8482,7 @@ VALUES
     'HVS F4',
     'bw',
     '2',
-    400,
+    200,
     'HVS F4 - B/W - Bolak-balik'
   );
 INSERT INTO
@@ -7614,7 +8658,7 @@ INSERT INTO
 VALUES
   (
     'mat003',
-    NULL,
+    'SKU-395078',
     'Albatros',
     'digital',
     'm2',
@@ -7626,7 +8670,7 @@ VALUES
     NULL,
     1,
     '2026-03-04 15:57:40',
-    '2026-03-04 15:57:40'
+    '2026-05-25 21:46:40'
   );
 INSERT INTO
   `materials` (
@@ -8526,6 +9570,66 @@ INSERT INTO
   )
 VALUES
   (
+    'p1780744646719',
+    'PRD-MQ29DUZ3',
+    'Gantungan Kunci',
+    'idcard-1857',
+    2500,
+    5000,
+    100,
+    5,
+    'pcs',
+    '?',
+    '2026-06-06 18:17:26',
+    NULL
+  );
+INSERT INTO
+  `products` (
+    `id`,
+    `code`,
+    `name`,
+    `category_id`,
+    `buy_price`,
+    `sell_price`,
+    `stock`,
+    `min_stock`,
+    `unit`,
+    `emoji`,
+    `updated_at`,
+    `image`
+  )
+VALUES
+  (
+    'p1781490114417',
+    'PRD-MQEL7TKG',
+    'PIGORA 10 R (20X30)',
+    'pigora-7038',
+    15000,
+    25000,
+    9,
+    2,
+    'pcs',
+    '?',
+    '2026-06-15 09:21:54',
+    NULL
+  );
+INSERT INTO
+  `products` (
+    `id`,
+    `code`,
+    `name`,
+    `category_id`,
+    `buy_price`,
+    `sell_price`,
+    `stock`,
+    `min_stock`,
+    `unit`,
+    `emoji`,
+    `updated_at`,
+    `image`
+  )
+VALUES
+  (
     'prod-dummy-1',
     'SIDU32',
     'Buku Tulis SIDU 32',
@@ -8728,7 +9832,7 @@ VALUES
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
-  (17, 'auto_print', 'true');
+  (17, 'auto_print', 'false');
 INSERT INTO
   `settings` (`id`, `key`, `value`)
 VALUES
@@ -8775,7 +9879,7 @@ VALUES
   (
     27,
     'print_prices',
-    '[{\"id\":\"1774179838786\",\"paper\":\"HVS A4 EPSON\",\"color\":\"bw\",\"price\":\"500\"},{\"id\":\"1774179843217\",\"paper\":\"HVS A4 EPSON\",\"color\":\"color\",\"price\":\"1000\"},{\"id\":\"1774179893993\",\"paper\":\"PRIN KERTAS COVER EPSON\",\"color\":\"bw\",\"price\":\"1500\"},{\"id\":\"1774179915393\",\"paper\":\"PRINT COPY A4 F4 CANON\",\"color\":\"bw\",\"price\":\"250\"},{\"id\":\"1774328770287\",\"paper\":\"CETAK FOTO 3R\",\"color\":\"color\",\"price\":\"3000\"}]'
+    '[{\"id\":\"1774179838786\",\"paper\":\"HVS A4 EPSON\",\"color\":\"bw\",\"price\":\"500\"},{\"id\":\"1774179843217\",\"paper\":\"HVS A4 EPSON\",\"color\":\"color\",\"price\":\"1000\"},{\"id\":\"1774179893993\",\"paper\":\"PRIN KERTAS COVER\",\"color\":\"color\",\"price\":\"1500\"},{\"id\":\"1774179915393\",\"paper\":\"PRINT COPY A4 F4 CANON\",\"color\":\"bw\",\"price\":\"250\"},{\"id\":\"1774328770287\",\"paper\":\"CETAK FOTO 3R\",\"color\":\"color\",\"price\":\"3000\"},{\"id\":\"1781596126169\",\"paper\":\"PRIN HVS A4 FULL COLOR\",\"color\":\"color\",\"side\":\"1\",\"price\":\"1500\"},{\"id\":\"1781598597047\",\"paper\":\"STICKER GLOSSY A4\",\"color\":\"color\",\"side\":\"1\",\"price\":\"5000\"}]'
   );
 INSERT INTO
   `settings` (`id`, `key`, `value`)
@@ -8934,6 +10038,72 @@ VALUES
 # DATA DUMP FOR TABLE: spk
 # ------------------------------------------------------------
 
+INSERT INTO
+  `spk` (
+    `id`,
+    `spk_number`,
+    `customer_id`,
+    `customer_name`,
+    `customer_phone`,
+    `customer_company`,
+    `product_name`,
+    `product_qty`,
+    `product_unit`,
+    `kategori`,
+    `specs_material`,
+    `specs_finishing`,
+    `specs_notes`,
+    `biaya_cetak`,
+    `biaya_material`,
+    `biaya_finishing`,
+    `biaya_desain`,
+    `biaya_lainnya`,
+    `total_biaya`,
+    `dp_amount`,
+    `sisa_tagihan`,
+    `status`,
+    `priority`,
+    `assigned_to`,
+    `deadline`,
+    `completed_at`,
+    `created_by`,
+    `created_at`,
+    `updated_at`,
+    `offset_order_id`
+  )
+VALUES
+  (
+    '02b7182e-5071-4fde-8d06-c905c53cb4a8',
+    'SPK-2026-00011',
+    NULL,
+    'Pelanggan Umum',
+    NULL,
+    NULL,
+    'Offset - ID CARD',
+    1,
+    'pcs',
+    'Cetak Offset',
+    'ID CARD',
+    '-',
+    'Ukuran: A4',
+    8880.00,
+    0.00,
+    0.00,
+    0.00,
+    0.00,
+    8880.00,
+    0.00,
+    8880.00,
+    'Menunggu Antrian',
+    'Normal',
+    NULL,
+    NULL,
+    NULL,
+    'u1',
+    '2026-05-25 21:49:13',
+    '2026-05-25 21:49:13',
+    NULL
+  );
 INSERT INTO
   `spk` (
     `id`,
@@ -10484,6 +11654,28 @@ VALUES
     'Batal',
     '2026-03-24 05:19:01'
   );
+INSERT INTO
+  `spk_logs` (
+    `id`,
+    `spk_id`,
+    `user_id`,
+    `action`,
+    `description`,
+    `old_value`,
+    `new_value`,
+    `created_at`
+  )
+VALUES
+  (
+    51,
+    '02b7182e-5071-4fde-8d06-c905c53cb4a8',
+    'u1',
+    'STATUS_CHANGE',
+    'SPK Baru Dibuat',
+    NULL,
+    'Menunggu Antrian',
+    '2026-05-25 21:49:13'
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: spk_payments
@@ -11179,6 +12371,226 @@ VALUES
     21250,
     0
   );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1780635268893190',
+    't1780635268889',
+    NULL,
+    'Fotocopy HVS A4 (B/W, 1 Sisi)',
+    20,
+    250,
+    5000,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1780744682674382',
+    't1780744682670',
+    NULL,
+    'Gantungan Kunci',
+    2,
+    5000,
+    10000,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1780789281305494',
+    't1780789281303',
+    NULL,
+    'Fotocopy HVS A3 (B/W, 1 Sisi)',
+    1,
+    1000,
+    1000,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1780789281306989',
+    't1780789281303',
+    NULL,
+    'Kertas Cover',
+    1,
+    750,
+    750,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1780807034364821',
+    't1780807034360',
+    NULL,
+    'Print PRINT COPY A4 F4 CANON BW (1 Sisi)',
+    75,
+    250,
+    18750,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td17809328716595',
+    't1780932871652',
+    NULL,
+    'Fotocopy HVS A4 (B/W, 1 Sisi)',
+    14,
+    250,
+    3500,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1781596101110466',
+    't1781596101102',
+    NULL,
+    'Fotocopy HVS F4 (B/W, 1 Sisi)',
+    75,
+    250,
+    18750,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1781596273570108',
+    't1781596273569',
+    NULL,
+    'Print PRIN HVS A4 FULL COLOR BW (1 Sisi)',
+    65,
+    1500,
+    97500,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1781598412886504',
+    't1781598412885',
+    NULL,
+    'Print PRIN HVS A4 FULL COLOR BW (1 Sisi)',
+    45,
+    1500,
+    67500,
+    0
+  );
+INSERT INTO
+  `transaction_details` (
+    `id`,
+    `transaction_id`,
+    `product_id`,
+    `name`,
+    `qty`,
+    `price`,
+    `subtotal`,
+    `discount`
+  )
+VALUES
+  (
+    'td1781598674818199',
+    't1781598674817',
+    NULL,
+    'Print STICKER GLOSSY A4 COLOR (1 Sisi)',
+    3,
+    5000,
+    15000,
+    0
+  );
 
 # ------------------------------------------------------------
 # DATA DUMP FOR TABLE: transactions
@@ -11850,10 +13262,10 @@ VALUES
     0,
     0,
     1584000,
-    1000000,
+    1584000,
     0,
-    'hutang',
-    'pending',
+    'tunai',
+    'paid',
     'ID CARD KOP MART'
   );
 INSERT INTO
@@ -11896,6 +13308,384 @@ VALUES
     0,
     'tunai',
     'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1780635268889',
+    'TRX-202606-1953',
+    '2026-06-05 11:54:28',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    5000,
+    0,
+    0,
+    5000,
+    5000,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1780744682670',
+    'TRX-202606-4394',
+    '2026-06-06 18:18:02',
+    NULL,
+    'Betty Ledok',
+    NULL,
+    'u1',
+    'Admin Utama',
+    '',
+    10000,
+    0,
+    0,
+    10000,
+    10000,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1780789281303',
+    'TRX-202606-2685',
+    '2026-06-07 06:41:21',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    1750,
+    0,
+    0,
+    1750,
+    1750,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1780807034360',
+    'TRX-202606-8389',
+    '2026-06-07 11:37:14',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    18750,
+    0,
+    0,
+    18750,
+    18750,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1780932871652',
+    'TRX-202606-6437',
+    '2026-06-08 22:34:31',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    3500,
+    0,
+    0,
+    3500,
+    3500,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1781596101102',
+    'TRX-202606-6375',
+    '2026-06-16 14:48:20',
+    NULL,
+    'Umum',
+    NULL,
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    18750,
+    0,
+    0,
+    18750,
+    18750,
+    0,
+    'tunai',
+    'paid',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1781596273569',
+    'TRX-202606-8675',
+    '2026-06-16 14:51:13',
+    'c1781596247440',
+    'MBAK ERNA PAUD',
+    '6285895773474',
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    97500,
+    0,
+    0,
+    97500,
+    0,
+    0,
+    'pending',
+    'pending',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1781598412885',
+    'TRX-202606-2662',
+    '2026-06-16 15:26:52',
+    'c1781598375864',
+    'ENI SULISTIANA PAUD',
+    '085755632262',
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    67500,
+    0,
+    0,
+    67500,
+    0,
+    0,
+    'pending',
+    'pending',
+    ''
+  );
+INSERT INTO
+  `transactions` (
+    `id`,
+    `invoice_no`,
+    `date`,
+    `customer_id`,
+    `customer_name`,
+    `customer_wa`,
+    `user_id`,
+    `user_name`,
+    `type`,
+    `subtotal`,
+    `discount`,
+    `tax_amount`,
+    `total`,
+    `paid`,
+    `change_amount`,
+    `payment_type`,
+    `status`,
+    `notes`
+  )
+VALUES
+  (
+    't1781598674817',
+    'TRX-202606-2766',
+    '2026-06-16 15:31:14',
+    'c1781596247440',
+    'MBAK ERNA PAUD',
+    '6285895773474',
+    'u1',
+    'Admin Utama',
+    'Cetak',
+    15000,
+    0,
+    0,
+    15000,
+    0,
+    0,
+    'pending',
+    'pending',
     ''
   );
 
