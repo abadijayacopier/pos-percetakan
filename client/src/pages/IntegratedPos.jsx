@@ -9,12 +9,15 @@ import { useTheme } from '../contexts/ThemeContext';
 import Swal from 'sweetalert2';
 import ReceiptProMax from '../components/ReceiptProMax';
 import PosHeader from '../components/pos/PosHeader';
+import PosCalculator from '../components/pos/PosCalculator';
+import PosPendingModal from '../components/pos/PosPendingModal';
 import { 
     Search, RefreshCw, ShoppingCart, Save, CreditCard, 
     User, ChevronRight, X, Minus, Plus, Trash2, 
     Package, LayoutGrid, Clock, Settings, Maximize, 
     LogOut, UserPlus, Info, AlertCircle, CheckCircle2,
-    Book, CheckCircle, Smartphone, MapPin, Mail, Phone
+    Book, CheckCircle, Smartphone, MapPin, Mail, Phone,
+    Calculator, History
 } from 'lucide-react';
 import { FiPrinter, FiSearch, FiCheckCircle, FiUserPlus, FiChevronRight, FiList, FiPlus, FiArrowLeft, FiMessageCircle, FiUserCheck } from 'react-icons/fi';
 
@@ -119,6 +122,8 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
     const [customerWa, setCustomerWa] = useState(''); // State untuk WhatsApp
     const [transactionNotes, setTransactionNotes] = useState(''); // State untuk Catatan/Keterangan
     const [taxEnabled, setTaxEnabled] = useState(false);
+    const [isCalculatorOpen, setCalculatorOpen] = useState(false);
+    const [isPendingModalOpen, setPendingModalOpen] = useState(false);
     const [taxPercentage, setTaxPercentage] = useState(11);
 
     // Mencegah ID invoice terus berubah akibat re-render dari timer
@@ -1344,14 +1349,22 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-5">
-                        <button onClick={saveQueue} className="p-6 bg-slate-100 dark:bg-slate-800 text-slate-600 rounded-[2rem] font-black active:scale-95 transition-all flex flex-col items-center gap-2">
-                            <Save size={24} />
-                            <span className="text-[8px] uppercase tracking-widest">Simpan (F12)</span>
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                        <button onClick={() => setCalculatorOpen(true)} className="p-3 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 rounded-2xl font-black active:scale-90 transition-all flex flex-col items-center gap-1.5 border border-slate-100 dark:border-slate-700/50 hover:border-blue-400 hover:text-blue-500 group" title="Kalkulator">
+                            <Calculator size={18} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[7px] uppercase tracking-widest">Kalkulator</span>
                         </button>
-                        <button onClick={openPayment} className="p-6 bg-blue-600 text-white rounded-[2rem] font-black active:scale-95 transition-all flex flex-col items-center gap-2 shadow-xl shadow-blue-500/20">
-                            <CreditCard size={24} />
-                            <span className="text-[8px] uppercase tracking-widest">Bayar (F10)</span>
+                        <button onClick={() => setPendingModalOpen(true)} className="p-3 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-2xl font-black active:scale-90 transition-all flex flex-col items-center gap-1.5 border border-amber-100 dark:border-amber-800/30 hover:border-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20 group relative" title="Pending / Hutang">
+                            <Clock size={18} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[7px] uppercase tracking-widest">Pending</span>
+                        </button>
+                        <button onClick={saveQueue} className="p-3 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 rounded-2xl font-black active:scale-90 transition-all flex flex-col items-center gap-1.5 border border-slate-100 dark:border-slate-700/50 hover:border-blue-400 hover:text-blue-500 group" title="Simpan Pending (F12)">
+                            <Save size={18} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[7px] uppercase tracking-widest">Simpan</span>
+                        </button>
+                        <button onClick={openPayment} className="p-3 bg-blue-600 text-white rounded-2xl font-black active:scale-90 transition-all flex flex-col items-center gap-1.5 shadow-lg shadow-blue-500/20 hover:bg-blue-700 group" title="Bayar (F10)">
+                            <CreditCard size={18} className="group-hover:scale-110 transition-transform" />
+                            <span className="text-[7px] uppercase tracking-widest">Bayar</span>
                         </button>
                     </div>
                 </div>
@@ -1707,6 +1720,16 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
                     </div>
                 </div>
             </Modal>
+
+            {/* Calculator Modal */}
+            <PosCalculator isOpen={isCalculatorOpen} onClose={() => setCalculatorOpen(false)} />
+
+            {/* Pending Transactions Modal */}
+            <PosPendingModal
+                isOpen={isPendingModalOpen}
+                onClose={() => setPendingModalOpen(false)}
+                showToast={showToast}
+            />
         </div>
     );
 }
