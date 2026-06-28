@@ -828,6 +828,52 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
         }
     };
 
+    const handleRestorePending = async (trx) => {
+        try {
+            if (cart.length > 0) {
+                const { isConfirmed } = await Swal.fire({
+                    title: 'Keranjang Tidak Kosong',
+                    text: 'Mengembalikan transaksi pending akan menghapus isi keranjang saat ini. Lanjutkan?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Lanjutkan',
+                    cancelButtonText: 'Batal'
+                });
+                if (!isConfirmed) return;
+            }
+
+            // Restore items
+            const restoredCart = (trx.items || []).map(item => ({
+                id: item.productId || `restored-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                name: item.name,
+                sellPrice: item.price,
+                quantity: item.qty,
+                type: item.type || (item.source === 'atk' ? 'atk' : 'service'),
+                note: item.note || ''
+            }));
+            
+            setCart(restoredCart);
+            setGlobalDiscount(trx.discount || 0);
+            if (trx.customerId) {
+                setSelectedCustomerId(trx.customerId);
+            } else {
+                setSelectedCustomerId('manual');
+                setManualCustomerName(trx.customerName || '');
+            }
+            setTransactionNotes(trx.notes || '');
+            if (trx.customerWa) setCustomerWa(trx.customerWa);
+            
+            // Delete the old pending transaction so it doesn't duplicate
+            await api.delete(`/transactions/${trx.id}`);
+            
+            showToast('Transaksi dipulihkan ke keranjang', 'success');
+            if (isMobile) setIsCartOpen(true);
+        } catch (error) {
+            console.error('Failed to restore pending transaction:', error);
+            showToast('Gagal memulihkan transaksi pending', 'error');
+        }
+    };
+
     // Keyboard Shortcuts
     useKeyboardShortcuts({
         'F1': () => setActiveServiceTab('fotocopy'),
@@ -1728,6 +1774,7 @@ export default function IntegratedPos({ onNavigate, pageState, onFullscreenChang
             <PosPendingModal
                 isOpen={isPendingModalOpen}
                 onClose={() => setPendingModalOpen(false)}
+                onRestoreToCart={handleRestorePending}
                 showToast={showToast}
             />
         </div>
