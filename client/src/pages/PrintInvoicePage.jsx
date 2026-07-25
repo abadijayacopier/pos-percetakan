@@ -3,8 +3,8 @@ import api from '../services/api';
 
 import { FiGlobe, FiPhone, FiMapPin, FiMail } from 'react-icons/fi';
 
-export default function PrintInvoicePage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || null;
+export default function PrintInvoicePage({ onNavigate, pageState, spkId: propSpkId }) {
+    const spkId = propSpkId || pageState?.spkId || null;
     const [invoiceData, setInvoiceData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({});

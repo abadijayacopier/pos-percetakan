@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function SPKSettlementPage({ onNavigate, pageState }) {
-    const spkId = pageState?.spkId || null;
+export default function SPKSettlementPage({ onNavigate, pageState, spkId: propSpkId }) {
+    const spkId = propSpkId || pageState?.spkId || null;
     const [spk, setSpk] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sendWa, setSendWa] = useState(true);

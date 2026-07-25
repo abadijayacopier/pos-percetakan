@@ -7,8 +7,8 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
-export default function ServiceInvoicePage({ onNavigate, pageState }) {
-    const serviceId = pageState?.serviceId || null;
+export default function ServiceInvoicePage({ onNavigate, pageState, serviceId: propServiceId }) {
+    const serviceId = propServiceId || pageState?.serviceId || null;
     const [service, setService] = useState(null);
     const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({});

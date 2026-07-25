@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { FiArrowLeft, FiPrinter, FiShield, FiCalendar, FiBox } from 'react-icons/fi';
 
-export default function ServiceWarrantyStickerPage({ onNavigate, pageState }) {
-    const serviceId = pageState?.serviceId || null;
+export default function ServiceWarrantyStickerPage({ onNavigate, pageState, serviceId: propServiceId }) {
+    const serviceId = propServiceId || pageState?.serviceId || null;
     const [service, setService] = useState(null);
     const [settings, setSettings] = useState({});
     const [serviceWarranty, setServiceWarranty] = useState('1 Minggu');
