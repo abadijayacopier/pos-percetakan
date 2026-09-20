@@ -190,12 +190,18 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
     const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
-        const { totalAmount, dpAmount, title } = req.body;
+        const { title } = req.body;
+        const [taskRows] = await connection.query('SELECT * FROM dp_tasks WHERE id = ? FOR UPDATE', [req.params.id]);
+        if (!taskRows.length) return res.status(404).json({ message: 'Task tidak ditemukan' });
+        const task = taskRows[0];
+        const totalAmount = Number(task.material_price || 0) + Number(task.design_price || 0);
+        const dpAmount = Number(task.dp_amount || 0);
+        const sisa = totalAmount - dpAmount;
+        if (sisa < 0) return res.status(409).json({ message: 'Data DP melebihi total pesanan' });
 
         await connection.query("UPDATE dp_tasks SET is_paid = 1, status = 'diambil' WHERE id = ?", [req.params.id]);
         await connection.query("UPDATE design_assignments SET status = 'selesai' WHERE task_id = ? AND status IN ('ditugaskan', 'dikerjakan')", [req.params.id]);
 
-        const sisa = totalAmount - dpAmount;
         if (sisa > 0) {
             const cashFlowId = 'cf' + Date.now();
             const date = new Date().toISOString().split('T')[0];
@@ -205,9 +211,8 @@ router.post('/:id/pay', verifyToken, requireRole(['kasir', 'admin']), async (req
             `, [cashFlowId, date, sisa, `Pelunasan: ${title} (${req.params.id})`, req.params.id]);
         }
 
-        const [taskRows] = await connection.query('SELECT customerId FROM dp_tasks WHERE id = ?', [req.params.id]);
-        if (taskRows.length > 0 && taskRows[0].customerId) {
-            await connection.query('UPDATE customers SET total_spend = total_spend + ? WHERE id = ?', [sisa, taskRows[0].customerId]);
+        if (task.customerId) {
+            await connection.query('UPDATE customers SET total_spend = total_spend + ? WHERE id = ?', [sisa, task.customerId]);
         }
 
         await connection.commit();
