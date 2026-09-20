@@ -91,7 +91,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin', 'operator']), async
         const orderId = 'ord' + Date.now();
         const orderNo = await generateOrderNumber(conn);
         const totalHarga = items.reduce((sum, i) => sum + (parseInt(i.subtotal) || 0), 0);
-        const dp = parseInt(dp_amount) || 0;
+        const dp = Number.isFinite(Number(dp_amount)) ? Number(dp_amount) : 0;
+        if (totalHarga <= 0) return res.status(400).json({ message: 'Total order harus lebih dari 0' });
+        if (dp < 0 || dp > totalHarga) return res.status(400).json({ message: 'DP tidak boleh negatif atau melebihi total order' });
         const remaining = totalHarga - dp;
 
         const safeMetode = metode_pembayaran && metode_pembayaran.trim() ? metode_pembayaran.trim() : null;
@@ -175,8 +177,14 @@ router.patch('/:id/status-bayar', verifyToken, requireRole(['kasir', 'admin']), 
         const [[order]] = await conn.query('SELECT * FROM orders WHERE id = ?', [req.params.id]);
         if (!order) throw new Error('Order tidak ditemukan');
 
-        const newDp = order.dp_amount + tambahan;
-        const newRemaining = Math.max(0, order.total_harga - newDp);
+        const currentDp = Number(order.dp_amount || 0);
+        const totalHarga = Number(order.total_harga || 0);
+        const remainingBefore = Math.max(0, totalHarga - currentDp);
+        if (tambahan > remainingBefore) {
+            return res.status(400).json({ message: 'Pembayaran melebihi sisa tagihan', remaining: remainingBefore });
+        }
+        const newDp = currentDp + tambahan;
+        const newRemaining = totalHarga - newDp;
         const newStatus = newRemaining === 0 ? 'lunas' : newDp > 0 ? 'dp' : 'belum_bayar';
 
         await conn.query(`UPDATE orders SET dp_amount=?, remaining=?, status_pembayaran=?, metode_pembayaran=COALESCE(?,metode_pembayaran) WHERE id=?`, [newDp, newRemaining, newStatus, metode_pembayaran || null, req.params.id]);
