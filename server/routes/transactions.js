@@ -212,7 +212,9 @@ router.post('/', verifyToken, requireRole(['kasir', 'admin']), async (req, res) 
             }
 
             // Digital Printing & Service Integration (Isolated per Tenant)
-            if (item.type === 'digital') {
+            // Digital Printing yang sudah dibuat melalui halaman Digital Printing
+            // memiliki taskId sebagai sumber utama. Jangan membuat dp_task kedua.
+            if (item.type === 'digital' && !item.meta?.taskId) {
                 const orderId = 'ORD-' + Date.now().toString().slice(-6);
                 await connection.query(`
                     INSERT INTO dp_tasks (id, status, customerName, customerId, title, material_id, material_name, 
