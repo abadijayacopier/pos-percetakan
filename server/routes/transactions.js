@@ -388,8 +388,12 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         if (trxArr.length === 0) throw new Error('Trx not found');
         const trx = trxArr[0];
 
-        const newPaid = Number(trx.paid || 0) + Number(paidAmount);
-        const newStatus = newPaid >= trx.total ? 'paid' : 'debt';
+        const payment = Number(paidAmount);
+        const remaining = Math.max(0, Number(trx.total || 0) - Number(trx.paid || 0));
+        if (!Number.isFinite(payment) || payment <= 0) return res.status(400).json({ message: 'Nominal pembayaran harus lebih dari 0' });
+        if (payment > remaining) return res.status(400).json({ message: 'Pembayaran melebihi sisa tagihan', remaining });
+        const newPaid = Number(trx.paid || 0) + payment;
+        const newStatus = newPaid >= Number(trx.total || 0) ? 'paid' : 'debt';
 
         await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ?, notes = ? WHERE id = ?',
             [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, notes || trx.notes, id]);
@@ -399,10 +403,10 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         await connection.query(`
             INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
             VALUES (?, ?, 'in', 'Penjualan', ?, ?, ?)
-        `, [cashFlowId, todayDate, paidAmount, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
+        `, [cashFlowId, todayDate, payment, `Pelunasan ${trx.invoice_no || trx.id}`, id]);
 
         await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'payment', 'Transaction', `Pelunasan ${trx.invoice_no || trx.id}: ${paidAmount} via ${paymentMethod}`, req.ip || null]);
+            [req.user.id, req.user.name, 'payment', 'Transaction', `Pelunasan ${trx.invoice_no || trx.id}: ${payment} via ${paymentMethod}`, req.ip || null]);
 
         await connection.commit();
         res.json({ message: 'Pembayaran berhasil dicatat' });
@@ -426,8 +430,24 @@ router.put('/:id/cancel-settlement', verifyToken, requireRole(['admin']), async 
         const trx = trxArr[0];
 
         // Reset status ke debt dan nominal paid dikurangi (atau bisa juga ditanya nominalnya, tapi biasanya batal lunas itu reset ke sisa)
-        // Disini kita set status ke 'debt' saja. Nominal paid tetap apa adanya agar admin bisa edit manual nominalnya di modal Edit.
-        await connection.query('UPDATE transactions SET status = "debt" WHERE id = ?', [id]);
+        const [[lastPayment]] = await connection.query(
+            "SELECT * FROM cash_flow WHERE reference_id = ? AND type = 'in' AND category = 'Penjualan' ORDER BY created_at DESC LIMIT 1",
+            [id]
+        );
+        if (!lastPayment) return res.status(400).json({ message: 'Tidak ada pembayaran yang dapat dibatalkan' });
+        const currentPaid = Number(trx.paid || 0);
+        const reverseAmount = Math.min(Number(lastPayment.amount || 0), currentPaid);
+        await connection.query('UPDATE transactions SET paid = ?, status = ? WHERE id = ?',
+            [currentPaid - reverseAmount, currentPaid - reverseAmount > 0 ? 'debt' : 'unpaid', id]);
+        if (reverseAmount > 0) {
+            await connection.query(
+                "INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id) VALUES (?, ?, 'out', 'Void/Refund', ?, ?, ?)",
+                ['cf' + Date.now(), new Date().toISOString().slice(0, 10), reverseAmount, `Reversal pembatalan pembayaran ${trx.invoice_no || id}`, id]
+            );
+            if (trx.customer_id) {
+                await connection.query('UPDATE customers SET total_spend = MAX(0, total_spend - ?) WHERE id = ?', [reverseAmount, trx.customer_id]);
+            }
+        }
 
         await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
             [req.user.id, req.user.name, 'cancel_payment', 'Transaction', `BATAL PELUNASAN (Admin) - Invoice ${trx.invoice_no || id}`, req.ip || null]);
