@@ -25,6 +25,7 @@ import CustomersPage from './pages/CustomersPage';
 import FinancePage from './pages/FinancePage';
 import PayrollPage from './pages/PayrollPage';
 import CashierPaymentPage from './pages/CashierPaymentPage';
+import KasirPage from './pages/KasirPage';
 import QRISMonitorPage from './pages/QRISMonitorPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -180,7 +181,7 @@ function App() {
             case 'customers': return <CustomersPage {...props} />;
             case 'finance': return <FinancePage {...props} />;
             case 'payroll': return <PayrollPage {...props} />;
-            case 'kasir-payment': return <CashierPaymentPage {...props} />;
+            case 'kasir-payment': return <KasirPage {...props} />;
             case 'qris-monitor': return <QRISMonitorPage {...props} />;
             case 'reports': return <ReportsPage {...props} />;
             case 'settings': return <SettingsPage {...props} />;
