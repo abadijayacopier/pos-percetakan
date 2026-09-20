@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getTenantPool, masterPool } = require('../config/database');
+const { getTenantPool, masterPool, currentMode } = require('../config/database');
 const TenantManager = require('../utils/tenantManager');
 
 /**
@@ -19,7 +19,7 @@ const verifyToken = async (req, res, next) => {
         const { getActivePool } = require('../config/database');
         req.user = verified;
 
-        const isStandalone = (process.env.APP_MODE || '').trim() === 'standalone';
+        const isStandalone = currentMode === 'standalone';
 
         // 1. Standalone Mode Logic
         if (isStandalone) {
