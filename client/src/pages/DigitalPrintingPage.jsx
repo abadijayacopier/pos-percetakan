@@ -312,8 +312,8 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 subtotal: totalEstimasi,
                 source: 'digital',
             type: 'digital',
-            note: taskId,
-            meta: { taskId }
+            note: newTask.id,
+            meta: { taskId: newTask.id }
             }],
             subtotal: totalEstimasi,
             discount: 0,
