@@ -25,14 +25,14 @@ router.post('/', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { name, username, password, role, isActive } = req.body;
 
-        if (!name || !username || !role) {
-            return res.status(400).json({ message: 'Nama, username, dan role wajib diisi' });
+        if (!name || !username || !role || !password || String(password).length < 8) {
+            return res.status(400).json({ message: 'Nama, username, role, dan password minimal 8 karakter wajib diisi' });
         }
 
         const [existing] = await req.db.query('SELECT id FROM users WHERE username = ?', [username]);
         if (existing.length > 0) return res.status(400).json({ message: 'Username sudah terpakai' });
 
-        const hashed = await bcrypt.hash(password || '123456', 10);
+        const hashed = await bcrypt.hash(password, 10);
 
         // Use req.db to insert into tenant's database
         const [result] = await req.db.query(
@@ -87,6 +87,12 @@ router.put('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
     try {
         const { id } = req.params;
+        if (String(id) === String(req.user.id)) return res.status(400).json({ message: 'Admin tidak dapat menghapus akun sendiri' });
+        const [adminCount] = await req.db.query("SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin' AND is_active = 1");
+        const [targetUser] = await req.db.query('SELECT role, is_active FROM users WHERE id = ?', [id]);
+        if (targetUser.length && targetUser[0].role === 'admin' && targetUser[0].is_active && Number(adminCount[0].cnt) <= 1) {
+            return res.status(400).json({ message: 'Tidak dapat menghapus admin aktif terakhir' });
+        }
         const [userArr] = await req.db.query('SELECT name, username FROM users WHERE id = ?', [id]);
         const userName = userArr.length > 0 ? userArr[0].name : 'Unknown';
 
