@@ -310,7 +310,10 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 qty: 1,
                 price: totalEstimasi,
                 subtotal: totalEstimasi,
-                source: 'digital'
+                source: 'digital',
+            type: 'digital',
+            note: taskId,
+            meta: { taskId }
             }],
             subtotal: totalEstimasi,
             discount: 0,
