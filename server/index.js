@@ -65,6 +65,7 @@ app.use('/api/service', require('./routes/service'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/transactions', require('./routes/transactions'));
+app.use('/api/cashier', require('./routes/cashier'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/print-orders', require('./routes/printing'));
 app.use('/api/customers', require('./routes/customers'));
