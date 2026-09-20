@@ -30,6 +30,70 @@ export default function CashierPaymentPage({ onNavigate }) {
     const [editDiscount, setEditDiscount] = useState(0);
     const [selectedDeleteTrx, setSelectedDeleteTrx] = useState(null);
     const [settleNotes, setSettleNotes] = useState('');
+    const [productionOrders, setProductionOrders] = useState([]);
+    const [productionSearch, setProductionSearch] = useState('');
+    const [productionLoading, setProductionLoading] = useState(false);
+    const [selectedProduction, setSelectedProduction] = useState(null);
+    const [productionAmount, setProductionAmount] = useState('');
+    const [productionMethod, setProductionMethod] = useState('tunai');
+    const [productionNotes, setProductionNotes] = useState('');
+
+    const loadProductionOrders = async (searchValue = productionSearch) => {
+        setProductionLoading(true);
+        try {
+            const { data } = await api.get('/cashier/production-orders', {
+                params: { search: searchValue || '' }
+            });
+            setProductionOrders(data.data || []);
+        } catch (e) {
+            console.error('Gagal memuat antrian pembayaran produksi:', e);
+        } finally {
+            setProductionLoading(false);
+        }
+    };
+
+    const openProductionPayment = (order) => {
+        setSelectedProduction(order);
+        setProductionAmount(String(Math.max(0, Math.round(Number(order.remaining_amount || 0)))));
+        setProductionMethod('tunai');
+        setProductionNotes('');
+    };
+
+    const handleProductionPayment = async () => {
+        if (!selectedProduction) return;
+        const amount = Number(productionAmount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Nominal belum benar', text: 'Masukkan nominal pembayaran lebih dari 0.' });
+            return;
+        }
+        if (amount > Number(selectedProduction.remaining_amount || 0)) {
+            Swal.fire({ icon: 'warning', title: 'Pembayaran terlalu besar', text: 'Nominal melebihi sisa tagihan.' });
+            return;
+        }
+
+        try {
+            const { data } = await api.post(
+                `/cashier/production-orders/${selectedProduction.source}/${selectedProduction.id}/pay`,
+                { amount, method: productionMethod, notes: productionNotes }
+            );
+
+            setSelectedProduction(null);
+            await Promise.all([loadProductionOrders(), loadData()]);
+            Swal.fire({
+                icon: 'success',
+                title: 'Pembayaran Berhasil',
+                text: data.message || 'Pesanan sudah dilepas ke antrian produksi.',
+                timer: 2200,
+                showConfirmButton: false
+            });
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: e.response?.data?.message || 'Gagal memproses pembayaran produksi.'
+            });
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -46,7 +110,12 @@ export default function CashierPaymentPage({ onNavigate }) {
         } catch (e) { console.error(e); }
     };
 
-    useEffect(() => { loadData(); }, []);
+    useEffect(() => {
+        loadData();
+        loadProductionOrders();
+        const timer = setInterval(() => loadProductionOrders(), 10000);
+        return () => clearInterval(timer);
+    }, []);
 
     const reload = () => loadData();
 
@@ -364,6 +433,87 @@ export default function CashierPaymentPage({ onNavigate }) {
                         </div>
                     </motion.div>
                 ))}
+            </div>
+
+            {/* Antrian Pembayaran Produksi */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-amber-200 dark:border-amber-500/20 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-amber-100 dark:border-slate-800 bg-amber-50/50 dark:bg-amber-500/5 flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+                    <div>
+                        <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-3">
+                            <span className="p-2.5 bg-amber-500 rounded-xl text-white"><FiClock /></span>
+                            Pesanan Cetak Menunggu Pembayaran
+                        </h2>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2">
+                            Digital Printing & Offset → bayar / DP → otomatis dilepas ke produksi
+                        </p>
+                    </div>
+                    <div className="relative w-full lg:w-96">
+                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            value={productionSearch}
+                            onChange={e => {
+                                setProductionSearch(e.target.value);
+                                loadProductionOrders(e.target.value);
+                            }}
+                            placeholder="Cari pelanggan atau jenis cetakan..."
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl py-3 pl-11 pr-4 text-sm font-bold outline-none focus:border-amber-500"
+                        />
+                    </div>
+                </div>
+                <div className="p-5 overflow-x-auto">
+                    {productionLoading && productionOrders.length === 0 ? (
+                        <div className="py-10 text-center text-xs font-bold text-slate-400">Memuat antrian pembayaran...</div>
+                    ) : productionOrders.length === 0 ? (
+                        <div className="py-10 text-center">
+                            <FiCheckCircle size={34} className="mx-auto text-emerald-500 mb-3" />
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Tidak ada pesanan cetak menunggu pembayaran</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            {productionOrders.map(order => (
+                                <div key={`${order.source}-${order.id}`} className="border border-slate-100 dark:border-slate-800 rounded-3xl p-5 bg-slate-50/50 dark:bg-slate-950/40">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase ${order.source === 'digital' ? 'bg-blue-100 text-blue-600' : 'bg-violet-100 text-violet-600'}`}>
+                                                    {order.source_label}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-slate-400">{order.id}</span>
+                                            </div>
+                                            <h3 className="font-black text-slate-800 dark:text-white truncate">{order.customer_name || 'Pelanggan Umum'}</h3>
+                                            <p className="text-xs font-bold text-slate-500 mt-1 truncate">{order.print_type || order.material_name || 'Pesanan cetak'}</p>
+                                            {order.material_name && <p className="text-[10px] text-slate-400 mt-1">Bahan: {order.material_name} · Qty: {order.qty || 1}</p>}
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sisa</p>
+                                            <p className="text-xl font-black text-amber-600">{formatRupiah(order.remaining_amount)}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                                        <div className="rounded-xl bg-white dark:bg-slate-900 p-2">
+                                            <p className="text-[8px] font-black uppercase text-slate-400">Total</p>
+                                            <p className="text-xs font-black">{formatRupiah(order.total_amount)}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white dark:bg-slate-900 p-2">
+                                            <p className="text-[8px] font-black uppercase text-slate-400">Sudah Bayar</p>
+                                            <p className="text-xs font-black text-emerald-600">{formatRupiah(order.paid_amount)}</p>
+                                        </div>
+                                        <div className="rounded-xl bg-white dark:bg-slate-900 p-2">
+                                            <p className="text-[8px] font-black uppercase text-slate-400">Status</p>
+                                            <p className="text-xs font-black text-slate-600 dark:text-slate-300">{order.status}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => openProductionPayment(order)}
+                                        className="w-full mt-4 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                                    >
+                                        <FiCreditCard /> Bayar / DP & Lepas ke Produksi
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Content Table Card */}
@@ -697,6 +847,62 @@ export default function CashierPaymentPage({ onNavigate }) {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Modal Pembayaran Pesanan Produksi */}
+            <Modal
+                isOpen={!!selectedProduction}
+                onClose={() => setSelectedProduction(null)}
+                title={selectedProduction ? `Pembayaran ${selectedProduction.source_label}` : 'Pembayaran Produksi'}
+                footer={
+                    <div className="flex gap-4 w-full">
+                        <button onClick={() => setSelectedProduction(null)} className="flex-1 px-6 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-widest">Batal</button>
+                        <button onClick={handleProductionPayment} className="flex-1 px-6 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2">
+                            <FiCheckCircle /> Proses Pembayaran & Cetak
+                        </button>
+                    </div>
+                }
+            >
+                {selectedProduction && (
+                    <div className="space-y-5">
+                        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Pelanggan</p>
+                            <p className="text-lg font-black mt-1">{selectedProduction.customer_name || 'Pelanggan Umum'}</p>
+                            <p className="text-xs font-bold text-slate-500 mt-1">{selectedProduction.print_type}</p>
+                            <div className="flex justify-between mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                                <span className="text-xs font-bold text-slate-400">Sisa Tagihan</span>
+                                <span className="text-xl font-black text-amber-600">{formatRupiah(selectedProduction.remaining_amount)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nominal Bayar / DP</label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={productionAmount ? Number(productionAmount).toLocaleString('id-ID') : ''}
+                                onChange={e => setProductionAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                className="w-full mt-2 px-5 py-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-2xl font-black outline-none focus:border-emerald-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Metode Pembayaran</label>
+                            <div className="grid grid-cols-3 gap-2 mt-2">
+                                {['tunai','qris','transfer'].map(m => (
+                                    <button key={m} onClick={() => setProductionMethod(m)} className={`py-3 rounded-xl text-[10px] font-black uppercase ${productionMethod === m ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{m}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <textarea
+                            value={productionNotes}
+                            onChange={e => setProductionNotes(e.target.value)}
+                            placeholder="Catatan pembayaran (opsional)"
+                            className="w-full min-h-[80px] px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-bold"
+                        />
+                        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                            Setelah pembayaran berhasil, pesanan otomatis berstatus siap diproses operator produksi.
                         </div>
                     </div>
                 )}
