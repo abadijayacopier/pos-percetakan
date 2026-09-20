@@ -227,19 +227,85 @@ router.patch('/items/:itemId/status', verifyToken, requireRole(['kasir', 'admin'
     }
 });
 
-// ── DELETE batalkan order ──────────────────────────────────────────────────
+// ── DELETE batalkan order — reverse material, DP and customer ledger
 router.delete('/:id', verifyToken, requireRole(['admin']), async (req, res) => {
+    const conn = await req.db.getConnection();
     try {
-        await req.db.query(
-            `UPDATE production_status ps
+        await conn.beginTransaction();
+
+        const [[order]] = await conn.query('SELECT * FROM orders WHERE id = ? FOR UPDATE', [req.params.id]);
+        if (!order) return res.status(404).json({ message: 'Order tidak ditemukan' });
+
+        const [statuses] = await conn.query(
+            `SELECT status FROM production_status ps
              INNER JOIN order_items oi ON oi.id = ps.order_item_id
-             SET ps.status = 'batal'
-             WHERE oi.order_id = ?`,
+             WHERE oi.order_id = ?`, [req.params.id]
+        );
+        if (statuses.length && statuses.every(r => ['batal', 'selesai', 'diambil'].includes(r.status))) {
+            const active = statuses.some(r => !['batal'].includes(r.status));
+            if (!active && String(order.catatan || '').includes('[BATAL]')) {
+                return res.status(400).json({ message: 'Order sudah dibatalkan' });
+            }
+        }
+
+        const [items] = await conn.query(
+            'SELECT material_id, quantity, luas_total, layanan FROM order_items WHERE order_id = ?',
             [req.params.id]
         );
-        res.json({ message: 'Order dibatalkan' });
+        for (const item of items) {
+            if (!item.material_id) continue;
+            const qty = item.layanan === 'digital_printing' && Number(item.luas_total)
+                ? Number(item.luas_total) * (Number(item.quantity) || 1)
+                : (Number(item.quantity) || 1);
+            if (qty <= 0) continue;
+            await conn.query('UPDATE materials SET stok_saat_ini = stok_saat_ini + ? WHERE id = ?', [qty, item.material_id]);
+            await conn.query(
+                `INSERT INTO material_movements (material_id, tipe, jumlah, satuan, referensi, catatan, user_id)
+                 SELECT ?, 'masuk', ?, satuan, ?, ?, ? FROM materials WHERE id = ?`,
+                [item.material_id, qty, order.order_number, `Pembatalan order ${order.order_number}`, req.user.id, item.material_id]
+            );
+        }
+
+        const dp = Math.max(0, Number(order.dp_amount || 0));
+        if (dp > 0) {
+            await conn.query(
+                `INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                 VALUES (?, ?, 'out', 'Void/Refund', ?, ?, ?)`,
+                ['cf' + Date.now(), new Date().toISOString().slice(0, 10), dp, `Refund DP pembatalan ${order.order_number}`, order.id]
+            );
+            if (order.customer_id) {
+                await conn.query(
+                    'UPDATE customers SET total_spend = GREATEST(0, total_spend - ?) WHERE id = ?',
+                    [dp, order.customer_id]
+                );
+            }
+        }
+
+        await conn.query(
+            `UPDATE production_status ps
+             INNER JOIN order_items oi ON oi.id = ps.order_item_id
+             SET ps.status = 'batal', ps.catatan_teknis = CONCAT(COALESCE(ps.catatan_teknis,''), ?)
+             WHERE oi.order_id = ?`,
+            [` [BATAL oleh ${req.user.name}]`, req.params.id]
+        );
+        await conn.query(
+            'UPDATE orders SET dp_amount = 0, remaining = total_harga, status_pembayaran = "belum_bayar", catatan = CONCAT(COALESCE(catatan, ""), ?) WHERE id = ?',
+            [` [BATAL oleh ${req.user.name}]`, req.params.id]
+        );
+
+        await conn.query(
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'cancel_order', 'Order', `Batal order ${order.order_number}; refundDP=${dp}`, req.ip || null]
+        );
+
+        await conn.commit();
+        res.json({ message: 'Order dibatalkan; material dikembalikan dan refund DP dicatat.' });
     } catch (e) {
-        res.status(500).json({ message: e.message });
+        await conn.rollback();
+        console.error('Cancel order error:', e);
+        res.status(500).json({ message: 'Gagal membatalkan order: ' + e.message });
+    } finally {
+        conn.release();
     }
 });
 
