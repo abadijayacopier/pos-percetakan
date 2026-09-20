@@ -336,14 +336,21 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
         if (status === 'Lunas') dbStatus = 'paid';
         if (status === 'Cicil') dbStatus = 'debt';
 
+        const [[existingTrx]] = await connection.query('SELECT * FROM transactions WHERE id = ? FOR UPDATE', [req.params.id]);
+        if (!existingTrx) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
+        if (String(existingTrx.status).toLowerCase() === 'void') return res.status(400).json({ message: 'Transaksi void tidak dapat diedit' });
+        const normalizedPaid = Number.isFinite(Number(paidAmount)) ? Number(paidAmount) : Number(existingTrx.paid || 0);
+        if (normalizedPaid < 0) return res.status(400).json({ message: 'Nominal dibayar tidak boleh negatif' });
+
         if (items && items.length > 0) {
-            const newSubtotal = reqSubtotal || items.reduce((s, i) => s + ((i.qty || 1) * (i.price || 0)), 0);
-            const newDiscount = reqDiscount !== undefined ? reqDiscount : 0;
-            const newTotal = reqTotal || (newSubtotal - newDiscount);
+            const newSubtotal = reqSubtotal !== undefined ? Number(reqSubtotal) : items.reduce((s, i) => s + ((Number(i.qty) || 1) * (Number(i.price) || 0)), 0);
+            const newDiscount = reqDiscount !== undefined ? Number(reqDiscount) : 0;
+            const newTotal = reqTotal !== undefined ? Number(reqTotal) : (newSubtotal - newDiscount);
+            if (!Number.isFinite(newTotal) || newTotal < 0 || normalizedPaid > newTotal) return res.status(400).json({ message: 'Total atau pembayaran transaksi tidak valid' });
 
             await connection.query(
                 'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status), subtotal = ?, discount = ?, total = ? WHERE id = ?',
-                [customerName, paidAmount, paymentType, notes, dbStatus || null, newSubtotal, newDiscount, newTotal, req.params.id]
+                [customerName ?? existingTrx.customer_name, normalizedPaid, paymentType ?? existingTrx.payment_type, notes ?? existingTrx.notes, dbStatus || (normalizedPaid >= newTotal ? 'paid' : normalizedPaid > 0 ? 'debt' : 'unpaid'), newSubtotal, newDiscount, newTotal, req.params.id]
             );
 
             await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
@@ -358,7 +365,7 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
         } else {
             await connection.query(
                 'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status) WHERE id = ?',
-                [customerName, paidAmount, paymentType, notes, dbStatus || null, req.params.id]
+                [customerName ?? existingTrx.customer_name, normalizedPaid, paymentType ?? existingTrx.payment_type, notes ?? existingTrx.notes, dbStatus || (normalizedPaid >= Number(existingTrx.total || 0) ? 'paid' : normalizedPaid > 0 ? 'debt' : 'unpaid'), req.params.id]
             );
         }
 
