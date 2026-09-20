@@ -403,6 +403,8 @@ export default function DigitalPrintingPage({ onNavigate }) {
                 price: totalAmount,
                 subtotal: totalAmount,
                 source: 'digital',
+                type: 'digital',
+                note: taskId,
                 meta: {
                     taskId: taskId,
                     width: widthNum,
