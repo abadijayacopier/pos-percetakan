@@ -198,6 +198,18 @@ router.patch('/:id/status', verifyToken, requireRole(['admin', 'kasir', 'operato
         if (!current.length) return res.status(404).json({ message: 'SPK tidak ditemukan' });
 
         const oldStatus = current[0].status;
+
+        // Production is financially gated: a positive DP/payment is required
+        // before an Offset SPK can enter physical production stages.
+        const productionStatuses = ['produksi', 'proses cetak', 'dalam proses cetak', 'finishing', 'qc', 'selesai'];
+        if (productionStatuses.includes(String(status || '').toLowerCase())) {
+            const [[gate]] = await conn.query('SELECT dp_amount, sisa_tagihan FROM spk WHERE id = ? FOR UPDATE', [req.params.id]);
+            if (Number(gate?.dp_amount || 0) <= 0) {
+                const err = new Error('Pesanan belum memiliki DP/pembayaran. Bayar di kasir sebelum masuk produksi.');
+                err.statusCode = 409;
+                throw err;
+            }
+        }
         
         if (status === 'Selesai' || status === 'selesai') {
             await conn.query('UPDATE spk SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
@@ -220,7 +232,7 @@ router.patch('/:id/status', verifyToken, requireRole(['admin', 'kasir', 'operato
         res.json({ message: 'Status SPK diperbarui', oldStatus, newStatus: status });
     } catch (error) {
         await conn.rollback();
-        res.status(500).json({ message: 'Gagal update status' });
+        res.status(error.statusCode || 500).json({ message: error.message || 'Gagal update status' });
     } finally {
         conn.release();
     }
