@@ -12,7 +12,7 @@ class TenantManager {
      */
     static async getShopDBName(shopIdentifier) {
         // Handle Standalone Mode
-        if (process.env.APP_MODE === 'standalone') {
+        if (require('../config/database').currentMode === 'standalone') {
             return { dbName: process.env.DB_NAME || 'pos_abadi', shopId: 1 };
         }
 
@@ -111,7 +111,7 @@ class TenantManager {
     static async getPoolForShop(shopIdentifier) {
         const { getActivePool } = require('../config/database');
         
-        if (process.env.APP_MODE === 'standalone') {
+        if (require('../config/database').currentMode === 'standalone') {
             return await getActivePool();
         }
 
