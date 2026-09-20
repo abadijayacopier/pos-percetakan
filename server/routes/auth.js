@@ -2,14 +2,14 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { masterPool, getTenantPool } = require('../config/database');
+const { masterPool, getTenantPool, currentMode } = require('../config/database');
 const TenantManager = require('../utils/tenantManager');
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
     try {
         const { username, password, shopId } = req.body;
-        const isStandalone = process.env.APP_MODE === 'standalone';
+        const isStandalone = currentMode === 'standalone';
 
         // 1. Resolve Tenant DB
         let dbName;
