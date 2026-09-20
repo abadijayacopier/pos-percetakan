@@ -54,6 +54,14 @@ router.post('/', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desain
 
         const newId = id || ('ORD-' + Math.floor(Math.random() * 9999).toString().padStart(4, '0'));
 
+        // Production is financially gated: physical production requires a positive DP/payment.
+        const requestedStatus = status || 'menunggu_desain';
+        const initialDp = Number(dp_amount || 0);
+        const productionStatuses = ['produksi', 'proses', 'cetak', 'finishing', 'qc', 'selesai'];
+        if (productionStatuses.includes(String(requestedStatus).toLowerCase()) && initialDp <= 0) {
+            return res.status(409).json({ message: 'Pesanan belum memiliki DP/pembayaran. Bayar di kasir sebelum dilepas ke produksi.' });
+        }
+
         await req.db.query(`
             INSERT INTO dp_tasks
             (id, status, customerName, customerId, title, material_id, material_name, 
@@ -86,6 +94,20 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desa
             type, qty, dp_amount, is_paid, file_url,
             designer_id, designer_name, operator_id, operator_name
         } = req.body;
+
+        const requestedStatus = status;
+        const productionStatuses = ['produksi', 'proses', 'cetak', 'finishing', 'qc', 'selesai'];
+        if (productionStatuses.includes(String(requestedStatus || '').toLowerCase())) {
+            const [[gate]] = await req.db.query(
+                'SELECT dp_amount FROM dp_tasks WHERE id = ?',
+                [req.params.id]
+            );
+            if (!gate) return res.status(404).json({ message: 'Task tidak ditemukan' });
+            const effectiveDp = dp_amount !== undefined ? Number(dp_amount) : Number(gate.dp_amount || 0);
+            if (!Number.isFinite(effectiveDp) || effectiveDp <= 0) {
+                return res.status(409).json({ message: 'Pesanan belum memiliki DP/pembayaran. Bayar di kasir sebelum dilepas ke produksi.' });
+            }
+        }
 
         await req.db.query(`
             UPDATE dp_tasks 
@@ -142,6 +164,14 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir', 'operator', 'desa
 router.patch('/:id/status', verifyToken, async (req, res) => {
     try {
         const { status } = req.body;
+        const productionStatuses = ['produksi', 'proses', 'cetak', 'finishing', 'qc', 'selesai'];
+        if (productionStatuses.includes(String(status || '').toLowerCase())) {
+            const [[gate]] = await req.db.query('SELECT dp_amount FROM dp_tasks WHERE id = ?', [req.params.id]);
+            if (!gate) return res.status(404).json({ message: 'Task tidak ditemukan' });
+            if (Number(gate.dp_amount || 0) <= 0) {
+                return res.status(409).json({ message: 'Pesanan belum memiliki DP/pembayaran. Bayar di kasir sebelum masuk produksi.' });
+            }
+        }
         await req.db.query('UPDATE dp_tasks SET status = ? WHERE id = ?', [status, req.params.id]);
         
         // Fetch info for logging
