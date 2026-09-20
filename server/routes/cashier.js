@@ -42,7 +42,7 @@ router.get('/production-orders', verifyToken, requireRole(['kasir', 'admin', 'op
                 c.phone AS customer_phone
             FROM dp_tasks t
             LEFT JOIN customers c ON c.id = t.customerId
-            WHERE t.status NOT IN ('batal','selesai','diambil')
+            WHERE t.status NOT IN ('batal','produksi','cetak','finishing','selesai','siap_diambil','diambil')
               AND COALESCE(t.dp_amount,0) < (COALESCE(t.material_price,0) + COALESCE(t.design_price,0))
               AND (? = '' OR t.customerName LIKE ? OR t.title LIKE ? OR t.material_name LIKE ? OR t.id LIKE ?)
             ORDER BY t.created_at DESC
