@@ -487,6 +487,34 @@ router.put('/:id/pay', verifyToken, async (req, res) => {
         await connection.query('UPDATE transactions SET paid = ?, payment_type = ?, status = ?, customer_wa = ?, notes = ? WHERE id = ?',
             [newPaid, paymentMethod, newStatus, customerWa || trx.customer_wa, notes || trx.notes, id]);
 
+        // Jika transaksi berasal dari Digital Printing, pembayaran kasir juga
+        // harus melepas task yang sama ke antrian produksi.
+        const [[dpDetail]] = await connection.query(
+            'SELECT note FROM transaction_details WHERE transaction_id = ? AND note IS NOT NULL ORDER BY id DESC LIMIT 1',
+            [id]
+        );
+        if (dpDetail?.note) {
+            const [[dpTask]] = await connection.query(
+                'SELECT id, material_price, design_price, dp_amount, customerId, status FROM dp_tasks WHERE id = ? FOR UPDATE',
+                [dpDetail.note]
+            );
+            if (dpTask) {
+                const dpTotal = Number(dpTask.material_price || 0) + Number(dpTask.design_price || 0);
+                const dpPaid = Math.min(dpTotal, Number(dpTask.dp_amount || 0) + payment);
+                await connection.query(
+                    "UPDATE dp_tasks SET dp_amount = ?, is_paid = ?, status = 'produksi' WHERE id = ? AND status NOT IN ('batal','selesai','diambil')",
+                    [dpPaid, dpPaid >= dpTotal ? 1 : 0, dpTask.id]
+                );
+            }
+        }
+
+        if (trx.customer_id) {
+            await connection.query(
+                'UPDATE customers SET total_spend = total_spend + ? WHERE id = ?',
+                [payment, trx.customer_id]
+            );
+        }
+
         const cashFlowId = 'cf' + Date.now();
         const todayDate = new Date().toISOString().slice(0, 10);
         await connection.query(`
