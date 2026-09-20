@@ -144,7 +144,7 @@ const licenseGuard = async (req, res, next) => {
         next();
     } catch (e) {
         console.error('License Guard Error:', e);
-        next();
+        return res.status(503).json({ error: 'LICENSE_CHECK_FAILED', message: 'Pemeriksaan lisensi gagal. Silakan coba lagi.' });
     }
 };
 
