@@ -46,3 +46,25 @@ test('reconciliation endpoints exist', () => {
   assert.match(src, /router\.get\('\/reconciliation'/);
   assert.match(src, /router\.get\('\/stock-reconciliation'/);
 });
+
+test('production is gated by cashier payment for digital printing', () => {
+  const src = fs.readFileSync(path.join(root, 'server/routes/dp_tasks.js'), 'utf8');
+  assert.match(src, /Production is financially gated/);
+  assert.match(src, /Bayar di kasir sebelum dilepas ke produksi/);
+  assert.match(src, /Number\(gate\.dp_amount \|\| 0\) <= 0/);
+});
+
+test('production is gated by cashier payment for offset SPK', () => {
+  const src = fs.readFileSync(path.join(root, 'server/routes/spk.js'), 'utf8');
+  assert.match(src, /Production is financially gated/);
+  assert.match(src, /Bayar di kasir sebelum masuk produksi/);
+  assert.match(src, /SELECT dp_amount, sisa_tagihan FROM spk/);
+});
+
+test('cashier production payment routes both digital and offset orders', () => {
+  const src = fs.readFileSync(path.join(root, 'server/routes/cashier.js'), 'utf8');
+  assert.match(src, /router\.get\('\/production-orders'/);
+  assert.match(src, /source === 'digital'/);
+  assert.match(src, /INSERT INTO spk_payments/);
+  assert.match(src, /INSERT INTO cash_flow/);
+});
