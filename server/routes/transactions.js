@@ -290,48 +290,73 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// 5. Void Transaksi
+// 5. Void Transaksi — soft void, preserve financial/audit history
 router.delete('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
+        const [[trx]] = await connection.query('SELECT * FROM transactions WHERE id = ? FOR UPDATE', [req.params.id]);
+        if (!trx) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
+        if (String(trx.status).toLowerCase() === 'void') return res.status(400).json({ message: 'Transaksi sudah void' });
 
-        const [items] = await connection.query('SELECT product_id, qty FROM transaction_details WHERE transaction_id = ? AND product_id IS NOT NULL', [req.params.id]);
-
+        const [items] = await connection.query(
+            'SELECT product_id, qty FROM transaction_details WHERE transaction_id = ? AND product_id IS NOT NULL',
+            [req.params.id]
+        );
         for (const item of items) {
-            await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [item.qty, item.product_id]);
-            await connection.query(`
-                INSERT INTO stock_movements (product_id, type, qty, reference, notes) 
-                VALUES (?, 'in', ?, ?, 'Void Transaksi POS')
-             `, [item.product_id, item.qty, req.params.id]);
+            const qty = Number(item.qty) || 0;
+            if (qty <= 0) continue;
+            await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [qty, item.product_id]);
+            await connection.query(
+                `INSERT INTO stock_movements (product_id, type, qty, reference, notes)
+                 VALUES (?, 'in', ?, ?, 'Void Transaksi POS')`,
+                [item.product_id, qty, req.params.id]
+            );
         }
 
-        // Cancel related DP Tasks if any
-        await connection.query('UPDATE dp_tasks SET status = "batal" WHERE customerName = (SELECT customer_name FROM transactions WHERE id = ?) AND status NOT IN ("selesai", "diambil")', [req.params.id]);
+        const paid = Math.max(0, Number(trx.paid || 0));
+        if (paid > 0) {
+            await connection.query(
+                `INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                 VALUES (?, ?, 'out', 'Void/Refund', ?, ?, ?)`,
+                ['cf' + Date.now(), new Date().toISOString().slice(0, 10), paid, `Refund void ${trx.invoice_no || req.params.id}`, req.params.id]
+            );
+            if (trx.customer_id) {
+                await connection.query(
+                    'UPDATE customers SET total_spend = GREATEST(0, total_spend - ?) WHERE id = ?',
+                    [paid, trx.customer_id]
+                );
+            }
+        }
 
-        await connection.query('DELETE FROM cash_flow WHERE reference_id = ?', [req.params.id]);
-        await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
-        await connection.query('DELETE FROM transactions WHERE id = ?', [req.params.id]);
-        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'delete_transaction', 'Transaction', `Hapus & Void TRX ${req.params.id}`, req.ip || null]);
+        await connection.query('UPDATE dp_tasks SET status = "batal" WHERE customerName = ? AND status NOT IN ("selesai", "diambil", "batal")',
+            [trx.customer_name]);
+        await connection.query(
+            'UPDATE transactions SET status = "void", paid = 0, change_amount = 0, notes = CONCAT(COALESCE(notes, ""), ?), updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [` [VOID oleh ${req.user.name}]`, req.params.id]
+        );
+        await connection.query(
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'void_transaction', 'Transaction', `Void TRX ${req.params.id}; refund=${paid}`, req.ip || null]
+        );
 
         await connection.commit();
-        res.json({ message: 'Transaksi berhasil dihapus dan stok dikembalikan!' });
+        res.json({ message: 'Transaksi berhasil di-void; stok dikembalikan dan riwayat keuangan dipertahankan.' });
     } catch (error) {
         await connection.rollback();
-        res.status(500).json({ message: 'Gagal menghapus transaksi' });
+        console.error('Void transaction error:', error);
+        res.status(500).json({ message: 'Gagal melakukan void transaksi' });
     } finally {
         connection.release();
     }
 });
 
-// 5b. Update Transaksi (Edit General + Items)
+// 5b. Update Transaksi — reconcile stock, customer spend and payment ledger
 router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res) => {
     const connection = await req.db.getConnection();
     try {
         await connection.beginTransaction();
         const { customerName, paidAmount, paymentType, notes, status, items, subtotal: reqSubtotal, total: reqTotal, discount: reqDiscount } = req.body;
-
         let dbStatus = status;
         if (status === 'Lunas') dbStatus = 'paid';
         if (status === 'Cicil') dbStatus = 'debt';
@@ -339,47 +364,102 @@ router.put('/:id', verifyToken, requireRole(['admin', 'kasir']), async (req, res
         const [[existingTrx]] = await connection.query('SELECT * FROM transactions WHERE id = ? FOR UPDATE', [req.params.id]);
         if (!existingTrx) return res.status(404).json({ message: 'Transaksi tidak ditemukan' });
         if (String(existingTrx.status).toLowerCase() === 'void') return res.status(400).json({ message: 'Transaksi void tidak dapat diedit' });
-        const normalizedPaid = Number.isFinite(Number(paidAmount)) ? Number(paidAmount) : Number(existingTrx.paid || 0);
-        if (normalizedPaid < 0) return res.status(400).json({ message: 'Nominal dibayar tidak boleh negatif' });
 
-        if (items && items.length > 0) {
-            const newSubtotal = reqSubtotal !== undefined ? Number(reqSubtotal) : items.reduce((s, i) => s + ((Number(i.qty) || 1) * (Number(i.price) || 0)), 0);
-            const newDiscount = reqDiscount !== undefined ? Number(reqDiscount) : 0;
-            const newTotal = reqTotal !== undefined ? Number(reqTotal) : (newSubtotal - newDiscount);
-            if (!Number.isFinite(newTotal) || newTotal < 0 || normalizedPaid > newTotal) return res.status(400).json({ message: 'Total atau pembayaran transaksi tidak valid' });
+        const normalizedPaid = paidAmount !== undefined ? Number(paidAmount) : Number(existingTrx.paid || 0);
+        if (!Number.isFinite(normalizedPaid) || normalizedPaid < 0) return res.status(400).json({ message: 'Nominal dibayar tidak valid' });
 
-            await connection.query(
-                'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status), subtotal = ?, discount = ?, total = ? WHERE id = ?',
-                [customerName ?? existingTrx.customer_name, normalizedPaid, paymentType ?? existingTrx.payment_type, notes ?? existingTrx.notes, dbStatus || (normalizedPaid >= newTotal ? 'paid' : normalizedPaid > 0 ? 'debt' : 'unpaid'), newSubtotal, newDiscount, newTotal, req.params.id]
+        let newItems = items;
+        let newSubtotal = Number(existingTrx.subtotal || 0);
+        let newDiscount = Number(existingTrx.discount || 0);
+        let newTotal = Number(existingTrx.total || 0);
+
+        if (Array.isArray(newItems)) {
+            newSubtotal = reqSubtotal !== undefined ? Number(reqSubtotal) : newItems.reduce((sum, i) => sum + ((Number(i.qty) || 0) * (Number(i.price) || 0)), 0);
+            newDiscount = reqDiscount !== undefined ? Number(reqDiscount) : 0;
+            newTotal = reqTotal !== undefined ? Number(reqTotal) : newSubtotal - newDiscount;
+            if (!Number.isFinite(newTotal) || newTotal < 0 || normalizedPaid > newTotal) {
+                return res.status(400).json({ message: 'Total atau pembayaran transaksi tidak valid' });
+            }
+
+            const [oldItems] = await connection.query(
+                'SELECT product_id, qty FROM transaction_details WHERE transaction_id = ? AND product_id IS NOT NULL',
+                [req.params.id]
             );
+            for (const item of oldItems) {
+                const qty = Number(item.qty) || 0;
+                if (qty > 0) await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [qty, item.product_id]);
+            }
+
+            for (const item of newItems) {
+                const productId = item.productId || item.product_id || null;
+                const qty = Number(item.qty) || 0;
+                if (productId && qty > 0) {
+                    const [[product]] = await connection.query('SELECT stock FROM products WHERE id = ? FOR UPDATE', [productId]);
+                    if (!product) return res.status(400).json({ message: `Produk ${productId} tidak ditemukan` });
+                    if (Number(product.stock) < qty) return res.status(400).json({ message: `Stok produk ${productId} tidak mencukupi` });
+                }
+            }
 
             await connection.query('DELETE FROM transaction_details WHERE transaction_id = ?', [req.params.id]);
-
-            for (const item of items) {
+            for (const item of newItems) {
                 const detailId = 'td' + Date.now() + Math.floor(Math.random() * 10000);
+                const productId = item.productId || item.product_id || null;
+                const qty = Number(item.qty) || 1;
+                const price = Number(item.price) || 0;
                 await connection.query(
                     'INSERT INTO transaction_details (id, transaction_id, product_id, name, qty, price, subtotal, discount, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [detailId, req.params.id, item.productId || null, item.name, item.qty || 1, item.price || 0, (item.qty || 1) * (item.price || 0), item.discount || 0, item.note || null]
+                    [detailId, req.params.id, productId, item.name, qty, price, qty * price, Number(item.discount) || 0, item.note || null]
                 );
+                if (productId && qty > 0) {
+                    await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [qty, productId]);
+                    await connection.query(
+                        `INSERT INTO stock_movements (product_id, type, qty, reference, notes) VALUES (?, 'out', ?, ?, 'Edit Transaksi POS')`,
+                        [productId, qty, req.params.id]
+                    );
+                }
             }
-        } else {
-            await connection.query(
-                'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = COALESCE(?, status) WHERE id = ?',
-                [customerName ?? existingTrx.customer_name, normalizedPaid, paymentType ?? existingTrx.payment_type, notes ?? existingTrx.notes, dbStatus || (normalizedPaid >= Number(existingTrx.total || 0) ? 'paid' : normalizedPaid > 0 ? 'debt' : 'unpaid'), req.params.id]
-            );
         }
 
-        await connection.query('INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-            [req.user.id, req.user.name, 'edit_transaction', 'Transaction', `Edit TRX ${req.params.id}`, req.ip || null]).catch(() => {});
+        const oldPaid = Number(existingTrx.paid || 0);
+        const paymentDelta = normalizedPaid - oldPaid;
+        await connection.query(
+            'UPDATE transactions SET customer_name = ?, paid = ?, payment_type = ?, notes = ?, status = ?, subtotal = ?, discount = ?, total = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [customerName ?? existingTrx.customer_name, normalizedPaid, paymentType ?? existingTrx.payment_type, notes ?? existingTrx.notes,
+             dbStatus || (normalizedPaid >= newTotal ? 'paid' : normalizedPaid > 0 ? 'debt' : 'unpaid'),
+             newSubtotal, newDiscount, newTotal, req.params.id]
+        );
+
+        if (paymentDelta !== 0) {
+            const abs = Math.abs(paymentDelta);
+            await connection.query(
+                `INSERT INTO cash_flow (id, date, type, category, amount, description, reference_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                ['cf' + Date.now(), new Date().toISOString().slice(0, 10), paymentDelta > 0 ? 'in' : 'out',
+                 paymentDelta > 0 ? 'Penjualan' : 'Void/Refund', abs,
+                 `${paymentDelta > 0 ? 'Penyesuaian pembayaran' : 'Refund penyesuaian'} ${existingTrx.invoice_no || req.params.id}`,
+                 req.params.id]
+            );
+            if (existingTrx.customer_id) {
+                await connection.query(
+                    'UPDATE customers SET total_spend = GREATEST(0, total_spend + ?) WHERE id = ?',
+                    [paymentDelta, existingTrx.customer_id]
+                );
+            }
+        }
+
+        await connection.query(
+            'INSERT INTO activity_log (user_id, user_name, action, target, detail, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, req.user.name, 'edit_transaction', 'Transaction', `Edit TRX ${req.params.id}; paymentDelta=${paymentDelta}`, req.ip || null]
+        );
 
         await connection.commit();
-        res.json({ message: 'Transaksi diupdate!' });
+        res.json({ message: 'Transaksi diupdate dan stok/keuangan direkonsiliasi.' });
     } catch (error) {
-        if (connection) await connection.rollback();
+        await connection.rollback();
         console.error('Edit transaction error:', error);
         res.status(500).json({ message: 'Gagal update transaksi: ' + error.message });
     } finally {
-        if (connection) connection.release();
+        connection.release();
     }
 });
 
