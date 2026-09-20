@@ -20,6 +20,14 @@ process.on('uncaughtException', (err) => {
 
 const PORT = process.env.PORT || 5001;
 
+if (process.env.NODE_ENV === 'production') {
+    const jwtSecret = String(process.env.JWT_SECRET || '');
+    if (jwtSecret.length < 32 || jwtSecret.includes('CHANGE_ME') || jwtSecret.includes('GANTI_JWT')) {
+        throw new Error('JWT_SECRET production wajib diisi dengan secret acak minimal 32 karakter.');
+    }
+}
+
+
 // Middleware - CORS
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
