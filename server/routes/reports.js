@@ -138,5 +138,28 @@ router.get('/payroll', verifyToken, async (req, res) => {
         res.status(500).json({ message: 'Gagal memuat laporan penggajian' });
     }
 });
+/** Financial + stock reconciliation endpoints. */
+router.get('/reconciliation', verifyToken, async (req, res) => {
+    try {
+        const { dateFrom, dateTo } = req.query;
+        const trxParams = [], cfParams = [];
+        let trxWhere = "WHERE LOWER(COALESCE(status,'')) <> 'void'";
+        let cfWhere = 'WHERE 1=1';
+        if (dateFrom) { trxWhere += ' AND date >= ?'; cfWhere += ' AND date >= ?'; trxParams.push(`${dateFrom} 00:00:00`); cfParams.push(`${dateFrom} 00:00:00`); }
+        if (dateTo) { trxWhere += ' AND date <= ?'; cfWhere += ' AND date <= ?'; trxParams.push(`${dateTo} 23:59:59`); cfParams.push(`${dateTo} 23:59:59`); }
+        const [[trx]] = await req.db.query(`SELECT COUNT(*) AS transaction_count, COALESCE(SUM(paid),0) AS transaction_paid FROM transactions ${trxWhere}`, trxParams);
+        const [[cf]] = await req.db.query(`SELECT COALESCE(SUM(CASE WHEN type='in' THEN amount ELSE 0 END),0) AS cash_in, COALESCE(SUM(CASE WHEN type='out' THEN amount ELSE 0 END),0) AS cash_out FROM cash_flow ${cfWhere}`, cfParams);
+        const expectedNet = Number(trx.transaction_paid || 0);
+        const ledgerNet = Number(cf.cash_in || 0) - Number(cf.cash_out || 0);
+        res.json({ period:{dateFrom:dateFrom||null,dateTo:dateTo||null}, transactions:{count:Number(trx.transaction_count||0),paid:expectedNet}, cashFlow:{incoming:Number(cf.cash_in||0),outgoing:Number(cf.cash_out||0),net:ledgerNet}, variance:ledgerNet-expectedNet, balanced:Math.abs(ledgerNet-expectedNet)<1 });
+    } catch (error) { console.error('Report Reconciliation Error:', error); res.status(500).json({ message:'Gagal melakukan rekonsiliasi keuangan' }); }
+});
 
+router.get('/stock-reconciliation', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await req.db.query(`SELECT p.id,p.code,p.name,p.stock,COALESCE((SELECT SUM(CASE WHEN sm.type='in' THEN sm.qty ELSE -sm.qty END) FROM stock_movements sm WHERE sm.product_id=p.id),0) AS ledger_net FROM products p ORDER BY p.name ASC`);
+        const details=rows.map(r=>({...r,variance:Number(r.stock||0)-Number(r.ledger_net||0)}));
+        res.json({balanced:details.every(r=>Math.abs(Number(r.variance))<0.0001),details});
+    } catch (error) { console.error('Report Stock Reconciliation Error:',error); res.status(500).json({message:'Gagal melakukan rekonsiliasi stok'}); }
+});
 module.exports = router;
