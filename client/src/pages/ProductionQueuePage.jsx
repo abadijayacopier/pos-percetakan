@@ -128,7 +128,8 @@ export default function ProductionQueuePage({ onNavigate }) {
 
             assignments = assignRes.data;
             spkTasks = (spkRes.data.data || [])
-                .filter(s => s.status !== 'Batal' && s.status !== 'batal' && s.status !== 'Diambil')
+                // Offset baru masuk ke produksi setelah kasir menerima DP/pembayaran.
+                .filter(s => s.status !== 'Batal' && s.status !== 'batal' && s.status !== 'Diambil' && Number(s.dp_amount || 0) > 0)
                 .map(s => ({
                     id: s.spk_number,
                     real_id: s.id,
@@ -155,11 +156,13 @@ export default function ProductionQueuePage({ onNavigate }) {
         let prodTasks = [];
         try {
             const { data: allTasks } = await api.get('/dp-tasks');
-            prodTasks = allTasks.filter(t => !['checkout', 'batal'].includes(t.status))
+            // Digital printing baru masuk antrian produksi setelah kasir menerima DP/pembayaran.
+            // Status desain tetap dikerjakan di halaman desain, bukan di lantai produksi.
+            prodTasks = allTasks.filter(t => ['produksi', 'cetak', 'finishing', 'selesai'].includes(t.status))
                 .map(t => ({
                     ...t,
                     type: t.type || 'digital',
-                    status: ['menunggu_desain', 'desain', 'ditugaskan', 'produksi', 'unassigned', 'diterima'].includes(t.status) ? 'produksi' : t.status
+                    status: ['produksi', 'unassigned', 'diterima'].includes(t.status) ? 'produksi' : t.status
                 }));
         } catch (e) { console.error(e); }
 
